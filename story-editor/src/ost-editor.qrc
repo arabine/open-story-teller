@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../assets/floppy.svg</file>
+        <file>../assets/folder-open.svg</file>
+        <file>../assets/play-circle.png</file>
+        <file>../assets/build.png</file>
+    </qresource>
+</RCC>

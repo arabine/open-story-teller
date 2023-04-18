@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>StoryView.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>FrontButton.qml</file>
+        <file>icons/home.png</file>
+        <file>icons/ok.png</file>
+        <file>icons/pause.png</file>
+        <file>default_image.bmp</file>
+        <file>osb-logo-scale320x240.png</file>
+    </qresource>
+</RCC>

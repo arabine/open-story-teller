@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg1469"
+   version="1.1"
+   viewBox="0 0 200 200"
+   height="200mm"
+   width="200mm"
+   sodipodi:docname="pause.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   inkscape:export-filename="/home/anthony/git/sunii/sunii-app/icons/pause.png"
+   inkscape:export-xdpi="25.4"
+   inkscape:export-ydpi="25.4">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="2001"
+     inkscape:window-height="1076"
+     id="namedview9"
+     showgrid="false"
+     inkscape:zoom="0.55409463"
+     inkscape:cx="104.22497"
+     inkscape:cy="196.42555"
+     inkscape:window-x="1362"
+     inkscape:window-y="538"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1469" />
+  <defs
+     id="defs1463" />
+  <metadata
+     id="metadata1466">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="matrix(23.587418,0,0,23.587418,1377.7985,-4036.3787)"
+     id="layer1">
+    <g
+       id="g1446"
+       transform="translate(-41.758392,26.794454)">
+      <rect
+         style="opacity:1;fill:#ce672c;fill-opacity:1;fill-rule:evenodd;stroke:#ce672c;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect1409"
+         width="0.095993958"
+         height="5.9276266"
+         x="-14.392337"
+         y="145.61588" />
+      <rect
+         style="opacity:1;fill:#ce672c;fill-opacity:1;fill-rule:evenodd;stroke:#ce672c;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect1409-2"
+         width="0.095993958"
+         height="5.9276271"
+         x="-10.312625"
+         y="145.61588" />
+    </g>
+  </g>
+</svg>
