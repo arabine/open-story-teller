@@ -1,0 +1,6 @@
+[submodule "story-editor/QHexView"]
+	path = story-editor/QHexView
+	url = https://github.com/arabine/QHexView
+[submodule "story-editor/nodeeditor"]
+	path = story-editor/nodeeditor
+	url = https://github.com/arabine/nodeeditor.git
