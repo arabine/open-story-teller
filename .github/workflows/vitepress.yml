@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: 16
           cache: npm
+          path: docs
       - run: npm ci
         working-directory: docs
       - name: Build
