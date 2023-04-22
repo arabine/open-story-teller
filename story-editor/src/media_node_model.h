@@ -67,4 +67,5 @@ private:
     std::shared_ptr<NodeData> m_nodeData;
 
     QJsonObject m_mediaData;
+    void ShowContextMenu(const QPoint &pos);
 };

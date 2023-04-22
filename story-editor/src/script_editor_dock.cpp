@@ -16,10 +16,14 @@ $RamData1           DV32    1 ; one 32-bit integer
 .entry:                 ;; comment here should work
 
 
-    ; Syscall test (show image)
+    ; Syscall test: show image and play sound
     lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
     lcons r1, $soundChoice ; set to 0 if no sound
     syscall 1
+
+    ; syscall test: wait for event
+    lcons r0, 0xFF  ; wait for all event, blocking
+    syscall 2
 
 ; We create a stupid loop just for RAM variable testing
 

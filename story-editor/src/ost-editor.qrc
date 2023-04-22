@@ -4,5 +4,6 @@
         <file>../assets/folder-open.svg</file>
         <file>../assets/play-circle.png</file>
         <file>../assets/build.png</file>
+        <file>../assets/volume-off.png</file>
     </qresource>
 </RCC>

@@ -7,6 +7,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QEvent>
 #include <QtWidgets/QFileDialog>
+#include <QMenu>
 
 MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     : m_model(model)
@@ -41,6 +42,24 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
         m_ports = i;
         Q_EMIT m_model.nodeUpdated(getNodeId());
     });
+
+    connect(m_ui.selectImageButton, &QPushButton::clicked, [&](bool enable) {
+        ShowContextMenu(QCursor::pos());
+    });
+}
+
+void MediaNodeModel::ShowContextMenu(const QPoint &pos)
+{
+    QMenu contextMenu(tr("Context menu"), m_widget);
+
+    QAction action1("Remove Data Point", this);
+  //  connect(&action1, SIGNAL(triggered()), this, SLOT(removeDataPoint()));
+    contextMenu.addAction(&action1);
+    contextMenu.addAction(&action1);
+    contextMenu.addAction(&action1);
+    contextMenu.addAction(&action1);
+
+    contextMenu.exec(m_widget->mapFromGlobal(pos));
 }
 
 QJsonObject MediaNodeModel::save() const

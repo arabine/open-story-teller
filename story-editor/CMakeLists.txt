@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(ost-editor VERSION 0.1 LANGUAGES CXX C)
+project(story-editor VERSION 0.1 LANGUAGES CXX C)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -61,16 +61,18 @@ set(PROJECT_SOURCES
     src/ost-log.ui
     src/media-node.ui
     src/event-node.ui
-    ../chip32/chip32_assembler.cpp
-    ../chip32/chip32_vm.c
+    ../software/chip32/chip32_assembler.cpp
+    ../software/chip32/chip32_vm.c
 )
 
-include_directories(../chip32)
+include_directories(../software/chip32)
 
 add_subdirectory(QHexView)
+option(BUILD_SHARED_LIBS "" OFF)
+add_subdirectory(nodeeditor)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(ost-editor
+    qt_add_executable(${PROJECT_NAME}
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
@@ -80,20 +82,17 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
-        add_library(ost-editor SHARED
+        add_library(${PROJECT_NAME} SHARED
             ${PROJECT_SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
-        add_executable(ost-editor
+        add_executable(${PROJECT_NAME}
             ${PROJECT_SOURCES}
         )
     endif()
 endif()
-
-option(BUILD_SHARED_LIBS "" OFF)
-add_subdirectory(nodeeditor)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${NODE_EDITOR_HEADERS})
 target_link_directories(${PROJECT_NAME} PUBLIC ${NODE_EDITOR_LIBDIR})
@@ -116,10 +115,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-install(TARGETS ost-editor
+install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(ost-editor)
+    qt_finalize_executable(${PROJECT_NAME})
 endif()

@@ -1,2 +1,12 @@
 
 software/pico-sdk/
+
+www-docs/node_modules/
+
+*.lock
+
+build-story-editor-Desktop_Qt_6_4_1_GCC_64bit-Debug/
+
+docs/resources/
+
+docs/node_modules/

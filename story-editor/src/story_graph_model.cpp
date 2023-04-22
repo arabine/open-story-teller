@@ -5,8 +5,11 @@
 #include <QJsonArray>
 #include <iterator>
 
-StoryGraphModel::StoryGraphModel()
-{}
+StoryGraphModel::StoryGraphModel(StoryProject &project)
+    : m_project(project)
+{
+
+}
 
 StoryGraphModel::~StoryGraphModel()
 {

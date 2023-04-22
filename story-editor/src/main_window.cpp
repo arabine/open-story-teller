@@ -43,7 +43,7 @@ using QtNodes::StyleCollection;
 int nodeX = 0.0;
 
 MainWindow::MainWindow()
-    : m_model()
+    : m_model(m_project)
     , m_scene(m_model)
 {
     m_toolbar = new ToolBar();
@@ -267,6 +267,8 @@ bool MainWindow::event(QEvent *event)
 
         if (m_dbg.run_result == VM_WAIT_EVENT)
         {
+            // Result event is in R1
+            m_chip32_ctx.registers[R1] = 0x01;
             stepInstruction();
         }
 
@@ -294,16 +296,17 @@ uint8_t MainWindow::Syscall(uint8_t code)
         m_ostHmiDock->SetImage(imageFile);
     }
     // WAIT EVENT bits:
-    // 1: block
-    // 0: OK button
-    // 1: home button
-    // 2: pause button
-    // 3: rotary left
-    // 4: rotary right
+    // 0: block
+    // 1: OK button
+    // 2: home button
+    // 3: pause button
+    // 4: rotary left
+    // 5: rotary right
     else if (code == 2)
     {
         // Event mask is located in R0
         // optional timeout is located in R1
+        // if timeout is set to zero, wait for infinite and beyond
         retCode = 1; // set the VM in pause
     }
 
@@ -329,6 +332,7 @@ void MainWindow::buildScript()
             std::copy(m_program.begin(), m_program.end(), m_rom_data);
             m_ramView->SetMemory(m_rom_data, m_program.size());
             chip32_initialize(&m_chip32_ctx);
+            m_dbg.run_result = VM_OK;
             updateAll();
             DebugContext::DumpCodeAssembler(m_assembler);
         }

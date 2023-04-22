@@ -117,7 +117,9 @@ public:
 private slots:
     void stepInstruction();
     void closeEvent(QCloseEvent *event);
+
 private:
+    StoryProject m_project;
     StoryGraphModel m_model;
     StoryGraphScene m_scene;
 
@@ -130,9 +132,6 @@ private:
     VmDock *m_vmDock{nullptr};
     MemoryViewDock *m_ramView{nullptr};
     MemoryViewDock *m_romView{nullptr};
-
-    // Story pure C++ classes
-    StoryProject m_project;
 
     // VM
     uint8_t m_rom_data[16*1024];
