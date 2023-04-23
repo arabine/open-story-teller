@@ -11,6 +11,10 @@ export default defineConfig({
       { text: 'Examples', link: '/markdown-examples' }
     ],
 
+    search: {
+      provider: 'local'
+    },
+
     sidebar: [
       {
         text: 'Examples',
@@ -22,7 +26,21 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+      { icon: 'github', link: 'https://github.com/arabine/open-story-teller' }
     ]
+  },
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en'
+    },
+    fr: {
+      label: 'French',
+      lang: 'fr', // optional, will be added  as `lang` attribute on `html` tag
+      link: '/fr' // default /fr/ -- shows on navbar translations menu, can be external
+
+      // other locale specific properties...
+    }
   }
 })
+

@@ -101,6 +101,29 @@ MainWindow::MainWindow()
     m_romView = new MemoryViewDock("RomViewDock", "ROM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_romView);
 
+
+    m_chooseFileDialog = new QDialog(this);
+    m_chooseFileUi.setupUi(m_chooseFileDialog);
+    m_chooseFileDialog->close();
+
+    connect(&m_model, &StoryGraphModel::sigChooseFile, [&](NodeId id) {
+        m_chooseFileUi.tableView->setModel(&m_resourcesDock->getModel());
+        m_chooseFileDialog->exec();
+
+        // Get the file choosen
+        QModelIndexList selection = m_chooseFileUi.tableView->selectionModel()->selectedRows();
+
+        if (selection.count() > 0)
+        {
+            // Take first
+            QModelIndex index = selection.at(0);
+            QString fn = m_resourcesDock->getModel().GetFileName(index.row());
+            QJsonObject obj;
+            obj["image"] = fn;
+            m_model.setNodeData(id, NodeRole::InternalData, obj.toVariantMap());
+        }
+    });
+
     // TODO: merge both
     m_model.registerNode<MediaNodeModel>("MediaNode");
     m_model.addModel("MediaNode", "Story Teller");

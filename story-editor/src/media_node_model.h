@@ -40,6 +40,8 @@ public:
 
     void load(QJsonObject const &mediaData) override;
 
+    void setInternalData(const QVariant &value) override;
+
 public:
     virtual QString modelName() const { return QString("MediaNode"); }
 
@@ -63,9 +65,10 @@ private:
 
     unsigned int m_ports{1};
     QWidget *m_widget;
+
     Ui::mediaNodeUi m_ui;
     std::shared_ptr<NodeData> m_nodeData;
 
     QJsonObject m_mediaData;
-    void ShowContextMenu(const QPoint &pos);
+    void setImage(const QString &fileName);
 };

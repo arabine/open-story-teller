@@ -42,7 +42,7 @@
        <item>
         <widget class="QPushButton" name="playButton">
          <property name="text">
-          <string>Play</string>
+          <string>Step</string>
          </property>
          <property name="icon">
           <iconset resource="ost-editor.qrc">

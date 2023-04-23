@@ -14,9 +14,7 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     , m_widget(new QWidget())
 {
     m_ui.setupUi(m_widget);
-
     m_ui.image->setText("Image will appear here");
-
     m_ui.image->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
     QFont f = m_ui.image->font();
@@ -44,22 +42,9 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     });
 
     connect(m_ui.selectImageButton, &QPushButton::clicked, [&](bool enable) {
-        ShowContextMenu(QCursor::pos());
+        //m_contextMenu->exec(m_widget->mapFromGlobal(QCursor::pos()));
+        emit m_model.sigChooseFile(getNodeId());
     });
-}
-
-void MediaNodeModel::ShowContextMenu(const QPoint &pos)
-{
-    QMenu contextMenu(tr("Context menu"), m_widget);
-
-    QAction action1("Remove Data Point", this);
-  //  connect(&action1, SIGNAL(triggered()), this, SLOT(removeDataPoint()));
-    contextMenu.addAction(&action1);
-    contextMenu.addAction(&action1);
-    contextMenu.addAction(&action1);
-    contextMenu.addAction(&action1);
-
-    contextMenu.exec(m_widget->mapFromGlobal(pos));
 }
 
 QJsonObject MediaNodeModel::save() const
@@ -83,18 +68,30 @@ void MediaNodeModel::load(const QJsonObject &mediaData)
 
     if (!imagePath.isEmpty())
     {
-        std::cout << "Loading " << m_mediaData["image"].toString().toStdString() << std::endl;
-        QPixmap pix(imagePath);
+        setImage(imagePath);
+    }
+}
 
-        if (pix.isNull())
-        {
-            std::cout << "!!!!!!! " << m_mediaData["image"].toString().toStdString() << std::endl;
-        }
+void MediaNodeModel::setImage(const QString &imagePath)
+{
+    QPixmap pix(imagePath);
 
-        int w = m_ui.image->width();
-        int h = m_ui.image->height();
-        pix.scaled(w, h, Qt::KeepAspectRatio);
-        m_ui.image->setPixmap(pix);
+    if (pix.isNull())
+    {
+        std::cout << "!!!!!!! " << m_mediaData["image"].toString().toStdString() << std::endl;
+    }
+
+    int w = m_ui.image->width();
+    int h = m_ui.image->height();
+    pix.scaled(w, h, Qt::KeepAspectRatio);
+    m_ui.image->setPixmap(pix);
+}
+
+void MediaNodeModel::setInternalData(const QVariant &value)
+{
+    QJsonObject obj = value.toJsonObject();
+    if (obj.contains("image")) {
+        setImage(obj.value("image").toString());
     }
 }
 

@@ -61,6 +61,7 @@ set(PROJECT_SOURCES
     src/ost-log.ui
     src/media-node.ui
     src/event-node.ui
+    src/choose-file.ui
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
 )

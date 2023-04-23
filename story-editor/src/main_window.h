@@ -30,7 +30,7 @@ using QtNodes::StyleCollection;
 using QtNodes::DataFlowGraphModel;
 using QtNodes::NodeDelegateModelRegistry;
 
-#include "ui_ost-log.h"
+#include "ui_choose-file.h"
 #include "story_project.h"
 #include "story_graph_model.h"
 #include "story_graph_scene.h"
@@ -132,6 +132,9 @@ private:
     VmDock *m_vmDock{nullptr};
     MemoryViewDock *m_ramView{nullptr};
     MemoryViewDock *m_romView{nullptr};
+
+    QDialog *m_chooseFileDialog;
+    Ui::chooseFileDIalog m_chooseFileUi;
 
     // VM
     uint8_t m_rom_data[16*1024];

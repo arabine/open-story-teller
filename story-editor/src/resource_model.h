@@ -64,6 +64,17 @@ public:
         endInsertRows();
     }
 
+    QString GetFileName(int row) {
+        QString n;
+
+        if (row < m_data.size())
+        {
+            n = m_data.at(row).file.c_str();
+        }
+
+        return n;
+    }
+
     QList<Resource> GetData() const { return m_data; }
 
 private:

@@ -212,8 +212,10 @@ bool StoryGraphModel::setNodeData(NodeId nodeId, NodeRole role, QVariant value)
         break;
 
     case NodeRole::InternalData:
+    {
+        model->setInternalData(value);
         break;
-
+    }
     case NodeRole::InPortCount:
         break;
 

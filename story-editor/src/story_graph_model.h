@@ -132,6 +132,9 @@ public:
 
     StoryProject &GetProject()  { return m_project; };
 
+signals:
+    void sigChooseFile(NodeId id);
+
 private:
     StoryProject &m_project;
 

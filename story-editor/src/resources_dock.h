@@ -13,6 +13,8 @@ public:
 
     QList<Resource> GetResources() const { return m_resourcesModel.GetData(); }
 
+    ResourceModel &getModel() { return m_resourcesModel; }
+
 private:
     // Resources
     Ui::ostResources m_uiOstResources;

@@ -10,3 +10,5 @@ build-story-editor-Desktop_Qt_6_4_1_GCC_64bit-Debug/
 docs/resources/
 
 docs/node_modules/
+
+story-editor/CMakeLists.txt.user
