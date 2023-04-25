@@ -132,11 +132,15 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
 }
 
 #define GET_REG(name, ra) if (!GetRegister(name, ra)) {\
-    std::cout << "ERROR! Bad register name: " << name << std::endl;\
+    std::stringstream ss; \
+    ss << "ERROR! Bad register name: " << name << std::endl;\
+    m_lastError = ss.str(); \
     return false; }
 
 #define CHIP32_CHECK(instr, cond, error) if (!(cond)) { \
-    std::cout << "error line: " << instr.line << ": " << error << std::endl; \
+    std::stringstream ss; \
+    ss << "error line: " << instr.line << ": " << error << std::endl; \
+    m_lastError = ss.str(); \
     return false; } \
 
 // =============================================================================
@@ -457,7 +461,7 @@ bool Assembler::Parse(const std::string &data)
             std::string label = instr.args[argsIndex];
             CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " << label);
             uint16_t addr = m_labels[label].addr;
-            std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
+            // std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
             instr.compiledArgs[argsIndex] = addr & 0xFF;
             instr.compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
             if (instr.code.opcode == OP_LCONS) {

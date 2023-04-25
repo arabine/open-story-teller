@@ -1,6 +1,7 @@
 #include "script_editor_dock.h"
 
-static const std::string test1 = R"(; jump over the data, to our entry label
+static const std::string test1 = R"(
+; jump over the data, to our entry label
     jump         .entry
 
 ; Constant elements are separated by commas
@@ -21,6 +22,66 @@ $RamData1           DV32    1 ; one 32-bit integer
     lcons r1, $soundChoice ; set to 0 if no sound
     syscall 1
 
+    mov   r1, sp  ; save sp address in R1 (first element)
+    lcons r0, .MEDIA_02
+    push r0
+    lcons r0, .MEDIA_03
+    push r0
+
+
+    lcons r2, 3 ; 3 iterations
+
+
+    jmp .media
+
+
+; Generic media choice manager
+.media:
+    ; Les adresses des différents medias sont dans la stack
+; Arguments:
+    ; r1: address of the first media address
+    ; r2: nombre d'itérations
+
+; Local:
+    ; r0: loop counter
+    ; r3: increment
+    ; r4: current media address
+
+.media_loop_start:
+    mov r0, r2 ; i = 3
+    mov r4, r1  ; current_media = @media
+.media_loop:
+    lcons r3, 1
+    sub r0, r3  ; i--
+    lcons r3, 4
+    add r4, r3  ; @++
+    skipnz r0   ;  if (r0) goto start_loop;
+    jmp .media_loop_start
+    push sp
+    push r0
+    push r1
+    call r4
+    pop r1
+    pop r0
+    pop sp
+
+    ; TODO: wait for event
+
+    jmp .media_loop
+
+.MEDIA_02:
+    lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
+    lcons r1, $soundChoice ; set to 0 if no sound
+    syscall 1
+    ret
+
+.MEDIA_03:
+    lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
+    lcons r1, $soundChoice ; set to 0 if no sound
+    syscall 1
+    ret
+
+.SYSCALL_TEST:
     ; syscall test: wait for event
     lcons r0, 0xFF  ; wait for all event, blocking
     syscall 2
@@ -43,6 +104,7 @@ $RamData1           DV32    1 ; one 32-bit integer
 mov R0,R2               ; copy R2 into R0 (NO blank space between , and R2)
 
     halt
+
 )";
 
 

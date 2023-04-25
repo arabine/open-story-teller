@@ -21,6 +21,7 @@
 #include <QTreeWidget>
 #include <QHeaderView>
 #include <QSettings>
+#include <QtDebug>
 
 #include <QtNodes/BasicGraphicsScene>
 #include <QtNodes/ConnectionStyle>
@@ -42,16 +43,26 @@ using QtNodes::StyleCollection;
 
 int nodeX = 0.0;
 
+typedef void (*message_output_t)(QtMsgType , const QMessageLogContext &, const QString &);
+
 MainWindow::MainWindow()
     : m_model(m_project)
     , m_scene(m_model)
 {
+    Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
+
+    qInstallMessageHandler(cb);
+
     m_toolbar = new ToolBar();
     m_scene.setDropShadowEffect(false);
     m_scene.nodeGeometry().setMarginsRatio(0.02);
     m_toolbar->createActions(menuBar());
     addToolBar(m_toolbar);
     createStatusBar();
+
+    m_logDock = new LogDock();
+    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_logDock);
 
     m_nodeEditorDock = new NodeEditorDock(&m_scene);
     addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_nodeEditorDock);
@@ -101,7 +112,6 @@ MainWindow::MainWindow()
     m_romView = new MemoryViewDock("RomViewDock", "ROM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_romView);
 
-
     m_chooseFileDialog = new QDialog(this);
     m_chooseFileUi.setupUi(m_chooseFileDialog);
     m_chooseFileDialog->close();
@@ -148,9 +158,14 @@ MainWindow::MainWindow()
     Callback<uint8_t(uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1);
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(uint8_t)>::callback);
 
-
     readSettings();
 
+    qDebug() << "Started StoryTeller Editor";
+}
+
+void MainWindow::MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    m_logDock->Append(type, context, msg);
 }
 
 void MainWindow::readSettings()
@@ -359,6 +374,14 @@ void MainWindow::buildScript()
             updateAll();
             DebugContext::DumpCodeAssembler(m_assembler);
         }
+        else
+        {
+            qCritical() << m_assembler.GetLastError().c_str();
+        }
+    }
+    else
+    {
+        qCritical() << m_assembler.GetLastError().c_str();
     }
 }
 

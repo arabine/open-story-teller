@@ -43,6 +43,8 @@ set(PROJECT_SOURCES
     src/nodeeditor_dock.cpp
     src/osthmi_dock.h
     src/osthmi_dock.cpp
+    src/log_dock.h
+    src/log_dock.cpp
     src/vm_dock.h
     src/vm_dock.cpp
     src/code_editor.h

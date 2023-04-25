@@ -42,6 +42,7 @@ using QtNodes::NodeDelegateModelRegistry;
 #include "memory_view_dock.h"
 #include "osthmi_dock.h"
 #include "nodeeditor_dock.h"
+#include "log_dock.h"
 #include "toolbar.h"
 
 struct DebugContext
@@ -132,6 +133,7 @@ private:
     VmDock *m_vmDock{nullptr};
     MemoryViewDock *m_ramView{nullptr};
     MemoryViewDock *m_romView{nullptr};
+    LogDock *m_logDock{nullptr};
 
     QDialog *m_chooseFileDialog;
     Ui::chooseFileDIalog m_chooseFileUi;
@@ -162,6 +164,7 @@ private:
     QString GetFileName(uint32_t addr);
 
     bool event(QEvent *event);
+    void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 };
 
 #endif // MAIN_WINDOW_H

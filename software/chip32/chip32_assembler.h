@@ -104,11 +104,15 @@ public:
     bool GetRegister(const std::string &regName, uint8_t &reg);
     bool GetRegisterName(uint8_t reg, std::string &regName);
 
+    std::string GetLastError() { return m_lastError; }
+
 private:
     bool CompileMnemonicArguments(Instr &instr);
 
     // label, address
     std::map<std::string, Instr> m_labels;
+
+    std::string m_lastError;
 
     std::vector<Instr> m_instructions;
     bool CompileConstantArguments(Instr &instr);
