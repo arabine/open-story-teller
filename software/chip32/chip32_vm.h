@@ -53,34 +53,31 @@ typedef enum
     OP_PUSH = 5, // push a register onto the stack, e.g.: push r0
     OP_POP = 6,  // pop the first element of the stack to a register, e.g.: pop r0
 
-    // functions
-    OP_CALL = 7, // set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
-    OP_RET = 8,  // return to the address of last callee (RA), e.g.: ret
-
     // memory get/set from/to an address. The last argument is a size (1, 2 or 4 bytes)
-    OP_STORE = 9,   // copy a value from a register to a ram address located in a register, specific size e.g. : store @r4, r1, 2 (2 bytes)
-    OP_LOAD = 10,   // copy a value from a ram address located in a register to a register, specific size e.g.: load r0, @r3, 1 (1 byte)
+    OP_STORE = 7,   // copy a value from a register to a ram address located in a register, specific size e.g. : store @r4, r1, 2 (2 bytes)
+    OP_LOAD = 8,   // copy a value from a ram address located in a register to a register, specific size e.g.: load r0, @r3, 1 (1 byte)
 
     // arithmetic:
-    OP_ADD = 11,  // sum and store in first reg, e.g.: add r0, r2
-    OP_SUB = 12,  // subtract and store in first reg, e.g.: sub r0, r2
-    OP_MUL = 13,  // multiply and store in first reg, e.g.: mul r0, r2
-    OP_DIV = 14,  // divide and store in first reg, remain in second, e.g.: div r0, r2
+    OP_ADD = 9,  // sum and store in first reg, e.g.: add r0, r2
+    OP_SUB = 10,  // subtract and store in first reg, e.g.: sub r0, r2
+    OP_MUL = 11,  // multiply and store in first reg, e.g.: mul r0, r2
+    OP_DIV = 12,  // divide and store in first reg, remain in second, e.g.: div r0, r2
 
-    OP_SHL = 15,  // logical shift left, e.g.: shl r0, r1
-    OP_SHR = 16,  // logical shift right, e.g.: shr r0, r1
-    OP_ISHR = 17, // arithmetic shift right (for signed values), e.g.: ishr r0, r1
+    OP_SHL = 13,  // logical shift left, e.g.: shl r0, r1
+    OP_SHR = 14,  // logical shift right, e.g.: shr r0, r1
+    OP_ISHR = 15, // arithmetic shift right (for signed values), e.g.: ishr r0, r1
 
-    OP_AND = 18,  // and two registers and store result in the first one, e.g.: and r0, r1
-    OP_OR = 19,   // or two registers and store result in the first one, e.g.: or r0, r1
-    OP_XOR = 20,  // xor two registers and store result in the first one, e.g.: xor r0, r1
-    OP_NOT = 21,  // not a register and store result, e.g.: not r0
+    OP_AND = 16,  // and two registers and store result in the first one, e.g.: and r0, r1
+    OP_OR = 17,   // or two registers and store result in the first one, e.g.: or r0, r1
+    OP_XOR = 18,  // xor two registers and store result in the first one, e.g.: xor r0, r1
+    OP_NOT = 19,  // not a register and store result, e.g.: not r0
 
-    // branching:
-    OP_JMP = 22, // jump to address, e.g.: jmp 0x0A 0x00
-    OP_JR = 23,  // jump to address in register, e.g.: jr r1
-    OP_SKIPZ = 24,  // skip next instruction if zero, e.g.: skipz r0
-    OP_SKIPNZ = 25, // skip next instruction if not zero, e.g.: skipnz r2
+    // branching/functions
+    OP_CALL = 20, // set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
+    OP_RET = 21,  // return to the address of last callee (RA), e.g.: ret
+    OP_JUMP = 22, //  jump to address (can use label or address), e.g.: jump .my_label
+    OP_SKIPZ = 23,  // skip next instruction if zero, e.g.: skipz r0
+    OP_SKIPNZ = 24, // skip next instruction if not zero, e.g.: skipnz r2
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;
@@ -91,14 +88,15 @@ typedef enum
 | name  | number | type                             | preserved |
 |-------|--------|----------------------------------|-----------|
 | r0-r9 | 0-9    | general-purpose                  | Y         |
-| pc    | 16     | program counter                  | Y         |
-| sp    | 18     | stack pointer                    | Y         |
-| ra    | 19     | return address                   | N         |
+| t0-t9 | 10-19  | temporary registers              | N         |
+| pc    | 20     | program counter                  | Y         |
+| sp    | 21     | stack pointer                    | Y         |
+| ra    | 22     | return address                   | N         |
 
 */
 typedef enum
 {
-    // preserved across a call
+    // preserved across a call, use them for argument passing
     R0,
     R1,
     R2,
@@ -109,6 +107,17 @@ typedef enum
     R7,
     R8,
     R9,
+    // Temporaties are automatically saved on stack across a call
+    T0,
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    T8,
+    T9,
     // special
     PC,
     SP,
@@ -140,11 +149,11 @@ typedef struct {
 } OpCode;
 
 #define OPCODES_LIST { { OP_NOP, 0, 0 }, { OP_HALT, 0, 0 }, { OP_SYSCALL, 1, 1 }, { OP_LCONS, 2, 5 }, \
-{ OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, { OP_CALL, 1, 2 }, { OP_RET, 0, 0 }, \
+{ OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, \
 { OP_STORE, 3, 4 }, { OP_LOAD, 3, 4 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
-{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_JMP, 1, 2 }, { OP_JR, 1, 1 }, \
-{ OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
+{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 2 }, { OP_RET, 0, 0 }, \
+{ OP_JUMP, 1, 2 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
 
 /**
   Whole memory is 64KB
@@ -185,7 +194,6 @@ typedef struct
     uint32_t instrCount;
     uint16_t prog_size;
     uint32_t max_instr;
-    bool skip_next;
     uint32_t registers[REGISTER_COUNT];
     syscall_t syscall;
 

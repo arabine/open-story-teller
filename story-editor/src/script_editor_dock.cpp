@@ -27,13 +27,8 @@ $RamData1           DV32    1 ; one 32-bit integer
     push r0
     lcons r0, .MEDIA_03
     push r0
-
-
     lcons r2, 3 ; 3 iterations
-
-
-    jmp .media
-
+    jump .media
 
 ; Generic media choice manager
 .media:
@@ -43,31 +38,33 @@ $RamData1           DV32    1 ; one 32-bit integer
     ; r2: nombre d'itérations
 
 ; Local:
-    ; r0: loop counter
-    ; r3: increment
-    ; r4: current media address
+    ; t0: loop counter
+    ; t1: increment 1
+    ; t2: increment 4
+    ; t4: current media address
 
 .media_loop_start:
-    mov r0, r2 ; i = 3
-    mov r4, r1  ; current_media = @media
+    mov t0, r2 ; i = 3
+    lcons t1, 1
+    lcons t2, 4
+    mov t4, r1  ; copy address, r4 will be modified
 .media_loop:
-    lcons r3, 1
-    sub r0, r3  ; i--
-    lcons r3, 4
-    add r4, r3  ; @++
+    sub t0, t1  ; i--
+    add t4, t3  ; @++
     skipnz r0   ;  if (r0) goto start_loop;
-    jmp .media_loop_start
+    jump .media_loop_start
     push sp
     push r0
     push r1
-    call r4
+    load r0, @r4, 4
+    call r0
     pop r1
     pop r0
     pop sp
 
     ; TODO: wait for event
 
-    jmp .media_loop
+    jump .media_loop
 
 .MEDIA_02:
     lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)

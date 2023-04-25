@@ -75,15 +75,16 @@ static std::string ToLower(const std::string &text)
 }
 
 static const RegNames AllRegs[] = { { R0, "r0" }, { R1, "r1" }, { R2, "r2" }, { R3, "r3" }, { R4, "r4" }, { R5, "r5" },
-    { R6, "r6" }, { R7, "r7" }, { R8, "r8" }, { R9, "r9" }, { PC, "pc" }, { SP, "sp" }, { RA, "ra" }
+    { R6, "r6" }, { R7, "r7" }, { R8, "r8" }, { R9, "r9" }, { T0, "t0" }, { T1, "t1" }, { T2, "t2" }, { T3, "t3" }, { T4, "t4" },
+    { T5, "t5" }, { T6, "t6" }, { T7, "t7" }, { T8, "t8" }, { T9, "t9" },{ PC, "pc" }, { SP, "sp" }, { RA, "ra" }
 };
 
 static const uint32_t NbRegs = sizeof(AllRegs) / sizeof(AllRegs[0]);
 
 // Keep same order than the opcodes list!!
 static const std::string Mnemonics[] = {
-    "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "call", "ret", "store", "load", "add", "sub", "mul", "div",
-    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "jump", "jumpr", "skipz", "skipnz"
+    "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "sub", "mul", "div",
+    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "skipz", "skipnz"
 };
 
 static OpCode OpCodes[] = OPCODES_LIST;
@@ -191,7 +192,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         GET_REG(instr.args[0], ra);
         instr.compiledArgs.push_back(ra);
         // Detect address or immedate value
-        if (instr.args[1].at(0) == '$') {
+        if ((instr.args[1].at(0) == '$') || (instr.args[1].at(0) == '.')) {
             instr.useLabel = true;
             leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
         } else { // immediate value
@@ -202,7 +203,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     case OP_PUSH:
     case OP_SKIPZ:
     case OP_SKIPNZ:
-    case OP_JR:
+    case OP_CALL:
         GET_REG(instr.args[0], ra);
         instr.compiledArgs.push_back(ra);
         break;
@@ -223,8 +224,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         instr.compiledArgs.push_back(ra);
         instr.compiledArgs.push_back(rb);
         break;
-    case OP_JMP:
-    case OP_CALL:
+    case OP_JUMP:
         // Reserve 2 bytes for address, it will be filled at the end
         instr.useLabel = true;
         instr.compiledArgs.push_back(0);
@@ -448,6 +448,11 @@ bool Assembler::Parse(const std::string &data)
             m_labels[opcode] = instr;
             m_instructions.push_back(instr);
         }
+        else
+        {
+            m_lastError = "Unknown mnemonic or bad formatted line: " + std::to_string(lineNum);
+            return false;
+        }
     }
 
     // 2. Second pass: replace all label or RAM data by the real address in memory
@@ -455,20 +460,18 @@ bool Assembler::Parse(const std::string &data)
     {
         if (instr.useLabel && (instr.args.size() > 0))
         {
-            // label is the first argument for jump, call, store
-            // in second position for load!
+            // label is the first argument for jump, second position for LCONS
             uint16_t argsIndex = instr.code.opcode == OP_LCONS ? 1 : 0;
             std::string label = instr.args[argsIndex];
             CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " << label);
             uint16_t addr = m_labels[label].addr;
-            // std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
+            std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
             instr.compiledArgs[argsIndex] = addr & 0xFF;
             instr.compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
             if (instr.code.opcode == OP_LCONS) {
-                // We precise if we load from RAM or ROM
+                // We precise if the address is from RAM or ROM
                 instr.compiledArgs[argsIndex+3] = m_labels[label].isRamData ? 0x80 : 0;
             }
-
         }
     }
 

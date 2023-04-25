@@ -42,6 +42,25 @@ THE SOFTWARE.
     ctx->rom.mem[ctx->registers[PC] - 1] << 16 | ctx->rom.mem[ctx->registers[PC]] << 24; \
 })
 
+static inline uint32_t leu32_get(const uint8_t *a)
+{
+    uint32_t val = 0;
+    val |= (((uint32_t) a[3]) << 24);
+    val |= (((uint32_t) a[2]) << 16);
+    val |= (((uint32_t) a[1]) << 8);
+    val |= ((uint32_t) a[0]);
+
+    return val;
+}
+
+static inline void leu32_put(uint8_t *buff, uint32_t data)
+{
+    buff[3] = (data >> 24U) & 0xFFU;
+    buff[2] = (data >> 16U) & 0xFFU;
+    buff[1] = (data >> 8U) & 0xFFU;
+    buff[0] = data & 0xFFU;
+}
+
 #define _CHECK_SKIP if (skip) continue;
 
 #ifndef VM_DISABLE_CHECKS
@@ -85,51 +104,9 @@ void chip32_initialize(chip32_ctx_t *ctx)
 {
     memset(ctx->ram.mem, 0, ctx->ram.size);
     memset(ctx->registers, 0, REGISTER_COUNT * sizeof(uint32_t));
-
-    ctx->skip_next = false;
     ctx->instrCount = 0;
-
     ctx->registers[SP] = ctx->ram.size;
 }
-
-#define MEM_ACCESS(addr, vmem) if ((addr >= vmem->addr) && ((addr + vmem->size) < vmem->size))\
-{\
-    addr -= vmem->addr;\
-    return &vmem->mem[addr];\
-}
-
-
-/*
-
-uint8_t *chip32_memory(uint16_t addr)
-{
-    static uint8_t dummy = 0;
-    // Beware, can provoke memory overflow
-    MEM_ACCESS(addr, g_rom);
-    MEM_ACCESS(addr, g_ram);
-
-    return g_ram->mem; //!< Defaut memory to RAM location if address out of segment.
-}
-
-uint32_t chip32_stack_count()
-{
-    return g_ram->size - ctx->registers[SP];
-}
-
-void chip32_stack_push(uint32_t value)
-{
-    ctx->registers[SP] -= 4;
-    memcpy(chip32_memory(ctx->registers[SP]), &value, sizeof(uint32_t));
-}
-
-uint32_t chip32_stack_pop()
-{
-    uint32_t val = 0;
-    memcpy(&val, chip32_memory(ctx->registers[SP]), sizeof(uint32_t));
-    ctx->registers[SP] += 4;
-    return val;
-}*/
-
 
 chip32_result_t chip32_run(chip32_ctx_t *ctx)
 {
@@ -146,20 +123,12 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     chip32_result_t result = VM_OK;
 
     _CHECK_ROM_ADDR_VALID(ctx->registers[PC])
-    const uint8_t instr = ctx->rom.mem[ctx->registers[PC]];
+    uint8_t instr = ctx->rom.mem[ctx->registers[PC]];
     if (instr >= INSTRUCTION_COUNT)
         return VM_ERR_UNKNOWN_OPCODE;
 
     uint8_t bytes = OpCodes[instr].bytes;
     _CHECK_BYTES_AVAIL(bytes);
-
-    if (ctx->skip_next)
-    {
-        ctx->skip_next = false;
-        ctx->registers[PC] += bytes + 1; // jump over arguments and point to the next instruction
-        ctx->instrCount++;
-        return VM_SKIPED;
-    }
 
     switch (instr)
     {
@@ -220,13 +189,24 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     }
     case OP_CALL:
     {
-        ctx->registers[RA] = ctx->registers[PC] + 3;
+        ctx->registers[RA] = ctx->registers[PC] + 3; // set return address to next instruction after CALL
         ctx->registers[PC] = _NEXT_SHORT - 1;
+        // save all temporary registers on stack
+        ctx->registers[SP] -= 4*10; // reserve memory
+        // fill memory
+        for (int i = 0; i < 10; i++) {
+            leu32_put(&ctx->ram.mem[ctx->registers[SP] + i*4], ctx->registers[T0 + i]);
+        }
         break;
     }
     case OP_RET:
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
+        // restore all temporary registers on stack
+        for (int i = 0; i < 10; i++) {
+            ctx->registers[T0 + i] = leu32_get(&ctx->ram.mem[ctx->registers[SP] + i*4]);
+        }
+        ctx->registers[SP] += 4*10; // free memory
         break;
     }
     case OP_STORE:
@@ -367,36 +347,23 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[reg1] = ~ctx->registers[reg1];
         break;
     }
-    case OP_JMP:
+    case OP_JUMP:
     {
         ctx->registers[PC] = _NEXT_SHORT - 1;
         break;
     }
-    case OP_JR:
-    {
-        const uint8_t reg1 = _NEXT_BYTE;
-        _CHECK_REGISTER_VALID(reg1)
-        uint16_t addr = ctx->registers[reg1];
-        ctx->registers[PC] = addr;
-        break;
-    }
     case OP_SKIPZ:
-    {
-        const uint8_t reg = _NEXT_BYTE;
-        _CHECK_REGISTER_VALID(reg)
-        if (reg == 0)
-        {
-            ctx->skip_next = true;
-        }
-        break;
-    }
     case OP_SKIPNZ:
     {
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
-        if (reg != 0)
+        bool skip = instr == OP_SKIPZ ? ctx->registers[reg] == 0 : ctx->registers[reg] != 0;
+        if (skip)
         {
-            ctx->skip_next = true;
+            ctx->registers[PC]++; // 1. go to next instruction
+            instr = ctx->rom.mem[ctx->registers[PC]];
+            bytes = OpCodes[instr].bytes;
+            ctx->registers[PC] += bytes; // jump over argument bytes
         }
         break;
     }
