@@ -5,13 +5,19 @@ static const std::string test1 = R"(
     jump         .entry
 
 ; Constant elements are separated by commas
-$imageBird          DC8  "example.bmp", 8  ; string of chars, followed by one byte
-$soundChoice        DC8  "choose1.snd"
-$someConstant       DC32  12456789
+$imageBird          DC8, "example.bmp", 8  ; string of chars, followed by one byte
+$soundChoice        DC8,  "choose1.snd"
+$yaya               DC8,  "yaya.bmp"
+$rabbit             DC8,  "rabbit.bmp"
+$someConstant       DC32,  12456789
+
+; Liste des labels
+$ChoiceObject       DC32,  .MEDIA_02, .MEDIA_03
 
 ; DVsxx to declare a variable in RAM, followed by the number of elements
-$MyArray            DV8    10 ; array of 10 bytes
-$RamData1           DV32    1 ; one 32-bit integer
+$MyArray            DV8,    10 ; array of 10 bytes
+$RamData1           DV32,    1 ; one 32-bit integer
+$ChoiceMem          DV32,    10 ; 10 elements for the choices, to be generated
 
 ; label definition
 .entry:                 ;; comment here should work
@@ -22,13 +28,16 @@ $RamData1           DV32    1 ; one 32-bit integer
     lcons r1, $soundChoice ; set to 0 if no sound
     syscall 1
 
-    mov   r1, sp  ; save sp address in R1 (first element)
-    lcons r0, .MEDIA_02
-    push r0
+    ; We put all the choices in reserved global memory
+    lcons t2, 4 ; address increment
+    lcons t0, $ChoiceMem
+    lcons t1, .MEDIA_02
+    store @t0, t1, 4    ; @t0 = t1
+
     lcons r0, .MEDIA_03
     push r0
-    lcons r2, 3 ; 3 iterations
-    jump .media
+    lcons r2, 2 ; 3 iterations
+    jump .media ; no return possible, so a jump is enough
 
 ; Generic media choice manager
 .media:
@@ -51,30 +60,26 @@ $RamData1           DV32    1 ; one 32-bit integer
 .media_loop:
     sub t0, t1  ; i--
     add t4, t3  ; @++
-    skipnz r0   ;  if (r0) goto start_loop;
+    skipnz t0   ;  if (r0) goto start_loop;
     jump .media_loop_start
-    push sp
-    push r0
-    push r1
-    load r0, @r4, 4
+    load r0, @t4, 4 ; r0 =  content in ram at address in T4
     call r0
-    pop r1
-    pop r0
-    pop sp
 
     ; TODO: wait for event
+
+    ; TODO: if ok event, free stack, then
 
     jump .media_loop
 
 .MEDIA_02:
-    lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
+    lcons r0, $yaya ; image name address in ROM located in R0 (null terminated)
     lcons r1, $soundChoice ; set to 0 if no sound
     syscall 1
     ret
 
 .MEDIA_03:
-    lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
-    lcons r1, $soundChoice ; set to 0 if no sound
+    lcons r0, $rabbit
+    lcons r1, $soundChoice
     syscall 1
     ret
 

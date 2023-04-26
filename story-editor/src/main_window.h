@@ -58,14 +58,14 @@ struct DebugContext
         for (std::vector<Chip32::Instr>::const_iterator iter = assembler.Begin();
              iter != assembler.End(); ++iter)
         {
-            if (iter->isRomCode())
+            if (iter->isRomCode() || iter->isRomData)
             {
                 qDebug() << "-------------------";
                 qDebug() << "Instr: " << iter->mnemonic.c_str();
                 qDebug() << "Addr: " <<  Qt::hex << iter->addr;
                 qDebug() << "Line: " << iter->line;
                 qDebug() << "\t- Opcode: "  << Qt::hex <<  iter->code.opcode
-                                            << ", Args: " << iter->code.bytes;
+                                            << ", opcode args: " << iter->code.bytes;
 
                 int i = 1;
                 for (auto arg : iter->compiledArgs)

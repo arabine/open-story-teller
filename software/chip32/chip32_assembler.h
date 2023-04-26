@@ -115,7 +115,7 @@ private:
     std::string m_lastError;
 
     std::vector<Instr> m_instructions;
-    bool CompileConstantArguments(Instr &instr);
+    bool CompileConstantArgument(Instr &instr, const std::string &a);
 };
 
 }

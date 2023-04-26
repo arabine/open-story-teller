@@ -30,43 +30,14 @@ THE SOFTWARE.
 #include <algorithm>
 #include <iostream>
 #include <cstdint>
+#include <iterator>
+#include <string>
 
 namespace Chip32
 {
 // =============================================================================
 // GLOBAL UTILITY FUNCTIONS
 // =============================================================================
-static const char* ws = " \t\n\r\f\v";
-
-// trim from end of string (right)
-static inline std::string& rtrim(std::string& s, const char* t = ws)
-{
-    s.erase(s.find_last_not_of(t) + 1);
-    return s;
-}
-
-// trim from beginning of string (left)
-static inline std::string& ltrim(std::string& s, const char* t = ws)
-{
-    s.erase(0, s.find_first_not_of(t));
-    return s;
-}
-
-// trim from both ends of string (right then left)
-static inline std::string& trim(std::string& s, const char* t = ws)
-{
-    return ltrim(rtrim(s, t), t);
-}
-
-static std::vector<std::string> Split(const std::string &theString)
-{
-    std::vector<std::string> result;
-    std::istringstream iss(theString);
-    for(std::string s; iss >> s; )
-        result.push_back(s);
-    return result;
-}
-
 static std::string ToLower(const std::string &text)
 {
     std::string newText = text;
@@ -108,16 +79,6 @@ static bool IsOpCode(const std::string &label, OpCode &op)
     return success;
 }
 
-static void GetArgs(Instr &instr, const std::string &data)
-{
-    std::string value;
-    std::istringstream iss(data);
-    while (getline(iss, value, ','))
-    {
-        instr.args.push_back(trim(value));
-    }
-}
-
 static inline void leu32_put(std::vector<std::uint8_t> &container, uint32_t data)
 {
     container.push_back(data & 0xFFU);
@@ -143,6 +104,37 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
     ss << "error line: " << instr.line << ": " << error << std::endl; \
     m_lastError = ss.str(); \
     return false; } \
+
+std::vector<std::string> Split(std::string line)
+{
+    std::vector<std::string> result;
+    std::istringstream iss(line);
+    std::string token;
+
+    while (std::getline(iss, token, ' ')) {
+        // Vérifier si le jeton contient une virgule
+        size_t comma_pos = token.find(",");
+        if (comma_pos != std::string::npos) {
+            // Diviser le jeton en deux parties séparées par la virgule
+            std::string first_token = token.substr(0, comma_pos);
+            std::string second_token = token.substr(comma_pos + 1);
+            // Ajouter chaque partie au vecteur de résultats
+            if (!first_token.empty()) {
+                result.push_back(first_token);
+            }
+            if (!second_token.empty()) {
+                result.push_back(second_token);
+            }
+        } else {
+            // Ajouter le jeton entier au vecteur de résultats
+            if (!token.empty()) {
+                result.push_back(token);
+            }
+        }
+    }
+
+    return result;
+}
 
 // =============================================================================
 // ASSEMBLER CLASS
@@ -255,44 +247,52 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     return true;
 }
 
-bool Assembler::CompileConstantArguments(Instr &instr)
+bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
 {
-    for (auto &a : instr.args)
+    instr.compiledArgs.clear(); instr.args.clear(); instr.useLabel = false;
+
+    // Check string
+    if (a.size() > 2)
     {
-        // Check string
-        if (a.size() > 2)
+        // Detected string
+        if ((a[0] == '"') && (a[a.size() - 1] == '"'))
         {
-            // Detected string
-            if ((a[0] == '"') && (a[a.size() - 1] == '"'))
+            for (int i = 1; i < (a.size() - 1); i++)
             {
-                for (int i = 1; i < (a.size() - 1); i++)
-                {
-                    instr.compiledArgs.push_back(a[i]);
-                }
-                instr.compiledArgs.push_back(0);
-                continue;
+                instr.compiledArgs.push_back(a[i]);
             }
+            instr.compiledArgs.push_back(0);
+            return true;
         }
-
-        // here, we check if the intergers are correct
-        uint32_t intVal = static_cast<uint32_t>(strtol(a.c_str(),  NULL, 0));
-
-        bool sizeOk = false;
-        if (((intVal <= UINT8_MAX) && (instr.dataTypeSize == 8)) ||
-            ((intVal <= UINT16_MAX) && (instr.dataTypeSize == 16)) ||
-            ((intVal <= UINT32_MAX) && (instr.dataTypeSize == 32))) {
-            sizeOk = true;
-        }
-        CHIP32_CHECK(instr, sizeOk, "integer too high: " << intVal);
-        if (instr.dataTypeSize == 8) {
-            instr.compiledArgs.push_back(intVal);
-        } else if (instr.dataTypeSize == 16) {
-            leu16_put(instr.compiledArgs, intVal);
-        } else {
-            leu32_put(instr.compiledArgs, intVal);
+        // Detect label
+        else if (a[0] == '.')
+        {
+            // Label must be 32-bit, throw an error if not the case
+            CHIP32_CHECK(instr, instr.dataTypeSize == 32, "Labels must be stored in a 32-bit area (DC32)")
+            instr.useLabel = true;
+            instr.args.push_back(a);
+            leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
+            return true;
         }
     }
 
+    // here, we check if the intergers are correct
+    uint32_t intVal = static_cast<uint32_t>(strtol(a.c_str(),  NULL, 0));
+
+    bool sizeOk = false;
+    if (((intVal <= UINT8_MAX) && (instr.dataTypeSize == 8)) ||
+        ((intVal <= UINT16_MAX) && (instr.dataTypeSize == 16)) ||
+        ((intVal <= UINT32_MAX) && (instr.dataTypeSize == 32))) {
+        sizeOk = true;
+    }
+    CHIP32_CHECK(instr, sizeOk, "integer too high: " << intVal);
+    if (instr.dataTypeSize == 8) {
+        instr.compiledArgs.push_back(intVal);
+    } else if (instr.dataTypeSize == 16) {
+        leu16_put(instr.compiledArgs, intVal);
+    } else {
+        leu32_put(instr.compiledArgs, intVal);
+    }
     return true;
 }
 
@@ -336,19 +336,14 @@ bool Assembler::Parse(const std::string &data)
         lineNum++;
         Instr instr;
         instr.line = lineNum;
-
-        line = trim(line);
-
         int pos = line.find_first_of(";");
         if (pos != std::string::npos) {
             line.erase(pos);
         }
-
-        if (line.length() <= 0) continue;
+        if (std::all_of(line.begin(), line.end(), ::isspace)) continue;
 
         // Split the line
         std::vector<std::string> lineParts = Split(line);
-
         CHIP32_CHECK(instr, (lineParts.size() > 0), " not a valid line");
 
         // Ok until now
@@ -384,12 +379,7 @@ bool Assembler::Parse(const std::string &data)
             }
             else if ((instr.code.nbAargs > 0) && (lineParts.size() >= 2))
             {
-                // Compute arguments
-                for (int i = 1; i < lineParts.size(); i++)
-                {
-                    GetArgs(instr, lineParts[i]);
-                }
-
+                instr.args.insert(instr.args.begin(), lineParts.begin() + 1, lineParts.end());
                 CHIP32_CHECK(instr, instr.args.size() == instr.code.nbAargs,
                              "Bad number of parameters. Required: " << static_cast<int>(instr.code.nbAargs) << ", got: " << instr.args.size());
                 nbArgsSuccess = true;
@@ -402,7 +392,6 @@ bool Assembler::Parse(const std::string &data)
             if (nbArgsSuccess)
             {
                 CHIP32_CHECK(instr, CompileMnemonicArguments(instr) == true, "Compile failure");
-
                 instr.addr = code_addr;
                 code_addr += 1 + instr.compiledArgs.size();
                 m_instructions.push_back(instr);
@@ -430,23 +419,27 @@ bool Assembler::Parse(const std::string &data)
 
             if (instr.isRomData)
             {
+                instr.addr = code_addr;
+                m_labels[opcode] = instr; // location of the start of the data
+                // if ROM data, we generate one instruction per argument
+                // reason: arguments may be labels, easier to replace later
+
                 for (int i = 2; i < lineParts.size(); i++)
                 {
-                    GetArgs(instr, lineParts[i]);
+                    CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), "Compile argument error, stopping.");
+                    m_instructions.push_back(instr);
+                    code_addr += instr.compiledArgs.size();
+                    instr.addr = code_addr;
                 }
-                CHIP32_CHECK(instr, CompileConstantArguments(instr), "Compile error, stopping.");
-
-                instr.addr = code_addr;
-                code_addr += instr.compiledArgs.size();
             }
-            else // RAM DATA
+            else // RAM DATA, only one argument is used: the size of the array
             {
                 instr.addr = ram_addr;
                 instr.dataLen = static_cast<uint16_t>(strtol(lineParts[2].c_str(),  NULL, 0));
                 ram_addr += instr.dataLen;
+                m_labels[opcode] = instr;
+                m_instructions.push_back(instr);
             }
-            m_labels[opcode] = instr;
-            m_instructions.push_back(instr);
         }
         else
         {
