@@ -152,7 +152,7 @@ typedef struct {
 { OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, \
 { OP_STORE, 3, 4 }, { OP_LOAD, 3, 4 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
-{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 2 }, { OP_RET, 0, 0 }, \
+{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 1 }, { OP_RET, 0, 0 }, \
 { OP_JUMP, 1, 2 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
 
 /**

@@ -189,8 +189,10 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     }
     case OP_CALL:
     {
-        ctx->registers[RA] = ctx->registers[PC] + 3; // set return address to next instruction after CALL
-        ctx->registers[PC] = _NEXT_SHORT - 1;
+        ctx->registers[RA] = ctx->registers[PC] + 2; // set return address to next instruction after CALL
+        const uint8_t reg = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg)
+        ctx->registers[PC] = ctx->registers[reg] - 1;
         // save all temporary registers on stack
         ctx->registers[SP] -= 4*10; // reserve memory
         // fill memory

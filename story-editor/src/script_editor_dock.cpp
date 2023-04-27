@@ -11,8 +11,8 @@ $yaya               DC8,  "yaya.bmp"
 $rabbit             DC8,  "rabbit.bmp"
 $someConstant       DC32,  12456789
 
-; Liste des labels
-$ChoiceObject       DC32,  .MEDIA_02, .MEDIA_03
+; Liste des noeuds à appeler
+$ChoiceObject       DC32,  2, .MEDIA_02, .MEDIA_03
 
 ; DVsxx to declare a variable in RAM, followed by the number of elements
 $MyArray            DV8,    10 ; array of 10 bytes
@@ -27,48 +27,39 @@ $ChoiceMem          DV32,    10 ; 10 elements for the choices, to be generated
     lcons r0, $imageBird ; image name address in ROM located in R0 (null terminated)
     lcons r1, $soundChoice ; set to 0 if no sound
     syscall 1
-
-    ; We put all the choices in reserved global memory
-    lcons t2, 4 ; address increment
-    lcons t0, $ChoiceMem
-    lcons t1, .MEDIA_02
-    store @t0, t1, 4    ; @t0 = t1
-
-    lcons r0, .MEDIA_03
-    push r0
-    lcons r2, 2 ; 3 iterations
+    lcons r0, $ChoiceObject
     jump .media ; no return possible, so a jump is enough
 
 ; Generic media choice manager
 .media:
     ; Les adresses des différents medias sont dans la stack
 ; Arguments:
-    ; r1: address of the first media address
-    ; r2: nombre d'itérations
-
+    ; r0: address d'une structure de type "media choice"
 ; Local:
     ; t0: loop counter
     ; t1: increment 1
     ; t2: increment 4
-    ; t4: current media address
+    ; t3: current media address
 
 .media_loop_start:
-    mov t0, r2 ; i = 3
+    load t0, @r0, 4 ; Le premier élément est le nombre de choix possibles, t0 = 3 (exemple)
     lcons t1, 1
     lcons t2, 4
-    mov t4, r1  ; copy address, r4 will be modified
+    mov t3, r0
 .media_loop:
-    sub t0, t1  ; i--
-    add t4, t3  ; @++
-    skipnz t0   ;  if (r0) goto start_loop;
-    jump .media_loop_start
-    load r0, @t4, 4 ; r0 =  content in ram at address in T4
-    call r0
+    add t3, t2  ; @++
 
+
+; -------  On appelle un autre media node
+    push r0 ; save r0
+    load r0, @t3, 4 ; r0 =  content in ram at address in T4
+    call r0
+    pop r0
     ; TODO: wait for event
 
-    ; TODO: if ok event, free stack, then
-
+    sub t0, t1  ; i--
+    skipnz t0   ;  if (r0) goto start_loop;
+    jump .media_loop_start
     jump .media_loop
 
 .MEDIA_02:
