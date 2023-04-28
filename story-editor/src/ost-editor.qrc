@@ -5,5 +5,6 @@
         <file>../assets/play-circle.png</file>
         <file>../assets/build.png</file>
         <file>../assets/volume-off.png</file>
+        <file>../assets/file-document-plus-outline.svg</file>
     </qresource>
 </RCC>

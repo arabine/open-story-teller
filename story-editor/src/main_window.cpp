@@ -22,6 +22,8 @@
 #include <QHeaderView>
 #include <QSettings>
 #include <QtDebug>
+#include <QStandardPaths>
+#include <QDir>
 
 #include <QtNodes/BasicGraphicsScene>
 #include <QtNodes/ConnectionStyle>
@@ -49,6 +51,10 @@ MainWindow::MainWindow()
     : m_model(m_project)
     , m_scene(m_model)
 {
+    SetupTemporaryProject();
+
+    RefreshProjectInformation();
+
     Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
 
@@ -63,39 +69,36 @@ MainWindow::MainWindow()
 
     m_logDock = new LogDock();
     addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_logDock);
+    m_toolbar->AddDockToMenu(m_logDock->toggleViewAction());
 
     m_nodeEditorDock = new NodeEditorDock(&m_scene);
     addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_nodeEditorDock);
-    m_toolbar->addAction(m_nodeEditorDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_nodeEditorDock->toggleViewAction());
 
     m_ostHmiDock = new OstHmiDock();
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ostHmiDock);
+    m_toolbar->AddDockToMenu(m_ostHmiDock->toggleViewAction());
 
     connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [=]() {
         QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
     });
 
-    m_resourcesDock = new ResourcesDock();
+    m_resourcesDock = new ResourcesDock(m_project);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_resourcesDock);
+    m_toolbar->AddDockToMenu(m_resourcesDock->toggleViewAction());
 
     m_scriptEditorDock = new ScriptEditorDock();
     addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_scriptEditorDock);
+    m_toolbar->AddDockToMenu(m_scriptEditorDock->toggleViewAction());
 
     m_vmDock = new VmDock(m_assembler);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_vmDock);
+    m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction());
 
     connect(m_vmDock, &VmDock::sigCompile, [=]() {
 
-        m_project.Clear();
 
-        // Add Resources to project
-        QList<Resource> res = m_resourcesDock->GetResources();
-
-        for (auto & r : res)
-        {
-            m_project.m_images.push_back(r);
-        }
-
+        m_resourcesDock->SaveToProject();
         m_scriptEditorDock->setScript(m_project.Compile());
     });
 
@@ -109,8 +112,11 @@ MainWindow::MainWindow()
 
     m_ramView = new MemoryViewDock("RamViewDock", "RAM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ramView);
+    m_toolbar->AddDockToMenu(m_ramView->toggleViewAction());
+
     m_romView = new MemoryViewDock("RomViewDock", "ROM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_romView);
+    m_toolbar->AddDockToMenu(m_romView->toggleViewAction());
 
     m_chooseFileDialog = new QDialog(this);
     m_chooseFileUi.setupUi(m_chooseFileDialog);
@@ -160,7 +166,39 @@ MainWindow::MainWindow()
 
     readSettings();
 
+    connect(m_toolbar, &ToolBar::sigNew, this, [=]() {
+        NewProject();
+    });
+
+    connect(m_toolbar, &ToolBar::sigSave, this, [=]() {
+       SaveProject();
+    });
+
     qDebug() << "Started StoryTeller Editor";
+}
+
+void MainWindow::CloseProject()
+{
+
+}
+
+void MainWindow::SetupTemporaryProject()
+{
+    QString appDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+
+    // Generate a project unique ID name
+    m_project.uuid = QUuid::createUuid().toString().toStdString();
+    m_project.working_dir = QString(appDir + QDir::separator() + m_project.uuid.c_str()).toStdString();
+    m_project.Initialize();
+
+ //   m_resourcesDock->Initialize();
+
+    qDebug() << "Working dir is: " << m_project.working_dir.c_str();
+}
+
+void MainWindow::RefreshProjectInformation()
+{
+    setWindowTitle(QString("StoryTeller Editor - ") + m_project.working_dir.c_str());
 }
 
 void MainWindow::MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -189,7 +227,7 @@ void MainWindow::DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId)
 
     if (m_tree->image >= 0)
     {
-        std::string imageFile = m_project.m_working_dir + "/rf/" + m_project.m_images[m_tree->image].file + ".bmp";
+        std::string imageFile = m_project.working_dir + "/rf/" + m_project.m_images[m_tree->image].file + ".bmp";
         std::cout << "Node image: " << imageFile << std::endl;
         nodeInternalData["image"] = imageFile.c_str();
     }
@@ -391,6 +429,12 @@ void MainWindow::createStatusBar()
     statusBar()->showMessage(tr("Ready"));
 }
 
+void MainWindow::NewProject()
+{
+
+}
+
+
 void MainWindow::open()
 {
     QMimeDatabase mimeDatabase;
@@ -420,32 +464,25 @@ void MainWindow::open()
     QGuiApplication::restoreOverrideCursor();
 }
 
-void MainWindow::save()
+void MainWindow::SaveProject()
 {
-    QMimeDatabase mimeDatabase;
-    QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Choose a file name"), ".",
-                                                    mimeDatabase.mimeTypeForName("application/json").filterString());
-    if (fileName.isEmpty())
-        return;
-    QFile file(fileName);
-    if (!file.open(QFile::WriteOnly | QFile::Text)) {
-        QMessageBox::warning(this, tr("Dock Widgets"),
-                             tr("Cannot write file %1:\n%2.")
-                             .arg(QDir::toNativeSeparators(fileName), file.errorString()));
-        return;
+    // Open the dialog if the project file does not exists
+    if (!QFile::exists(m_project.file_path.c_str()))
+    {
+        // Save current project
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save project file"),
+                                                        QDir::homePath() + "/new_story.ostproj",
+                                                        tr("OpenStory Teller project (*.ostproj)"));
+        if (fileName.isEmpty())
+            return;
+        m_project.file_path = fileName.toStdString();
     }
-
-    QTextStream out(&file);
-    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 
     QJsonObject saveData = m_model.save();
     QJsonDocument doc(saveData);
-    out << doc.toJson();
+    qDebug() << doc.toJson();
 
-    QGuiApplication::restoreOverrideCursor();
-
-    statusBar()->showMessage(tr("Saved '%1'").arg(fileName), 2000);
+    statusBar()->showMessage(tr("Saved '%1'").arg(m_project.file_path.c_str()), 2000);
 }
 
 void MainWindow::about()

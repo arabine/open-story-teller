@@ -53,17 +53,16 @@ QJsonObject MediaNodeModel::save() const
 
     // Merge two objects
     QVariantMap map = obj.toVariantMap();
-    map.insert(m_mediaData.toVariantMap());
+    map.insert(m_mediaData);
 
     return QJsonObject::fromVariantMap(map);
 }
 
 void MediaNodeModel::load(const QJsonObject &mediaData)
 {
-    m_mediaData = mediaData;
+    m_mediaData = mediaData.toVariantMap();
 
     // Display loaded image
-
     QString imagePath = m_mediaData["image"].toString();
 
     if (!imagePath.isEmpty())
@@ -93,6 +92,9 @@ void MediaNodeModel::setInternalData(const QVariant &value)
     if (obj.contains("image")) {
         setImage(obj.value("image").toString());
     }
+
+    // Merge new data into local object
+    m_mediaData.insert(obj.toVariantMap());
 }
 
 unsigned int MediaNodeModel::nPorts(PortType portType) const

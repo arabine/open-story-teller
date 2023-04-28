@@ -1,10 +1,10 @@
 #ifndef MEMORY_VIEWDOCK_H
 #define MEMORY_VIEWDOCK_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include <qhexview.h>
 
-class MemoryViewDock : public QDockWidget
+class MemoryViewDock : public DockWidgetBase
 {
 public:
     MemoryViewDock(const QString &objectName, const QString &title);

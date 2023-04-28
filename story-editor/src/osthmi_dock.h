@@ -1,10 +1,10 @@
 #ifndef OSTHMI_DOCK_H
 #define OSTHMI_DOCK_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include "ui_ost-hmi.h"
 
-class OstHmiDock : public QDockWidget
+class OstHmiDock : public DockWidgetBase
 {
     Q_OBJECT
 public:

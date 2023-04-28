@@ -1,22 +1,29 @@
 #ifndef RESOURCESDOCK_H
 #define RESOURCESDOCK_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include "ui_ost-resources.h"
 #include "resource_model.h"
+#include <filesystem>
 
-class ResourcesDock : public QDockWidget
+class ResourcesDock : public DockWidgetBase
 {
     Q_OBJECT
 public:
-    ResourcesDock();
+    ResourcesDock(StoryProject &project);
+
+    void Initialize();
 
     QList<Resource> GetResources() const { return m_resourcesModel.GetData(); }
-
     ResourceModel &getModel() { return m_resourcesModel; }
 
+    void SaveToProject();
+
+public slots:
+    void slotClear();
+
 private:
-    // Resources
+    StoryProject &m_project;
     Ui::ostResources m_uiOstResources;
     ResourceModel m_resourcesModel;
 };

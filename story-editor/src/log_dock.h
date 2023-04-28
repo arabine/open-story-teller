@@ -1,10 +1,10 @@
 #ifndef LOGDOCK_H
 #define LOGDOCK_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include "ui_ost-log.h"
 
-class LogDock : public QDockWidget
+class LogDock : public DockWidgetBase
 {
 public:
     LogDock();

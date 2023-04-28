@@ -3,8 +3,23 @@
 #include <fstream>
 #include <iostream>
 #include <queue>
+#include <filesystem>
 #include "json.hpp"
 
+
+void StoryProject::Initialize()
+{
+    // Frist try to create the working directory
+    if (!std::filesystem::is_directory(working_dir))
+    {
+        std::filesystem::create_directories(working_dir);
+    }
+    m_imagesPath = std::filesystem::path(working_dir) /  "images";
+    m_soundsPath = std::filesystem::path(working_dir) /  "sounds";
+
+    std::filesystem::create_directories(m_imagesPath);
+    std::filesystem::create_directories(m_soundsPath);
+}
 
 bool StoryProject::Load(const std::string &file_path)
 {
@@ -12,12 +27,11 @@ bool StoryProject::Load(const std::string &file_path)
     bool success = false;
 
     std::filesystem::path p(file_path);
-    m_working_dir= p.parent_path();
+    working_dir= p.parent_path();
 
-    std::cout << "Working dir is: " << m_working_dir << std::endl;
+    std::cout << "Working dir is: " << working_dir << std::endl;
 
     try {
-
 
         nlohmann::json j = nlohmann::json::parse(f);
 

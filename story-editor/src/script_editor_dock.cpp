@@ -102,7 +102,7 @@ mov R0,R2               ; copy R2 into R0 (NO blank space between , and R2)
 
 
 ScriptEditorDock::ScriptEditorDock()
-    : QDockWidget(tr("Script editor"))
+    : DockWidgetBase(tr("Script editor"))
 {
     setObjectName("ScriptEditorDock"); // used to save the state
 

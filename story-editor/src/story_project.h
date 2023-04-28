@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <filesystem>
 
 struct StoryNode
 {
@@ -43,9 +44,10 @@ struct Resource
 
 struct StoryProject
 {
+    std::string uuid;
+    std::string working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
+    std::string file_path; /// project file (archive)
 
-
-    std::string m_working_dir;
     std::vector<StoryNode> m_nodes;
 
     std::string m_type;
@@ -57,6 +59,12 @@ struct StoryProject
 
     StoryNode *m_tree;
 
+    // Initialize a project
+    // The following parameters must be set before calling this method:
+    // - uuid
+    // - working_directory
+    void Initialize();
+
     bool Load(const std::string &file_path);
     void CreateTree();
     void Clear() {
@@ -66,16 +74,20 @@ struct StoryProject
 
     std::string Compile();
 
+
+    std::filesystem::path ImagesPath() const { return m_imagesPath; }
+    std::filesystem::path SoundsPath() const { return m_soundsPath; }
+
     static std::string GetFileExtension(const std::string &FileName);
     static std::string GetFileName(const std::string &path);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
-
 
 public:
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 private:
-
+    std::filesystem::path m_imagesPath;
+    std::filesystem::path m_soundsPath;
 };
 
 #endif // STORY_PROJECT_H

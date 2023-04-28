@@ -1,11 +1,11 @@
 #ifndef SCRIPTEDITOR_H
 #define SCRIPTEDITOR_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include "code_editor.h"
 #include "highlighter.h"
 
-class ScriptEditorDock : public QDockWidget
+class ScriptEditorDock : public DockWidgetBase
 {
     Q_OBJECT
 

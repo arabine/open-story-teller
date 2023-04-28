@@ -69,6 +69,6 @@ private:
     Ui::mediaNodeUi m_ui;
     std::shared_ptr<NodeData> m_nodeData;
 
-    QJsonObject m_mediaData;
+    QVariantMap m_mediaData;
     void setImage(const QString &fileName);
 };

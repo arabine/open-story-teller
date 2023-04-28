@@ -3,7 +3,7 @@
 #include <QPixmap>
 
 OstHmiDock::OstHmiDock()
-    : QDockWidget(tr("StoryTeller HMI"))
+    : DockWidgetBase(tr("StoryTeller HMI"))
 {
     setObjectName("OstHmiDock"); // used to save the state
     m_uiOstDisplay.setupUi(this);

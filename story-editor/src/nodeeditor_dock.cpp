@@ -2,7 +2,7 @@
 #include <QOpenGLWidget>
 
 NodeEditorDock::NodeEditorDock(BasicGraphicsScene *scene)
-    : QDockWidget(tr("Node editor"))
+    : DockWidgetBase(tr("Node editor"))
 {
     setObjectName("NodeEditorDock");
 

@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
     src/toolbar.cpp
     src/ost-editor.qrc
     src/story_project.cpp
+    src/story_project.h
     src/media_node_model.h
     src/media_node_model.cpp
     src/story_graph_model.cpp
@@ -47,6 +48,8 @@ set(PROJECT_SOURCES
     src/log_dock.cpp
     src/vm_dock.h
     src/vm_dock.cpp
+    src/dock_widget_base.h
+    src/dock_widget_base.cpp
     src/code_editor.h
     src/code_editor.cpp
     src/graph.h
@@ -55,6 +58,9 @@ set(PROJECT_SOURCES
     src/event_node_model.cpp
     src/highlighter.h
     src/highlighter.cpp
+    src/zip.cpp
+    src/zip.h
+    src/miniz.c
     src/ost-hmi.ui
     src/ost-vm.ui
     src/ost-data.ui
@@ -64,6 +70,7 @@ set(PROJECT_SOURCES
     src/media-node.ui
     src/event-node.ui
     src/choose-file.ui
+    src/new-project.ui
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
 )

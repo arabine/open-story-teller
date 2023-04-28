@@ -152,7 +152,7 @@ private:
     // Private functions
     void createActions();
     void createStatusBar();
-    void save();
+    void SaveProject();
     void DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId);
     void about();
     void open();
@@ -165,6 +165,11 @@ private:
 
     bool event(QEvent *event);
     void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+    void NewProject();
+
+    void SetupTemporaryProject();
+    void RefreshProjectInformation();
+    void CloseProject();
 };
 
 #endif // MAIN_WINDOW_H

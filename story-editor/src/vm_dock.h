@@ -1,12 +1,12 @@
 #ifndef VMDOCK_H
 #define VMDOCK_H
 
-#include <QDockWidget>
+#include "dock_widget_base.h"
 #include "ui_ost-vm.h"
 
 #include "chip32_assembler.h"
 
-class VmDock : public QDockWidget
+class VmDock : public DockWidgetBase
 {
     Q_OBJECT
 

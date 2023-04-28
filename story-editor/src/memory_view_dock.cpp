@@ -2,7 +2,7 @@
 #include "model/buffer/qmemorybuffer.h"
 
 MemoryViewDock::MemoryViewDock(const QString &objectName, const QString &title)
-    : QDockWidget(title)
+    : DockWidgetBase(title)
 {
     setObjectName(objectName);
 

@@ -1,7 +1,7 @@
 #include "log_dock.h"
 
 LogDock::LogDock()
-    : QDockWidget(tr("Logs"))
+    : DockWidgetBase(tr("Logs"))
 {
     setObjectName("OstHmiDock"); // used to save the state
     m_logUi.setupUi(this);

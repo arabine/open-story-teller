@@ -311,7 +311,10 @@ QJsonObject StoryGraphModel::saveNode(NodeId const nodeId) const
 {
     QJsonObject nodeJson;
 
+
     nodeJson["id"] = static_cast<qint64>(nodeId);
+
+    nodeJson["internal-data"] = _models.at(nodeId)->save();
 
     {
         QPointF const pos = nodeData(nodeId, NodeRole::Position).value<QPointF>();
@@ -321,8 +324,8 @@ QJsonObject StoryGraphModel::saveNode(NodeId const nodeId) const
         posJson["y"] = pos.y();
         nodeJson["position"] = posJson;
 
-//        nodeJson["inPortCount"] = QString::number(_nodePortCounts[nodeId].in);
-//        nodeJson["outPortCount"] = QString::number(_nodePortCounts[nodeId].out);
+        nodeJson["inPortCount"] = QString::number(nodeData(nodeId, NodeRole::InPortCount).value<int>());
+        nodeJson["outPortCount"] = QString::number(nodeData(nodeId, NodeRole::OutPortCount).value<int>());
     }
 
     return nodeJson;
