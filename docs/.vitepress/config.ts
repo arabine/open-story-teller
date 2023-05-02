@@ -8,7 +8,7 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: 'Documentation', link: '/intro-getting-started' }
     ],
 
     search: {
@@ -17,10 +17,41 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: 'Examples',
+        text: 'Introduction',
+        collapsed: false,
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
+          { text: 'Getting started', link: '/intro-getting-started' }
+        ]
+      },
+      {
+        text: 'Bundles assembly guides',
+        collapsed: false,
+        items: [
+          { text: 'Bundles introduction', link: '/guide-intro' },
+          { text: 'Dev kit (Raspberry Pico)', link: '/guide-devkit-pico' },
+          { text: 'SeeedStudio Wio Lite', link: '/guide-wio-lite' },
+          { text: 'Arduino MKR Zero', link: '/guide-mkr-zero' }
+        ]
+      },
+      {
+        text: 'Software player',
+        collapsed: false,
+        items: [
+          { text: 'Player information', link: '/player-intro' }
+        ]
+      },
+      {
+        text: 'Story editor',
+        collapsed: false,
+        items: [
+          { text: 'User manual', link: '/editor-intro' },
+        ]
+      },
+      {
+        text: 'Developers corner',
+        collapsed: false,
+        items: [
+          { text: 'Source code architecture', link: '/dev-intro' },
         ]
       }
     ],
