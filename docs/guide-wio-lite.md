@@ -6,7 +6,7 @@ Current status: ON DEVELOPMENT
 
 The firmware is still under construction. Everything is tested on breadboard.
 
-![proto](images/ost-1/complete.png)
+<!-- ![proto](images/ost-1/complete.png) -->
 
 What is working:
 - The audio path
@@ -17,15 +17,15 @@ What is working:
 
 An I2S DAC controller with a jack output :
 
-![proto](images/ost-1/audio_board.webp)
+<!-- ![proto](images/ost-1/audio_board.webp) -->
 
 An audio amplifier from Adafruit (2.5W, can drive a speaker between 3 ohms and 8 ohms).
 
-![proto](images/ost-1/audio_amplifier.png)
+<!-- ![proto](images/ost-1/audio_amplifier.png) -->
 
 A speaker :
 
-![proto](images/ost-1/speaker_4ohms_3w.png)
+<!-- ![proto](images/ost-1/speaker_4ohms_3w.png) -->
 
 
 
