@@ -13,18 +13,20 @@ Current status: ON DEVELOPMENT
 
 ## Bill of materials
 
-The minimal list of components are:
+Here is an example of components.
+- Links are examples of what to buy, price is not optimized
+- Use traditional suppliers for generic components (buttons, resistors...), such as Adafruit, PiHut, Pimoroni, Kubii, Gotronic...
 
-| Part                                      | Price    | Shop      |
-| ----------------------------------------- | -------- | --------- |
-| Audio board + speaker                     | 13 €     | Waveshare |
-| Raspberry Pico W                          | 9 €      | Kubii     |
-| 2inch LCD  (320x240)                      | 14 €     | Waveshare |
-| Some Pimoroni buttons are rotary switches | 4 €      | Pimoroni  |
-| UPS module or Pimoroni LiPo Shim          | 15 €     | Waveshare |
-| LiPo battery 500mAh                       | 9 €      | Any       |
-| Carte d'extension GPIO Pico Decker        | 15 €     | Waveshare |
-| **TOTAL**                                 | **67 €** |
+| Part                                  | Price    | Shop      | Link                                     |
+| ------------------------------------- | -------- | --------- | ---------------------------------------- |
+| Audio board + speaker                 | 13 €     | Waveshare | [Buy on Amazon](https://amzn.to/41nWgeB) |
+| Raspberry Pico W                      | 9 €      | Kubii     | [Buy on Amazon](https://amzn.to/3AUQeXQ) |
+| 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ) |
+| Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX) |
+| UPS module or Pimoroni LiPo Shim      | 15 €     | Waveshare | [Buy on Amazon](https://amzn.to/44p8Exo) |
+| LiPo battery 500mAh                   | 9 €      | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
+| Carte d'extension GPIO Pico 4 modules | 15 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
+| **TOTAL**                             | **67 €** |
 
 In addition to this list, you may need some more materials such as wires, prototype boards, resistors...
 

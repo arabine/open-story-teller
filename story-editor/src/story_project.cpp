@@ -6,19 +6,31 @@
 #include <filesystem>
 #include "json.hpp"
 
-
-void StoryProject::Initialize()
+void StoryProject::New(const std::string &uuid, const std::string &file_path)
 {
+    m_uuid = uuid;
+    Initialize(file_path);
+}
+
+
+void StoryProject::Initialize(const std::string &file_path)
+{
+    m_project_path = file_path;
+    std::filesystem::path p(file_path);
+    m_working_dir= p.parent_path();
+
     // Frist try to create the working directory
-    if (!std::filesystem::is_directory(working_dir))
+    if (!std::filesystem::is_directory(m_working_dir))
     {
-        std::filesystem::create_directories(working_dir);
+        std::filesystem::create_directories(m_working_dir);
     }
-    m_imagesPath = std::filesystem::path(working_dir) /  "images";
-    m_soundsPath = std::filesystem::path(working_dir) /  "sounds";
+    m_imagesPath = std::filesystem::path(m_working_dir) /  "images";
+    m_soundsPath = std::filesystem::path(m_working_dir) /  "sounds";
 
     std::filesystem::create_directories(m_imagesPath);
     std::filesystem::create_directories(m_soundsPath);
+
+    m_initialized = true;
 }
 
 bool StoryProject::Load(const std::string &file_path)
@@ -27,9 +39,9 @@ bool StoryProject::Load(const std::string &file_path)
     bool success = false;
 
     std::filesystem::path p(file_path);
-    working_dir= p.parent_path();
+    m_working_dir= p.parent_path();
 
-    std::cout << "Working dir is: " << working_dir << std::endl;
+    std::cout << "Working dir is: " << m_working_dir << std::endl;
 
     try {
 
@@ -89,7 +101,7 @@ bool StoryProject::Load(const std::string &file_path)
 
         m_type = j["type"];
         m_code = j["code"];
-        m_name = j["name"];
+        name = j["name"];
 
         success = true;
 
@@ -205,5 +217,31 @@ std::string StoryProject::Compile()
     chip32 << "\thalt\r\n";
 
     return chip32.str();
+}
+
+void StoryProject::SetImageFormat(ImageFormat format)
+{
+    m_imageFormat = format;
+}
+
+void StoryProject::SetSoundFormat(SoundFormat format)
+{
+    m_soundFormat = format;
+}
+
+void StoryProject::SetDisplayFormat(int w, int h)
+{
+    m_display_w = w;
+    m_display_h = h;
+}
+
+std::string StoryProject::GetProjectFilePath() const
+{
+    return m_project_path;
+}
+
+std::string StoryProject::GetWorkingDir() const
+{
+    return m_working_dir;
 }
 

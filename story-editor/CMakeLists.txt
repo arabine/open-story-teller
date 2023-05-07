@@ -40,14 +40,14 @@ set(PROJECT_SOURCES
     src/script_editor_dock.cpp
     src/memory_view_dock.h
     src/memory_view_dock.cpp
-    src/nodeeditor_dock.h
-    src/nodeeditor_dock.cpp
     src/osthmi_dock.h
     src/osthmi_dock.cpp
     src/log_dock.h
     src/log_dock.cpp
     src/vm_dock.h
     src/vm_dock.cpp
+    src/new_project_dialog.h
+    src/new_project_dialog.cpp
     src/dock_widget_base.h
     src/dock_widget_base.cpp
     src/code_editor.h

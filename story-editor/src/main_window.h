@@ -11,9 +11,9 @@
 #include <QMainWindow>
 #include <QDockWidget>
 
-
 #include <QtNodes/ConnectionStyle>
-
+#include <QtNodes/GraphicsView>
+#include <QtNodes/BasicGraphicsScene>
 #include <QtNodes/StyleCollection>
 #include <QtNodes/DataFlowGraphModel>
 #include <QtNodes/DataFlowGraphicsScene>
@@ -23,8 +23,8 @@
 
 using QtNodes::DataFlowGraphicsScene;
 using QtNodes::ConnectionStyle;
-
-
+using QtNodes::BasicGraphicsScene;
+using QtNodes::GraphicsView;
 using QtNodes::NodeRole;
 using QtNodes::StyleCollection;
 using QtNodes::DataFlowGraphModel;
@@ -41,9 +41,10 @@ using QtNodes::NodeDelegateModelRegistry;
 #include "script_editor_dock.h"
 #include "memory_view_dock.h"
 #include "osthmi_dock.h"
-#include "nodeeditor_dock.h"
 #include "log_dock.h"
 #include "toolbar.h"
+#include "new_project_dialog.h"
+
 
 struct DebugContext
 {
@@ -118,15 +119,17 @@ public:
 private slots:
     void stepInstruction();
     void closeEvent(QCloseEvent *event);
+    void slotDefaultDocksPosition();
+    void slotWelcome();
 
 private:
     StoryProject m_project;
     StoryGraphModel m_model;
     StoryGraphScene m_scene;
+    GraphicsView *m_view{nullptr};
 
     // Qt stuff
     ToolBar *m_toolbar{nullptr};
-    NodeEditorDock *m_nodeEditorDock{nullptr};
     OstHmiDock *m_ostHmiDock{nullptr};
     ResourcesDock *m_resourcesDock{nullptr};
     ScriptEditorDock *m_scriptEditorDock{nullptr};
@@ -134,9 +137,10 @@ private:
     MemoryViewDock *m_ramView{nullptr};
     MemoryViewDock *m_romView{nullptr};
     LogDock *m_logDock{nullptr};
-
+    QSettings m_settings;
     QDialog *m_chooseFileDialog;
     Ui::chooseFileDIalog m_chooseFileUi;
+    NewProjectDialog *m_newProjectDialog{nullptr};
 
     // VM
     uint8_t m_rom_data[16*1024];
@@ -155,7 +159,6 @@ private:
     void SaveProject();
     void DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId);
     void about();
-    void open();
     void buildScript();
     void highlightNextLine();
     void readSettings();
@@ -170,6 +173,8 @@ private:
     void SetupTemporaryProject();
     void RefreshProjectInformation();
     void CloseProject();
+    void OpenProject();
+    void ExitProgram();
 };
 
 #endif // MAIN_WINDOW_H

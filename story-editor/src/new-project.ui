@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>NewProjectDialog</class>
- <widget class="QDialog" name="NewProjectDialog">
+ <class>newProjectDialog</class>
+ <widget class="QDialog" name="newProjectDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>346</width>
-    <height>263</height>
+    <height>269</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>New project</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>New project parameters</string>
+      <string>New project parameters (directory must be empty)</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
@@ -30,10 +30,14 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit"/>
+         <widget class="QLineEdit" name="directoryPath">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="selectDirectoryButton">
           <property name="minimumSize">
            <size>
             <width>40</width>
@@ -63,7 +67,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit_2"/>
+         <widget class="QLineEdit" name="projectName"/>
         </item>
        </layout>
       </item>
@@ -77,13 +81,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox">
-          <item>
-           <property name="text">
-            <string>320x240</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="displaySizeCombo"/>
         </item>
        </layout>
       </item>
@@ -97,13 +95,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox_2">
-          <item>
-           <property name="text">
-            <string>BMP (compressed 4-bit palette)</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="imageFormatCombo"/>
         </item>
        </layout>
       </item>
@@ -117,13 +109,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox_3">
-          <item>
-           <property name="text">
-            <string>QOA (Quite Ok Audio)</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="soundFormatCombo"/>
         </item>
        </layout>
       </item>
@@ -139,6 +125,16 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="errorMessage">
+        <property name="text">
+         <string>ErrorMessage</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::RichText</enum>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -156,38 +152,5 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>NewProjectDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>NewProjectDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

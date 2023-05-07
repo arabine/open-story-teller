@@ -6,5 +6,8 @@
         <file>../assets/build.png</file>
         <file>../assets/volume-off.png</file>
         <file>../assets/file-document-plus-outline.svg</file>
+        <file>../assets/close-outline.svg</file>
+        <file>../assets/folder-open-outline.svg</file>
+        <file>../assets/welcome.png</file>
     </qresource>
 </RCC>
