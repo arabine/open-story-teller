@@ -51,12 +51,12 @@ typedef void (*message_output_t)(QtMsgType , const QMessageLogContext &, const Q
 MainWindow::MainWindow()
     : m_model(m_project)
     , m_scene(m_model)
-    , m_settings("D8S", "OpenStoryTeller")
+    , m_settings("OpenStoryTeller", "OpenStoryTellerEditor")
 {
     m_project.Clear();
-  //  SetupTemporaryProject();
 
-//    RefreshProjectInformation();
+    m_scene.setDropShadowEffect(false);
+    m_scene.nodeGeometry().setMarginsRatio(0.02);
 
     m_view = new GraphicsView(&m_scene);
     m_view->setScaleRange(0, 0);
@@ -64,10 +64,9 @@ MainWindow::MainWindow()
     setCentralWidget(m_view);
 
     m_toolbar = new ToolBar();
-    m_scene.setDropShadowEffect(false);
-    m_scene.nodeGeometry().setMarginsRatio(0.02);
     m_toolbar->createActions(menuBar());
-    addToolBar(m_toolbar);
+    addToolBar(Qt::LeftToolBarArea, m_toolbar);
+    m_toolbar->setVisible(true);
 
     connect(m_toolbar, &ToolBar::sigDefaultDocksPosition, this, &MainWindow::slotDefaultDocksPosition);
 
@@ -118,6 +117,9 @@ MainWindow::MainWindow()
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_romView);
     m_toolbar->AddDockToMenu(m_romView->toggleViewAction());
 
+    tabifyDockWidget(m_vmDock, m_romView);
+    tabifyDockWidget(m_romView, m_ramView);
+
     m_chooseFileDialog = new QDialog(this);
     m_chooseFileUi.setupUi(m_chooseFileDialog);
     m_chooseFileDialog->close();
@@ -167,8 +169,6 @@ MainWindow::MainWindow()
     Callback<uint8_t(uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1);
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(uint8_t)>::callback);
 
-    readSettings();
-
     connect(m_toolbar, &ToolBar::sigNew, this, [&]() {
         NewProject();
     });
@@ -178,7 +178,7 @@ MainWindow::MainWindow()
     });
 
     connect(m_toolbar, &ToolBar::sigOpen, this, [&]() {
-       OpenProject();
+       OpenProjectDialog();
     });
 
     connect(m_toolbar, &ToolBar::sigClose, this, [&]() {
@@ -189,14 +189,21 @@ MainWindow::MainWindow()
         ExitProgram();
     });
 
+    connect(m_toolbar, &ToolBar::sigOpenRecent, this, [&](const QString &recent) {
+        CloseProject();
+        OpenProject(recent);
+    });
 
     // Install event handler now that everythin is initialized
     Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
 
+
     qInstallMessageHandler(cb);
 
-    qDebug() << "Started StoryTeller Editor";
+    readSettings();
+    qDebug() << "Settings location: " << m_settings.fileName();
+    qDebug() << "Welcome to StoryTeller Editor";
 
     CloseProject();
 
@@ -216,26 +223,6 @@ void MainWindow::slotWelcome()
     msgBox.exec();
 }
 
-void MainWindow::SetupTemporaryProject()
-{
-    /*
-    QString appDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-
-    // Look at any previous workspace used
-    // Generate a project unique ID name if no any
-    m_settings.setValue("project/workspace", m_project.uuid.c_str());
-
-    m_project.working_dir = QString(appDir + QDir::separator() + m_project.uuid.c_str()).toStdString();
-    m_project.name = "Untitled project";
-    m_project.Initialize(m_settings.value("project/workspace", QUuid::createUuid().toString()).toString().toStdString()
-                         );
-
- //   m_resourcesDock->Initialize();
-
-    qDebug() << "Working dir is: " << m_project.working_dir.c_str();
-*/
-}
-
 void MainWindow::ExitProgram()
 {
     // FIXME: warn if project not saved
@@ -243,7 +230,7 @@ void MainWindow::ExitProgram()
 
 void MainWindow::RefreshProjectInformation()
 {
-    setWindowTitle(QString("StoryTeller Editor - ") + m_project.GetWorkingDir().c_str());
+    setWindowTitle(QString("StoryTeller Editor - ") + m_project.GetProjectFilePath().c_str());
 }
 
 void MainWindow::MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -258,12 +245,20 @@ void MainWindow::readSettings()
 
     restoreGeometry(m_settings.value("MainWindow/geometry").toByteArray());
     restoreState(m_settings.value("MainWindow/windowState").toByteArray());
+
+    // Restore recent projects list
+    m_recentProjects = m_settings.value("RecentProjects").toStringList();
+    m_toolbar->GenerateRecentProjectsMenu(m_recentProjects);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     m_settings.setValue("MainWindow/geometry", saveGeometry());
     m_settings.setValue("MainWindow/windowState", saveState());
+
+    // Memorize recent projects list
+    m_settings.setValue("RecentProjects", m_recentProjects);
+
     QMainWindow::closeEvent(event);
 }
 
@@ -485,11 +480,11 @@ void MainWindow::NewProject()
         m_project.SetDisplayFormat(s.width(), s.height());
         m_project.SetImageFormat(m_newProjectDialog->GetImageFormat());
         m_project.SetSoundFormat(m_newProjectDialog->GetSoundFormat());
+        m_project.SetName(m_newProjectDialog->GetProjectName().toStdString());
+        m_project.SetUuid(QUuid::createUuid().toString().toStdString());
 
-        m_toolbar->SetAllDocks(true);
-        m_toolbar->SetActionsActive(true);
-        m_toolbar->ShowAllDocks(true);
-        m_view->setEnabled(true);
+        SaveProject();
+        EnableProject();
     }
 }
 
@@ -497,51 +492,124 @@ void MainWindow::CloseProject()
 {
     m_project.Clear();
 
-    m_toolbar->SetAllDocks(false);
+    m_model.Clear();
+
+    m_ostHmiDock->Close();
+    m_resourcesDock->Close();
+    m_scriptEditorDock->Close();
+    m_vmDock->Close();
+    m_ramView->Close();
+    m_romView->Close();
+    m_logDock->Close();
+
     m_toolbar->SetActionsActive(false);
     m_view->setEnabled(false);
 }
 
-void MainWindow::OpenProject()
+void MainWindow::EnableProject()
 {
-    QString fn = QFileDialog::getOpenFileName(this, tr("Open project file"),
-                                                    QDir::homePath(),
-                                                    tr("StoryEditor Project (project.json)"));
+    // Add to recent if not exists
+    if (!m_recentProjects.contains(m_project.GetProjectFilePath().c_str()))
+    {
+        m_recentProjects.push_front(m_project.GetProjectFilePath().c_str());
+        // Limit to 10 recent projects
+        if (m_recentProjects.size() > 10) {
+            m_recentProjects.pop_back();
+        }
+        m_toolbar->GenerateRecentProjectsMenu(m_recentProjects);
+    }
 
-    m_project.Initialize(fn.toStdString());
+    m_ostHmiDock->Open();
+    m_resourcesDock->Open();
+    m_scriptEditorDock->Open();
+    m_vmDock->Open();
+    m_ramView->Open();
+    m_romView->Open();
+    m_logDock->Open();
+
+    m_toolbar->SetActionsActive(true);
+    m_view->setEnabled(true);
+}
+
+void MainWindow::OpenProjectDialog()
+{
+    QFileDialog dialog(this);
+
+    dialog.setNameFilter(tr("StoryEditor Project (project.json)"));
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setDirectory(QDir::homePath());
+
+    if (dialog.exec())
+    {
+        QStringList fileNames = dialog.selectedFiles();
+
+        if (fileNames.size() == 1)
+        {
+            OpenProject(fileNames.at(0));
+        }
+    }
+}
+
+void MainWindow::OpenProject(const QString &filePath)
+{
+    bool success = false;
+    QString errorMsg;
+
+    m_project.Initialize(filePath.toStdString());
 
     QFile loadFile(m_project.GetProjectFilePath().c_str());
 
-    if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning("Couldn't open project file.");
-        return;
-    }
-
-    QJsonParseError err;
-    QJsonDocument loadDoc = QJsonDocument::fromJson(loadFile.readAll(), &err);
-
-    if (err.error == QJsonParseError::NoError)
+    if (loadFile.open(QIODevice::ReadOnly))
     {
-        QJsonObject projectRoot = loadDoc.object();
-        QString errorString;
+        QJsonParseError err;
+        QJsonDocument loadDoc = QJsonDocument::fromJson(loadFile.readAll(), &err);
 
-        if (projectRoot.contains("project"))
+        if (err.error == QJsonParseError::NoError)
         {
-            QJsonObject projectData = projectRoot["project"].toObject();
+            QJsonObject projectRoot = loadDoc.object();
 
-            m_project.name = projectData["name"].toString().toStdString();
-//            m_project.uuid = projectData["uuid"].toString().toStdString();
+            if (projectRoot.contains("project"))
+            {
+                QJsonObject projectData = projectRoot["project"].toObject();
+
+                m_project.SetName(projectData["name"].toString().toStdString());
+                m_project.SetUuid(projectData["uuid"].toString().toStdString());
+
+                if (projectRoot.contains("nodegraph"))
+                {
+                    QJsonObject nodeData = projectRoot["nodegraph"].toObject();
+                    m_model.load(nodeData);
+
+                    success = true;
+                }
+                else
+                {
+                    errorMsg = tr("Missing nodegraph section in JSON file.");
+                }
+            }
+            else
+            {
+                errorMsg = tr("Missing project section in JSON file.");
+            }
         }
-
-        if (projectRoot.contains("nodegraph"))
+        else
         {
-            QJsonObject nodeData = projectRoot["nodegraph"].toObject();
-            m_model.load(nodeData);
+            errorMsg = err.errorString();
         }
     }
     else
     {
-        QMessageBox::critical(this, tr("Open project error"), err.errorString());
+        errorMsg = tr("Could not open project file.");
+    }
+
+    if (success)
+    {
+        EnableProject();
+    }
+    else
+    {
+        qWarning() << errorMsg;
+        QMessageBox::critical(this, tr("Open project error"), errorMsg);
     }
 }
 
@@ -551,8 +619,8 @@ void MainWindow::SaveProject()
     QJsonObject jsonModel = m_model.save();
 
     QJsonObject projectData;
-    projectData["name"] = m_project.name.c_str();
-//    projectData["uuid"] = m_project.uuid.c_str();
+    projectData["name"] = m_project.GetName().c_str();
+    projectData["uuid"] = m_project.GetUuid().c_str();
 
     QJsonObject saveData;
     saveData["project"] = projectData;
@@ -571,13 +639,5 @@ void MainWindow::SaveProject()
 
     statusBar()->showMessage(tr("Saved '%1'").arg(m_project.GetProjectFilePath().c_str()), 2000);
 }
-
-void MainWindow::about()
-{
-    QMessageBox::about(this, tr("About OST Editor"),
-                       tr("OpenStoryTeller node editor."
-                          "Build your own stories on an open source hardware."));
-}
-
 
 

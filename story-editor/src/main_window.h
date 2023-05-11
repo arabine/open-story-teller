@@ -141,6 +141,7 @@ private:
     QDialog *m_chooseFileDialog;
     Ui::chooseFileDIalog m_chooseFileUi;
     NewProjectDialog *m_newProjectDialog{nullptr};
+    QStringList m_recentProjects;
 
     // VM
     uint8_t m_rom_data[16*1024];
@@ -158,7 +159,6 @@ private:
     void createStatusBar();
     void SaveProject();
     void DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId);
-    void about();
     void buildScript();
     void highlightNextLine();
     void readSettings();
@@ -170,11 +170,12 @@ private:
     void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
     void NewProject();
 
-    void SetupTemporaryProject();
     void RefreshProjectInformation();
     void CloseProject();
-    void OpenProject();
+    void OpenProjectDialog();
     void ExitProgram();
+    void EnableProject();
+    void OpenProject(const QString &filePath);
 };
 
 #endif // MAIN_WINDOW_H

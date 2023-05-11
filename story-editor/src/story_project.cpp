@@ -101,7 +101,7 @@ bool StoryProject::Load(const std::string &file_path)
 
         m_type = j["type"];
         m_code = j["code"];
-        name = j["name"];
+        m_name = j["name"];
 
         success = true;
 

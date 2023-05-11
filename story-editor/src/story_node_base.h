@@ -25,6 +25,10 @@ public:
         QPointF pos;
     };
 
+    ~StoryNodeBase() {
+        std::cout << "Delete node: " << m_nodeId << std::endl;
+    }
+
     void setNodeId(NodeId id) { m_nodeId = id; }
     NodeId getNodeId() { return m_nodeId; }
 

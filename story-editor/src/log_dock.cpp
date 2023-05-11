@@ -1,9 +1,9 @@
 #include "log_dock.h"
 
 LogDock::LogDock()
-    : DockWidgetBase(tr("Logs"))
+    : DockWidgetBase(tr("Logs"), true)
 {
-    setObjectName("OstHmiDock"); // used to save the state
+    setObjectName("LogsDock"); // used to save the state
     m_logUi.setupUi(this);
 }
 

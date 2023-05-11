@@ -1,7 +1,7 @@
 #include "vm_dock.h"
 
 VmDock::VmDock(Chip32::Assembler &assembler)
-    : DockWidgetBase(tr("Virtual Machine"))
+    : DockWidgetBase(tr("Virtual Machine"), false)
 {
     setObjectName("VirtualMachineDock");  // used to save the state
 

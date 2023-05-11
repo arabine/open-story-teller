@@ -47,8 +47,6 @@ struct StoryProject
     enum ImageFormat { IMG_FORMAT_BMP_4BITS, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
     enum SoundFormat { SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
 
-    // Project properties and location
-    std::string name; /// human readable name
     std::vector<StoryNode> m_nodes;
 
     std::string m_type;
@@ -75,9 +73,13 @@ struct StoryProject
     void SetImageFormat(ImageFormat format);
     void SetSoundFormat(SoundFormat format);
     void SetDisplayFormat(int w, int h);
+    void SetName(const std::string &name) { m_name = name; }
+    void SetUuid(const std::string &uuid) { m_uuid = uuid; }
 
     std::string GetProjectFilePath() const;
     std::string GetWorkingDir() const;
+    std::string GetName() const { return m_name; }
+    std::string GetUuid() const { return m_uuid; }
 
     std::filesystem::path ImagesPath() const { return m_imagesPath; }
     std::filesystem::path SoundsPath() const { return m_soundsPath; }
@@ -95,6 +97,8 @@ public:
     static std::string ToUpper(const std::string &input);
 
 private:
+    // Project properties and location
+    std::string m_name; /// human readable name
     std::string m_uuid;
     std::filesystem::path m_imagesPath;
     std::filesystem::path m_soundsPath;

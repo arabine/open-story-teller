@@ -4,7 +4,7 @@
 
 ResourcesDock::ResourcesDock(StoryProject &project)
     : m_project(project)
-    , DockWidgetBase(tr("Resources"))
+    , DockWidgetBase(tr("Resources"), true)
 {
     setObjectName("ResourcesDock");  // used to save the state
 

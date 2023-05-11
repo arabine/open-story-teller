@@ -310,11 +310,15 @@ bool StoryGraphModel::deleteNode(NodeId const nodeId)
 QJsonObject StoryGraphModel::saveNode(NodeId const nodeId) const
 {
     QJsonObject nodeJson;
-
-
     nodeJson["id"] = static_cast<qint64>(nodeId);
 
-    nodeJson["internal-data"] = _models.at(nodeId)->save();
+    auto it = _models.find(nodeId);
+    if (it == _models.end())
+        return nodeJson;
+
+    auto &model = it->second;
+
+    nodeJson["internal-data"] = model->save();
 
     {
         QPointF const pos = nodeData(nodeId, NodeRole::Position).value<QPointF>();
@@ -352,27 +356,49 @@ QJsonObject StoryGraphModel::save() const
 
 void StoryGraphModel::loadNode(QJsonObject const &nodeJson)
 {
-    NodeId restoredNodeId = static_cast<NodeId>(nodeJson["id"].toInt());
+    // Possibility of the id clash when reading it from json and not generating a
+    // new value.
+    // 1. When restoring a scene from a file.
+    // Conflict is not possible because the scene must be cleared by the time of
+    // loading.
+    // 2. When undoing the deletion command.  Conflict is not possible
+    // because all the new ids were created past the removed nodes.
+    NodeId restoredNodeId = nodeJson["id"].toInt();
 
     _nextNodeId = std::max(_nextNodeId, restoredNodeId + 1);
 
-    // Create new node.
-    _nodeIds.insert(restoredNodeId);
+    QJsonObject const internalDataJson = nodeJson["internal-data"].toObject();
 
-    setNodeData(restoredNodeId, NodeRole::InPortCount, nodeJson["inPortCount"].toString().toUInt());
+    QString delegateModelName = internalDataJson["model-name"].toString();
 
-    setNodeData(restoredNodeId,
-                NodeRole::OutPortCount,
-                nodeJson["outPortCount"].toString().toUInt());
+//    std::unique_ptr<NodeDelegateModel> model = _registry->create(delegateModelName);
 
-    {
+    auto model = createNode(delegateModelName.toStdString());
+
+    if (model) {
+//        connect(model.get(),
+//                &NodeDelegateModel::dataUpdated,
+//                [restoredNodeId, this](PortIndex const portIndex) {
+//                    onOutPortDataUpdated(restoredNodeId, portIndex);
+//                });
+
+
+        _models[restoredNodeId] = model;
+        model->setNodeId(restoredNodeId);
+        _nodeIds.insert(restoredNodeId);
+
+        Q_EMIT nodeCreated(restoredNodeId);
+
         QJsonObject posJson = nodeJson["position"].toObject();
         QPointF const pos(posJson["x"].toDouble(), posJson["y"].toDouble());
 
         setNodeData(restoredNodeId, NodeRole::Position, pos);
-    }
 
-    Q_EMIT nodeCreated(restoredNodeId);
+        _models[restoredNodeId]->load(internalDataJson);
+    } else {
+        throw std::logic_error(std::string("No registered model with name ")
+                               + delegateModelName.toLocal8Bit().data());
+    }
 }
 
 void StoryGraphModel::load(QJsonObject const &jsonDocument)
@@ -418,4 +444,12 @@ void StoryGraphModel::removePort(NodeId nodeId, PortType portType, PortIndex por
     portsAboutToBeDeleted(nodeId, portType, first, last);
 
     portsDeleted();
+}
+
+void StoryGraphModel::Clear()
+{
+    _nodeIds.clear();
+    _connectivity.clear();
+    _models.clear();
+    emit modelReset();
 }

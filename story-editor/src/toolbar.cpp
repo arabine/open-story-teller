@@ -1,9 +1,14 @@
 #include "toolbar.h"
 #include "qmenubar.h"
 
+#include <QMessageBox>
+
 ToolBar::ToolBar()
 {
     setObjectName("MainToolBar");
+
+//    setIconSize(QSize(10, 10));
+//    setFixedHeight(36);
 }
 
 void ToolBar::createActions(QMenuBar *menuBar)
@@ -14,7 +19,7 @@ void ToolBar::createActions(QMenuBar *menuBar)
     {
         QIcon icon(":/assets/file-document-plus-outline.svg");
         QAction *act = new QAction(icon, tr("&New project"), this);
-        act->setShortcuts(QKeySequence::Save);
+        act->setShortcuts(QKeySequence::New);
         act->setStatusTip(tr("Create a new project"));
         connect(act, &QAction::triggered, this, &ToolBar::sigNew);
         fileMenu->addAction(act);
@@ -51,6 +56,9 @@ void ToolBar::createActions(QMenuBar *menuBar)
         addAction(m_closeProjectAction);
     }
 
+    m_recentProjectsMenu = new QMenu(tr("Recent projects"));
+    fileMenu->addMenu(m_recentProjectsMenu);
+
     fileMenu->addSeparator();
 
     QAction *quitAct = fileMenu->addAction(tr("&Quit"), this, &ToolBar::sigExit);
@@ -64,18 +72,25 @@ void ToolBar::createActions(QMenuBar *menuBar)
     auto act = m_windowsMenu->addAction(tr("Reset docks position"));
     connect(act, &QAction::triggered, this, &ToolBar::sigDefaultDocksPosition);
 
-    m_closeAllDocksAction = m_windowsMenu->addAction(tr("Show/Hide all docks"));
-    m_closeAllDocksAction->setCheckable(true);
-    connect(m_closeAllDocksAction, &QAction::triggered, this, [=] (bool checked) {
-        SetAllDocks(checked);
-    });
-
     m_windowsMenu->addSeparator();
 
     QMenu *helpMenu = menuBar->addMenu(tr("&Help"));
 
-    QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &ToolBar::sigAbout);
+    QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &ToolBar::slotAbout);
     aboutAct->setStatusTip(tr("Show the application's About box"));
+}
+
+void ToolBar::GenerateRecentProjectsMenu(const QStringList &recents)
+{
+    m_recentProjectsMenu->clear();
+
+    for (auto &r: recents)
+    {
+        auto act = m_recentProjectsMenu->addAction(r);
+        connect(act, &QAction::triggered, this, [&, r]() {
+            emit sigOpenRecent(r);
+        });
+    }
 }
 
 void ToolBar::SetActionsActive(bool enable)
@@ -89,19 +104,12 @@ void ToolBar::SetActionsActive(bool enable)
     m_saveProjectAction->setEnabled(enable);
 }
 
-void ToolBar::ShowAllDocks(bool enable)
-{
-    m_closeAllDocksAction->setEnabled(enable);
-    m_closeAllDocksAction->trigger();
-}
 
-void ToolBar::SetAllDocks(bool enable)
+void ToolBar::slotAbout()
 {
-    for (auto d : m_actionDockList)
-    {
-        d->setChecked(!enable);
-        d->trigger();
-    }
+    QMessageBox::about(this, tr("About OST Editor"),
+                       tr("OpenStoryTeller node editor."
+                          "Build your own stories on an open source hardware."));
 }
 
 void ToolBar::AddDockToMenu(QAction *action)
