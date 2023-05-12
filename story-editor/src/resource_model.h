@@ -10,22 +10,36 @@ class ResourceModel : public QAbstractTableModel
 {
 
 public:
-    ResourceModel(QObject * parent = {}) : QAbstractTableModel{parent} {}
+    ResourceModel(StoryProject &project, QObject * parent = {});
 
-    int rowCount(const QModelIndex &) const override { return m_data.count(); }
-    int columnCount(const QModelIndex &) const override { return 3; }
+    int rowCount(const QModelIndex &) const override;
+    int columnCount(const QModelIndex &) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     void append(const Resource & res);
 
     void Clear();
 
-    QString GetFileName(int row);
+private:
+    StoryProject &m_project;
+};
 
-    QList<Resource> GetData() const { return m_data; }
+class ResourceFilterProxyModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
+
+public:
+    ResourceFilterProxyModel(QObject *parent = nullptr);
+
+
+    void setFilterType(const QString &type);
+protected:
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+//    bool lessThan(const QModelIndex &left, const QModelIndex &right) const override;
 
 private:
-    QList<Resource> m_data;
+
+    QString m_typeFilter;
 };
 
 #endif // RESOURCE_MODEL_H

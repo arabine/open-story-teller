@@ -67,6 +67,21 @@ void ToolBar::createActions(QMenuBar *menuBar)
 
     menuBar->addSeparator();
 
+    // -------------------------------- DEBUG STORY
+
+    QMenu *storyMenu = menuBar->addMenu(tr("&Story"));
+    // ------------ Run
+    {
+        QIcon icon(":/assets/play-circle-green.png");
+        m_runAction = new QAction(icon, tr("&Close project"), this);
+        m_runAction->setStatusTip(tr("Build and run current project"));
+        connect(m_runAction, &QAction::triggered, this, &ToolBar::sigRun);
+        storyMenu->addAction(m_runAction);
+        addSeparator();
+        addAction(m_runAction);
+    }
+
+    // -------------------------------- WINDOWS MENU
     m_windowsMenu = menuBar->addMenu(tr("&Windows"));
 
     auto act = m_windowsMenu->addAction(tr("Reset docks position"));
@@ -102,6 +117,7 @@ void ToolBar::SetActionsActive(bool enable)
     m_windowsMenu->setEnabled(enable);
     m_closeProjectAction->setEnabled(enable);
     m_saveProjectAction->setEnabled(enable);
+    m_runAction->setEnabled(enable);
 }
 
 

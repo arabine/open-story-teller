@@ -35,9 +35,10 @@ void StoryProject::Initialize(const std::string &file_path)
 
 bool StoryProject::Load(const std::string &file_path)
 {
+
     std::ifstream f(file_path);
     bool success = false;
-
+/*
     std::filesystem::path p(file_path);
     m_working_dir= p.parent_path();
 
@@ -116,7 +117,7 @@ bool StoryProject::Load(const std::string &file_path)
     {
         CreateTree();
     }
-
+*/
     return success;
 }
 
@@ -191,6 +192,27 @@ void StoryProject::ReplaceCharacter(std::string &theString, const std::string &t
     while (found != std::string::npos);
 }
 
+void StoryProject::AppendResource(const Resource &res)
+{
+    m_resources.push_back(res);
+}
+
+bool StoryProject::GetResourceAt(int index, Resource &resOut)
+{
+    bool success = false;
+    if ((index >= 0) && (index < m_resources.size()))
+    {
+        resOut = m_resources[index];
+        success = true;
+    }
+    return success;
+}
+
+void StoryProject::ClearResources()
+{
+    m_resources.clear();
+}
+
 std::string StoryProject::GetFileExtension(const std::string &fileName)
 {
     if(fileName.find_last_of(".") != std::string::npos)
@@ -204,7 +226,7 @@ std::string StoryProject::Compile()
 
     chip32 << "\tjump         .entry\r\n";
 
-    for (auto & r : m_images)
+    for (auto & r : m_resources)
     {
         std::string fileName = GetFileName(r.file);
         std::string ext = GetFileExtension(fileName);

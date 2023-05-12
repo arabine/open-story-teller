@@ -14,18 +14,21 @@ public:
 
     void Initialize();
 
-    QList<Resource> GetResources() const { return m_resourcesModel.GetData(); }
     ResourceModel &getModel() { return m_resourcesModel; }
+    ResourceFilterProxyModel &getFilteredModel() { return m_proxyModel; }
+
+    void SetFilterType(const QString &type) { m_proxyModel.setFilterType(type); }
+
+    void Append(const Resource &res);
 
     void SaveToProject();
-
-public slots:
-    void slotClear();
+    void Clear();
 
 private:
     StoryProject &m_project;
     Ui::ostResources m_uiOstResources;
     ResourceModel m_resourcesModel;
+    ResourceFilterProxyModel m_proxyModel;
 };
 
 #endif // RESOURCESDOCK_H

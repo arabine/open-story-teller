@@ -23,15 +23,17 @@ signals:
     void sigExit();
     void sigDefaultDocksPosition();
     void sigOpenRecent(const QString &project);
+    void sigRun();
 
 private slots:
     void slotAbout();
 
 private:
-    QMenu *m_windowsMenu;
-    QMenu *m_recentProjectsMenu;
-    QAction *m_saveProjectAction;
-    QAction *m_closeProjectAction;
+    QMenu *m_windowsMenu{nullptr};
+    QMenu *m_recentProjectsMenu{nullptr};
+    QAction *m_saveProjectAction{nullptr};
+    QAction *m_closeProjectAction{nullptr};
+    QAction *m_runAction{nullptr};
     QList<QAction *> m_actionDockList;
 };
 

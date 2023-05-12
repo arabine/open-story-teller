@@ -42,7 +42,6 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     });
 
     connect(m_ui.selectImageButton, &QPushButton::clicked, [&](bool enable) {
-        //m_contextMenu->exec(m_widget->mapFromGlobal(QCursor::pos()));
         emit m_model.sigChooseFile(getNodeId());
     });
 }

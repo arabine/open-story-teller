@@ -40,6 +40,7 @@ struct Resource
     std::string file;
     std::string description;
     std::string format;
+    std::string type;
 };
 
 struct StoryProject
@@ -52,20 +53,14 @@ struct StoryProject
     std::string m_type;
     std::string m_code;
 
-    std::vector<Resource> m_images;
-    std::vector<Resource> m_sounds;
-
     StoryNode *m_tree;
-
 
     bool Load(const std::string &file_path);
     void CreateTree();
     void Clear() {
         m_uuid = "";
         m_working_dir = "";
-        m_images.clear();
-        m_sounds.clear();
-
+        m_resources.clear();
         m_initialized = false;
     }
 
@@ -88,6 +83,17 @@ struct StoryProject
     static std::string GetFileName(const std::string &path);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
 
+
+    // -------------  Resources Management
+    void AppendResource(const Resource &res);
+    bool GetResourceAt(int index, Resource &resOut);
+    void ClearResources();
+    int ResourcesSize() const { return m_resources.size(); }
+
+    std::vector<Resource>::const_iterator Begin() const { return m_resources.begin(); }
+    std::vector<Resource>::const_iterator End() const { return m_resources.end(); }
+
+
 public:
     // Initialize with an existing project
     void Initialize(const std::string &file_path);
@@ -104,6 +110,7 @@ private:
     std::filesystem::path m_soundsPath;
     bool m_initialized{false};
 
+    std::vector<Resource> m_resources;
     std::string m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
     std::string m_project_path; /// JSON project file
 

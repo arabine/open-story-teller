@@ -1,5 +1,7 @@
 ## Arduino MKR Zero (SAMD21G18A)
 
+Current status: ON DEVELOPMENT
+
 | Category           | Maker                          | Name                  | Rounded Price |
 | ------------------ | ------------------------------ | --------------------- | ------------- |
 | Main CPU board     | Arduino                        | MKR Zero              | 30€           |

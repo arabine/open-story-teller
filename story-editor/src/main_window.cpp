@@ -135,10 +135,13 @@ MainWindow::MainWindow()
         {
             // Take first
             QModelIndex index = selection.at(0);
-            QString fn = m_resourcesDock->getModel().GetFileName(index.row());
-            QJsonObject obj;
-            obj["image"] = fn;
-            m_model.setNodeData(id, NodeRole::InternalData, obj.toVariantMap());
+            Resource res;
+            if (m_project.GetResourceAt(index.row(), res))
+            {
+                QJsonObject obj;
+                obj["image"] = res.file.c_str();
+                m_model.setNodeData(id, NodeRole::InternalData, obj.toVariantMap());
+            }
         }
     });
 
@@ -268,7 +271,7 @@ void MainWindow::DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId)
 
     if (m_tree->image >= 0)
     {
-        std::string imageFile = m_project.GetWorkingDir() + "/rf/" + m_project.m_images[m_tree->image].file + ".bmp";
+        std::string imageFile = ""; // FIXME m_project.GetWorkingDir() + "/rf/" + m_project.m_images[m_tree->image].file + ".bmp";
         std::cout << "Node image: " << imageFile << std::endl;
         nodeInternalData["image"] = imageFile.c_str();
     }
@@ -575,6 +578,20 @@ void MainWindow::OpenProject(const QString &filePath)
                 m_project.SetName(projectData["name"].toString().toStdString());
                 m_project.SetUuid(projectData["uuid"].toString().toStdString());
 
+                QJsonArray resourcesData = projectData["resources"].toArray();
+
+                for (const auto &r : resourcesData)
+                {
+                    Resource rData;
+                    QJsonObject obj = r.toObject();
+                    rData.type = obj["type"].toString().toStdString();
+                    rData.format = obj["format"].toString().toStdString();
+                    rData.description = obj["description"].toString().toStdString();
+                    rData.file = obj["file"].toString().toStdString();
+                    m_resourcesDock->Append(rData);
+                }
+
+
                 if (projectRoot.contains("nodegraph"))
                 {
                     QJsonObject nodeData = projectRoot["nodegraph"].toObject();
@@ -621,6 +638,21 @@ void MainWindow::SaveProject()
     QJsonObject projectData;
     projectData["name"] = m_project.GetName().c_str();
     projectData["uuid"] = m_project.GetUuid().c_str();
+
+    QJsonArray resourcesData;
+
+    for (std::vector<Resource>::const_iterator it = m_project.Begin(); it != m_project.End(); ++it)
+    {
+        auto &r = *it;
+        QJsonObject obj;
+        obj["type"] = r.type.c_str();
+        obj["format"] = r.format.c_str();
+        obj["description"] = r.description.c_str();
+        obj["file"] = r.file.c_str();
+
+        resourcesData.append(obj);
+    }
+    projectData["resources"] = resourcesData;
 
     QJsonObject saveData;
     saveData["project"] = projectData;
