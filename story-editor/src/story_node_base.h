@@ -10,6 +10,7 @@
 #include <QtNodes/NodeDelegateModel>
 #include <QtNodes/NodeDelegateModelRegistry>
 #include <QtNodes/Definitions>
+#include "json.hpp"
 
 using QtNodes::NodeData;
 using QtNodes::NodeDataType;
@@ -32,7 +33,18 @@ public:
     void setNodeId(NodeId id) { m_nodeId = id; }
     NodeId getNodeId() { return m_nodeId; }
 
-    virtual void setInternalData(const QVariant &value) {
+    virtual nlohmann::json ToJson() const {
+        nlohmann::json j;
+
+        j["model-name"] = name().toStdString();
+        return j;
+    }
+
+    virtual void FromJson(nlohmann::json &j) {
+        // default implementation does nothing
+    }
+
+    virtual void setInternalData(const nlohmann::json &j) {
         // default impl
     }
 

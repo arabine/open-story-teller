@@ -9,6 +9,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QMenu>
 
+
 MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     : m_model(model)
     , m_widget(new QWidget())
@@ -46,27 +47,25 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     });
 }
 
-QJsonObject MediaNodeModel::save() const
+nlohmann::json MediaNodeModel::ToJson() const
 {
-    QJsonObject obj = NodeDelegateModel::save();
-
+    // Always start with generic
+    nlohmann::json j = StoryNodeBase::ToJson();
     // Merge two objects
-    QVariantMap map = obj.toVariantMap();
-    map.insert(m_mediaData);
-
-    return QJsonObject::fromVariantMap(map);
+    j.merge_patch(m_mediaData);
+    return j;
 }
 
-void MediaNodeModel::load(const QJsonObject &mediaData)
+void MediaNodeModel::FromJson(nlohmann::json &j)
 {
-    m_mediaData = mediaData.toVariantMap();
+    m_mediaData = j;
 
     // Display loaded image
-    QString imagePath = m_mediaData["image"].toString();
+    std::string imagePath = m_mediaData["image"].get<std::string>();
 
-    if (!imagePath.isEmpty())
+    if (imagePath.size() > 0)
     {
-        setImage(imagePath);
+        setImage(imagePath.c_str());
     }
 }
 
@@ -76,7 +75,7 @@ void MediaNodeModel::setImage(const QString &imagePath)
 
     if (pix.isNull())
     {
-        std::cout << "!!!!!!! " << m_mediaData["image"].toString().toStdString() << std::endl;
+        std::cout << "!!!!!!! " << m_mediaData["image"].get<std::string>() << std::endl;
     }
 
     int w = m_ui.image->width();
@@ -85,15 +84,14 @@ void MediaNodeModel::setImage(const QString &imagePath)
     m_ui.image->setPixmap(pix);
 }
 
-void MediaNodeModel::setInternalData(const QVariant &value)
+void MediaNodeModel::setInternalData(const nlohmann::json &j)
 {
-    QJsonObject obj = value.toJsonObject();
-    if (obj.contains("image")) {
-        setImage(obj.value("image").toString());
+    if (j.contains("image")) {
+        setImage(j["image"].get<std::string>().c_str());
     }
 
     // Merge new data into local object
-    m_mediaData.insert(obj.toVariantMap());
+    m_mediaData.merge_patch(j);
 }
 
 unsigned int MediaNodeModel::nPorts(PortType portType) const

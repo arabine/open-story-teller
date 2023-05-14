@@ -96,19 +96,6 @@ public:
 
     bool deleteNode(NodeId const nodeId) override;
 
-    QJsonObject saveNode(NodeId const) const override;
-
-    QJsonObject save() const;
-
-    /// @brief Creates a new node based on the informatoin in `nodeJson`.
-    /**
-   * @param nodeJson conains a `NodeId`, node's position, internal node
-   * information.
-   */
-    void loadNode(QJsonObject const &nodeJson) override;
-
-    void load(QJsonObject const &jsonDocument);
-
     void addPort(NodeId nodeId, PortType portType, PortIndex portIndex);
 
     void removePort(NodeId nodeId, PortType portType, PortIndex first);
@@ -132,6 +119,13 @@ public:
 
     StoryProject &GetProject()  { return m_project; };
     void Clear();
+    void SetInternalData(NodeId nodeId, nlohmann::json &j);
+
+    nlohmann::json Save() const;
+    void Load(const nlohmann::json &j);
+
+    nlohmann::json SaveNode(NodeId const) const;
+    void LoadNode(const nlohmann::json &nodeJson); // Creates a new node
 
 signals:
     void sigChooseFile(NodeId id);

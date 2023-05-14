@@ -4,7 +4,9 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+#include "json.hpp"
 
+// FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
 struct StoryNode
 {
     bool auto_jump;
@@ -55,7 +57,9 @@ struct StoryProject
 
     StoryNode *m_tree;
 
-    bool Load(const std::string &file_path);
+    bool Load(const std::string &file_path, nlohmann::json &model);
+    void Save(const nlohmann::json &model);
+
     void CreateTree();
     void Clear() {
         m_uuid = "";
@@ -102,6 +106,7 @@ public:
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 
+
 private:
     // Project properties and location
     std::string m_name; /// human readable name
@@ -112,7 +117,7 @@ private:
 
     std::vector<Resource> m_resources;
     std::string m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
-    std::string m_project_path; /// JSON project file
+    std::string m_project_file_path; /// JSON project file
 
     int m_display_w{320};
     int m_display_h{240};

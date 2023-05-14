@@ -176,6 +176,17 @@ QVariant StoryGraphModel::nodeData(NodeId nodeId, NodeRole role) const
     return result;
 }
 
+void StoryGraphModel::SetInternalData(NodeId nodeId, nlohmann::json &j)
+{
+    auto it = _models.find(nodeId);
+    if (it == _models.end())
+        return;
+
+    auto &model = it->second;
+
+    model->setInternalData(j);
+}
+
 bool StoryGraphModel::setNodeData(NodeId nodeId, NodeRole role, QVariant value)
 {
     bool result = false;
@@ -212,10 +223,8 @@ bool StoryGraphModel::setNodeData(NodeId nodeId, NodeRole role, QVariant value)
         break;
 
     case NodeRole::InternalData:
-    {
-        model->setInternalData(value);
         break;
-    }
+
     case NodeRole::InPortCount:
         break;
 
@@ -307,9 +316,63 @@ bool StoryGraphModel::deleteNode(NodeId const nodeId)
     return true;
 }
 
-QJsonObject StoryGraphModel::saveNode(NodeId const nodeId) const
+namespace QtNodes {
+    void to_json(nlohmann::json& j, const ConnectionId& p) {
+        j = nlohmann::json{
+            {"outNodeId", static_cast<qint64>(p.outNodeId)},
+            {"outPortIndex", static_cast<qint64>(p.outPortIndex)},
+            {"intNodeId", static_cast<qint64>(p.inNodeId)},
+            {"inPortIndex", static_cast<qint64>(p.inPortIndex)},
+        };
+    }
+
+    void from_json(const nlohmann::json& j, ConnectionId& p) {
+//        j.at("name").get_to(p.name);
+//        j.at("address").get_to(p.address);
+//        j.at("age").get_to(p.age);
+    }
+} // namespace QtNodes
+
+
+nlohmann::json StoryGraphModel::Save() const
 {
-    QJsonObject nodeJson;
+    nlohmann::json j;
+    nlohmann::json nodesJsonArray;
+    for (auto const nodeId : allNodeIds()) {
+        nodesJsonArray.push_back(SaveNode(nodeId));
+    }
+    j["nodes"] = nodesJsonArray;
+
+    nlohmann::json connJsonArray;
+    for (auto const &cid : _connectivity) {
+        nlohmann::json o = cid;
+        connJsonArray.push_back(o);
+    }
+    j["connections"] = connJsonArray;
+
+    return j;
+}
+
+void StoryGraphModel::Load(const nlohmann::json &j)
+{
+    nlohmann::json nodesJsonArray = j["nodes"];
+
+    for (auto& element : nodesJsonArray) {
+        LoadNode(element);
+    }
+
+    nlohmann::json connectionJsonArray = j["connections"];
+
+    for (auto& connection : connectionJsonArray) {
+        ConnectionId connId = connection.get<QtNodes::ConnectionId>();
+        // Restore the connection
+        addConnection(connId);
+    }
+}
+
+nlohmann::json StoryGraphModel::SaveNode(NodeId const nodeId) const
+{
+    nlohmann::json nodeJson;
     nodeJson["id"] = static_cast<qint64>(nodeId);
 
     auto it = _models.find(nodeId);
@@ -318,43 +381,25 @@ QJsonObject StoryGraphModel::saveNode(NodeId const nodeId) const
 
     auto &model = it->second;
 
-    nodeJson["internal-data"] = model->save();
+    nodeJson["internal-data"] = model->ToJson();
 
     {
         QPointF const pos = nodeData(nodeId, NodeRole::Position).value<QPointF>();
 
-        QJsonObject posJson;
+        nlohmann::json posJson;
         posJson["x"] = pos.x();
         posJson["y"] = pos.y();
         nodeJson["position"] = posJson;
 
-        nodeJson["inPortCount"] = QString::number(nodeData(nodeId, NodeRole::InPortCount).value<int>());
-        nodeJson["outPortCount"] = QString::number(nodeData(nodeId, NodeRole::OutPortCount).value<int>());
+        nodeJson["inPortCount"] = nodeData(nodeId, NodeRole::InPortCount).value<int>();
+        nodeJson["outPortCount"] = nodeData(nodeId, NodeRole::OutPortCount).value<int>();
     }
 
     return nodeJson;
 }
 
-QJsonObject StoryGraphModel::save() const
-{
-    QJsonObject sceneJson;
 
-    QJsonArray nodesJsonArray;
-    for (auto const nodeId : allNodeIds()) {
-        nodesJsonArray.append(saveNode(nodeId));
-    }
-    sceneJson["nodes"] = nodesJsonArray;
-
-    QJsonArray connJsonArray;
-    for (auto const &cid : _connectivity) {
-        connJsonArray.append(QtNodes::toJson(cid));
-    }
-    sceneJson["connections"] = connJsonArray;
-
-    return sceneJson;
-}
-
-void StoryGraphModel::loadNode(QJsonObject const &nodeJson)
+void StoryGraphModel::LoadNode(const nlohmann::json &nodeJson)
 {
     // Possibility of the id clash when reading it from json and not generating a
     // new value.
@@ -363,17 +408,17 @@ void StoryGraphModel::loadNode(QJsonObject const &nodeJson)
     // loading.
     // 2. When undoing the deletion command.  Conflict is not possible
     // because all the new ids were created past the removed nodes.
-    NodeId restoredNodeId = nodeJson["id"].toInt();
+    NodeId restoredNodeId = nodeJson["id"].get<int>();
 
     _nextNodeId = std::max(_nextNodeId, restoredNodeId + 1);
 
-    QJsonObject const internalDataJson = nodeJson["internal-data"].toObject();
+    nlohmann::json internalDataJson = nodeJson["internal-data"];
 
-    QString delegateModelName = internalDataJson["model-name"].toString();
+    std::string delegateModelName = internalDataJson["model-name"].get<std::string>();
 
 //    std::unique_ptr<NodeDelegateModel> model = _registry->create(delegateModelName);
 
-    auto model = createNode(delegateModelName.toStdString());
+    auto model = createNode(delegateModelName);
 
     if (model) {
 //        connect(model.get(),
@@ -389,37 +434,18 @@ void StoryGraphModel::loadNode(QJsonObject const &nodeJson)
 
         Q_EMIT nodeCreated(restoredNodeId);
 
-        QJsonObject posJson = nodeJson["position"].toObject();
-        QPointF const pos(posJson["x"].toDouble(), posJson["y"].toDouble());
+        nlohmann::json posJson = nodeJson["position"];
+        QPointF const pos(posJson["x"].get<double>(), posJson["y"].get<double>());
 
         setNodeData(restoredNodeId, NodeRole::Position, pos);
 
-        _models[restoredNodeId]->load(internalDataJson);
+        _models[restoredNodeId]->FromJson(internalDataJson);
     } else {
-        throw std::logic_error(std::string("No registered model with name ")
-                               + delegateModelName.toLocal8Bit().data());
+        throw std::logic_error(std::string("No registered model with name ") + delegateModelName);
     }
 }
 
-void StoryGraphModel::load(QJsonObject const &jsonDocument)
-{
-    QJsonArray nodesJsonArray = jsonDocument["nodes"].toArray();
 
-    for (QJsonValueRef nodeJson : nodesJsonArray) {
-        loadNode(nodeJson.toObject());
-    }
-
-    QJsonArray connectionJsonArray = jsonDocument["connections"].toArray();
-
-    for (QJsonValueRef connection : connectionJsonArray) {
-        QJsonObject connJson = connection.toObject();
-
-        ConnectionId connId = QtNodes::fromJson(connJson);
-
-        // Restore the connection
-        addConnection(connId);
-    }
-}
 
 void StoryGraphModel::addPort(NodeId nodeId, PortType portType, PortIndex portIndex)
 {

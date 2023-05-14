@@ -36,11 +36,10 @@ public:
     QString name() const override { return QString("MediaNode"); }
 
 public:
-    QJsonObject save() const override;
+    virtual nlohmann::json ToJson() const override;
+    virtual void FromJson(nlohmann::json &j) override;
 
-    void load(QJsonObject const &mediaData) override;
-
-    void setInternalData(const QVariant &value) override;
+    void setInternalData(const nlohmann::json &j) override;
 
 public:
     virtual QString modelName() const { return QString("MediaNode"); }
@@ -57,6 +56,7 @@ public:
 
     bool resizable() const override { return true; }
 
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
@@ -69,6 +69,6 @@ private:
     Ui::mediaNodeUi m_ui;
     std::shared_ptr<NodeData> m_nodeData;
 
-    QVariantMap m_mediaData;
+    nlohmann::json m_mediaData;
     void setImage(const QString &fileName);
 };

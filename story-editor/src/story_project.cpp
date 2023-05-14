@@ -15,7 +15,7 @@ void StoryProject::New(const std::string &uuid, const std::string &file_path)
 
 void StoryProject::Initialize(const std::string &file_path)
 {
-    m_project_path = file_path;
+    m_project_file_path = file_path;
     std::filesystem::path p(file_path);
     m_working_dir= p.parent_path();
 
@@ -33,12 +33,12 @@ void StoryProject::Initialize(const std::string &file_path)
     m_initialized = true;
 }
 
-bool StoryProject::Load(const std::string &file_path)
+bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
 {
 
     std::ifstream f(file_path);
     bool success = false;
-/*
+
     std::filesystem::path p(file_path);
     m_working_dir= p.parent_path();
 
@@ -49,6 +49,37 @@ bool StoryProject::Load(const std::string &file_path)
         nlohmann::json j = nlohmann::json::parse(f);
 
         m_nodes.clear();
+
+
+        if (j.contains("project"))
+        {
+            nlohmann::json projectData = j["project"];
+
+            m_name = projectData["name"].get<std::string>();
+            m_uuid = projectData["uuid"].get<std::string>();
+
+            nlohmann::json resourcesData = projectData["resources"];
+
+            for (const auto &obj : resourcesData)
+            {
+                Resource rData;
+
+                rData.type = obj["type"].get<std::string>();
+                rData.format = obj["format"].get<std::string>();
+                rData.description = obj["description"].get<std::string>();
+                rData.file = obj["file"].get<std::string>();
+                m_resources.push_back(rData);
+            }
+
+            if (j.contains("nodegraph"))
+            {
+                model = j["nodegraph"];
+                success = true;
+            }
+        }
+
+ /*
+
         if (j.contains("nodes"))
         {
             for (auto& element : j["nodes"])
@@ -106,19 +137,40 @@ bool StoryProject::Load(const std::string &file_path)
 
         success = true;
 
-
-    } catch(std::exception &e)
+*/
+    }
+    catch(std::exception &e)
     {
         std::cout << e.what() << std::endl;
     }
 
-
-    if (success)
-    {
-        CreateTree();
-    }
-*/
     return success;
+}
+
+void StoryProject::Save(const nlohmann::json &model)
+{
+    nlohmann::json j;
+    j["project"] = { {"name", m_name}, {"uuid", m_uuid} };
+
+    {
+        nlohmann::json resourcesData;
+
+        for (auto &r : m_resources)
+        {
+            nlohmann::json obj = {{"type", r.type},
+                                  {"format", r.format},
+                                  {"description", r.description},
+                                  {"file", r.file}};
+
+            resourcesData.push_back(obj);
+        }
+        j["resources"] = resourcesData;
+    }
+
+    j["nodegraph"] = model;
+
+    std::ofstream o(m_project_file_path);
+    o << std::setw(4) << j << std::endl;
 }
 
 void StoryProject::CreateTree()
@@ -259,7 +311,7 @@ void StoryProject::SetDisplayFormat(int w, int h)
 
 std::string StoryProject::GetProjectFilePath() const
 {
-    return m_project_path;
+    return m_project_file_path;
 }
 
 std::string StoryProject::GetWorkingDir() const

@@ -556,71 +556,15 @@ void MainWindow::OpenProjectDialog()
 void MainWindow::OpenProject(const QString &filePath)
 {
     bool success = false;
-    QString errorMsg;
+    QString errorMsg = tr("General error");
 
     m_project.Initialize(filePath.toStdString());
 
-    QFile loadFile(m_project.GetProjectFilePath().c_str());
+    nlohmann::json model;
 
-    if (loadFile.open(QIODevice::ReadOnly))
+    if (m_project.Load(filePath.toStdString(), model))
     {
-        QJsonParseError err;
-        QJsonDocument loadDoc = QJsonDocument::fromJson(loadFile.readAll(), &err);
-
-        if (err.error == QJsonParseError::NoError)
-        {
-            QJsonObject projectRoot = loadDoc.object();
-
-            if (projectRoot.contains("project"))
-            {
-                QJsonObject projectData = projectRoot["project"].toObject();
-
-                m_project.SetName(projectData["name"].toString().toStdString());
-                m_project.SetUuid(projectData["uuid"].toString().toStdString());
-
-                QJsonArray resourcesData = projectData["resources"].toArray();
-
-                for (const auto &r : resourcesData)
-                {
-                    Resource rData;
-                    QJsonObject obj = r.toObject();
-                    rData.type = obj["type"].toString().toStdString();
-                    rData.format = obj["format"].toString().toStdString();
-                    rData.description = obj["description"].toString().toStdString();
-                    rData.file = obj["file"].toString().toStdString();
-                    m_resourcesDock->Append(rData);
-                }
-
-
-                if (projectRoot.contains("nodegraph"))
-                {
-                    QJsonObject nodeData = projectRoot["nodegraph"].toObject();
-                    m_model.load(nodeData);
-
-                    success = true;
-                }
-                else
-                {
-                    errorMsg = tr("Missing nodegraph section in JSON file.");
-                }
-            }
-            else
-            {
-                errorMsg = tr("Missing project section in JSON file.");
-            }
-        }
-        else
-        {
-            errorMsg = err.errorString();
-        }
-    }
-    else
-    {
-        errorMsg = tr("Could not open project file.");
-    }
-
-    if (success)
-    {
+        m_model.Load(model);
         EnableProject();
     }
     else
@@ -633,41 +577,8 @@ void MainWindow::OpenProject(const QString &filePath)
 
 void MainWindow::SaveProject()
 {
-    QJsonObject jsonModel = m_model.save();
+ //   QJsonObject jsonModel = m_model.save();
 
-    QJsonObject projectData;
-    projectData["name"] = m_project.GetName().c_str();
-    projectData["uuid"] = m_project.GetUuid().c_str();
-
-    QJsonArray resourcesData;
-
-    for (std::vector<Resource>::const_iterator it = m_project.Begin(); it != m_project.End(); ++it)
-    {
-        auto &r = *it;
-        QJsonObject obj;
-        obj["type"] = r.type.c_str();
-        obj["format"] = r.format.c_str();
-        obj["description"] = r.description.c_str();
-        obj["file"] = r.file.c_str();
-
-        resourcesData.append(obj);
-    }
-    projectData["resources"] = resourcesData;
-
-    QJsonObject saveData;
-    saveData["project"] = projectData;
-    saveData["nodegraph"] = jsonModel;
-
-    QJsonDocument doc(saveData);
-    qDebug() << doc.toJson();
-
-    QFile f(m_project.GetProjectFilePath().c_str());
-
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
-        return;
-
-    QTextStream fout(&f);
-    fout << doc.toJson();
 
     statusBar()->showMessage(tr("Saved '%1'").arg(m_project.GetProjectFilePath().c_str()), 2000);
 }
