@@ -272,7 +272,7 @@ std::string StoryProject::GetFileExtension(const std::string &fileName)
     return "";
 }
 
-std::string StoryProject::Compile()
+std::string StoryProject::BuildResources()
 {
     std::stringstream chip32;
 
@@ -287,8 +287,6 @@ std::string StoryProject::Compile()
         chip32 << "$" << fileName << " DC8 \"" << fileName + "." + ext << "\", 8\r\n";
     }
     chip32 << ".entry:\r\n";
-
-    chip32 << "\thalt\r\n";
 
     return chip32.str();
 }

@@ -1,4 +1,5 @@
-
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023-2099 Anthony Rabine <anthony@rabine.fr>
 
 #include <QAction>
 #include <QScreen>
@@ -49,7 +50,8 @@ int nodeX = 0.0;
 typedef void (*message_output_t)(QtMsgType , const QMessageLogContext &, const QString &);
 
 MainWindow::MainWindow()
-    : m_model(m_project)
+    : m_resourceModel(m_project)
+    , m_model(m_project)
     , m_scene(m_model)
     , m_settings("OpenStoryTeller", "OpenStoryTellerEditor")
 {
@@ -84,7 +86,7 @@ MainWindow::MainWindow()
         QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
     });
 
-    m_resourcesDock = new ResourcesDock(m_project);
+    m_resourcesDock = new ResourcesDock(m_project, m_resourceModel);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_resourcesDock);
     m_toolbar->AddDockToMenu(m_resourcesDock->toggleViewAction());
 
@@ -97,8 +99,7 @@ MainWindow::MainWindow()
     m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction());
 
     connect(m_vmDock, &VmDock::sigCompile, [=]() {
-        m_resourcesDock->SaveToProject();
-        m_scriptEditorDock->setScript(m_project.Compile());
+      //  m_scriptEditorDock->setScript(m_project.BuildResources());
     });
 
     connect(m_vmDock, &VmDock::sigStepInstruction, [=]() {
@@ -124,7 +125,7 @@ MainWindow::MainWindow()
     m_chooseFileUi.setupUi(m_chooseFileDialog);
     m_chooseFileDialog->close();
 
-    connect(&m_model, &StoryGraphModel::sigChooseFile, [&](NodeId id) {
+    connect(&m_model, &StoryGraphModel::sigChooseFile, [&](NodeId id, const QString &type) {
         m_chooseFileUi.tableView->setModel(&m_resourcesDock->getModel());
         m_chooseFileDialog->exec();
 
@@ -138,9 +139,8 @@ MainWindow::MainWindow()
             Resource res;
             if (m_project.GetResourceAt(index.row(), res))
             {
-                QJsonObject obj;
-                obj["image"] = res.file.c_str();
-                m_model.setNodeData(id, NodeRole::InternalData, obj.toVariantMap());
+                nlohmann::json obj = {{type.toStdString(), res.file}};
+                m_model.SetInternalData(id, obj);
             }
         }
     });
@@ -197,6 +197,10 @@ MainWindow::MainWindow()
         OpenProject(recent);
     });
 
+    connect(m_toolbar, &ToolBar::sigRun, this, [&]() {
+        BuildAndRun();
+    });
+
     // Install event handler now that everythin is initialized
     Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
@@ -209,8 +213,50 @@ MainWindow::MainWindow()
     qDebug() << "Welcome to StoryTeller Editor";
 
     CloseProject();
+    RefreshProjectInformation();
 
 //    QMetaObject::invokeMethod(this, "slotWelcome", Qt::QueuedConnection);
+}
+
+void MainWindow::BuildAndRun()
+{
+    // 1. Check if the model can be compiled, check for errors and report
+
+    // FIXME
+
+    // 2. Generate the assembly code from the model
+    std::string code  = m_project.BuildResources() + "\n";
+    code += m_model.Build();
+
+    // Add global functions
+    code += ReadResourceFile(":/scripts/media.asm").toStdString();
+
+    code += "\thalt\r\n";
+
+    m_scriptEditorDock->setScript(code.c_str());
+
+    // 3. Compile the assembly to machine binary
+   // buildScript();
+
+}
+
+
+QString MainWindow::ReadResourceFile(const QString &fileName)
+{
+    QString data;
+    QFile file(fileName);
+    if(!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "filenot opened";
+    }
+    else
+    {
+        qDebug() << "file opened";
+        data = file.readAll();
+    }
+
+    file.close();
+
+    return data;
 }
 
 void MainWindow::slotDefaultDocksPosition()
@@ -562,6 +608,8 @@ void MainWindow::OpenProject(const QString &filePath)
 
     nlohmann::json model;
 
+    m_resourceModel.BeginChange();
+
     if (m_project.Load(filePath.toStdString(), model))
     {
         m_model.Load(model);
@@ -572,14 +620,16 @@ void MainWindow::OpenProject(const QString &filePath)
         qWarning() << errorMsg;
         QMessageBox::critical(this, tr("Open project error"), errorMsg);
     }
+
+    m_resourceModel.EndChange();
+    RefreshProjectInformation();
 }
 
 
 void MainWindow::SaveProject()
 {
- //   QJsonObject jsonModel = m_model.save();
-
-
+    nlohmann::json model = m_model.Save();
+    m_project.Save(model);
     statusBar()->showMessage(tr("Saved '%1'").arg(m_project.GetProjectFilePath().c_str()), 2000);
 }
 

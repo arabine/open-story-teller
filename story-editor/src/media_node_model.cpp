@@ -43,8 +43,16 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     });
 
     connect(m_ui.selectImageButton, &QPushButton::clicked, [&](bool enable) {
-        emit m_model.sigChooseFile(getNodeId());
+        emit m_model.sigChooseFile(getNodeId(), "image");
     });
+
+    // default model
+    m_mediaData = {
+        {"image", ""},
+        {"sound", ""}
+    };
+
+    m_mediaData.merge_patch(StoryNodeBase::ToJson());
 }
 
 nlohmann::json MediaNodeModel::ToJson() const
@@ -58,7 +66,7 @@ nlohmann::json MediaNodeModel::ToJson() const
 
 void MediaNodeModel::FromJson(nlohmann::json &j)
 {
-    m_mediaData = j;
+    m_mediaData.merge_patch(j);
 
     // Display loaded image
     std::string imagePath = m_mediaData["image"].get<std::string>();

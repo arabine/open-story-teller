@@ -10,5 +10,6 @@
         <file>../assets/folder-open-outline.svg</file>
         <file>../assets/welcome.png</file>
         <file>../assets/play-circle-green.png</file>
+        <file>../scripts/media.asm</file>
     </qresource>
 </RCC>

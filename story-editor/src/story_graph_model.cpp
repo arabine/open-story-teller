@@ -327,9 +327,10 @@ namespace QtNodes {
     }
 
     void from_json(const nlohmann::json& j, ConnectionId& p) {
-//        j.at("name").get_to(p.name);
-//        j.at("address").get_to(p.address);
-//        j.at("age").get_to(p.age);
+        j.at("outNodeId").get_to(p.outNodeId);
+        j.at("outPortIndex").get_to(p.outPortIndex);
+        j.at("intNodeId").get_to(p.inNodeId);
+        j.at("inPortIndex").get_to(p.inPortIndex);
     }
 } // namespace QtNodes
 
@@ -360,6 +361,8 @@ void StoryGraphModel::Load(const nlohmann::json &j)
     for (auto& element : nodesJsonArray) {
         LoadNode(element);
     }
+
+    std::cout << j.dump(4) << std::endl;
 
     nlohmann::json connectionJsonArray = j["connections"];
 
@@ -396,6 +399,18 @@ nlohmann::json StoryGraphModel::SaveNode(NodeId const nodeId) const
     }
 
     return nodeJson;
+}
+
+std::string StoryGraphModel::BuildNode(NodeId const nodeId) const
+{
+    std::string code;
+
+    auto it = _models.find(nodeId);
+    if (it == _models.end())
+        return "";
+
+    auto &model = it->second;
+    return model->Build();
 }
 
 
@@ -445,7 +460,17 @@ void StoryGraphModel::LoadNode(const nlohmann::json &nodeJson)
     }
 }
 
+std::string StoryGraphModel::Build()
+{
+    std::string code;
+    nlohmann::json nodesJsonArray;
+    for (auto const nodeId : allNodeIds()) {
 
+        code = BuildNode(nodeId) + "\n";
+    }
+
+    return code;
+}
 
 void StoryGraphModel::addPort(NodeId nodeId, PortType portType, PortIndex portIndex)
 {

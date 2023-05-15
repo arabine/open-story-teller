@@ -10,7 +10,7 @@ class ResourcesDock : public DockWidgetBase
 {
     Q_OBJECT
 public:
-    ResourcesDock(StoryProject &project);
+    ResourcesDock(StoryProject &project, ResourceModel &model);
 
     void Initialize();
 
@@ -19,15 +19,10 @@ public:
 
     void SetFilterType(const QString &type) { m_proxyModel.setFilterType(type); }
 
-    void Append(const Resource &res);
-
-    void SaveToProject();
-    void Clear();
-
 private:
     StoryProject &m_project;
     Ui::ostResources m_uiOstResources;
-    ResourceModel m_resourcesModel;
+    ResourceModel &m_resourcesModel;
     ResourceFilterProxyModel m_proxyModel;
 };
 

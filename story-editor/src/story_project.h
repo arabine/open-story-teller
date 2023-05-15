@@ -67,8 +67,8 @@ struct StoryProject
         m_resources.clear();
         m_initialized = false;
     }
-
-    std::string Compile();
+    
+    std::string BuildResources();
     void SetImageFormat(ImageFormat format);
     void SetSoundFormat(SoundFormat format);
     void SetDisplayFormat(int w, int h);

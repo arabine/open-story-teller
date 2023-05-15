@@ -48,7 +48,12 @@ public:
         // default impl
     }
 
+    virtual std::string Build() {
+        return "";
+    }
+
     NodeGeometryData  &geometryData() { return m_geometryData; }
+
 
 private:
     NodeId m_nodeId;

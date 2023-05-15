@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023-2099 Anthony Rabine <anthony@rabine.fr>
+
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
@@ -44,7 +47,7 @@ using QtNodes::NodeDelegateModelRegistry;
 #include "log_dock.h"
 #include "toolbar.h"
 #include "new_project_dialog.h"
-
+#include "resource_model.h"
 
 struct DebugContext
 {
@@ -116,6 +119,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
 
+protected:
+    void BuildAndRun();
+
 private slots:
     void stepInstruction();
     void closeEvent(QCloseEvent *event);
@@ -124,6 +130,7 @@ private slots:
 
 private:
     StoryProject m_project;
+    ResourceModel m_resourceModel;
     StoryGraphModel m_model;
     StoryGraphScene m_scene;
     GraphicsView *m_view{nullptr};
@@ -176,6 +183,7 @@ private:
     void ExitProgram();
     void EnableProject();
     void OpenProject(const QString &filePath);
+    QString ReadResourceFile(const QString &fileName);
 };
 
 #endif // MAIN_WINDOW_H

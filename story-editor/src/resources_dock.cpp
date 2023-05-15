@@ -2,9 +2,9 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
-ResourcesDock::ResourcesDock(StoryProject &project)
+ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
     : m_project(project)
-    , m_resourcesModel(project)
+    , m_resourcesModel(model)
     , DockWidgetBase(tr("Resources"), true)
 {
     setObjectName("ResourcesDock");  // used to save the state
@@ -53,30 +53,6 @@ ResourcesDock::ResourcesDock(StoryProject &project)
             m_resourcesModel.append(res);
         }
     });
-}
-
-void ResourcesDock::Initialize()
-{
-
-}
-
-void ResourcesDock::Append(const Resource &res)
-{
-    m_resourcesModel.append(res);
-}
-
-void ResourcesDock::SaveToProject()
-{
-    m_project.Clear();
-//    for (auto & r : m_resourcesModel.GetData())
-//    {
-//        m_project.m_images.push_back(r);
-    //    }
-}
-
-void ResourcesDock::Clear()
-{
-    m_resourcesModel.Clear();
 }
 
 

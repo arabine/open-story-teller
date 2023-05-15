@@ -58,6 +58,16 @@ void ResourceModel::Clear()
     endResetModel();
 }
 
+void ResourceModel::BeginChange()
+{
+    beginResetModel();
+}
+
+void ResourceModel::EndChange()
+{
+    endResetModel();
+}
+
 
 // ------------------------------- PROXY MODEL -------------------------------
 

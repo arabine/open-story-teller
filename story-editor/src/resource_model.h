@@ -19,6 +19,8 @@ public:
     void append(const Resource & res);
 
     void Clear();
+    void BeginChange();
+    void EndChange();
 
 private:
     StoryProject &m_project;

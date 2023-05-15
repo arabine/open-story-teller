@@ -127,8 +127,11 @@ public:
     nlohmann::json SaveNode(NodeId const) const;
     void LoadNode(const nlohmann::json &nodeJson); // Creates a new node
 
+    std::string Build();
+
+    std::string BuildNode(const NodeId nodeId) const;
 signals:
-    void sigChooseFile(NodeId id);
+    void sigChooseFile(NodeId id, const QString &type);
 
 private:
     StoryProject &m_project;
