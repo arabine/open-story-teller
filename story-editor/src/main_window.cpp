@@ -76,11 +76,11 @@ MainWindow::MainWindow()
 
     m_logDock = new LogDock();
     addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_logDock);
-    m_toolbar->AddDockToMenu(m_logDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_logDock->toggleViewAction(), m_logDock);
 
     m_ostHmiDock = new OstHmiDock();
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ostHmiDock);
-    m_toolbar->AddDockToMenu(m_ostHmiDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_ostHmiDock->toggleViewAction(), m_ostHmiDock);
 
     connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [=]() {
         QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
@@ -88,15 +88,15 @@ MainWindow::MainWindow()
 
     m_resourcesDock = new ResourcesDock(m_project, m_resourceModel);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_resourcesDock);
-    m_toolbar->AddDockToMenu(m_resourcesDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_resourcesDock->toggleViewAction(), m_resourcesDock);
 
     m_scriptEditorDock = new ScriptEditorDock();
     addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_scriptEditorDock);
-    m_toolbar->AddDockToMenu(m_scriptEditorDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_scriptEditorDock->toggleViewAction(), m_scriptEditorDock);
 
     m_vmDock = new VmDock(m_assembler);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_vmDock);
-    m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction(), m_vmDock);
 
     connect(m_vmDock, &VmDock::sigCompile, [=]() {
       //  m_scriptEditorDock->setScript(m_project.BuildResources());
@@ -112,11 +112,11 @@ MainWindow::MainWindow()
 
     m_ramView = new MemoryViewDock("RamViewDock", "RAM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ramView);
-    m_toolbar->AddDockToMenu(m_ramView->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_ramView->toggleViewAction(), m_ramView);
 
     m_romView = new MemoryViewDock("RomViewDock", "ROM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_romView);
-    m_toolbar->AddDockToMenu(m_romView->toggleViewAction());
+    m_toolbar->AddDockToMenu(m_romView->toggleViewAction(), m_romView);
 
     tabifyDockWidget(m_vmDock, m_romView);
     tabifyDockWidget(m_romView, m_ramView);
@@ -208,7 +208,7 @@ MainWindow::MainWindow()
 
     qInstallMessageHandler(cb);
 
-    readSettings();
+    readSettings(); // restore all windows preferences
     qDebug() << "Settings location: " << m_settings.fileName();
     qDebug() << "Welcome to StoryTeller Editor";
 
@@ -221,7 +221,6 @@ MainWindow::MainWindow()
 void MainWindow::BuildAndRun()
 {
     // 1. Check if the model can be compiled, check for errors and report
-
     // FIXME
 
     // 2. Generate the assembly code from the model
@@ -231,7 +230,7 @@ void MainWindow::BuildAndRun()
     // Add global functions
     code += ReadResourceFile(":/scripts/media.asm").toStdString();
 
-    code += "\thalt\r\n";
+//    code += "\thalt\r\n";
 
     m_scriptEditorDock->setScript(code.c_str());
 
@@ -298,6 +297,9 @@ void MainWindow::readSettings()
     // Restore recent projects list
     m_recentProjects = m_settings.value("RecentProjects").toStringList();
     m_toolbar->GenerateRecentProjectsMenu(m_recentProjects);
+
+    // retore prefered visibility
+    m_toolbar->SetDocksPreferences(m_settings.value("PreferedVisibility"));
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -307,6 +309,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     // Memorize recent projects list
     m_settings.setValue("RecentProjects", m_recentProjects);
+
+    // Memorize all docks prefered visibiliy
+    m_settings.setValue("PreferedVisibility", m_toolbar->GetDocksPreferences());
 
     QMainWindow::closeEvent(event);
 }

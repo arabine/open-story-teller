@@ -18,7 +18,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                         ".",
-                                                        tr("Images (*.bmp)"));
+                                                        tr("Images (*.bmp *.png *.jpg)"));
 
         if (std::filesystem::exists(fileName.toStdString()))
         {
@@ -30,7 +30,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             res.format = "BMP";
             res.type = "image";
             res.file = p.filename();
-            m_resourcesModel.append(res);
+            m_resourcesModel.Append(res);
         }
     });
 
@@ -38,7 +38,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                         ".",
-                                                        tr("Sound files (*.wav, *.mp3, *.m4a)"));
+                                                        tr("Sound files (*.wav *.mp3 *.m4a)"));
 
         if (std::filesystem::exists(fileName.toStdString()))
         {
@@ -50,7 +50,21 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             res.format = "WAV";
             res.type = "sound";
             res.file = p.filename();
-            m_resourcesModel.append(res);
+            m_resourcesModel.Append(res);
+        }
+    });
+
+    connect(m_uiOstResources.deleteButton, &QPushButton::clicked, [=](bool checked) {
+        QItemSelectionModel *selectionModel = m_uiOstResources.resourcesView->selectionModel();
+        // Récupération des lignes sélectionnées
+        QModelIndexList selectedRows = selectionModel->selectedRows();
+
+        if (selectedRows.count() > 0)
+        {
+            for (int i = 0; i < selectedRows.count(); i++)
+            {
+                m_resourcesModel.Delete(selectedRows.at(i).row());
+            }
         }
     });
 }

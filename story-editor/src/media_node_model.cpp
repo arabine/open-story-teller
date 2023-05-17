@@ -8,7 +8,7 @@
 #include <QtCore/QEvent>
 #include <QtWidgets/QFileDialog>
 #include <QMenu>
-
+#include <qdebug.h>
 
 MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     : m_model(model)
@@ -46,6 +46,16 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
         emit m_model.sigChooseFile(getNodeId(), "image");
     });
 
+    connect(m_ui.selectSoundButton, &QPushButton::clicked, [&](bool enable) {
+        emit m_model.sigChooseFile(getNodeId(), "sound");
+    });
+
+    connect(m_ui.playSoundButton, &QPushButton::clicked, [&](bool enable) {
+        m_model.PlaySound(m_soundFilePath);
+    });
+
+    m_ui.playSoundButton->setEnabled(false);
+
     // default model
     m_mediaData = {
         {"image", ""},
@@ -53,6 +63,11 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     };
 
     m_mediaData.merge_patch(StoryNodeBase::ToJson());
+}
+
+QString MediaNodeModel::caption() const
+{
+    return QString("Media Node " + QString::number(getNodeId()));
 }
 
 nlohmann::json MediaNodeModel::ToJson() const
@@ -66,30 +81,23 @@ nlohmann::json MediaNodeModel::ToJson() const
 
 void MediaNodeModel::FromJson(nlohmann::json &j)
 {
-    m_mediaData.merge_patch(j);
-
-    // Display loaded image
-    std::string imagePath = m_mediaData["image"].get<std::string>();
-
-    if (imagePath.size() > 0)
-    {
-        setImage(imagePath.c_str());
-    }
+    setInternalData(j); // Merge with SetInternalData ?
 }
 
-void MediaNodeModel::setImage(const QString &imagePath)
+void MediaNodeModel::setImage(const QString &fileName)
 {
-    QPixmap pix(imagePath);
+    QPixmap pix(m_model.BuildFullImagePath(fileName));
 
     if (pix.isNull())
     {
-        std::cout << "!!!!!!! " << m_mediaData["image"].get<std::string>() << std::endl;
+        qCritical() << "Can't find image: " << fileName;
     }
 
     int w = m_ui.image->width();
     int h = m_ui.image->height();
     pix.scaled(w, h, Qt::KeepAspectRatio);
     m_ui.image->setPixmap(pix);
+    m_ui.imageName->setText(fileName);
 }
 
 void MediaNodeModel::setInternalData(const nlohmann::json &j)
@@ -98,8 +106,72 @@ void MediaNodeModel::setInternalData(const nlohmann::json &j)
         setImage(j["image"].get<std::string>().c_str());
     }
 
+    if (j.contains("sound")) {
+        QString fileName = j["sound"].get<std::string>().c_str();
+        m_soundFilePath = m_model.BuildFullSoundPath(fileName);
+        m_ui.soundName->setText(fileName);
+        m_ui.playSoundButton->setEnabled(true);
+    }
+
     // Merge new data into local object
     m_mediaData.merge_patch(j);
+}
+
+std::string MediaNodeModel::GenerateConstants()
+{
+    std::string s;
+
+    std::string image = m_mediaData["image"].get<std::string>();
+    std::string sound = m_mediaData["sound"].get<std::string>();
+    if (image.size() > 0)
+    {
+        s = StoryProject::FileToConstant(image);
+    }
+    if (sound.size() > 0)
+    {
+        s = StoryProject::FileToConstant(sound);
+    }
+
+    // Generate choice table if needed (out ports > 1)
+
+    return s;
+}
+
+std::string MediaNodeModel::Build()
+{
+    std::stringstream ss;
+
+    ss << R"(; ---------------- )" << GetNodeTitle() << "\n";
+    std::string image = m_mediaData["image"].get<std::string>();
+    std::string sound = m_mediaData["sound"].get<std::string>();
+    if (image.size() > 0)
+    {
+        ss << "lcons r0, $" << image  << "\n";
+    }
+    else
+    {
+        ss << "lcons r0, 0\n";
+    }
+
+    if (sound.size() > 0)
+    {
+        ss << "lcons r1, $" << sound  << "\n";
+    }
+    else
+    {
+        ss << "lcons r1, 0\n";
+    }
+
+
+/*
+
+
+
+        syscall 1
+        lcons r0, $ChoiceObject
+            jump .media ; no return possible, so a jump is enough
+*/
+    return ss.str();
 }
 
 unsigned int MediaNodeModel::nPorts(PortType portType) const

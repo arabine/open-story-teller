@@ -21,7 +21,8 @@ public:
 
     void Close();
     void Open();
-
+    void SetPreferedVisibility(bool visibility);
+    bool GetPreferedVisibility() const { return m_visibility; }
 private:
     enum tribool: uint8_t {False = 0, True = 1, Unknown = 2};
     tribool m_visibility{Unknown};

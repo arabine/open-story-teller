@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023-2099 Anthony Rabine <anthony@rabine.fr>
+
 #pragma once
 
 #include <iostream>
@@ -18,7 +21,6 @@ using QtNodes::PortType;
 
 #include "story_graph_model.h"
 #include "story_node_base.h"
-#include "story_project.h"
 
 /// The model dictates the number of inputs and outputs for the Node.
 /// In this example it has no logic.
@@ -31,7 +33,7 @@ public:
     ~MediaNodeModel() = default;
 
 public:
-    QString caption() const override { return QString("Media Node"); }
+    QString caption() const override;
 
     QString name() const override { return QString("MediaNode"); }
 
@@ -40,6 +42,9 @@ public:
     virtual void FromJson(nlohmann::json &j) override;
 
     void setInternalData(const nlohmann::json &j) override;
+
+    virtual std::string GenerateConstants() override;
+    virtual std::string Build() override;
 
 public:
     virtual QString modelName() const { return QString("MediaNode"); }
@@ -65,6 +70,8 @@ private:
 
     unsigned int m_ports{1};
     QWidget *m_widget;
+
+    QString m_soundFilePath;
 
     Ui::mediaNodeUi m_ui;
     std::shared_ptr<NodeData> m_nodeData;

@@ -43,4 +43,9 @@ void DockWidgetBase::Open()
     }
 }
 
+void DockWidgetBase::SetPreferedVisibility(bool visibility)
+{
+    m_visibility = visibility ? tribool::True : tribool::False;
+}
+
 

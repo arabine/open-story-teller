@@ -86,12 +86,13 @@ struct StoryProject
     static std::string GetFileExtension(const std::string &FileName);
     static std::string GetFileName(const std::string &path);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
-
+    static std::string FileToConstant(const std::string &FileName);
 
     // -------------  Resources Management
     void AppendResource(const Resource &res);
     bool GetResourceAt(int index, Resource &resOut);
     void ClearResources();
+    void DeleteResourceAt(int index);
     int ResourcesSize() const { return m_resources.size(); }
 
     std::vector<Resource>::const_iterator Begin() const { return m_resources.begin(); }

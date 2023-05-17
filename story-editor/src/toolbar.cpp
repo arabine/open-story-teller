@@ -1,5 +1,6 @@
 #include "toolbar.h"
 #include "qmenubar.h"
+#include "src/dock_widget_base.h"
 
 #include <QMessageBox>
 
@@ -108,6 +109,33 @@ void ToolBar::GenerateRecentProjectsMenu(const QStringList &recents)
     }
 }
 
+QVariant ToolBar::GetDocksPreferences() const
+{
+    QMap<QString, QVariant> prefs;
+
+    for (auto d : m_docksList)
+    {
+        prefs[d->objectName()] = d->GetPreferedVisibility();
+    }
+
+    return prefs;
+}
+
+QVariant ToolBar::SetDocksPreferences(const QVariant &prefs)
+{
+    QMap<QString, QVariant> p = prefs.toMap();
+
+    for (auto d : m_docksList)
+    {
+        if (p.contains(d->objectName()))
+        {
+            d->SetPreferedVisibility(p[d->objectName()].toBool());
+        }
+    }
+
+    return prefs;
+}
+
 void ToolBar::SetActionsActive(bool enable)
 {
     for (auto d : m_actionDockList)
@@ -128,8 +156,12 @@ void ToolBar::slotAbout()
                           "Build your own stories on an open source hardware."));
 }
 
-void ToolBar::AddDockToMenu(QAction *action)
+void ToolBar::AddDockToMenu(QAction *action, DockWidgetBase *dock)
 {
     m_windowsMenu->addAction(action);
     m_actionDockList.push_back(action);
+    m_docksList.push_back(dock);
+    connect(action, &QAction::triggered, this, [dock](bool checked) {
+        dock->SetPreferedVisibility(checked);
+    });
 }

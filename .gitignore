@@ -16,3 +16,7 @@ story-editor/CMakeLists.txt.user
 hardware/kicad/ost-pico-addon/ost-pico-addon-backups/
 
 hardware/kicad/ost-pico-addon/fp-info-cache
+
+*.kra~
+
+*.png~

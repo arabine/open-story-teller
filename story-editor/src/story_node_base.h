@@ -31,7 +31,7 @@ public:
     }
 
     void setNodeId(NodeId id) { m_nodeId = id; }
-    NodeId getNodeId() { return m_nodeId; }
+    NodeId getNodeId() const { return m_nodeId; }
 
     virtual nlohmann::json ToJson() const {
         nlohmann::json j;
@@ -48,15 +48,21 @@ public:
         // default impl
     }
 
+    virtual std::string GenerateConstants() {
+        return "";
+    }
+
     virtual std::string Build() {
         return "";
     }
 
     NodeGeometryData  &geometryData() { return m_geometryData; }
 
+    std::string GetNodeTitle() const { return m_nodeTitle; }
 
 private:
     NodeId m_nodeId;
+    std::string m_nodeTitle{"Media node"};
     NodeGeometryData m_geometryData;
 };
 

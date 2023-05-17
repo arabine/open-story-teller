@@ -45,10 +45,17 @@ QVariant ResourceModel::headerData(int section, Qt::Orientation orientation, int
     }
 }
 
-void ResourceModel::append(const Resource &res) {
+void ResourceModel::Append(const Resource &res) {
     beginInsertRows({}, m_project.ResourcesSize(), m_project.ResourcesSize());
     m_project.AppendResource(res);
     endInsertRows();
+}
+
+void ResourceModel::Delete(int row)
+{
+    beginRemoveRows({}, row, row);
+    m_project.DeleteResourceAt(row);
+    endRemoveRows();
 }
 
 void ResourceModel::Clear()

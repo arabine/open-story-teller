@@ -58,23 +58,26 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
             m_name = projectData["name"].get<std::string>();
             m_uuid = projectData["uuid"].get<std::string>();
 
-            nlohmann::json resourcesData = projectData["resources"];
-
-            for (const auto &obj : resourcesData)
+            if (j.contains("resources"))
             {
-                Resource rData;
+                nlohmann::json resourcesData = j["resources"];
 
-                rData.type = obj["type"].get<std::string>();
-                rData.format = obj["format"].get<std::string>();
-                rData.description = obj["description"].get<std::string>();
-                rData.file = obj["file"].get<std::string>();
-                m_resources.push_back(rData);
-            }
+                for (const auto &obj : resourcesData)
+                {
+                    Resource rData;
 
-            if (j.contains("nodegraph"))
-            {
-                model = j["nodegraph"];
-                success = true;
+                    rData.type = obj["type"].get<std::string>();
+                    rData.format = obj["format"].get<std::string>();
+                    rData.description = obj["description"].get<std::string>();
+                    rData.file = obj["file"].get<std::string>();
+                    m_resources.push_back(rData);
+                }
+
+                if (j.contains("nodegraph"))
+                {
+                    model = j["nodegraph"];
+                    success = true;
+                }
             }
         }
 
@@ -244,6 +247,15 @@ void StoryProject::ReplaceCharacter(std::string &theString, const std::string &t
     while (found != std::string::npos);
 }
 
+std::string StoryProject::FileToConstant(const std::string &FileName)
+{
+    std::string fileName = GetFileName(FileName);
+    std::string ext = GetFileExtension(fileName);
+    EraseString(fileName, "." + ext); // on retire l'extension du pack
+
+    return "$" + fileName + " DC8 \"" + fileName + "." + ext + "\", 8\r\n";
+}
+
 void StoryProject::AppendResource(const Resource &res)
 {
     m_resources.push_back(res);
@@ -263,6 +275,14 @@ bool StoryProject::GetResourceAt(int index, Resource &resOut)
 void StoryProject::ClearResources()
 {
     m_resources.clear();
+}
+
+void StoryProject::DeleteResourceAt(int index)
+{
+    if ((index >= 0) && (index < m_resources.size()))
+    {
+        m_resources.erase(m_resources.begin() + index);
+    }
 }
 
 std::string StoryProject::GetFileExtension(const std::string &fileName)

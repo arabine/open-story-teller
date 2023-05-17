@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023-2099 Anthony Rabine <anthony@rabine.fr>
+
 #pragma once
 
 #include "src/story_project.h"
@@ -10,6 +13,8 @@
 
 #include <QtNodes/NodeDelegateModel>
 #include <QtNodes/NodeDelegateModelRegistry>
+#include <QAudioOutput>
+#include <QMediaPlayer>
 
 using QtNodes::ConnectionStyle;
 using QtNodes::NodeRole;
@@ -118,6 +123,10 @@ public:
     }
 
     StoryProject &GetProject()  { return m_project; };
+    QString GetImagesDir() const;
+    QString GetSoundsDir() const;
+    QString BuildFullImagePath(const QString &fileName) const;
+    QString BuildFullSoundPath(const QString &fileName) const;
     void Clear();
     void SetInternalData(NodeId nodeId, nlohmann::json &j);
 
@@ -129,7 +138,11 @@ public:
 
     std::string Build();
 
-    std::string BuildNode(const NodeId nodeId) const;
+
+    // Centralized for wide usage
+    void PlaySound(const QString &fileName);
+
+    NodeId FindFirstNode() const;
 signals:
     void sigChooseFile(NodeId id, const QString &type);
 
@@ -164,4 +177,7 @@ private:
 
     /// A convenience variable needed for generating unique node ids.
     unsigned int _nextNodeId{0};
+
+    QMediaPlayer *m_player{nullptr};
+    QAudioOutput *m_audioOutput{nullptr};
 };

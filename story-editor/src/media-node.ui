@@ -34,6 +34,9 @@
      <property name="text">
       <string>TextLabel</string>
      </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item>
@@ -59,9 +62,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_4">
+      <widget class="QLabel" name="imageName">
        <property name="text">
-        <string>TextLabel</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -97,9 +100,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_5">
+      <widget class="QLabel" name="soundName">
        <property name="text">
-        <string>TextLabel</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -111,7 +114,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_4">
+      <widget class="QPushButton" name="playSoundButton">
        <property name="icon">
         <iconset resource="ost-editor.qrc">
          <normaloff>:/assets/play-circle.png</normaloff>:/assets/play-circle.png</iconset>

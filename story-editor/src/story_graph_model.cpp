@@ -4,11 +4,14 @@
 #include <QtNodes/ConnectionIdUtils>
 #include <QJsonArray>
 #include <iterator>
+#include <QDir>
 
 StoryGraphModel::StoryGraphModel(StoryProject &project)
     : m_project(project)
 {
-
+    m_player = new QMediaPlayer;
+    m_audioOutput = new QAudioOutput;
+    m_player->setAudioOutput(m_audioOutput);
 }
 
 StoryGraphModel::~StoryGraphModel()
@@ -146,7 +149,7 @@ QVariant StoryGraphModel::nodeData(NodeId nodeId, NodeRole role) const
         break;
 
     case NodeRole::Caption:
-        result = QString("Node");
+        result = model->caption();
         break;
 
     case NodeRole::Style: {
@@ -168,7 +171,6 @@ QVariant StoryGraphModel::nodeData(NodeId nodeId, NodeRole role) const
     case NodeRole::Widget: {
         auto w = model->embeddedWidget();
         result = QVariant::fromValue(w);
-//        result = QVariant::fromValue(widget(nodeId));
         break;
     }
     }
@@ -321,7 +323,7 @@ namespace QtNodes {
         j = nlohmann::json{
             {"outNodeId", static_cast<qint64>(p.outNodeId)},
             {"outPortIndex", static_cast<qint64>(p.outPortIndex)},
-            {"intNodeId", static_cast<qint64>(p.inNodeId)},
+            {"inNodeId", static_cast<qint64>(p.inNodeId)},
             {"inPortIndex", static_cast<qint64>(p.inPortIndex)},
         };
     }
@@ -329,7 +331,7 @@ namespace QtNodes {
     void from_json(const nlohmann::json& j, ConnectionId& p) {
         j.at("outNodeId").get_to(p.outNodeId);
         j.at("outPortIndex").get_to(p.outPortIndex);
-        j.at("intNodeId").get_to(p.inNodeId);
+        j.at("inNodeId").get_to(p.inNodeId);
         j.at("inPortIndex").get_to(p.inPortIndex);
     }
 } // namespace QtNodes
@@ -401,16 +403,11 @@ nlohmann::json StoryGraphModel::SaveNode(NodeId const nodeId) const
     return nodeJson;
 }
 
-std::string StoryGraphModel::BuildNode(NodeId const nodeId) const
+void StoryGraphModel::PlaySound(const QString &fileName)
 {
-    std::string code;
-
-    auto it = _models.find(nodeId);
-    if (it == _models.end())
-        return "";
-
-    auto &model = it->second;
-    return model->Build();
+    m_player->setSource(QUrl::fromLocalFile(fileName));
+    m_audioOutput->setVolume(50);
+    m_player->play();
 }
 
 
@@ -460,16 +457,67 @@ void StoryGraphModel::LoadNode(const nlohmann::json &nodeJson)
     }
 }
 
-std::string StoryGraphModel::Build()
+NodeId StoryGraphModel::FindFirstNode() const
 {
-    std::string code;
-    nlohmann::json nodesJsonArray;
-    for (auto const nodeId : allNodeIds()) {
+    NodeId id{InvalidNodeId};
 
-        code = BuildNode(nodeId) + "\n";
+    // First node is the one without connection on its input port
+
+    for (auto const nodeId : allNodeIds())
+    {
+        bool foundConnection{false};
+        for (auto& c : _connectivity)
+        {
+            if (c.outNodeId == nodeId)
+            {
+                foundConnection = true;
+            }
+
+        }
+
+        if (!foundConnection)
+        {
+            id = nodeId;
+            qDebug() << "First node is: " << id;
+            break;
+        }
     }
 
-    return code;
+    return id;
+}
+
+std::string StoryGraphModel::Build()
+{
+    std::stringstream chip32;
+
+    FindFirstNode();
+
+    chip32 << "\tjump         .entry\r\n";
+
+    // First generate all constants
+    for (auto const nodeId : allNodeIds())
+    {
+        auto it = _models.find(nodeId);
+        if (it != _models.end())
+        {
+            chip32 << it->second->GenerateConstants() << "\n";
+        }
+    }
+
+    chip32 << ".entry:\r\n";
+
+    nlohmann::json nodesJsonArray;
+    for (auto const nodeId : allNodeIds())
+    {
+        auto it = _models.find(nodeId);
+        if (it == _models.end())
+            return "";
+
+        auto &model = it->second;
+        chip32 << model->Build() << "\n";
+    }
+
+    return chip32.str();
 }
 
 void StoryGraphModel::addPort(NodeId nodeId, PortType portType, PortIndex portIndex)
@@ -495,6 +543,26 @@ void StoryGraphModel::removePort(NodeId nodeId, PortType portType, PortIndex por
     portsAboutToBeDeleted(nodeId, portType, first, last);
 
     portsDeleted();
+}
+
+QString StoryGraphModel::GetImagesDir() const
+{
+    return QString(m_project.GetWorkingDir().c_str()) + QDir::separator() + "images";
+}
+
+QString StoryGraphModel::BuildFullImagePath(const QString &fileName) const
+{
+    return GetImagesDir() + QDir::separator() + fileName;
+}
+
+QString StoryGraphModel::GetSoundsDir() const
+{
+    return QString(m_project.GetWorkingDir().c_str()) + QDir::separator() + "sounds";
+}
+
+QString StoryGraphModel::BuildFullSoundPath(const QString &fileName) const
+{
+    return GetSoundsDir() + QDir::separator() + fileName;
 }
 
 void StoryGraphModel::Clear()
