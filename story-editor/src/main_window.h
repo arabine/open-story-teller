@@ -13,6 +13,7 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QDockWidget>
+#include <QTimer>
 
 #include <QtNodes/ConnectionStyle>
 #include <QtNodes/GraphicsView>
@@ -136,6 +137,7 @@ private:
     GraphicsView *m_view{nullptr};
 
     // Qt stuff
+    QTimer *m_runTimer{nullptr};
     ToolBar *m_toolbar{nullptr};
     OstHmiDock *m_ostHmiDock{nullptr};
     ResourcesDock *m_resourcesDock{nullptr};
@@ -166,12 +168,12 @@ private:
     void createStatusBar();
     void SaveProject();
     void DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId);
-    void buildScript();
+    void BuildScript();
     void highlightNextLine();
     void readSettings();
     void updateAll();
     uint8_t Syscall(uint8_t code);
-    QString GetFileName(uint32_t addr);
+    QString GetFileNameFromMemory(uint32_t addr);
 
     bool event(QEvent *event);
     void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);

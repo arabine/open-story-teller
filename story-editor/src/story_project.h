@@ -68,7 +68,6 @@ struct StoryProject
         m_initialized = false;
     }
     
-    std::string BuildResources();
     void SetImageFormat(ImageFormat format);
     void SetSoundFormat(SoundFormat format);
     void SetDisplayFormat(int w, int h);
@@ -85,6 +84,7 @@ struct StoryProject
 
     static std::string GetFileExtension(const std::string &FileName);
     static std::string GetFileName(const std::string &path);
+    static std::string RemoveFileExtension(const std::string &FileName);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
     static std::string FileToConstant(const std::string &FileName);
 

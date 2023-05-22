@@ -40,44 +40,44 @@ extern "C" {
 typedef enum
 {
     // system:
-    OP_NOP = 0,  // do nothing
-    OP_HALT = 1, // halt execution
-    OP_SYSCALL = 2,  // system call handled by user-registered function, 4 arguments (R0 - R3) passed by value
+    OP_NOP = 0,  ///< do nothing
+    OP_HALT = 1, ///< halt execution
+    OP_SYSCALL = 2,  ///< system call handled by user-registered function, 4 arguments (R0 - R3) passed by value
     // constants:
-    OP_LCONS = 3,  // store a value in a register, e.g.: lcons r0, 0xA2 0x00 0x00 0x00
-                   // can also load a variable address: lcons r2, $DataInRam
+    OP_LCONS = 3,  ///< store a value in a register, e.g.: lcons r0, 0xA2 0x00 0x00 0x00
+                   ///< can also load a variable address: lcons r2, $DataInRam
 
     // register operations:
-    OP_MOV = 4, // copy a value between registers, e.g.: mov r0, r2
+    OP_MOV = 4, ///< copy a value between registers, e.g.: mov r0, r2
     // stack:
-    OP_PUSH = 5, // push a register onto the stack, e.g.: push r0
-    OP_POP = 6,  // pop the first element of the stack to a register, e.g.: pop r0
+    OP_PUSH = 5, ///< push a register onto the stack, e.g.: push r0
+    OP_POP = 6,  ///< pop the first element of the stack to a register, e.g.: pop r0
 
     // memory get/set from/to an address. The last argument is a size (1, 2 or 4 bytes)
-    OP_STORE = 7,   // copy a value from a register to a ram address located in a register, specific size e.g. : store @r4, r1, 2 (2 bytes)
-    OP_LOAD = 8,   // copy a value from a ram address located in a register to a register, specific size e.g.: load r0, @r3, 1 (1 byte)
+    OP_STORE = 7,   ///< copy a value from a register to a ram address located in a register, specific size e.g. : store @r4, r1, 2 (2 bytes)
+    OP_LOAD = 8,   ///< copy a value from a ram address located in a register to a register, specific size e.g.: load r0, @r3, 1 (1 byte)
 
     // arithmetic:
-    OP_ADD = 9,  // sum and store in first reg, e.g.: add r0, r2
-    OP_SUB = 10,  // subtract and store in first reg, e.g.: sub r0, r2
-    OP_MUL = 11,  // multiply and store in first reg, e.g.: mul r0, r2
-    OP_DIV = 12,  // divide and store in first reg, remain in second, e.g.: div r0, r2
+    OP_ADD = 9,  ///<  sum and store in first reg, e.g.: add r0, r2
+    OP_SUB = 10,  ///<  subtract and store in first reg, e.g.: sub r0, r2
+    OP_MUL = 11,  ///<  multiply and store in first reg, e.g.: mul r0, r2
+    OP_DIV = 12,  ///<  divide and store in first reg, remain in second, e.g.: div r0, r2
 
-    OP_SHL = 13,  // logical shift left, e.g.: shl r0, r1
-    OP_SHR = 14,  // logical shift right, e.g.: shr r0, r1
-    OP_ISHR = 15, // arithmetic shift right (for signed values), e.g.: ishr r0, r1
+    OP_SHL = 13,  ///<  logical shift left, e.g.: shl r0, r1
+    OP_SHR = 14,  ///<  logical shift right, e.g.: shr r0, r1
+    OP_ISHR = 15, ///<  arithmetic shift right (for signed values), e.g.: ishr r0, r1
 
-    OP_AND = 16,  // and two registers and store result in the first one, e.g.: and r0, r1
-    OP_OR = 17,   // or two registers and store result in the first one, e.g.: or r0, r1
-    OP_XOR = 18,  // xor two registers and store result in the first one, e.g.: xor r0, r1
-    OP_NOT = 19,  // not a register and store result, e.g.: not r0
+    OP_AND = 16,  ///<  and two registers and store result in the first one, e.g.: and r0, r1
+    OP_OR = 17,   ///<  or two registers and store result in the first one, e.g.: or r0, r1
+    OP_XOR = 18,  ///<  xor two registers and store result in the first one, e.g.: xor r0, r1
+    OP_NOT = 19,  ///<  not a register and store result, e.g.: not r0
 
     // branching/functions
-    OP_CALL = 20, // set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
-    OP_RET = 21,  // return to the address of last callee (RA), e.g.: ret
-    OP_JUMP = 22, //  jump to address (can use label or address), e.g.: jump .my_label
-    OP_SKIPZ = 23,  // skip next instruction if zero, e.g.: skipz r0
-    OP_SKIPNZ = 24, // skip next instruction if not zero, e.g.: skipnz r2
+    OP_CALL = 20, ///<  set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
+    OP_RET = 21,  ///<  return to the address of last callee (RA), e.g.: ret
+    OP_JUMP = 22, ///<   jump to address (can use label or address), e.g.: jump .my_label
+    OP_SKIPZ = 23,  ///<  skip next instruction if zero, e.g.: skipz r0
+    OP_SKIPNZ = 24, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;
@@ -185,6 +185,10 @@ typedef struct
 } virtual_mem_t;
 
 typedef uint8_t (*syscall_t)(uint8_t);
+
+#define SYSCALL_RET_OK          0   ///< Default state, continue execution immediately
+#define SYSCALL_RET_WAIT_EV     1   ///< Sets the VM in wait for event state
+
 
 typedef struct
 {

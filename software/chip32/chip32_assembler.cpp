@@ -340,6 +340,7 @@ bool Assembler::Parse(const std::string &data)
         if (pos != std::string::npos) {
             line.erase(pos);
         }
+        line.erase(std::remove(line.begin(), line.end(), '\t'), line.end()); // remove tabulations
         if (std::all_of(line.begin(), line.end(), ::isspace)) continue;
 
         // Split the line

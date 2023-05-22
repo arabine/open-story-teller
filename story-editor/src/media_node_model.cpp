@@ -129,10 +129,10 @@ std::string MediaNodeModel::GenerateConstants()
     }
     if (sound.size() > 0)
     {
-        s = StoryProject::FileToConstant(sound);
+        s += StoryProject::FileToConstant(sound);
     }
 
-    // Generate choice table if needed (out ports > 1)
+    // FIXME: Generate choice table if needed (out ports > 1)
 
     return s;
 }
@@ -142,8 +142,8 @@ std::string MediaNodeModel::Build()
     std::stringstream ss;
 
     ss << R"(; ---------------- )" << GetNodeTitle() << "\n";
-    std::string image = m_mediaData["image"].get<std::string>();
-    std::string sound = m_mediaData["sound"].get<std::string>();
+    std::string image = StoryProject::RemoveFileExtension(m_mediaData["image"].get<std::string>());
+    std::string sound = StoryProject::RemoveFileExtension(m_mediaData["sound"].get<std::string>());
     if (image.size() > 0)
     {
         ss << "lcons r0, $" << image  << "\n";
@@ -161,6 +161,38 @@ std::string MediaNodeModel::Build()
     {
         ss << "lcons r1, 0\n";
     }
+    // Call the media executor (image, sound)
+    ss << "syscall 1\n";
+
+
+    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+
+    int nb_out_ports = 0;
+
+    for (auto & c : conns)
+    {
+        if (c.outNodeId > 0)
+        {
+            nb_out_ports++;
+        }
+    }
+
+    if (nb_out_ports == 0)
+    {
+        ss << "halt\n";
+    }
+    else
+    {
+
+    }
+
+    // Check output connections number
+    // == 0: end, generate halt
+    // == 1: jump directly to the other node
+    // > 1 : call the node choice manager
+
+//        lcons r0, $ChoiceObject
+//            jump .media ; no return possible, so a jump is enough
 
 
 /*

@@ -26,7 +26,13 @@
       <property name="minimumSize">
        <size>
         <width>320</width>
-        <height>200</height>
+        <height>240</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>320</width>
+        <height>240</height>
        </size>
       </property>
       <property name="frameShape">
@@ -34,6 +40,9 @@
       </property>
       <property name="text">
        <string/>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
       </property>
      </widget>
     </item>

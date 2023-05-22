@@ -247,13 +247,18 @@ void StoryProject::ReplaceCharacter(std::string &theString, const std::string &t
     while (found != std::string::npos);
 }
 
+std::string StoryProject::RemoveFileExtension(const std::string &FileName)
+{
+    std::string f = GetFileName(FileName);
+    std::string ext = GetFileExtension(f);
+    EraseString(f, "." + ext);
+    return f;
+}
+
 std::string StoryProject::FileToConstant(const std::string &FileName)
 {
-    std::string fileName = GetFileName(FileName);
-    std::string ext = GetFileExtension(fileName);
-    EraseString(fileName, "." + ext); // on retire l'extension du pack
-
-    return "$" + fileName + " DC8 \"" + fileName + "." + ext + "\", 8\r\n";
+    std::string f = RemoveFileExtension(FileName);
+    return "$" + f + " DC8 \"" + FileName + "\", 8\r\n";
 }
 
 void StoryProject::AppendResource(const Resource &res)
@@ -292,24 +297,6 @@ std::string StoryProject::GetFileExtension(const std::string &fileName)
     return "";
 }
 
-std::string StoryProject::BuildResources()
-{
-    std::stringstream chip32;
-
-    chip32 << "\tjump         .entry\r\n";
-
-    for (auto & r : m_resources)
-    {
-        std::string fileName = GetFileName(r.file);
-        std::string ext = GetFileExtension(fileName);
-        EraseString(fileName, "." + ext); // on retire l'extension du pack
-
-        chip32 << "$" << fileName << " DC8 \"" << fileName + "." + ext << "\", 8\r\n";
-    }
-    chip32 << ".entry:\r\n";
-
-    return chip32.str();
-}
 
 void StoryProject::SetImageFormat(ImageFormat format)
 {

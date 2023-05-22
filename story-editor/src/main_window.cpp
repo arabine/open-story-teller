@@ -82,7 +82,7 @@ MainWindow::MainWindow()
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ostHmiDock);
     m_toolbar->AddDockToMenu(m_ostHmiDock->toggleViewAction(), m_ostHmiDock);
 
-    connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [=]() {
+    connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [&]() {
         QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
     });
 
@@ -98,16 +98,16 @@ MainWindow::MainWindow()
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_vmDock);
     m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction(), m_vmDock);
 
-    connect(m_vmDock, &VmDock::sigCompile, [=]() {
+    connect(m_vmDock, &VmDock::sigCompile, [&]() {
       //  m_scriptEditorDock->setScript(m_project.BuildResources());
     });
 
-    connect(m_vmDock, &VmDock::sigStepInstruction, [=]() {
+    connect(m_vmDock, &VmDock::sigStepInstruction, [&]() {
         QCoreApplication::postEvent(this, new VmEvent(VmEvent::evStep));
     });
 
-    connect(m_vmDock, &VmDock::sigBuild, [=]() {
-        buildScript();
+    connect(m_vmDock, &VmDock::sigBuild, [&]() {
+        BuildScript();
     });
 
     m_ramView = new MemoryViewDock("RamViewDock", "RAM");
@@ -176,7 +176,7 @@ MainWindow::MainWindow()
         NewProject();
     });
 
-    connect(m_toolbar, &ToolBar::sigSave, this, [=]() {
+    connect(m_toolbar, &ToolBar::sigSave, this, [&]() {
         SaveProject();
     });
 
@@ -215,6 +215,39 @@ MainWindow::MainWindow()
     CloseProject();
     RefreshProjectInformation();
 
+    // Prepare run timer
+    m_runTimer = new QTimer(this);
+    m_runTimer->setSingleShot(true);
+    connect(m_runTimer, &QTimer::timeout, this, [&]() {
+        if (m_dbg.run_result == VM_OK)
+        {
+            stepInstruction();
+        }
+
+        if (m_dbg.run_result == VM_OK)
+        {
+            // Restart timer
+            m_runTimer->start(100);
+        }
+        else if (m_dbg.run_result == VM_FINISHED)
+        {
+            m_dbg.running = false;
+        }
+        else if (m_dbg.run_result == VM_WAIT_EVENT)
+        {
+            m_runTimer->stop(); // just to make sure
+        }
+    });
+
+    connect(&m_model, &StoryGraphModel::sigAudioStopped, this, [&]() {
+
+        if ((m_dbg.run_result == VM_WAIT_EVENT) && (m_dbg.running))
+        {
+            // Continue execution of node
+            m_runTimer->start(100);
+        }
+    });
+
 //    QMetaObject::invokeMethod(this, "slotWelcome", Qt::QueuedConnection);
 }
 
@@ -224,8 +257,7 @@ void MainWindow::BuildAndRun()
     // FIXME
 
     // 2. Generate the assembly code from the model
-    std::string code  = m_project.BuildResources() + "\n";
-    code += m_model.Build();
+    std::string code = m_model.Build();
 
     // Add global functions
     code += ReadResourceFile(":/scripts/media.asm").toStdString();
@@ -235,8 +267,14 @@ void MainWindow::BuildAndRun()
     m_scriptEditorDock->setScript(code.c_str());
 
     // 3. Compile the assembly to machine binary
-   // buildScript();
+    BuildScript();
 
+    // 4. Run the VM code!
+    if (m_dbg.run_result == VM_OK)
+    {
+        m_dbg.running = true;
+        m_runTimer->start(100);
+    }
 }
 
 
@@ -406,7 +444,7 @@ void MainWindow::updateAll()
     m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
 }
 
-QString MainWindow::GetFileName(uint32_t addr)
+QString MainWindow::GetFileNameFromMemory(uint32_t addr)
 {
     char strBuf[100];
     bool isRam = addr & 0x80000000;
@@ -452,19 +490,21 @@ bool MainWindow::event(QEvent *event)
 
 uint8_t MainWindow::Syscall(uint8_t code)
 {
-    uint8_t retCode = 0;
+    uint8_t retCode = SYSCALL_RET_OK;
     qDebug() << "SYSCALL: " << (int)code;
 
     // Media
     if (code == 1)
     {
         // image file name address is in R0
-        QString imageFile = GetFileName(m_chip32_ctx.registers[R0]);
+        QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
         // sound file name address is in R1
-        QString soundFile = GetFileName(m_chip32_ctx.registers[R1]);
+        QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
 
         qDebug() << "Image: " << imageFile << ", Sound: " << soundFile;
         m_ostHmiDock->SetImage(imageFile);
+        m_model.PlaySound(soundFile);
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     // WAIT EVENT bits:
     // 0: block
@@ -478,7 +518,7 @@ uint8_t MainWindow::Syscall(uint8_t code)
         // Event mask is located in R0
         // optional timeout is located in R1
         // if timeout is set to zero, wait for infinite and beyond
-        retCode = 1; // set the VM in pause
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
 
 
@@ -491,8 +531,11 @@ void MainWindow::stepInstruction()
     updateAll();
 }
 
-void MainWindow::buildScript()
+void MainWindow::BuildScript()
 {
+    m_dbg.run_result = VM_FINISHED;
+    m_dbg.running = false;
+
     if (m_assembler.Parse(m_scriptEditorDock->getScript().toStdString()) == true )
     {
         if (m_assembler.BuildBinary(m_program, m_result) == true)

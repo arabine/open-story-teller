@@ -12,6 +12,13 @@ StoryGraphModel::StoryGraphModel(StoryProject &project)
     m_player = new QMediaPlayer;
     m_audioOutput = new QAudioOutput;
     m_player->setAudioOutput(m_audioOutput);
+    
+    connect(m_player, &QMediaPlayer::playbackStateChanged, this, [&](QMediaPlayer::PlaybackState newState) {
+        if (newState == QMediaPlayer::PlaybackState::StoppedState) {
+            m_player->stop();
+            emit sigAudioStopped();
+        }
+    });
 }
 
 StoryGraphModel::~StoryGraphModel()
@@ -173,6 +180,9 @@ QVariant StoryGraphModel::nodeData(NodeId nodeId, NodeRole role) const
         result = QVariant::fromValue(w);
         break;
     }
+    case NodeRole::Id:
+        result = model->getNodeId();
+        break;
     }
 
     return result;

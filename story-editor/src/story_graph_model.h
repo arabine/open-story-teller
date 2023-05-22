@@ -145,6 +145,7 @@ public:
     NodeId FindFirstNode() const;
 signals:
     void sigChooseFile(NodeId id, const QString &type);
+    void sigAudioStopped();
 
 private:
     StoryProject &m_project;
