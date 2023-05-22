@@ -46,6 +46,8 @@ public:
     virtual std::string GenerateConstants() override;
     virtual std::string Build() override;
 
+    virtual void SetOutPortCount(int count) override;
+
 public:
     virtual QString modelName() const { return QString("MediaNode"); }
 

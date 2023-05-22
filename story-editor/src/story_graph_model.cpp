@@ -210,6 +210,8 @@ bool StoryGraphModel::setNodeData(NodeId nodeId, NodeRole role, QVariant value)
     auto &model = it->second;
 
     switch (role) {
+    case NodeRole::Id:
+        break;
     case NodeRole::Type:
         break;
     case NodeRole::Position: {        
@@ -460,6 +462,7 @@ void StoryGraphModel::LoadNode(const nlohmann::json &nodeJson)
         QPointF const pos(posJson["x"].get<double>(), posJson["y"].get<double>());
 
         setNodeData(restoredNodeId, NodeRole::Position, pos);
+        model->SetOutPortCount(nodeJson["outPortCount"].get<int>());
 
         _models[restoredNodeId]->FromJson(internalDataJson);
     } else {
@@ -478,11 +481,10 @@ NodeId StoryGraphModel::FindFirstNode() const
         bool foundConnection{false};
         for (auto& c : _connectivity)
         {
-            if (c.outNodeId == nodeId)
+            if (c.inNodeId == nodeId)
             {
                 foundConnection = true;
             }
-
         }
 
         if (!foundConnection)

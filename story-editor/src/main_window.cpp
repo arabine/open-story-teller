@@ -549,7 +549,7 @@ void MainWindow::BuildScript()
             chip32_initialize(&m_chip32_ctx);
             m_dbg.run_result = VM_OK;
             updateAll();
-            DebugContext::DumpCodeAssembler(m_assembler);
+//            DebugContext::DumpCodeAssembler(m_assembler);
         }
         else
         {

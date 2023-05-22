@@ -26,7 +26,8 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     m_ui.image->setMinimumSize(320, 240);
     m_ui.image->installEventFilter(this);
 
-    connect(m_ui.spinBox, &QSpinBox::valueChanged, [&](int i) {
+    connect(m_ui.spinBox, QOverload<int>::of(&QSpinBox::valueChanged), [&](int i) {
+
         bool addAction = false;
         if (m_ports < i) {
             addAction = true;
@@ -88,16 +89,14 @@ void MediaNodeModel::setImage(const QString &fileName)
 {
     QPixmap pix(m_model.BuildFullImagePath(fileName));
 
-    if (pix.isNull())
+    if (!pix.isNull())
     {
-        qCritical() << "Can't find image: " << fileName;
+        int w = m_ui.image->width();
+        int h = m_ui.image->height();
+        pix.scaled(w, h, Qt::KeepAspectRatio);
+        m_ui.image->setPixmap(pix);
+        m_ui.imageName->setText(fileName);
     }
-
-    int w = m_ui.image->width();
-    int h = m_ui.image->height();
-    pix.scaled(w, h, Qt::KeepAspectRatio);
-    m_ui.image->setPixmap(pix);
-    m_ui.imageName->setText(fileName);
 }
 
 void MediaNodeModel::setInternalData(const nlohmann::json &j)
@@ -133,6 +132,17 @@ std::string MediaNodeModel::GenerateConstants()
     }
 
     // FIXME: Generate choice table if needed (out ports > 1)
+    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+
+    int nb_out_ports = 0;
+
+    for (auto & c : conns)
+    {
+        if (c.outNodeId > 0)
+        {
+            nb_out_ports++;
+        }
+    }
 
     return s;
 }
@@ -164,14 +174,14 @@ std::string MediaNodeModel::Build()
     // Call the media executor (image, sound)
     ss << "syscall 1\n";
 
-
-    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+    NodeId id = getNodeId();
+    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(id);
 
     int nb_out_ports = 0;
 
     for (auto & c : conns)
     {
-        if (c.outNodeId > 0)
+        if (c.inNodeId == id)
         {
             nb_out_ports++;
         }
@@ -204,6 +214,13 @@ std::string MediaNodeModel::Build()
             jump .media ; no return possible, so a jump is enough
 */
     return ss.str();
+}
+
+void MediaNodeModel::SetOutPortCount(int count) {
+
+   // m_ui.spinBox->blockSignals(true);
+    m_ui.spinBox->setValue(count);
+ //   m_ui.spinBox->blockSignals(true);
 }
 
 unsigned int MediaNodeModel::nPorts(PortType portType) const

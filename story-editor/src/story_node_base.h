@@ -33,6 +33,10 @@ public:
     void setNodeId(NodeId id) { m_nodeId = id; }
     NodeId getNodeId() const { return m_nodeId; }
 
+    virtual void SetOutPortCount(int count) {
+        // default implementation does nothing
+    }
+
     virtual nlohmann::json ToJson() const {
         nlohmann::json j;
 
