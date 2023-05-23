@@ -16,6 +16,10 @@
 #include <QAudioOutput>
 #include <QMediaPlayer>
 
+#include <thread>
+#include <queue>
+#include <condition_variable>
+
 using QtNodes::ConnectionStyle;
 using QtNodes::NodeRole;
 using QtNodes::StyleCollection;
@@ -36,6 +40,40 @@ class PortAddRemoveWidget;
 
 #include "story_node_base.h"
 #include "story_project.h"
+
+template <typename T>
+class ThreadSafeQueue {
+    std::mutex mutex;
+    std::condition_variable cond_var;
+    std::queue<T> queue;
+
+public:
+    void push(T&& item) {
+        {
+            std::lock_guard lock(mutex);
+            queue.push(item);
+        }
+
+        cond_var.notify_one();
+    }
+
+    T& front() {
+        std::unique_lock lock(mutex);
+        cond_var.wait(lock, [&]{ return !queue.empty(); });
+        return queue.front();
+    }
+
+    void pop() {
+        std::lock_guard lock(mutex);
+        queue.pop();
+    }
+};
+
+struct AudioCommand {
+    std::string order;
+    std::string filename;
+};
+
 
 /**
  * The class implements a bare minimum required to demonstrate a model-based
@@ -179,6 +217,7 @@ private:
     /// A convenience variable needed for generating unique node ids.
     unsigned int _nextNodeId{0};
 
-    QMediaPlayer *m_player{nullptr};
-    QAudioOutput *m_audioOutput{nullptr};
+    std::thread m_audioThread;
+    ThreadSafeQueue<AudioCommand> m_audioQueue;
+    void AudioThread();
 };

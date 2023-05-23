@@ -73,9 +73,11 @@ set(PROJECT_SOURCES
     src/new-project.ui
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
+    ../software/library/miniaudio.c
 )
 
 include_directories(../software/chip32)
+include_directories(../software/library)
 
 add_subdirectory(QHexView)
 option(BUILD_SHARED_LIBS "" OFF)

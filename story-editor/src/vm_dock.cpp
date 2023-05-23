@@ -20,15 +20,15 @@ VmDock::VmDock(Chip32::Assembler &assembler)
         m_uiVM.regsTable->setItem(i, 1, regValueItem);
     }
 
-    connect(m_uiVM.generateButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiVM.generateButton, &QPushButton::clicked, [&](bool checked) {
         emit sigCompile();
     });
 
-    connect(m_uiVM.playButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiVM.playButton, &QPushButton::clicked, [&](bool checked) {
         emit sigStepInstruction();
     });
 
-    connect(m_uiVM.buildButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiVM.buildButton, &QPushButton::clicked, [&](bool checked) {
         emit sigBuild();
     });
 }

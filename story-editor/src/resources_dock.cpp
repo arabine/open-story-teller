@@ -14,7 +14,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
     m_proxyModel.setSourceModel(&m_resourcesModel);
 
-    connect(m_uiOstResources.addImageButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiOstResources.addImageButton, &QPushButton::clicked, [&](bool checked) {
 
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                         ".",
@@ -34,7 +34,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
         }
     });
 
-    connect(m_uiOstResources.addSoundButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiOstResources.addSoundButton, &QPushButton::clicked, [&](bool checked) {
 
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                         ".",
@@ -54,7 +54,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
         }
     });
 
-    connect(m_uiOstResources.deleteButton, &QPushButton::clicked, [=](bool checked) {
+    connect(m_uiOstResources.deleteButton, &QPushButton::clicked, [&](bool checked) {
         QItemSelectionModel *selectionModel = m_uiOstResources.resourcesView->selectionModel();
         // Récupération des lignes sélectionnées
         QModelIndexList selectedRows = selectionModel->selectedRows();

@@ -6,25 +6,51 @@
 #include <iterator>
 #include <QDir>
 
+extern "C" int miniaudio_play(const char* filename);
+
 StoryGraphModel::StoryGraphModel(StoryProject &project)
     : m_project(project)
 {
-    m_player = new QMediaPlayer;
-    m_audioOutput = new QAudioOutput;
-    m_player->setAudioOutput(m_audioOutput);
-    
-    connect(m_player, &QMediaPlayer::playbackStateChanged, this, [&](QMediaPlayer::PlaybackState newState) {
-        if (newState == QMediaPlayer::PlaybackState::StoppedState) {
-            m_player->stop();
-            emit sigAudioStopped();
-        }
-    });
+    m_audioThread = std::thread( std::bind(&StoryGraphModel::AudioThread, this) );
+//    connect(m_player, &QMediaPlayer::playbackStateChanged, this, [&](QMediaPlayer::PlaybackState newState) {
+//        if (newState == QMediaPlayer::PlaybackState::StoppedState) {
+//            m_player->stop();
+//            emit sigAudioStopped();
+//        }
+//    });
 }
 
 StoryGraphModel::~StoryGraphModel()
 {
-    //
+    // Quit audio thread
+    m_audioQueue.push({"quit", ""});
+    if (m_audioThread.joinable())
+    {
+        m_audioThread.join();
+    }
 }
+
+void StoryGraphModel::AudioThread()
+{
+    for (;;)
+    {
+        auto cmd = m_audioQueue.front();
+
+        if (cmd.order == "play") {
+            miniaudio_play(cmd.filename.c_str());
+            QMetaObject::invokeMethod(this, "sigAudioStopped", Qt::QueuedConnection);
+            m_audioQueue.pop();
+        } else {
+            return;
+        }
+    }
+}
+
+void StoryGraphModel::PlaySound(const QString &fileName)
+{
+    m_audioQueue.push({"play", fileName.toStdString()});
+}
+
 
 std::unordered_set<NodeId> StoryGraphModel::allNodeIds() const
 {
@@ -415,13 +441,6 @@ nlohmann::json StoryGraphModel::SaveNode(NodeId const nodeId) const
     return nodeJson;
 }
 
-void StoryGraphModel::PlaySound(const QString &fileName)
-{
-    m_player->setSource(QUrl::fromLocalFile(fileName));
-    m_audioOutput->setVolume(50);
-    m_player->play();
-}
-
 
 void StoryGraphModel::LoadNode(const nlohmann::json &nodeJson)
 {
@@ -502,7 +521,7 @@ std::string StoryGraphModel::Build()
 {
     std::stringstream chip32;
 
-    FindFirstNode();
+    NodeId firstNode = FindFirstNode();
 
     chip32 << "\tjump         .entry\r\n";
 
@@ -516,7 +535,7 @@ std::string StoryGraphModel::Build()
         }
     }
 
-    chip32 << ".entry:\r\n";
+
 
     nlohmann::json nodesJsonArray;
     for (auto const nodeId : allNodeIds())
@@ -526,6 +545,11 @@ std::string StoryGraphModel::Build()
             return "";
 
         auto &model = it->second;
+        if (model->getNodeId() == firstNode)
+        {
+            chip32 << ".entry:\r\n";
+        }
+
         chip32 << model->Build() << "\n";
     }
 
