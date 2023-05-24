@@ -243,6 +243,7 @@ MainWindow::MainWindow()
 
         if ((m_dbg.run_result == VM_WAIT_EVENT) && (m_dbg.running))
         {
+            m_dbg.run_result = VM_OK;
             // Continue execution of node
             m_runTimer->start(100);
         }
@@ -478,7 +479,8 @@ bool MainWindow::event(QEvent *event)
         {
             // Result event is in R1
             m_chip32_ctx.registers[R1] = 0x01;
-            stepInstruction();
+            m_dbg.run_result = VM_OK;
+            m_runTimer->start(100);
         }
 
     }
@@ -494,16 +496,27 @@ uint8_t MainWindow::Syscall(uint8_t code)
     qDebug() << "SYSCALL: " << (int)code;
 
     // Media
-    if (code == 1)
+    if (code == 1) // Execute media
     {
-        // image file name address is in R0
-        QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
-        // sound file name address is in R1
-        QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+        if (m_chip32_ctx.registers[R0] != 0)
+        {
+            // image file name address is in R0
+            QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            qDebug() << "Image: " << imageFile;
+            m_ostHmiDock->SetImage(imageFile);
+        }
+        else
+        {
+            m_ostHmiDock->ClearImage();
+        }
 
-        qDebug() << "Image: " << imageFile << ", Sound: " << soundFile;
-        m_ostHmiDock->SetImage(imageFile);
-        m_model.PlaySound(soundFile);
+        if (m_chip32_ctx.registers[R1] != 0)
+        {
+            // sound file name address is in R1
+            QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            qDebug() << ", Sound: " << soundFile;
+            m_model.PlaySound(soundFile);
+        }
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     // WAIT EVENT bits:
@@ -513,7 +526,7 @@ uint8_t MainWindow::Syscall(uint8_t code)
     // 3: pause button
     // 4: rotary left
     // 5: rotary right
-    else if (code == 2)
+    else if (code == 2) // Wait for event
     {
         // Event mask is located in R0
         // optional timeout is located in R1

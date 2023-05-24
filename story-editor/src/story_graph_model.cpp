@@ -523,7 +523,7 @@ std::string StoryGraphModel::Build()
 
     NodeId firstNode = FindFirstNode();
 
-    chip32 << "\tjump         .entry\r\n";
+    chip32 << "\tjump    " << GetNodeEntryLabel(firstNode) << "\r\n";
 
     // First generate all constants
     for (auto const nodeId : allNodeIds())
@@ -535,25 +535,28 @@ std::string StoryGraphModel::Build()
         }
     }
 
-
-
     nlohmann::json nodesJsonArray;
     for (auto const nodeId : allNodeIds())
     {
         auto it = _models.find(nodeId);
-        if (it == _models.end())
-            return "";
-
-        auto &model = it->second;
-        if (model->getNodeId() == firstNode)
+        if (it != _models.end())
         {
-            chip32 << ".entry:\r\n";
+            chip32 << it->second->Build() << "\n";
         }
-
-        chip32 << model->Build() << "\n";
     }
 
     return chip32.str();
+}
+
+std::string StoryGraphModel::GetNodeEntryLabel(NodeId nodeId) const
+{
+    std::string label;
+    auto it = _models.find(nodeId);
+    if (it != _models.end())
+    {
+        label = it->second->EntryLabel();
+    }
+    return label;
 }
 
 void StoryGraphModel::addPort(NodeId nodeId, PortType portType, PortIndex portIndex)

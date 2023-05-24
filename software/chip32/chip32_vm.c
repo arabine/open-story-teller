@@ -354,6 +354,13 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[PC] = _NEXT_SHORT - 1;
         break;
     }
+    case OP_JUMPR:
+    {
+        const uint8_t reg = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg)
+        ctx->registers[PC] = ctx->registers[reg] - 1;
+        break;
+    }
     case OP_SKIPZ:
     case OP_SKIPNZ:
     {

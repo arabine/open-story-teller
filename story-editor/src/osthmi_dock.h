@@ -11,6 +11,7 @@ public:
     OstHmiDock();
 
     void SetImage(const QString &fileName);
+    void ClearImage();
 
 signals:
     void sigOkButton();

@@ -60,6 +60,8 @@ public:
         return "";
     }
 
+    virtual std::string EntryLabel() const = 0;
+
     NodeGeometryData  &geometryData() { return m_geometryData; }
 
     std::string GetNodeTitle() const { return m_nodeTitle; }

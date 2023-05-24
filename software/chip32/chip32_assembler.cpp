@@ -55,7 +55,7 @@ static const uint32_t NbRegs = sizeof(AllRegs) / sizeof(AllRegs[0]);
 // Keep same order than the opcodes list!!
 static const std::string Mnemonics[] = {
     "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "sub", "mul", "div",
-    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "skipz", "skipnz"
+    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "jumpr", "skipz", "skipnz"
 };
 
 static OpCode OpCodes[] = OPCODES_LIST;
@@ -196,6 +196,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     case OP_SKIPZ:
     case OP_SKIPNZ:
     case OP_CALL:
+    case OP_JUMPR:
         GET_REG(instr.args[0], ra);
         instr.compiledArgs.push_back(ra);
         break;

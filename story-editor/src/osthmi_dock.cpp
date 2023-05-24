@@ -15,3 +15,8 @@ void OstHmiDock::SetImage(const QString &fileName)
 {
     m_uiOstDisplay.display->setPixmap(QPixmap(fileName));
 }
+
+void OstHmiDock::ClearImage()
+{
+    m_uiOstDisplay.display->clear();
+}

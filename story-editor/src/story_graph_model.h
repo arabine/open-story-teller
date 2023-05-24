@@ -176,6 +176,8 @@ public:
 
     std::string Build();
 
+    ///< Returns a node entry name
+    std::string GetNodeEntryLabel(NodeId nodeId) const;
 
     // Centralized for wide usage
     void PlaySound(const QString &fileName);

@@ -64,6 +64,22 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     };
 
     m_mediaData.merge_patch(StoryNodeBase::ToJson());
+
+    QtNodes::NodeStyle _nodeStyle;
+
+    QColor bgColor = QColor(94, 94, 94);
+    _nodeStyle.GradientColor0 = bgColor;
+    _nodeStyle.GradientColor1 = bgColor;
+    _nodeStyle.GradientColor2 = bgColor;
+    _nodeStyle.GradientColor3 = bgColor;
+    _nodeStyle.NormalBoundaryColor = bgColor;
+    _nodeStyle.FontColor = QColor(206, 206, 206);
+    _nodeStyle.FontColorFaded = QColor(125, 125, 125);
+    _nodeStyle.ShadowColor = QColor(20, 20, 20);
+    _nodeStyle.ConnectionPointColor = QColor(125, 125, 125);
+    _nodeStyle.FilledConnectionPointColor = QColor(206, 206, 206);
+
+    setNodeStyle(_nodeStyle);
 }
 
 QString MediaNodeModel::caption() const
@@ -131,29 +147,65 @@ std::string MediaNodeModel::GenerateConstants()
         s += StoryProject::FileToConstant(sound);
     }
 
-    // FIXME: Generate choice table if needed (out ports > 1)
-    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
-
-    int nb_out_ports = 0;
-
-    for (auto & c : conns)
+    int nb_out_conns = ComputeOutputConnections();
+    if (nb_out_conns > 1)
     {
-        if (c.outNodeId > 0)
+        // Generate choice table if needed (out ports > 1)
+        std::stringstream ss;
+        std::string label = ChoiceLabel();
+        ss << "$" << label
+           << " DC32, "
+           << nb_out_conns << ", ";
+
+        std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+        int i = 0;
+        for (auto & c : conns)
         {
-            nb_out_ports++;
+            std::stringstream ssChoice;
+
+            // On va chercher le label d'entrée du noeud connecté à l'autre bout
+            ss << m_model.GetNodeEntryLabel(c.inNodeId);
+            if (i < (nb_out_conns - 1))
+            {
+                ss << ", ";
+            }
+            else
+            {
+                ss << "\n";
+            }
+            i++;
         }
+
+        s += ss.str();
     }
 
     return s;
 }
 
+std::string MediaNodeModel::ChoiceLabel() const
+{
+    std::stringstream ss;
+    ss << "mediaChoice" << std::setw(4) << std::setfill('0') << getNodeId();
+    return ss.str();
+}
+
 std::string MediaNodeModel::Build()
 {
     std::stringstream ss;
+    int nb_out_conns = ComputeOutputConnections();
 
-    ss << R"(; ---------------- )" << GetNodeTitle() << "\n";
+    ss << R"(; ---------------------------- )"
+       << GetNodeTitle()
+        << " Type: "
+       << (nb_out_conns == 0 ? "End" : nb_out_conns == 1 ? "Transition" : "Choice")
+       << "\n";
     std::string image = StoryProject::RemoveFileExtension(m_mediaData["image"].get<std::string>());
     std::string sound = StoryProject::RemoveFileExtension(m_mediaData["sound"].get<std::string>());
+
+    // Le label de ce noeud est généré de la façon suivante :
+    // "media" + Node ID + id du noeud parent. Si pas de noeud parent, alors rien
+    ss << EntryLabel() << ":\n";
+
     if (image.size() > 0)
     {
         ss << "lcons r0, $" << image  << "\n";
@@ -174,53 +226,54 @@ std::string MediaNodeModel::Build()
     // Call the media executor (image, sound)
     ss << "syscall 1\n";
 
-    NodeId id = getNodeId();
-    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(id);
+    // Check output connections number
+    // == 0: end node        : generate halt
+    // == 1: transition node : image + sound on demand, jump directly to the other node when OK
+    // > 1 : choice node     : call the node choice manager
 
-    int nb_out_ports = 0;
-
-    for (auto & c : conns)
-    {
-        if (c.inNodeId == id)
-        {
-            nb_out_ports++;
-        }
-    }
-
-    if (nb_out_ports == 0)
+    if (nb_out_conns == 0) // End node
     {
         ss << "halt\n";
     }
-    else
+    else if (nb_out_conns == 1) // Transition node
     {
+        std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
 
+        auto it = conns.begin();
+        ++it;
+        // On place dans R0 le prochain noeud à exécuter en cas de OK
+        ss << "lcons r0, "
+           << m_model.GetNodeEntryLabel(it->inNodeId) << "\n"
+           << "ret\n";
     }
-
-    // Check output connections number
-    // == 0: end, generate halt
-    // == 1: jump directly to the other node
-    // > 1 : call the node choice manager
-
-//        lcons r0, $ChoiceObject
-//            jump .media ; no return possible, so a jump is enough
-
-
-/*
-
-
-
-        syscall 1
-        lcons r0, $ChoiceObject
-            jump .media ; no return possible, so a jump is enough
-*/
+    else // Choice node
+    {
+        ss << "lcons r0, $" << ChoiceLabel() << "\n"
+           << "jump .media ; no return possible, so a jump is enough";
+    }
     return ss.str();
 }
 
-void MediaNodeModel::SetOutPortCount(int count) {
+int MediaNodeModel::ComputeOutputConnections()
+{
+    NodeId id = getNodeId();
+    std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(id);
 
-   // m_ui.spinBox->blockSignals(true);
+    int nb_out_conns = 0;
+
+    for (auto & c : conns)
+    {
+        if (c.outNodeId == id)
+        {
+            nb_out_conns++;
+        }
+    }
+    return nb_out_conns;
+}
+
+void MediaNodeModel::SetOutPortCount(int count)
+{
     m_ui.spinBox->setValue(count);
- //   m_ui.spinBox->blockSignals(true);
 }
 
 unsigned int MediaNodeModel::nPorts(PortType portType) const
@@ -285,4 +338,11 @@ void MediaNodeModel::setInData(std::shared_ptr<NodeData> nodeData, PortIndex con
     }
 
     Q_EMIT dataUpdated(0);
+}
+
+std::string MediaNodeModel::EntryLabel() const
+{
+    std::stringstream ss;
+    ss << ".mediaEntry" << std::setw(4) << std::setfill('0') << getNodeId();
+    return ss.str();
 }

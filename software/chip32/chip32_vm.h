@@ -76,8 +76,9 @@ typedef enum
     OP_CALL = 20, ///<  set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
     OP_RET = 21,  ///<  return to the address of last callee (RA), e.g.: ret
     OP_JUMP = 22, ///<   jump to address (can use label or address), e.g.: jump .my_label
-    OP_SKIPZ = 23,  ///<  skip next instruction if zero, e.g.: skipz r0
-    OP_SKIPNZ = 24, ///<  skip next instruction if not zero, e.g.: skipnz r2
+    OP_JUMPR = 23, ///<   jump to address contained in a register, e.g.: jumpr t9
+    OP_SKIPZ = 24,  ///<  skip next instruction if zero, e.g.: skipz r0
+    OP_SKIPNZ = 25, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;
@@ -153,7 +154,7 @@ typedef struct {
 { OP_STORE, 3, 4 }, { OP_LOAD, 3, 4 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
 { OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 1 }, { OP_RET, 0, 0 }, \
-{ OP_JUMP, 1, 2 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
+{ OP_JUMP, 1, 2 }, { OP_JUMPR, 1, 1 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
 
 /**
   Whole memory is 64KB

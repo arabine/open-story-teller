@@ -63,6 +63,7 @@ public:
 
     bool resizable() const override { return true; }
 
+    virtual std::string EntryLabel() const override;
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -80,4 +81,6 @@ private:
 
     nlohmann::json m_mediaData;
     void setImage(const QString &fileName);
+    int ComputeOutputConnections();
+    std::string ChoiceLabel() const;
 };
