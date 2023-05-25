@@ -17,6 +17,11 @@ public:
     void setScript(const std::string &script);
     QString getScript() const;
 
+    void SetBreakPoints(const std::set<int> & bkp);
+
+signals:
+    void sigLineNumberAreaClicked(int line);
+
 private:
     CodeEditor *m_editor{nullptr};
     Highlighter *m_highlighter;

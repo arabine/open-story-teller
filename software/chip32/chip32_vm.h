@@ -108,7 +108,7 @@ typedef enum
     R7,
     R8,
     R9,
-    // Temporaties are automatically saved on stack across a call
+    // Temporaries are automatically saved on stack across a call
     T0,
     T1,
     T2,

@@ -70,8 +70,6 @@ MainWindow::MainWindow()
     addToolBar(Qt::LeftToolBarArea, m_toolbar);
     m_toolbar->setVisible(true);
 
-    connect(m_toolbar, &ToolBar::sigDefaultDocksPosition, this, &MainWindow::slotDefaultDocksPosition);
-
     createStatusBar();
 
     m_logDock = new LogDock();
@@ -81,10 +79,6 @@ MainWindow::MainWindow()
     m_ostHmiDock = new OstHmiDock();
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ostHmiDock);
     m_toolbar->AddDockToMenu(m_ostHmiDock->toggleViewAction(), m_ostHmiDock);
-
-    connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [&]() {
-        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
-    });
 
     m_resourcesDock = new ResourcesDock(m_project, m_resourceModel);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_resourcesDock);
@@ -97,18 +91,6 @@ MainWindow::MainWindow()
     m_vmDock = new VmDock(m_assembler);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_vmDock);
     m_toolbar->AddDockToMenu(m_vmDock->toggleViewAction(), m_vmDock);
-
-    connect(m_vmDock, &VmDock::sigCompile, [&]() {
-      //  m_scriptEditorDock->setScript(m_project.BuildResources());
-    });
-
-    connect(m_vmDock, &VmDock::sigStepInstruction, [&]() {
-        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evStep));
-    });
-
-    connect(m_vmDock, &VmDock::sigBuild, [&]() {
-        BuildScript();
-    });
 
     m_ramView = new MemoryViewDock("RamViewDock", "RAM");
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_ramView);
@@ -124,6 +106,71 @@ MainWindow::MainWindow()
     m_chooseFileDialog = new QDialog(this);
     m_chooseFileUi.setupUi(m_chooseFileDialog);
     m_chooseFileDialog->close();
+
+    m_newProjectDialog = new NewProjectDialog(this);
+    m_newProjectDialog->hide();
+
+    // TODO: merge both
+    m_model.registerNode<MediaNodeModel>("MediaNode");
+    m_model.addModel("MediaNode", "Story Teller");
+
+    // Prepare run timer
+    m_runTimer = new QTimer(this);
+    m_runTimer->setSingleShot(true);
+
+    // VM Initialize
+    m_chip32_ctx.stack_size = 512;
+
+    m_chip32_ctx.rom.mem = m_rom_data;
+    m_chip32_ctx.rom.addr = 0;
+    m_chip32_ctx.rom.size = sizeof(m_rom_data);
+
+    m_chip32_ctx.ram.mem = m_ram_data;
+    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
+    m_chip32_ctx.ram.size = sizeof(m_ram_data);
+
+    Callback<uint8_t(uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1);
+    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(uint8_t)>::callback);
+
+    // Install event handler now that everything is initialized
+    Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
+
+    qInstallMessageHandler(cb);
+
+    readSettings(); // restore all windows preferences
+    qDebug() << "Settings location: " << m_settings.fileName();
+    qDebug() << "Welcome to StoryTeller Editor";
+
+    CloseProject();
+    RefreshProjectInformation();
+
+    // ===================================  CONNECTIONS  ===================================
+    connect(m_toolbar, &ToolBar::sigDefaultDocksPosition, this, &MainWindow::slotDefaultDocksPosition);
+
+    connect(m_ostHmiDock, &OstHmiDock::sigOkButton, [&]() {
+        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evOkButton));
+    });
+
+    connect(m_ostHmiDock, &OstHmiDock::sigLeftButton, [&]() {
+        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evLeftButton));
+    });
+
+    connect(m_ostHmiDock, &OstHmiDock::sigRightButton, [&]() {
+        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evRightButton));
+    });
+
+    connect(m_vmDock, &VmDock::sigCompile, [&]() {
+        //  m_scriptEditorDock->setScript(m_project.BuildResources());
+    });
+
+    connect(m_vmDock, &VmDock::sigStepInstruction, [&]() {
+        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evStep));
+    });
+
+    connect(m_vmDock, &VmDock::sigBuild, [&]() {
+        BuildScript();
+    });
 
     connect(&m_model, &StoryGraphModel::sigChooseFile, [&](NodeId id, const QString &type) {
         m_chooseFileUi.tableView->setModel(&m_resourcesDock->getModel());
@@ -145,33 +192,6 @@ MainWindow::MainWindow()
         }
     });
 
-    m_newProjectDialog = new NewProjectDialog(this);
-    m_newProjectDialog->hide();
-
-    // TODO: merge both
-    m_model.registerNode<MediaNodeModel>("MediaNode");
-    m_model.addModel("MediaNode", "Story Teller");
-
-//    m_project.Load("packs/BE8949F60D854F54828419A1BDAED36A/pack.json");
-
-//    DisplayNode(m_project.m_tree, QtNodes::InvalidNodeId);
-
-    // VM Initialize
-
-    m_chip32_ctx.stack_size = 512;
-
-    m_chip32_ctx.rom.mem = m_rom_data;
-    m_chip32_ctx.rom.addr = 0;
-    m_chip32_ctx.rom.size = sizeof(m_rom_data);
-
-    m_chip32_ctx.ram.mem = m_ram_data;
-    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
-    m_chip32_ctx.ram.size = sizeof(m_ram_data);
-
-
-    Callback<uint8_t(uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1);
-    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(uint8_t)>::callback);
-
     connect(m_toolbar, &ToolBar::sigNew, this, [&]() {
         NewProject();
     });
@@ -181,7 +201,7 @@ MainWindow::MainWindow()
     });
 
     connect(m_toolbar, &ToolBar::sigOpen, this, [&]() {
-       OpenProjectDialog();
+        OpenProjectDialog();
     });
 
     connect(m_toolbar, &ToolBar::sigClose, this, [&]() {
@@ -201,26 +221,15 @@ MainWindow::MainWindow()
         BuildAndRun();
     });
 
-    // Install event handler now that everythin is initialized
-    Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    auto cb = static_cast<message_output_t>(Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::callback);
-
-
-    qInstallMessageHandler(cb);
-
-    readSettings(); // restore all windows preferences
-    qDebug() << "Settings location: " << m_settings.fileName();
-    qDebug() << "Welcome to StoryTeller Editor";
-
-    CloseProject();
-    RefreshProjectInformation();
-
-    // Prepare run timer
-    m_runTimer = new QTimer(this);
-    m_runTimer->setSingleShot(true);
     connect(m_runTimer, &QTimer::timeout, this, [&]() {
         if (m_dbg.run_result == VM_OK)
         {
+            if (m_dbg.m_breakpoints.contains(m_dbg.line + 1))
+            {
+                qDebug() << "Breakpoint on line: " << (m_dbg.line + 1);
+                m_dbg.free_run = false;
+                return;
+            }
             stepInstruction();
         }
 
@@ -231,7 +240,7 @@ MainWindow::MainWindow()
         }
         else if (m_dbg.run_result == VM_FINISHED)
         {
-            m_dbg.running = false;
+            m_dbg.free_run = false;
         }
         else if (m_dbg.run_result == VM_WAIT_EVENT)
         {
@@ -240,12 +249,29 @@ MainWindow::MainWindow()
     });
 
     connect(&m_model, &StoryGraphModel::sigAudioStopped, this, [&]() {
+        QCoreApplication::postEvent(this, new VmEvent(VmEvent::evAudioFinished));
+    });
 
-        if ((m_dbg.run_result == VM_WAIT_EVENT) && (m_dbg.running))
+    connect(m_scriptEditorDock, &ScriptEditorDock::sigLineNumberAreaClicked, this, [&](int line) {
+
+        // On cherche si une instruction existe à cette ligne
+        std::vector<Chip32::Instr>::const_iterator ptr = m_assembler.Begin();
+        for (; ptr != m_assembler.End(); ++ptr)
         {
-            m_dbg.run_result = VM_OK;
-            // Continue execution of node
-            m_runTimer->start(100);
+            if ((ptr->line == line) && ptr->isRomCode())
+            {
+                if (m_dbg.m_breakpoints.contains(line))
+                {
+                    m_dbg.m_breakpoints.erase(line);
+                }
+                else
+                {
+                    m_dbg.m_breakpoints.insert(line);
+                }
+
+                m_scriptEditorDock->SetBreakPoints(m_dbg.m_breakpoints);
+                break;
+            }
         }
     });
 
@@ -273,7 +299,7 @@ void MainWindow::BuildAndRun()
     // 4. Run the VM code!
     if (m_dbg.run_result == VM_OK)
     {
-        m_dbg.running = true;
+        m_dbg.free_run = true;
         m_runTimer->start(100);
     }
 }
@@ -433,7 +459,7 @@ void MainWindow::highlightNextLine()
     else
     {
         // Not found
-        qDebug() << "Reached end or instruction not found: " << m_dbg.line;
+        qDebug() << "Reached end or instruction not found line: " << m_dbg.line;
     }
 }
 
@@ -458,6 +484,25 @@ QString MainWindow::GetFileNameFromMemory(uint32_t addr)
     return QString(strBuf);
 }
 
+void MainWindow::EventFinished(uint32_t replyEvent)
+{
+    if (m_dbg.run_result == VM_WAIT_EVENT)
+    {
+        // Result event is in R0
+        m_chip32_ctx.registers[R0] = replyEvent;
+        m_dbg.run_result = VM_OK;
+
+        if (m_dbg.free_run)
+        {
+            m_runTimer->start(100);
+        }
+        else
+        {
+            stepInstruction();
+        }
+    }
+}
+
 bool MainWindow::event(QEvent *event)
 {
     if (event->type() == VmEvent::evStep)
@@ -473,16 +518,19 @@ bool MainWindow::event(QEvent *event)
     }
     else if (event->type() == VmEvent::evOkButton)
     {
-        VmEvent *myEvent = static_cast<VmEvent *>(event);
-
-        if (m_dbg.run_result == VM_WAIT_EVENT)
-        {
-            // Result event is in R1
-            m_chip32_ctx.registers[R1] = 0x01;
-            m_dbg.run_result = VM_OK;
-            m_runTimer->start(100);
-        }
-
+        EventFinished(0x01);
+    }
+    else if (event->type() == VmEvent::evLeftButton)
+    {
+        EventFinished(0x02);
+    }
+    else if (event->type() == VmEvent::evRightButton)
+    {
+        EventFinished(0x04);
+    }
+    else if (event->type() == VmEvent::evAudioFinished)
+    {
+        EventFinished(0x08);
     }
 
     // false means it should be send to target also. as in , we dont remove it.
@@ -547,7 +595,7 @@ void MainWindow::stepInstruction()
 void MainWindow::BuildScript()
 {
     m_dbg.run_result = VM_FINISHED;
-    m_dbg.running = false;
+    m_dbg.free_run = false;
 
     if (m_assembler.Parse(m_scriptEditorDock->getScript().toStdString()) == true )
     {

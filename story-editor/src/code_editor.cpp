@@ -4,8 +4,6 @@
 #include <QTextBlock>
 #include <QFontMetrics>
 
-//![constructor]
-
 CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 {
     lineNumberArea = new LineNumberArea(this);
@@ -13,6 +11,8 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     connect(this, &CodeEditor::blockCountChanged, this, &CodeEditor::updateLineNumberAreaWidth);
     connect(this, &CodeEditor::updateRequest, this, &CodeEditor::updateLineNumberArea);
     connect(this, &CodeEditor::cursorPositionChanged, this, &CodeEditor::highlightCurrentLine);
+
+    connect(lineNumberArea, &LineNumberArea::sigLineNumberAreaClicked, this, &CodeEditor::sigLineNumberAreaClicked);
 
     setTabStopDistance(QFontMetricsF(font()).horizontalAdvance(' ') * 4);
 
@@ -100,6 +100,14 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
             painter.setPen(Qt::black);
             painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
                              Qt::AlignRight, number);
+
+            if (m_breakpoints.contains(blockNumber +1))
+            {
+                QRectF rectangle(0, top, fontMetrics().height(), fontMetrics().height());
+                painter.setPen(Qt::red);
+                painter.setBrush(QBrush(Qt::red));
+                painter.drawEllipse(rectangle);
+            }
         }
 
         block = block.next();
@@ -109,4 +117,46 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
     }
 
 }
-//![extraAreaPaintEvent_2]
+
+int CodeEditor::ComputeLine(const QPointF &p)
+{
+    int line = -1;
+
+    QTextBlock block = firstVisibleBlock();
+
+    while (block.isValid())
+    {
+        int top = qRound(blockBoundingGeometry(block).top());
+        int bottom = top + qRound(blockBoundingRect(block).height());
+
+        if ((p.y() >= top) && (p.y() <= bottom))
+        {
+            line  = block.blockNumber() + 1;
+            break;
+        }
+
+        block = block.next();
+    }
+
+    return line;
+}
+
+void CodeEditor::SetBreakPoints(const std::set<int> &bkp)
+{
+    m_breakpoints = bkp;
+    update();
+}
+
+
+void LineNumberArea::mouseReleaseEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton)
+    {
+        QPointF p = event->position();
+        int line = codeEditor->ComputeLine(p);
+//        qDebug() << "Clicked line: " << line;
+        if (line >= 0)
+        {
+            emit sigLineNumberAreaClicked(line);
+        }
+    }
+}

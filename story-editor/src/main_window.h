@@ -54,9 +54,11 @@ struct DebugContext
 {
     uint32_t event_mask{0};
     bool wait_event{0};
-    bool running{false};
+    bool free_run{false};
     int line{-1};
     chip32_result_t run_result{VM_FINISHED};
+
+    std::set<int> m_breakpoints;
 
     static void DumpCodeAssembler(Chip32::Assembler & assembler) {
 
@@ -109,6 +111,9 @@ public:
     {}
     static const QEvent::Type evStep = static_cast<QEvent::Type>(QEvent::User + 1);
     static const QEvent::Type evOkButton = static_cast<QEvent::Type>(QEvent::User + 2);
+    static const QEvent::Type evLeftButton = static_cast<QEvent::Type>(QEvent::User + 3);
+    static const QEvent::Type evRightButton = static_cast<QEvent::Type>(QEvent::User + 4);
+    static const QEvent::Type evAudioFinished = static_cast<QEvent::Type>(QEvent::User + 5);
 
     uint8_t ev{0};
 };
@@ -186,6 +191,7 @@ private:
     void EnableProject();
     void OpenProject(const QString &filePath);
     QString ReadResourceFile(const QString &fileName);
+    void EventFinished(uint32_t replyEvent);
 };
 
 #endif // MAIN_WINDOW_H

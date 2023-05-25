@@ -193,22 +193,22 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         ctx->registers[PC] = ctx->registers[reg] - 1;
-        // save all temporary registers on stack
-        ctx->registers[SP] -= 4*10; // reserve memory
-        // fill memory
-        for (int i = 0; i < 10; i++) {
-            leu32_put(&ctx->ram.mem[ctx->registers[SP] + i*4], ctx->registers[T0 + i]);
-        }
+//        // save all temporary registers on stack
+//        ctx->registers[SP] -= 4*10; // reserve memory
+//        // fill memory
+//        for (int i = 0; i < 10; i++) {
+//            leu32_put(&ctx->ram.mem[ctx->registers[SP] + i*4], ctx->registers[T0 + i]);
+//        }
         break;
     }
     case OP_RET:
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
         // restore all temporary registers on stack
-        for (int i = 0; i < 10; i++) {
-            ctx->registers[T0 + i] = leu32_get(&ctx->ram.mem[ctx->registers[SP] + i*4]);
-        }
-        ctx->registers[SP] += 4*10; // free memory
+//        for (int i = 0; i < 10; i++) {
+//            ctx->registers[T0 + i] = leu32_get(&ctx->ram.mem[ctx->registers[SP] + i*4]);
+//        }
+//        ctx->registers[SP] += 4*10; // free memory
         break;
     }
     case OP_STORE:

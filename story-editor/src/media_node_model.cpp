@@ -12,7 +12,7 @@
 
 MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     : m_model(model)
-    , m_widget(new QWidget())
+    , m_widget(new StoryNodeWidgetBase())
 {
     m_ui.setupUi(m_widget);
     m_ui.image->setText("Image will appear here");
@@ -73,11 +73,17 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     _nodeStyle.GradientColor2 = bgColor;
     _nodeStyle.GradientColor3 = bgColor;
     _nodeStyle.NormalBoundaryColor = bgColor;
-    _nodeStyle.FontColor = QColor(206, 206, 206);
+    _nodeStyle.FontColor = Qt::white;
     _nodeStyle.FontColorFaded = QColor(125, 125, 125);
     _nodeStyle.ShadowColor = QColor(20, 20, 20);
     _nodeStyle.ConnectionPointColor = QColor(125, 125, 125);
     _nodeStyle.FilledConnectionPointColor = QColor(206, 206, 206);
+
+    _nodeStyle.SelectedBoundaryColor = QColor(20, 146, 202);
+    _nodeStyle.Opacity = 1.0;
+    _nodeStyle.PenWidth = 0;
+    _nodeStyle.HoveredPenWidth = 2.0;
+    _nodeStyle.ConnectionPointDiameter = 3.5;
 
     setNodeStyle(_nodeStyle);
 }
@@ -239,12 +245,18 @@ std::string MediaNodeModel::Build()
     {
         std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
 
-        auto it = conns.begin();
-        ++it;
-        // On place dans R0 le prochain noeud à exécuter en cas de OK
-        ss << "lcons r0, "
-           << m_model.GetNodeEntryLabel(it->inNodeId) << "\n"
-           << "ret\n";
+
+        for (auto c : conns)
+        {
+            if (c.outNodeId == getNodeId())
+            {
+                // On place dans R0 le prochain noeud à exécuter en cas de OK
+                ss << "lcons r0, "
+                   << m_model.GetNodeEntryLabel(c.inNodeId) << "\n"
+                   << "ret\n";
+            }
+        }
+
     }
     else // Choice node
     {
@@ -345,4 +357,16 @@ std::string MediaNodeModel::EntryLabel() const
     std::stringstream ss;
     ss << ".mediaEntry" << std::setw(4) << std::setfill('0') << getNodeId();
     return ss.str();
+}
+
+StoryNodeWidgetBase::StoryNodeWidgetBase() {
+    //        setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+
+    //        setAttribute(Qt::WA_NoSystemBackground);
+    setAttribute(Qt::WA_TranslucentBackground);
+    //        setAttribute(Qt::WA_PaintOnScreen);
+
+    //        setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    setStyleSheet("QLabel { background-color: rgba(0,0,0,0) }; QWidget { background-color: rgba(0,0,0,0) };");
 }

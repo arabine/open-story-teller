@@ -22,6 +22,13 @@ using QtNodes::PortType;
 #include "story_graph_model.h"
 #include "story_node_base.h"
 
+class StoryNodeWidgetBase : public QWidget
+{
+public:
+    StoryNodeWidgetBase();
+private:
+};
+
 /// The model dictates the number of inputs and outputs for the Node.
 /// In this example it has no logic.
 class MediaNodeModel : public StoryNodeBase
@@ -72,7 +79,7 @@ private:
     StoryGraphModel &m_model;
 
     unsigned int m_ports{1};
-    QWidget *m_widget;
+    StoryNodeWidgetBase *m_widget;
 
     QString m_soundFilePath;
 

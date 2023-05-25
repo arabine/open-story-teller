@@ -186,8 +186,7 @@ QVariant StoryGraphModel::nodeData(NodeId nodeId, NodeRole role) const
         break;
 
     case NodeRole::Style: {
-        auto style = StyleCollection::nodeStyle();
-        result = style.toJson().toVariantMap();
+        result = model->nodeStyle().toJson().toVariantMap();
     } break;
 
     case NodeRole::InternalData:

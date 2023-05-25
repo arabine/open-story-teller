@@ -15,6 +15,8 @@ public:
 
 signals:
     void sigOkButton();
+    void sigLeftButton();
+    void sigRightButton();
 
 private:
     Ui::ostDisplay m_uiOstDisplay;

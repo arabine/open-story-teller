@@ -2,6 +2,7 @@
 #define CODEEDITOR_H
 
 #include <QPlainTextEdit>
+#include <set>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -12,7 +13,6 @@ QT_END_NAMESPACE
 
 class LineNumberArea;
 
-//![codeeditordefinition]
 
 class CodeEditor : public QPlainTextEdit
 {
@@ -24,6 +24,12 @@ public:
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
 
+    int ComputeLine(const QPointF &p);
+    void SetBreakPoints(const std::set<int> & bkp);
+
+signals:
+    void sigLineNumberAreaClicked(int line);
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
 
@@ -33,14 +39,15 @@ private slots:
     void updateLineNumberArea(const QRect &rect, int dy);
 
 private:
-    QWidget *lineNumberArea;
+    LineNumberArea *lineNumberArea;
+    std::set<int> m_breakpoints;
 };
 
-//![codeeditordefinition]
-//![extraarea]
 
 class LineNumberArea : public QWidget
 {
+    Q_OBJECT
+
 public:
     LineNumberArea(CodeEditor *editor) : QWidget(editor), codeEditor(editor)
     {}
@@ -49,6 +56,11 @@ public:
     {
         return QSize(codeEditor->lineNumberAreaWidth(), 0);
     }
+
+    void mouseReleaseEvent(QMouseEvent *event) override;
+
+signals:
+    void sigLineNumberAreaClicked(int line);
 
 protected:
     void paintEvent(QPaintEvent *event) override
