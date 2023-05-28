@@ -20,3 +20,5 @@ hardware/kicad/ost-pico-addon/fp-info-cache
 *.kra~
 
 *.png~
+
+build-story-editor-Desktop_Qt_6_5_1_GCC_64bit-Debug/

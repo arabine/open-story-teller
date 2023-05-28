@@ -12,7 +12,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets OpenGLWidgets Multimedia OpenGL)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets Multimedia OpenGL)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Gui OpenGLWidgets Multimedia OpenGL )
 
 set(PROJECT_SOURCES
@@ -58,9 +58,6 @@ set(PROJECT_SOURCES
     src/event_node_model.cpp
     src/highlighter.h
     src/highlighter.cpp
-    src/zip.cpp
-    src/zip.h
-    src/miniz.c
     src/ost-hmi.ui
     src/ost-vm.ui
     src/ost-data.ui
@@ -80,34 +77,87 @@ include_directories(../software/chip32)
 include_directories(../software/library)
 
 add_subdirectory(QHexView)
-option(BUILD_SHARED_LIBS "" OFF)
-add_subdirectory(nodeeditor)
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(${PROJECT_NAME}
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET ost-editor APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(${PROJECT_NAME} SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(${PROJECT_NAME}
-            ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
+set(CMAKE_AUTOMOC ON)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${NODE_EDITOR_HEADERS})
-target_link_directories(${PROJECT_NAME} PUBLIC ${NODE_EDITOR_LIBDIR})
+set(NODEEDITOR_SOURCE_FILES
+  ./nodeeditor/src/AbstractGraphModel.cpp
+  ./nodeeditor/src/AbstractNodeGeometry.cpp
+  ./nodeeditor/src/BasicGraphicsScene.cpp
+  ./nodeeditor/src/ConnectionGraphicsObject.cpp
+  ./nodeeditor/src/ConnectionPainter.cpp
+  ./nodeeditor/src/ConnectionState.cpp
+  ./nodeeditor/src/ConnectionStyle.cpp
+  ./nodeeditor/src/DataFlowGraphModel.cpp
+  ./nodeeditor/src/DataFlowGraphicsScene.cpp
+  ./nodeeditor/src/DefaultHorizontalNodeGeometry.cpp
+  ./nodeeditor/src/DefaultVerticalNodeGeometry.cpp
+  ./nodeeditor/src/Definitions.cpp
+  ./nodeeditor/src/GraphicsView.cpp
+  ./nodeeditor/src/GraphicsViewStyle.cpp
+  ./nodeeditor/src/NodeDelegateModelRegistry.cpp
+  ./nodeeditor/src/NodeConnectionInteraction.cpp
+  ./nodeeditor/src/NodeDelegateModel.cpp
+  ./nodeeditor/src/NodeGraphicsObject.cpp
+  ./nodeeditor/src/DefaultNodePainter.cpp
+  ./nodeeditor/src/NodeState.cpp
+  ./nodeeditor/src/NodeStyle.cpp
+  ./nodeeditor/src/StyleCollection.cpp
+  ./nodeeditor/src/UndoCommands.cpp
+  ./nodeeditor/src/locateNode.cpp
+  ./nodeeditor/resources/resources.qrc
+)
+
+set(NODEEDITOR_HEADER_FILES
+  ./nodeeditor/include/QtNodes/internal/AbstractGraphModel.hpp
+  ./nodeeditor/include/QtNodes/internal/AbstractNodeGeometry.hpp
+  ./nodeeditor/include/QtNodes/internal/AbstractNodePainter.hpp
+  ./nodeeditor/include/QtNodes/internal/BasicGraphicsScene.hpp
+  ./nodeeditor/include/QtNodes/internal/Compiler.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionGraphicsObject.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionIdHash.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionIdUtils.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionState.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionStyle.hpp
+  ./nodeeditor/include/QtNodes/internal/DataFlowGraphicsScene.hpp
+  ./nodeeditor/include/QtNodes/internal/DataFlowGraphModel.hpp
+  ./nodeeditor/include/QtNodes/internal/DefaultNodePainter.hpp
+  ./nodeeditor/include/QtNodes/internal/Definitions.hpp
+  ./nodeeditor/include/QtNodes/internal/Export.hpp
+  ./nodeeditor/include/QtNodes/internal/GraphicsView.hpp
+  ./nodeeditor/include/QtNodes/internal/GraphicsViewStyle.hpp
+  ./nodeeditor/include/QtNodes/internal/locateNode.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeData.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeDelegateModel.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeDelegateModelRegistry.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeGraphicsObject.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeState.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeStyle.hpp
+  ./nodeeditor/include/QtNodes/internal/OperatingSystem.hpp
+  ./nodeeditor/include/QtNodes/internal/QStringStdHash.hpp
+  ./nodeeditor/include/QtNodes/internal/QUuidStdHash.hpp
+  ./nodeeditor/include/QtNodes/internal/Serializable.hpp
+  ./nodeeditor/include/QtNodes/internal/Style.hpp
+  ./nodeeditor/include/QtNodes/internal/StyleCollection.hpp
+  ./nodeeditor/include/QtNodes/internal/ConnectionPainter.hpp
+  ./nodeeditor/include/QtNodes/internal/DefaultHorizontalNodeGeometry.hpp
+  ./nodeeditor/include/QtNodes/internal/DefaultVerticalNodeGeometry.hpp
+  ./nodeeditor/include/QtNodes/internal/NodeConnectionInteraction.hpp
+  ./nodeeditor/include/QtNodes/internal/UndoCommands.hpp
+)
+
+
+
+qt_add_executable(${PROJECT_NAME}
+    MANUAL_FINALIZATION
+    ${PROJECT_SOURCES}
+    ${NODEEDITOR_SOURCE_FILES}
+    ${NODEEDITOR_HEADER_FILES}
+)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC NODE_EDITOR_STATIC)
+target_include_directories(${PROJECT_NAME} PUBLIC nodeeditor/include nodeeditor/include/QtNodes/internal)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Core
@@ -116,7 +166,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::OpenGLWidgets
     Qt${QT_VERSION_MAJOR}::OpenGL
     Qt${QT_VERSION_MAJOR}::Multimedia
-    QtNodes
     QHexView
     )
 
