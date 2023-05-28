@@ -28,3 +28,7 @@ build-story-editor-Desktop_Qt_6_5_1_MinGW_64_bit-Debug/
 build-story-editor-Desktop_Qt_6_5_1_MinGW_64_bit-Release/
 
 build-story-editor-Desktop_Qt_6_5_1_MSVC2019_64bit-Debug/
+
+release/
+
+story-editor/windows-setup/Output/
