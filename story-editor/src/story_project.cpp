@@ -17,7 +17,7 @@ void StoryProject::Initialize(const std::string &file_path)
 {
     m_project_file_path = file_path;
     std::filesystem::path p(file_path);
-    m_working_dir= p.parent_path();
+    m_working_dir= p.parent_path().generic_string();
 
     // Frist try to create the working directory
     if (!std::filesystem::is_directory(m_working_dir))
@@ -40,7 +40,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
     bool success = false;
 
     std::filesystem::path p(file_path);
-    m_working_dir= p.parent_path();
+    m_working_dir= p.parent_path().generic_string();
 
     std::cout << "Working dir is: " << m_working_dir << std::endl;
 

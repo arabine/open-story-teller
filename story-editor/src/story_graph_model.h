@@ -180,7 +180,7 @@ public:
     std::string GetNodeEntryLabel(NodeId nodeId) const;
 
     // Centralized for wide usage
-    void PlaySound(const QString &fileName);
+    void PlaySoundFile(const QString &fileName);
 
     NodeId FindFirstNode() const;
 signals:

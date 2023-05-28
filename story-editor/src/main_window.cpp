@@ -563,7 +563,7 @@ uint8_t MainWindow::Syscall(uint8_t code)
             // sound file name address is in R1
             QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
             qDebug() << ", Sound: " << soundFile;
-            m_model.PlaySound(soundFile);
+            m_model.PlaySoundFile(soundFile);
         }
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }

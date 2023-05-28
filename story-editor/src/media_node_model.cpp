@@ -52,7 +52,7 @@ MediaNodeModel::MediaNodeModel(StoryGraphModel &model)
     });
 
     connect(m_ui.playSoundButton, &QPushButton::clicked, [&](bool enable) {
-        m_model.PlaySound(m_soundFilePath);
+        m_model.PlaySoundFile(m_soundFilePath);
     });
 
     m_ui.playSoundButton->setEnabled(false);

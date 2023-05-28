@@ -46,7 +46,7 @@ void StoryGraphModel::AudioThread()
     }
 }
 
-void StoryGraphModel::PlaySound(const QString &fileName)
+void StoryGraphModel::PlaySoundFile(const QString &fileName)
 {
     m_audioQueue.push({"play", fileName.toStdString()});
 }

@@ -29,7 +29,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             Resource res;
             res.format = "BMP";
             res.type = "image";
-            res.file = p.filename();
+            res.file = p.filename().generic_string();
             m_resourcesModel.Append(res);
         }
     });
@@ -49,7 +49,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             Resource res;
             res.format = "WAV";
             res.type = "sound";
-            res.file = p.filename();
+            res.file = p.filename().generic_string();
             m_resourcesModel.Append(res);
         }
     });
