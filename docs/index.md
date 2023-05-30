@@ -7,7 +7,7 @@ hero:
   text: "Hardware and software that tell stories"
   tagline: Make your own, its free sofware
   image:
-    src: ./images/logo-color2.png
+    src: /logo.png
     alt: logo
   actions:
     - theme: brand
