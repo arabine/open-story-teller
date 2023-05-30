@@ -45,6 +45,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'User manual', link: '/editor-intro' },
+          { text: 'Development', link: '/editor-dev' },
         ]
       },
       {

@@ -6,6 +6,9 @@ hero:
   name: "Open Story Teller"
   text: "Hardware and software that tell stories"
   tagline: Make your own, its free sofware
+  image:
+    src: ./images/logo-color2.png
+    alt: logo
   actions:
     - theme: brand
       text: Getting started
@@ -17,11 +20,14 @@ hero:
 features:
   - title: Easy to repair
     details: Complete information is available to change parts and explain how it works
+    icon: 🛠️
   - title: Easy to custom
     details: Hardware abstraction layer to help you porting to any hardware
+    icon: ✨
   - title: Listen everywhere
     details: Keep your stories for life, listen to any device (custom, desktop, mobile, command line...)
+    icon: ⛵
   - title: Create complex stories
     details: The story editor uses a node graph engine with programming nodes
+    icon: 🏰
 ---
-

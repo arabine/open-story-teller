@@ -34,3 +34,7 @@ release/
 story-editor/windows-setup/Output/
 
 build-story-editor-Desktop_Qt_6_5_1_GCC_64bit-Release/
+
+build-story-player-Desktop_Qt_6_5_1_GCC_64bit-Debug/
+
+build-story-player-Desktop_Qt_GCC_64bit-Debug/

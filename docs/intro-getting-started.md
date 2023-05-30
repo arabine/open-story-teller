@@ -1,6 +1,31 @@
 # Getting started
 
-This documentation will guide you to make your own story teller. You can choose between a purely software version (for desktop or mobile), or a hardware version with electronics boards, wires and mechanical enclosure.
+This documentation will guide you to make your own story teller. You can choose between a purely software version (for deskto, mobile or command line), or a hardware version with electronics boards, wires and mechanical enclosure.
+
+## Project status
+
+- Story Editor is available in demo version
+- Firmware: we are focused to deliver a first version based on the Raspery Pico
+- Soft Player: available soon
+
+## Links
+
+Before starting, here is a complete list of links where you'll find project information:
+
+- :octopus: [Github](https://github.com/arabine/open-story-teller): source code for the firmware, the player and the story editor, issue tracking
+- [Itch.io](https://d8s-apps.itch.io/open-story-teller): Download page for the Story Editor and various player versions.
+
+## Helping
+
+You can help in various ways:
+
+- Report bugs on Github (open an new issue)
+- Propose patches, ideas, mechanical drawings, ports (open an issue)
+- Translate stuff
+- Donate through the Itch.io page
+
+<iframe frameborder="0" src="https://itch.io/embed/2082659" width="552" height="167"><a href="https://d8s-apps.itch.io/open-story-teller">Open Story Teller by D8S Apps</a></iframe>
+
 
 ## Where to start
 
@@ -33,17 +58,6 @@ It is not exhaustive but here is a minimal list:
 
 The software player is free and open source, you can rebuild it from the source code or download prebuild releases. See dedicated section.
 
-## Informations
-
-The Github project is https://github.com/arabine/open-story-teller. Feel free to use it for any project related topics:
-
-- Report bugs
-- Download the lastest firmware builds
-- Download the software player
-- Download the StoryEditor
-- Propose patches
-
-
 # Mechanical enclosure
 
 Not yet, waiting for the availability of the first complete kit to determine the form factor.
@@ -56,7 +70,6 @@ Not yet, waiting for the availability of the first complete kit to determine the
 - Propose to buy a PCB for I/O connections (buttons, rotary, LED...)
 
 # License
-
 
 MIT License
 

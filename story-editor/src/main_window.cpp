@@ -607,6 +607,7 @@ void MainWindow::BuildScript()
             std::copy(m_program.begin(), m_program.end(), m_rom_data);
             m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
             m_romView->SetMemory(m_rom_data, m_program.size());
+            m_project.SaveStory(m_program);
             chip32_initialize(&m_chip32_ctx);
             m_dbg.run_result = VM_OK;
             updateAll();

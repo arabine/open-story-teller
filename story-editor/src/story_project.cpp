@@ -12,6 +12,12 @@ void StoryProject::New(const std::string &uuid, const std::string &file_path)
     Initialize(file_path);
 }
 
+void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
+{
+    std::ofstream o(m_working_dir + std::filesystem::path::preferred_separator + "story.c32", std::ios::out | std::ios::binary);
+    o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
+    o.close();
+}
 
 void StoryProject::Initialize(const std::string &file_path)
 {

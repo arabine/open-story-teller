@@ -108,6 +108,7 @@ public:
     static std::string ToUpper(const std::string &input);
 
 
+    void SaveStory(const std::vector<uint8_t> &m_program);
 private:
     // Project properties and location
     std::string m_name; /// human readable name
