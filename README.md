@@ -31,15 +31,11 @@ We plan to propose a mechanical enclosure ready to be printed for an official bu
 
 See the documentation!
 
-# Generic player software
+# Generic player architecture
 
-The base software is highly portable and includes a micro virtual machine. This allow potential complex stories with loops, branches, user choices, randomization...
+The base software is highly portable and includes a micro virtual machine that executes the story scenario. This allow potential complex stories with loops, branches, user choices, randomization...
 
-This project propose an minimal cross-platform GUI player application that can be used as a base project.
-
-Current status:
-- Project broken, needs rework to embed the micro-VM
-- Qt/QML based, easily portable
+This project propose an minimal cross-platform GUI player application that can be used as a base project and VM implementation reference.
 
 # StoryTeller Editor
 
@@ -63,10 +59,6 @@ The Story plater is a purely software implementation of a simple story player. I
 
 ![editor](art/story_player.png)
 
-Technolologies used:
-- C language
-- Raylib for graphics and sounds
-- CMake build system
 
 # License
 
