@@ -185,13 +185,15 @@ typedef struct
 
 } virtual_mem_t;
 
-typedef uint8_t (*syscall_t)(uint8_t);
+typedef struct chip32_ctx_t chip32_ctx_t;
+
+typedef uint8_t (*syscall_t)(chip32_ctx_t *, uint8_t);
 
 #define SYSCALL_RET_OK          0   ///< Default state, continue execution immediately
 #define SYSCALL_RET_WAIT_EV     1   ///< Sets the VM in wait for event state
 
 
-typedef struct
+struct chip32_ctx_t
 {
     virtual_mem_t rom;
     virtual_mem_t ram;
@@ -202,7 +204,7 @@ typedef struct
     uint32_t registers[REGISTER_COUNT];
     syscall_t syscall;
 
-} chip32_ctx_t;
+};
 
 // =======================================================================================
 // VM RUN

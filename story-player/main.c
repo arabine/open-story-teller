@@ -24,11 +24,177 @@
 #define GUI_FILE_DIALOG_IMPLEMENTATION
 #include "gui_file_dialog.h"
 
+#include "chip32_vm.h"
+#include <stdbool.h>
+
+int set_filename_from_memory(chip32_ctx_t *ctx, uint32_t addr, char *filename_mem)
+{
+    int valid = 0;
+
+    // Test if address is valid
+
+    bool isRam = addr & 0x80000000;
+    addr &= 0xFFFF; // mask the RAM/ROM bit, ensure 16-bit addressing
+    if (isRam) {
+        strcpy(&filename_mem[0], (const char *)&ctx->ram.mem[addr]);
+    } else {
+        strcpy(&filename_mem[0], (const char *)&ctx->rom.mem[addr]);
+    }
+
+    return valid;
+}
+
+
+chip32_result_t vm_load_script(chip32_ctx_t *ctx, const char *filename)
+{
+    chip32_result_t run_result = VM_FINISHED;
+    FILE *fp = fopen(filename, "rb");
+    if (fp != NULL)
+    {
+        fseek(fp, 0L, SEEK_END);
+        long int sz = ftell(fp);
+        fseek(fp, 0L, SEEK_SET);
+
+        if (sz <= ctx->rom.size)
+        {
+            fread(ctx->rom.mem, sz, 1, fp);
+            run_result = VM_OK;
+            chip32_initialize(ctx);
+        }
+        fclose(fp);
+    }
+    return run_result;
+}
+
+#define MAX_PATH 260
+
+void get_home_path(char *homedir)
+{
+#ifdef _WIN32
+    snprintf(homedir, MAX_PATH, "%s%s", getenv("HOMEDRIVE"), getenv("HOMEPATH"));
+#else
+    snprintf(homedir, MAX_PATH, "%s", getenv("HOME"));
+#endif
+}
+
+
+void get_parent_dir(const char *path, char *parent)
+{
+    int parentLen;
+    char* last = strrchr(path, '/');
+
+    if (last != NULL) {
+
+        parentLen = strlen(path) - strlen(last + 1);
+        strncpy(parent, path, parentLen);
+    }
+}
+
+
+static Music gMusic;
+static char root_dir[260];
+static bool gMusicLoaded = false;
+
+static Texture texture = { 0 };
+
+#define EV_BUTTON_OK        0x01
+#define EV_BUTTON_LEFT      0x02
+#define EV_BUTTON_RIGHT     0x04
+
+uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
+{
+    uint8_t retCode = SYSCALL_RET_OK;
+
+    static char image_path[260];
+    static char sound_path[260];
+
+    if (code == 1) //  // Execute media
+    {
+        printf("SYSCALL 1\n");
+        fflush(stdout);
+//        UnloadTexture(*tex);
+//        *tex =
+
+        if (ctx->registers[R0] != 0)
+        {
+            // sound file name address is in R1
+            char image[100];
+            set_filename_from_memory(ctx, ctx->registers[R0], image);
+
+            strcpy(image_path, root_dir);
+            strcat(image_path, "images/");
+            strcat(image_path, image);
+
+            texture = LoadTexture(image_path);
+        }
+        else
+        {
+            UnloadTexture(texture);
+        }
+
+
+        if (ctx->registers[R1] != 0)
+        {
+            // sound file name address is in R1
+            char sound[100];
+            set_filename_from_memory(ctx, ctx->registers[R1], sound);
+
+            strcpy(sound_path, root_dir);
+            strcat(sound_path, "sounds/");
+            strcat(sound_path, sound);
+
+            gMusic = LoadMusicStream(sound_path);
+            gMusic.looping = false;
+            gMusicLoaded = true;
+
+            if (IsMusicReady(gMusic))
+            {
+                PlayMusicStream(gMusic);
+            }
+        }
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+    }
+    else if (code == 2) // Wait Event
+    {
+        printf("SYSCALL 2\n");
+        fflush(stdout);
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+    }
+    return retCode;
+}
+
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main()
 {
+    // VM Stuff
+    //---------------------------------------------------------------------------------------
+    uint8_t rom_data[16*1024];
+    uint8_t ram_data[16*1024];
+    chip32_ctx_t chip32_ctx;
+
+    chip32_ctx.stack_size = 512;
+
+    chip32_ctx.rom.mem = rom_data;
+    chip32_ctx.rom.addr = 0;
+    chip32_ctx.rom.size = sizeof(rom_data);
+
+    chip32_ctx.ram.mem = ram_data;
+    chip32_ctx.ram.addr = sizeof(rom_data);
+    chip32_ctx.ram.size = sizeof(ram_data);
+
+    chip32_ctx.syscall = story_player_syscall;
+
+    chip32_result_t run_result = VM_FINISHED;
+
+    // Directories
+    //---------------------------------------------------------------------------------------
+    char homedir[MAX_PATH];
+
+    get_home_path(homedir);
+
     // Initialization
     //---------------------------------------------------------------------------------------
     int screenWidth = 800;
@@ -41,7 +207,6 @@ int main()
 
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, 0x133D42ff);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
-    GuiSetIconScale(3);
 
     GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, 0x6DBFB2ff);
     GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, 0xffffffff);
@@ -53,16 +218,18 @@ int main()
 
     GuiSetFont(fontTtf);
 
-
     // Custom file dialog
     GuiFileDialogState fileDialogState = InitGuiFileDialog(GetWorkingDirectory());
-    Texture2D logoTexture = LoadTexture("logo-color2.png");        // Texture loading
+    strcpy(fileDialogState.filterExt, ".c32");
+    strcpy(fileDialogState.dirPathText, homedir);
+    Texture2D logoTexture = LoadTexture("logo-color2.png");
 
     bool exitWindow = false;
 
     char fileNameToLoad[512] = { 0 };
 
-    Texture texture = { 0 };
+    InitAudioDevice();
+    UnloadMusicStream(gMusic);
 
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
@@ -76,16 +243,35 @@ int main()
 
         if (fileDialogState.SelectFilePressed)
         {
-            // Load image file (if supported extension)
             if (IsFileExtension(fileDialogState.fileNameText, ".c32"))
             {
                 strcpy(fileNameToLoad, TextFormat("%s/%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
-                UnloadTexture(texture);
-                texture = LoadTexture(fileNameToLoad);
+                run_result = vm_load_script(&chip32_ctx, fileNameToLoad);
+                get_parent_dir(fileNameToLoad, root_dir);
+                printf("Root directory: %s\n", root_dir);
             }
 
             fileDialogState.SelectFilePressed = false;
         }
+
+        // VM next instruction
+        if (run_result == VM_OK)
+        {
+            run_result = chip32_step(&chip32_ctx);
+        }
+
+        if (gMusicLoaded)
+        {
+            UpdateMusicStream(gMusic);
+            if (!IsMusicStreamPlaying(gMusic))
+            {
+                StopMusicStream(gMusic);
+                UnloadMusicStream(gMusic);
+                gMusicLoaded = false;
+                run_result = VM_OK; // continue VM execution
+            }
+        }
+
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -94,38 +280,75 @@ int main()
 
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
+
         DrawTextureEx(logoTexture,  (Vector2){ (float)10, (float)10 }, 0, 0.15, WHITE);
 
-        DrawTexture(texture, GetScreenWidth()/2 - texture.width/2, GetScreenHeight()/2 - texture.height/2 - 5, WHITE);
-//        DrawRectangleLines(GetScreenWidth()/2 - texture.width/2, GetScreenHeight()/2 - texture.height/2 - 5, texture.width, texture.height, BLACK);
+        // Image de l'histoire
+        DrawRectangle(220, 25, 320, 240, WHITE);
+        DrawTexture(texture, 220, 25, WHITE);
 
-//        DrawText(fileNameToLoad, 208, GetScreenHeight() - 20, 10, GRAY);
+        GuiSetIconScale(3);
 
-        // raygui: controls drawing
-        //----------------------------------------------------------------------------------
-        if (fileDialogState.windowActive) GuiLock();
+        if (GuiButton((Rectangle){ 20, 140, 60, 60 }, "#05#"))
+        {
+            fileDialogState.windowActive = true;
+        }
 
-        if (GuiButton((Rectangle){ 20, 140, 60, 60 }, "#05#")) fileDialogState.windowActive = true;
-
-        // Pause ICON_PLAYER_PAUSE
+        // ICON_PLAYER_PAUSE
         if (GuiButton((Rectangle){ 20 + 65, 140, 60, 60 }, "#132#"))
         {
 
         }
 
-        // House ICON_HOUSE
+        // ICON_HOUSE
         if (GuiButton((Rectangle){ 20 + 2*65, 140, 60, 60 }, "#185#"))
         {
 
         }
 
+        // ICON_ARROW_LEFT
+        if (GuiButton((Rectangle){ 20, 205, 60, 60 }, "#114#"))
+        {
+            if (run_result == VM_WAIT_EVENT)
+            {
+                chip32_ctx.registers[R0] = EV_BUTTON_LEFT;
+                run_result = VM_OK;
+            }
+        }
+
+        // ICON_OK_TICK
+        if (GuiButton((Rectangle){ 20 + 65, 205, 60, 60 }, "#112#"))
+        {
+            if (run_result == VM_WAIT_EVENT)
+            {
+                chip32_ctx.registers[R0] = EV_BUTTON_OK;
+                run_result = VM_OK;
+            }
+        }
+
+        // ICON_ARROW_RIGHT
+        if (GuiButton((Rectangle){ 20 + 2*65, 205, 60, 60 }, "#115#"))
+        {
+            if (run_result == VM_WAIT_EVENT)
+            {
+                chip32_ctx.registers[R0] = EV_BUTTON_RIGHT;
+                run_result = VM_OK;
+            }
+        }
+
+        // raygui: controls drawing
+        //----------------------------------------------------------------------------------
+
+        if (fileDialogState.windowActive) GuiLock();
 
         GuiUnlock();
 
         // GUI: Dialog Window
         //--------------------------------------------------------------------------------
+        GuiSetIconScale(1);
         GuiFileDialog(&fileDialogState);
         //--------------------------------------------------------------------------------
+
 
         //----------------------------------------------------------------------------------
 
@@ -135,8 +358,10 @@ int main()
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
+    UnloadTexture(logoTexture);     // Unload texture
     UnloadTexture(texture);     // Unload texture
 
+    CloseAudioDevice();
     CloseWindow();              // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 

@@ -270,7 +270,7 @@ void GuiFileDialog(GuiFileDialogState *state)
         state->windowActive = !GuiWindowBox(state->windowBounds, "#198# Select File Dialog");
 
         // Draw previous directory button + logic
-        if (GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 48, state->windowBounds.y + 24 + 12, 40, 24 }, "< .."))
+        if (GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 48, state->windowBounds.y + 24 + 12, 40, 24 }, "#117#"))
         {
             // Move dir path one level up
             strcpy(state->dirPathText, GetPrevDirectoryPath(state->dirPathText));
@@ -345,7 +345,7 @@ void GuiFileDialog(GuiFileDialogState *state)
         // Draw bottom controls
         //--------------------------------------------------------------------------------------
         GuiLabel((Rectangle){ state->windowBounds.x + 8, state->windowBounds.y + state->windowBounds.height - 68, 60, 24 }, "File name:");
-        if (GuiTextBox((Rectangle){ state->windowBounds.x + 72, state->windowBounds.y + state->windowBounds.height - 68, state->windowBounds.width - 184, 24 }, state->fileNameText, 128, state->fileNameEditMode))
+        if (GuiTextBox((Rectangle){ state->windowBounds.x + 72, state->windowBounds.y + state->windowBounds.height - 68, state->windowBounds.width - 80, 24 }, state->fileNameText, 128, state->fileNameEditMode))
         {
             if (*state->fileNameText)
             {
@@ -372,10 +372,7 @@ void GuiFileDialog(GuiFileDialogState *state)
             state->fileNameEditMode = !state->fileNameEditMode;
         }
 
-        GuiLabel((Rectangle){ state->windowBounds.x + 8, state->windowBounds.y + state->windowBounds.height - 24 - 12, 68, 24 }, "File filter:");
-        GuiComboBox((Rectangle){ state->windowBounds.x + 72, state->windowBounds.y + state->windowBounds.height - 24 - 12, state->windowBounds.width - 184, 24 }, "All files", &state->fileTypeActive);
-
-        state->SelectFilePressed = GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 96 - 8, state->windowBounds.y + state->windowBounds.height - 68, 96, 24 }, "Select");
+        state->SelectFilePressed = GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 96 *2 - 8*2, state->windowBounds.y + state->windowBounds.height - 24 - 12, 96, 24 }, "Select");
 
         if (GuiButton((Rectangle){ state->windowBounds.x + state->windowBounds.width - 96 - 8, state->windowBounds.y + state->windowBounds.height - 24 - 12, 96, 24 }, "Cancel")) state->windowActive = false;
         //--------------------------------------------------------------------------------------
@@ -418,12 +415,84 @@ static inline int FileCompare(const char *d1, const char *d2, const char *dir)
     return strcmp(d1, d2);
 }
 
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+
+int is_regular_file(const char *path)
+{
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+
+#define MAX_FILEPATH_CAPACITY       8192        // Maximum capacity for filepath
+#define MAX_FILEPATH_LENGTH          4096       // Maximum length for filepaths (Linux PATH_MAX default value)
+
+
+// Scan all files and directories in a base path
+// WARNING: files.paths[] must be previously allocated and
+// contain enough space to store all required paths
+static void MyScanDirectoryFiles(const char *basePath, FilePathList *files, const char *filter)
+{
+    static char path[MAX_FILEPATH_LENGTH] = { 0 };
+    memset(path, 0, MAX_FILEPATH_LENGTH);
+
+    struct dirent *dp = NULL;
+    DIR *dir = opendir(basePath);
+
+    if (dir != NULL)
+    {
+        while ((dp = readdir(dir)) != NULL)
+        {
+            if ((strcmp(dp->d_name, ".") != 0) &&
+                (strcmp(dp->d_name, "..") != 0) && (dp->d_name[0] != '.'))
+            {
+                sprintf(path, "%s/%s", basePath, dp->d_name);
+
+                if ((filter != NULL) && (is_regular_file(path)))
+                {
+                    if (IsFileExtension(path, filter))
+                    {
+                        strcpy(files->paths[files->count], path);
+                        files->count++;
+                    }
+                }
+                else
+                {
+                    strcpy(files->paths[files->count], path);
+                    files->count++;
+                }
+            }
+        }
+
+        closedir(dir);
+    }
+}
+
+
+FilePathList MyLoadDirectoryFilesEx(const char *basePath, const char *filter)
+{
+    FilePathList files = { 0 };
+
+    files.capacity = MAX_FILEPATH_CAPACITY;
+    files.paths = (char **)RL_CALLOC(files.capacity, sizeof(char *));
+    for (unsigned int i = 0; i < files.capacity; i++) files.paths[i] = (char *)RL_CALLOC(MAX_FILEPATH_LENGTH, sizeof(char));
+
+    // WARNING: basePath is always prepended to scanned paths
+    MyScanDirectoryFiles(basePath, &files, filter);
+
+    return files;
+}
+
 // Read files in new path
 static void ReloadDirectoryFiles(GuiFileDialogState *state)
 {
     UnloadDirectoryFiles(state->dirFiles);
 
-    state->dirFiles = LoadDirectoryFilesEx(state->dirPathText, (state->filterExt[0] == '\0')? NULL : state->filterExt, false);
+    state->dirFiles = MyLoadDirectoryFilesEx(state->dirPathText, (state->filterExt[0] == '\0')? NULL : state->filterExt);
     state->itemFocused = 0;
 
     // Reset dirFilesIcon memory

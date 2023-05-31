@@ -146,7 +146,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
 
         if (ctx->syscall != NULL)
         {
-            if (ctx->syscall(code) != 0)
+            if (ctx->syscall(ctx, code) != 0)
             {
                 result = VM_WAIT_EVENT;
             }

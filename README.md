@@ -45,7 +45,7 @@ Current status:
 
 We propose a basic editor tool to create your own stories. The generated story script runs on our micro virtual machine and allow generate complex stories.
 
-![editor](images/story_editor_preview.png)
+![editor](art/story_editor_preview.png)
 
 Work in progress:
 - Project management
@@ -56,6 +56,17 @@ Planned nodes:
 - Random
 - Loop
 - Conditional
+
+# Story Player
+
+The Story plater is a purely software implementation of a simple story player. It is provided as an example and a test device for the micro virtual machine. It is very portable and should run on a large number of platforms.
+
+![editor](art/story_player.png)
+
+Technolologies used:
+- C language
+- Raylib for graphics and sounds
+- CMake build system
 
 # License
 

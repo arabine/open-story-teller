@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
-project(raylib_template)
+project(story-player)
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -25,7 +25,17 @@ endif()
 
 # Our Project
 
-add_executable(${PROJECT_NAME} main.c raygui.h)
+add_executable(${PROJECT_NAME}
+    main.c
+    raygui.h
+    ../software/chip32/chip32_assembler.cpp
+    ../software/chip32/chip32_vm.c
+    ../software/chip32/chip32_assembler.h
+    ../software/chip32/chip32_vm.h
+)
+include_directories(../software/chip32)
+include_directories(../software/library)
+
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} raylib)
 
