@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug J-Link",
+            "cwd": "${workspaceRoot}",
+            "executable": "./sketch_oct14a/build/arduino.samd.mkrzero/sketch_oct14a.ino.elf",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServerCLExe",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "ATSAMD21G18A",
+            "interface": "swd",
+            "runToMain": true,
+            "armToolchainPath": "/opt/gcc-arm-none-eabi-2020/bin/"
+        },
+        {
+            "name": "Black Magic Probe",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/RaspberryPico/open-story-teller.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "BMPGDBSerialPort": "/dev/ttyACM0",
+            "servertype": "bmp",
+            "interface": "swd",
+            "gdbPath": "gdb-multiarch",
+            // "device": "STM32L431VC",
+            "runToMain": true,
+            "preRestartCommands": [
+                "cd ${workspaceRoot}/build",
+                "file open-story-teller.elf",
+                // "target extended-remote /dev/ttyACM0",
+                "set mem inaccessible-by-default off",
+                "enable breakpoint",
+                "monitor reset",
+                "monitor swdp_scan",
+                "attach 1",
+                "load"
+            ]
+        }
+    ]
+}

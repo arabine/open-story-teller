@@ -2,12 +2,6 @@
 
 This documentation will guide you to make your own story teller. You can choose between a purely software version (for deskto, mobile or command line), or a hardware version with electronics boards, wires and mechanical enclosure.
 
-## Project status
-
-- Story Editor is available in demo version
-- Firmware: we are focused to deliver a first version based on the Raspery Pico
-- Soft Player: available soon
-
 ## Links
 
 Before starting, here is a complete list of links where you'll find project information:

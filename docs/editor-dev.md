@@ -21,7 +21,9 @@ You'll need:
 
 Open the CMakeLists.txt with your favorite IDE (ie, QtCreator) or build from the command line.
 
+# Architecture
 
+![arch](story-editor-architecture.png)
 
 
 

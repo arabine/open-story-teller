@@ -4,38 +4,46 @@
 # Default target: TBD ?
 # ==================================================================================================
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE ON)
 set(PROJECT_NAME open-story-teller)
 
 # ==================================================================================================
-# BUILD TYPE
+# DEFAULT VARIABLES OPTIONS
 # ==================================================================================================
+if(NOT OST_BUNDLE)
+    set(OST_BUNDLE "RASPI_PICO")
+endif()
+
+if(NOT PICO_SDK_PATH)
+    set(PICO_SDK_PATH "../pico-sdk")
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
 # ==================================================================================================
 # OST COMMON FILES
 # ==================================================================================================
 set(OST_SRCS
-    src/main.c
-    src/sdcard.c
-    src/debug.c
-    src/picture.c
-    src/filesystem.c
-    src/ost_tasker.c
-    src/ff/ff.c
-    src/ff/ffsystem.c
-    src/ff/ff_stubs.c
+    system/main.c
+    system/sdcard.c
+    system/debug.c
+    system/picture.c
+    system/filesystem.c
+    system/ost_tasker.c
+    system/ff/ff.c
+    system/ff/ffsystem.c
+    system/ff/ff_stubs.c
 )
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/library
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ff
+    ${CMAKE_CURRENT_SOURCE_DIR}/system
+    ${CMAKE_CURRENT_SOURCE_DIR}/system/ff
 )
 
 # ==================================================================================================
@@ -130,3 +138,17 @@ elseif(${OST_BUNDLE} STREQUAL "RASPI_PICO")
 else()
     message("============= DEFAULT TARGET: LINUX CONSOLE ============= ")
 endif()
+
+# ==================================================================================================
+# CUSTOM TARGETS
+# ==================================================================================================
+add_custom_target(RaspberryPico
+    COMMAND ${CMAKE_COMMAND}
+    -DOST_BUNDLE=RASPI_PICO
+    -DPICO_SDK_PATH=../pico-sdk
+    -DPICO_BOARD=pico_w
+    -DCMAKE_BUILD_TYPE=Debug
+    -B "${CMAKE_CURRENT_BINARY_DIR}/RaspberryPico"
+    -S "${CMAKE_SOURCE_DIR}"
+    COMMAND ${CMAKE_COMMAND} --build "${CMAKE_CURRENT_BINARY_DIR}/RaspberryPico"
+)
