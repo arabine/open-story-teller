@@ -23,7 +23,7 @@ Open the CMakeLists.txt with your favorite IDE (ie, QtCreator) or build from the
 
 # Architecture
 
-![arch](story-editor-architecture.png)
+![arch](./images/story-editor-architecture.png)
 
 
 
