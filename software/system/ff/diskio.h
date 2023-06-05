@@ -1,16 +1,13 @@
-/*-----------------------------------------------------------------------
-/  Low level disk interface module include file   (C)ChaN, 2014
+/*-----------------------------------------------------------------------/
+/  Low level disk interface modlue include file   (C)ChaN, 2019          /
 /-----------------------------------------------------------------------*/
 
-#ifndef SDCARD_DEFINED
-#define SDCARD_DEFINED
+#ifndef _DISKIO_DEFINED
+#define _DISKIO_DEFINED
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "ff.h"
-
 
 /* Status of Disk Functions */
 typedef BYTE	DSTATUS;
@@ -27,7 +24,6 @@ typedef enum {
 
 /*---------------------------------------*/
 /* Prototypes for disk control functions */
-/*---------------------------------------*/
 
 
 DSTATUS disk_initialize (BYTE pdrv);
@@ -38,6 +34,7 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
 
 
 /* Disk Status Bits (DSTATUS) */
+
 #define STA_NOINIT		0x01	/* Drive not initialized */
 #define STA_NODISK		0x02	/* No medium in the drive */
 #define STA_PROTECT		0x04	/* Write protected */
@@ -53,40 +50,25 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
 #define CTRL_TRIM			4	/* Inform device that the data on the block of sectors is no longer used (needed at FF_USE_TRIM == 1) */
 
 /* Generic command (Not used by FatFs) */
-#define CTRL_FORMAT			5	/* Create physical format on the media */
-#define CTRL_POWER_IDLE		6	/* Put the device idle state */
-#define CTRL_POWER_OFF		7	/* Put the device off state */
-#define CTRL_LOCK			8	/* Lock media removal */
-#define CTRL_UNLOCK			9	/* Unlock media removal */
-#define CTRL_EJECT			10	/* Eject media */
-#define CTRL_GET_SMART		11	/* Read SMART information */
+#define CTRL_POWER			5	/* Get/Set power status */
+#define CTRL_LOCK			6	/* Lock/Unlock media removal */
+#define CTRL_EJECT			7	/* Eject media */
+#define CTRL_FORMAT			8	/* Create physical format on the media */
 
-/* MMC/SDC specific command (Not used by FatFs) */
-#define MMC_GET_TYPE		50	/* Get card type */
-#define MMC_GET_CSD			51	/* Read CSD */
-#define MMC_GET_CID			52	/* Read CID */
-#define MMC_GET_OCR			53	/* Read OCR */
-#define MMC_GET_SDSTAT		54	/* Read SD status */
+/* MMC/SDC specific ioctl command */
+#define MMC_GET_TYPE		10	/* Get card type */
+#define MMC_GET_CSD			11	/* Get CSD */
+#define MMC_GET_CID			12	/* Get CID */
+#define MMC_GET_OCR			13	/* Get OCR */
+#define MMC_GET_SDSTAT		14	/* Get SD status */
 #define ISDIO_READ			55	/* Read data form SD iSDIO register */
 #define ISDIO_WRITE			56	/* Write data to SD iSDIO register */
 #define ISDIO_MRITE			57	/* Masked write data to SD iSDIO register */
 
-/* ATA/CF specific command (Not used by FatFs) */
-#define ATA_GET_REV			60	/* Get F/W revision */
-#define ATA_GET_MODEL		61	/* Get model name */
-#define ATA_GET_SN			62	/* Get serial number */
-
-
-/* MMC card type flags (MMC_GET_TYPE) */
-#define CT_MMC3		0x01		/* MMC ver 3 */
-#define CT_MMC4		0x02		/* MMC ver 4+ */
-#define CT_MMC		0x03		/* MMC */
-#define CT_SDC1		0x02		/* SDC ver 1 */
-#define CT_SDC2		0x04		/* SDC ver 2+ */
-#define CT_SDC		0x0C		/* SDC */
-#define CT_BLOCK	0x10		/* Block addressing */
-
-void disk_timerproc (void);
+/* ATA/CF specific ioctl command */
+#define ATA_GET_REV			20	/* Get F/W revision */
+#define ATA_GET_MODEL		21	/* Get model name */
+#define ATA_GET_SN			22	/* Get serial number */
 
 #ifdef __cplusplus
 }

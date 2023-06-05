@@ -1,3 +1,14 @@
 {
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "**/frontmatter.json": "jsonc",
+        "**/.frontmatter/config/*.json": "jsonc",
+        "diskio.h": "c",
+        "ost_hal.h": "c",
+        "stdint.h": "c",
+        "sdcard.h": "c",
+        "ff.h": "c",
+        "debug.h": "c",
+        "ffconf.h": "c"
+    }
 }

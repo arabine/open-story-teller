@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PICO_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/pico_hal_wrapper.c
     ${CMAKE_CURRENT_LIST_DIR}/pico_lcd_spi.c
+    ${CMAKE_CURRENT_LIST_DIR}/pico_sdcard_spi.c
 )
 
 include_directories(../../src ../../hal ../../library)

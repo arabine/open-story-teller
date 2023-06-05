@@ -3,14 +3,18 @@
 #include "ost_hal.h"
 #include "debug.h"
 #include "st7789.h"
+#include <ff.h>
+#include "diskio.h"
 
 // Raspberry Pico SDK
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
+#include "hardware/spi.h"
 #include "pico.h"
 
 // Local
 #include "pico_lcd_spi.h"
+#include "pico_sdcard_spi.h"
 
 static volatile uint32_t msTicks = 0;
 
@@ -39,18 +43,26 @@ const uint8_t LCD_CS = 9;
 const uint8_t LCD_RESET = 12;
 const uint8_t LCD_BL = 13;
 
-const uint8_t ROTARY_A = 19;
-const uint8_t ROTARY_B = 19;
+const uint8_t ROTARY_A = 6;
+const uint8_t ROTARY_B = 7;
+
+const uint8_t SD_CARD_CS = 17;
+
+const uint8_t SD_CARD_PRESENCE = 24;
+
+extern void disk_timerproc();
 
 static bool sys_timer_callback(struct repeating_timer *t)
 {
   msTicks++;
+
+  // disk_timerproc();
   return true;
 }
 
 void ost_system_initialize()
 {
-  stdio_init_all();
+  // stdio_init_all();
 
   ////------------------- Init DEBUG LED
   gpio_init(LED_PIN);
@@ -94,6 +106,16 @@ void ost_system_initialize()
 
   gpio_init(ROTARY_B);
   gpio_set_dir(ROTARY_B, GPIO_IN);
+
+  //------------------- Init SDCARD
+  gpio_init(SD_CARD_CS);
+  gpio_put(SD_CARD_CS, 1);
+  gpio_set_dir(SD_CARD_CS, GPIO_OUT);
+
+  gpio_init(SD_CARD_PRESENCE);
+  gpio_set_dir(SD_CARD_PRESENCE, GPIO_IN);
+
+  pico_sdcard_spi_init(10000);
 
   //------------------- System timer (1ms)
   add_repeating_timer_ms(1, sys_timer_callback, NULL, &sys_timer);
@@ -144,35 +166,35 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
 void sdcard_set_slow_clock()
 {
   // spi_init(100000, 0);
+  spi_set_baudrate(spi0, 10000);
 }
 
 void sdcard_set_fast_clock()
 {
-  // spi_init(800000, 0);
+  spi_set_baudrate(spi0, 1000 * 1000);
 }
 
-void sdcard_cs_high()
+void ost_hal_sdcard_cs_high()
 {
-  // spi_ss(1);
+  gpio_put(SD_CARD_CS, 1);
 }
 
-void sdcard_cs_low()
+void ost_hal_sdcard_cs_low()
 {
-  // spi_ss(0);
+  gpio_put(SD_CARD_CS, 0);
 }
 
-uint8_t sdcard_spi_transfer(uint8_t dat)
+uint8_t ost_hal_sdcard_spi_transfer(uint8_t dat)
 {
-  // return spi_transfer(dat);
-  return 0;
+  uint8_t out;
+  pico_ost_hal_sdcard_spi_transfer(&dat, &out, 1);
+
+  return out;
 }
 
-void sdcard_spi_recv_multi(uint8_t *buff, uint32_t btr)
+uint8_t ost_hal_sdcard_get_presence()
 {
-  // for (uint32_t i = 0; i < btr; i++)
-  // {
-  //   buff[i] = spi_transfer(buff[i]);
-  // }
+  return 1; // not wired
 }
 
 // ----------------------------------------------------------------------------

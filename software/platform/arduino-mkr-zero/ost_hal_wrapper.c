@@ -307,17 +307,17 @@ void sdcard_set_fast_clock()
   spi_init(800000, 0);
 }
 
-void sdcard_cs_high()
+void ost_hal_sdcard_cs_high()
 {
   spi_ss(1);
 }
 
-void sdcard_cs_low()
+void ost_hal_sdcard_cs_low()
 {
   spi_ss(0);
 }
 
-uint8_t sdcard_spi_transfer(uint8_t dat)
+uint8_t ost_hal_sdcard_spi_transfer(uint8_t dat)
 {
   return spi_transfer(dat);
 }

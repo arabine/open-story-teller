@@ -30,7 +30,7 @@
             // "device": "STM32L431VC",
             "runToMain": true,
             "preRestartCommands": [
-                "cd ${workspaceRoot}/build",
+                "cd ${workspaceRoot}/build/RaspberryPico",
                 "file open-story-teller.elf",
                 // "target extended-remote /dev/ttyACM0",
                 "set mem inaccessible-by-default off",

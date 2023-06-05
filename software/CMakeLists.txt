@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_COLOR_MAKEFILE ON)
 set(PROJECT_NAME open-story-teller)
 
@@ -31,6 +31,7 @@ endif()
 set(OST_SRCS
     system/main.c
     system/sdcard.c
+    system/ff_diskio_sdcard.c
     system/debug.c
     system/picture.c
     system/filesystem.c

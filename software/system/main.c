@@ -35,12 +35,20 @@ int main(void)
     return 0;
 }
 #else
+
+#include "sdcard.h"
+
 int main()
 {
     ost_system_initialize();
 
     // 1. Test the printf output
-    debug_printf("\r\n>>>>> Starting OpenStoryTeller tests: V%d.%d <<<<<\n", 1, 0);
+    debug_printf("\r\n [OST] Starting OpenStoryTeller tests: V%d.%d\r\n", 1, 0);
+
+    filesystem_mount();
+
+    // 2. Unit test the SD Card
+    // sdcard_init();
 
     for (;;)
     {

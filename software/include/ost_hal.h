@@ -53,10 +53,18 @@ extern "C"
     // ----------------------------------------------------------------------------
     // SDCARD HAL
     // ----------------------------------------------------------------------------
-    void sdcard_set_slow_clock();
-    void sdcard_set_fast_clock();
-    void sdcard_cs_high();
-    void sdcard_cs_low();
+
+    /**
+     * @brief Deselect the SD-Card by driving the Chip Select to high level (eg: 3.3V)
+     *
+     */
+    void ost_hal_sdcard_cs_high();
+
+    /**
+     * @brief Deselect the SD-Card by driving the Chip Select to low level (eg: 0V)
+     *
+     */
+    void ost_hal_sdcard_cs_low();
 
     /**
      * @brief
@@ -64,15 +72,14 @@ extern "C"
      * @param dat Data to send
      * @return uint8_t
      */
-    uint8_t sdcard_spi_transfer(uint8_t dat);
+    uint8_t ost_hal_sdcard_spi_transfer(uint8_t dat);
 
     /**
-     * @brief Receive multiple byte
+     * @brief Return 1 if the SD card is physically inserted, otherwise 0
      *
-     * @param buff  Pointer to data buffer
-     * @param btr	Number of bytes to receive (even number)
+     * @return uint8_t SD card is present or not
      */
-    void sdcard_spi_recv_multi(uint8_t *buff, uint32_t btr);
+    uint8_t ost_hal_sdcard_get_presence();
 
     // ----------------------------------------------------------------------------
     // DISPLAY HAL
