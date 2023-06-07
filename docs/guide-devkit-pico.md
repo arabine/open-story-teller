@@ -24,9 +24,25 @@ Here is an example of components.
 | 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ) |
 | Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX) |
 | UPS module or Pimoroni LiPo Shim      | 15 €     | Waveshare | [Buy on Amazon](https://amzn.to/44p8Exo) |
+| LiPo battery 500mAh                   |  9 €     | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
+| GPIO Expander Pico 4 modules          | 17 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
+| SDCard breakout board                 |  5 €     | Any       |  |
+| **TOTAL**                             | **86 €** |
+
+
+A much more optimization of price is possible using the Marble Pico board which is completely compatible to the original Pico pinout but with embedded battery management and SDCard holder. Price is still low: 5€!
+
+| Part                                  | Price    | Shop      | Link                                     |
+| ------------------------------------- | -------- | --------- | ---------------------------------------- |
+| Audio board + speaker                 | 13 €     | Waveshare | [Buy on Amazon](https://amzn.to/41nWgeB) |
+| Marble Pico                           | 5 €      | ArduShop  | [Buy on Amazon](https://ardushop.ro/en/home/2652-marble-pico.html) |
+| 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ) |
+| Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX) |
 | LiPo battery 500mAh                   | 9 €      | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
-| Carte d'extension GPIO Pico 4 modules | 15 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
-| **TOTAL**                             | **67 €** |
+| GPIO Expander Pico 2 modules          | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
+| **TOTAL**                             | **59 €** |
+
+
 
 In addition to this list, you may need some more materials such as wires, prototype boards, resistors...
 
@@ -37,6 +53,12 @@ We may propose in the future a PCB to help the connection without soldering.
 
 # Developers: how to build from the source code
 
+## Clone the repository
+
+```
+git clone https://github.com/arabine/open-story-teller
+```
+
 ## Install build tools
 
 Install build tools, example for a Debian based operating system:
@@ -44,29 +66,35 @@ Install build tools, example for a Debian based operating system:
 - sudo apt install gcc-arm-none-eabi
 - sudo apt install picolibc-arm-none-eabi
 
-Download the pico SDK somewhere on your disk:
+Make sure that CMake will use this cross toolchain. If not, use the following option in the command line during cmake invocation.
 
 ```
+cmake -DTOOLCHAIN=arm-none-eabi -DCMAKE_TOOLCHAIN_FILE=cmake/cross-gcc.cmake
+```
+
+Clone the pico SDK inside the `software` directory:
+
+```
+cd software
 git clone https://github.com/raspberrypi/pico-sdk
 ```
 
-
-
-Copy past the following command line, execute at the directory root. Replace the PICO_SDK_PATH value with the real location on your disk where you have installed the Pico SDK.
-
-First, create a CMake build directory:
+If you already have the Pico SDK installed somewhere else on your disk, you can create a link. Then, create a build directory and launch the build:
 
 ```
 mkdir build
 cd build
+cmake ..
+make
 ```
-Then generate the makefile (we use the Pico toolchain here, so there is no specific toolchain file to setup.)
+
+## CMake tuning options
 
 ```
 cmake  -DCMAKE_BUILD_TYPE=Debug -DOST_BUNDLE=RASPI_PICO -DPICO_SDK_PATH=../pico-sdk -DPICO_BOARD=pico_w ..
 ```
 
-This assume that the Pico SDK is located on the git project root directory. Change this path according to your real Pico SDK location.
+Replace the PICO_SDK_PATH value according to your real Pico SDK location if necessary.
 
 
 
