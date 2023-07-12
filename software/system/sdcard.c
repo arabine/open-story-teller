@@ -155,8 +155,8 @@ static SD_Error SD_SendCmd(uint8_t cmd, uint32_t arg, uint8_t crc)
 	ost_hal_sdcard_spi_transfer((uint8_t)arg);		   /*!< byte 5 */
 	ost_hal_sdcard_spi_transfer(crc | 0x01);		   /*!< byte 6: CRC */
 	/* a byte received immediately after CMD12 should be discarded... */
-	// if (cmd == SD_CMD_STOP_TRANSMISSION)
-	// 	ost_hal_sdcard_spi_transfer();
+	if (cmd == SD_CMD_STOP_TRANSMISSION)
+		ost_hal_sdcard_spi_transfer(0xFF);
 	/* SD Card responds within Ncr (response time),
 	   which is 0-8 bytes for SDSC cards, 1-8 bytes for MMC cards */
 	do
@@ -538,7 +538,7 @@ SD_Error sdcard_sectors_read(uint32_t readAddr, uint8_t *pBuffer, uint32_t nbSec
 {
 	SD_Error state;
 
-	debug_printf("--> reading %lu sectors from %lu ...", nbSectors, readAddr);
+	// debug_printf("--> reading %lu sectors from %lu ...", nbSectors, readAddr);
 
 	/* non High Capacity cards use byte-oriented addresses */
 	if (cardType != SD_Card_SDHC)
@@ -733,7 +733,7 @@ SD_Error sdcard_sectors_erase(uint32_t eraseAddrFrom, uint32_t eraseAddrTo)
 		return SD_ILLEGAL_COMMAND;
 	}
 
-	debug_printf("--> erasing sectors from %lu to %lu ...", eraseAddrFrom, eraseAddrTo);
+	// debug_printf("--> erasing sectors from %lu to %lu ...", eraseAddrFrom, eraseAddrTo);
 
 	/* non High Capacity cards use byte-oriented addresses */
 	if (cardType != SD_Card_SDHC)

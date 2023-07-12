@@ -23,6 +23,7 @@
             "executable": "${workspaceRoot}/build/RaspberryPico/open-story-teller.elf",
             "request": "launch",
             "type": "cortex-debug",
+            "showDevDebugOutput": "raw",
             "BMPGDBSerialPort": "/dev/ttyACM0",
             "servertype": "bmp",
             "interface": "swd",

@@ -1,0 +1,82 @@
+; i2s.pio
+;
+; Author: Daniel Collins
+; Date:   2022-02-25
+;
+; Copyright (c) 2022 Daniel Collins
+;
+; This file is part of rp2040_i2s_example.
+;
+; rp2040_i2s_example is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License, version 3 as published by the
+; Free Software Foundation.
+;
+; rp2040_i2s_example is distributed in the hope that it will be useful, but WITHOUT ANY
+; WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+; A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; rp2040_i2s_example. If not, see <https://www.gnu.org/licenses/>.
+
+; An I2S bi-directional peripheral with master clock (SCK) output.
+
+
+.program i2s_out_master
+; I2S audio output block. Synchronous with clock and input.
+; Must run at BCK * 2.
+;
+; This block also outputs the word clock (also called frame or LR clock) and
+; the bit clock.
+;
+; Set register x to (bit depth - 2) (e.g. for 24 bit audio, set to 22).
+; Note that if this is needed to be synchronous with the SCK module,
+; it is not possible to run 24-bit frames with an SCK of 256x fs. You must either
+; run SCK at 384x fs (if your codec permits this) or use 32-bit frames, which
+; work fine with 24-bit codecs.
+
+.side_set 2
+
+public entry_point:
+                    ;        /--- LRCLK
+                    ;        |/-- BCLK
+frameL:             ;        ||
+    set x, 30         side 0b00 ; start of Left frame
+    pull noblock      side 0b01 ; One clock after edge change with no data
+dataL:
+    out pins, 1       side 0b00
+    jmp x-- dataL     side 0b01
+
+frameR:
+    set x, 30         side 0b10
+    pull noblock      side 0b11 ; One clock after edge change with no data
+dataR:
+    out pins, 1       side 0b10
+    jmp x-- dataR     side 0b11
+
+
+% c-sdk {
+
+// These constants are the I2S clock to pio clock ratio
+const int i2s_sck_program_pio_mult = 2;
+const int i2s_out_master_program_pio_mult = 2;
+
+
+static inline void i2s_out_master_program_init(PIO pio, uint8_t sm, uint8_t offset, uint8_t bit_depth, uint8_t dout_pin, uint8_t clock_pin_base) {
+    pio_gpio_init(pio, dout_pin);
+    pio_gpio_init(pio, clock_pin_base);
+    pio_gpio_init(pio, clock_pin_base + 1);
+
+    pio_sm_config sm_config = i2s_out_master_program_get_default_config(offset);
+    sm_config_set_out_pins(&sm_config, dout_pin, 1);
+    sm_config_set_sideset_pins(&sm_config, clock_pin_base);
+    sm_config_set_out_shift(&sm_config, false, false, bit_depth);
+    sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+    pio_sm_init(pio, sm, offset, &sm_config);
+
+    uint32_t pin_mask = (1u << dout_pin) | (3u << clock_pin_base);
+    pio_sm_set_pins_with_mask(pio, sm, 0, pin_mask);  // zero output
+    pio_sm_set_pindirs_with_mask(pio, sm, pin_mask, pin_mask);
+}
+
+
+%}

@@ -41,12 +41,17 @@ extern "C"
     } ost_hal_gpio_t;
 
     // ----------------------------------------------------------------------------
-    // SYSTEM HAL
+    // HIGH LEVEL API
     // ----------------------------------------------------------------------------
     void ost_system_initialize();
     void system_putc(char ch);
     void ost_system_delay_ms(uint32_t delay);
 
+    void ost_audio_play(const char *filename);
+
+    // ----------------------------------------------------------------------------
+    // GPIO HAL
+    // ----------------------------------------------------------------------------
     int ost_hal_gpio_get(ost_hal_gpio_t gpio);
     void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value);
 
@@ -92,6 +97,13 @@ extern "C"
     void ost_display_ss_low();
     uint8_t ost_display_transfer_byte(uint8_t dat);
     void ost_display_transfer_multi(uint8_t *buff, uint32_t btr);
+
+    // ----------------------------------------------------------------------------
+    // AUDIO HAL
+    // ----------------------------------------------------------------------------
+    void ost_hal_audio_frame_end();
+    void ost_hal_audio_frame_start(const volatile void *, int dma_trans_number);
+    void ost_hal_audio_loop();
 
 #ifdef __cplusplus
 }

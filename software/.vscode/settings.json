@@ -9,6 +9,23 @@
         "sdcard.h": "c",
         "ff.h": "c",
         "debug.h": "c",
-        "ffconf.h": "c"
+        "ffconf.h": "c",
+        "picture.h": "c",
+        "ost_tasker.h": "c",
+        "audio_pio.h": "c",
+        "audio_player.h": "c",
+        "compare": "c",
+        "pio.h": "c",
+        "*.tcc": "c",
+        "memory_resource": "c",
+        "memory": "c",
+        "ostream": "c",
+        "streambuf": "c",
+        "random": "c",
+        "algorithm": "c",
+        "gpio.h": "c",
+        "pico_i2s.h": "c",
+        "stdlib.h": "c",
+        "os.h": "c"
     }
 }

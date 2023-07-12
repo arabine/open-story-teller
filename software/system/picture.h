@@ -3,14 +3,14 @@
 #define PICTURE_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void decompress(const char *filename);
+    void picture_show(const char *filename);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // PICTURE_H
-

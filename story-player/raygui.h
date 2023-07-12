@@ -1942,7 +1942,7 @@ int GuiToggleGroup(Rectangle bounds, const char *text, int *active)
     int result = 0;
     float initBoundsX = bounds.x;
 
-    bool temp = false;
+    int temp = 0;
     if (active == NULL) active = &temp;
 
     bool toggle = false;    // Required for individual toggles

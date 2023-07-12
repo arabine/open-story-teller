@@ -13,7 +13,7 @@ static uint dma_tx;
 
 void pico_lcd_spi_init()
 {
-    spi_init(spi1, 1000 * 1000);
+    spi_init(spi1, 10000000);
     // gpio_set_function(LCD_RX, GPIO_FUNC_SPI);
 
     gpio_set_function(LCD_SCK, GPIO_FUNC_SPI);

@@ -14,7 +14,7 @@ typedef FIL file_t;
 #else
 
 // Use standard library
-typedef FILE* file_t;
+typedef FILE *file_t;
 typedef int FRESULT;
 #define F_OK
 #endif
@@ -26,7 +26,7 @@ file_t ost_file_open(const char *filename)
     FRESULT fr = f_open(&fil, filename, FA_READ);
     if (fr != FR_OK)
     {
-        debug_printf("ERROR: f_open %d\n\r", (int) fr);
+        debug_printf("ERROR: f_open %d\n\r", (int)fr);
     }
     return fil;
 #else
@@ -37,30 +37,32 @@ file_t ost_file_open(const char *filename)
 static uint8_t bmpImage[512];
 
 static uint8_t decompressed[1024];
-static uint8_t palette[16*4];
+static uint8_t palette[16 * 4];
 
-typedef struct {
-   uint16_t type;                 /* Magic identifier            */
-   uint32_t size;                       /* File size in bytes          */
-   uint16_t reserved1;
-   uint16_t reserved2;
-   uint32_t offset;                     /* Offset to image data, bytes */
+typedef struct
+{
+    uint16_t type; /* Magic identifier            */
+    uint32_t size; /* File size in bytes          */
+    uint16_t reserved1;
+    uint16_t reserved2;
+    uint32_t offset; /* Offset to image data, bytes */
 } bmp_header_t;
 
-typedef struct {
-   uint32_t size;               /* Header size in bytes      */
-   uint32_t width;
-   uint32_t height;                /* Width and height of image */
-   uint16_t planes;       /* Number of colour planes   */
-   uint16_t bits;         /* Bits per pixel            */
-   uint32_t compression;        /* Compression type          */
-   uint32_t imagesize;          /* Image size in bytes       */
-   uint32_t xresolution;
-   uint32_t yresolution;     /* Pixels per meter          */
-   uint32_t ncolours;           /* Number of colours         */
-   uint32_t importantcolours;   /* Important colours         */
-   uint32_t rgb;
-   uint32_t rgb2;
+typedef struct
+{
+    uint32_t size; /* Header size in bytes      */
+    uint32_t width;
+    uint32_t height;      /* Width and height of image */
+    uint16_t planes;      /* Number of colour planes   */
+    uint16_t bits;        /* Bits per pixel            */
+    uint32_t compression; /* Compression type          */
+    uint32_t imagesize;   /* Image size in bytes       */
+    uint32_t xresolution;
+    uint32_t yresolution;      /* Pixels per meter          */
+    uint32_t ncolours;         /* Number of colours         */
+    uint32_t importantcolours; /* Important colours         */
+    uint32_t rgb;
+    uint32_t rgb2;
 } bmp_infoheader_t;
 
 static const uint32_t HEADER_SIZE = 14;
@@ -92,7 +94,7 @@ uint8_t parse_bmp(const uint8_t *data, bmp_header_t *header, bmp_infoheader_t *i
     return isBmp;
 }
 
-void decompress(const char *filename)
+void picture_show(const char *filename)
 {
     file_t fil;
     uint32_t offset;
@@ -108,7 +110,7 @@ void decompress(const char *filename)
     fseek(fil, offset, SEEK_SET);
     fread(bmpImage, sizeof(uint8_t), 512, fil);
 #endif
-    int nblines=0;
+    int nblines = 0;
 
     bmp_header_t header;
     bmp_infoheader_t info_header;
@@ -146,7 +148,7 @@ void decompress(const char *filename)
     // buffer de sortie, bitmap décompressé
     memset(decompressed, 0, sizeof(decompressed));
 
-  //  btea((uint32_t*) bmpImage, -128, key);
+    //  btea((uint32_t*) bmpImage, -128, key);
 
     uint32_t pixel = 0; // specify the pixel offset
     bool end = false;
@@ -174,7 +176,7 @@ void decompress(const char *filename)
             compressed = &bmpImage[0];
             i = 0;
         }
-        
+
         uint8_t rleCmd = compressed[i];
         if (rleCmd > 0)
         {
@@ -184,7 +186,7 @@ void decompress(const char *filename)
             {
                 if ((j & 1) == 0)
                 {
-                    decompressed[pixel] = (val & 0xF0) >>4;
+                    decompressed[pixel] = (val & 0xF0) >> 4;
                 }
                 else
                 {
@@ -245,7 +247,7 @@ void decompress(const char *filename)
                     if (pixel >= info_header.width)
                     {
                         debug_printf("!");
-                      //  pixel = 0;
+                        //  pixel = 0;
                     }
                 }
                 i += 2 + (second / 2);
@@ -261,7 +263,7 @@ void decompress(const char *filename)
             {
                 // enough pixels to write a line to the screen
                 ost_display_draw_h_line(pos.y, decompressed, palette);
-                debug_printf("POS Y: %d", pos.y);
+                // debug_printf("POS Y: %d", pos.y);
 
                 memset(decompressed, 0, sizeof(decompressed));
                 // ili9341_write(&pos, decompressed);
@@ -280,15 +282,14 @@ void decompress(const char *filename)
 
         if (totalPixels > (info_header.width * info_header.height))
         {
-           end = true; // error
+            end = true; // error
         }
-    }
-    while((offset < fileSize) && !end);
+    } while ((offset < fileSize) && !end);
 
-    if (end)
-    {
-        debug_printf("\r\n>>>>> Decoding error !! <<<<\r\n");
-    }
+    // if (end)
+    // {
+    //     debug_printf("\r\n>>>>> Decoding error !! <<<<\r\n");
+    // }
 
     // Fill missing lines
     if (nblines < info_header.height)
@@ -297,7 +298,7 @@ void decompress(const char *filename)
         int missing_lines = (info_header.height - nblines);
         for (int i = 0; i < missing_lines; i++)
         {
-          //ili9341_draw_h_line(pos.y, decompressed, palette);
+            // ili9341_draw_h_line(pos.y, decompressed, palette);
             nblines++;
         }
     }
@@ -308,9 +309,5 @@ void decompress(const char *filename)
     fclose(fil);
 #endif
 
-
     debug_printf("\r\nNb lines :%d\r\nTotal pixels: %d", (uint32_t)nblines, (uint32_t)totalPixels);
 }
-
-
- 

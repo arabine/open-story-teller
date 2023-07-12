@@ -18,16 +18,18 @@ set(PICO_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/pico_hal_wrapper.c
     ${CMAKE_CURRENT_LIST_DIR}/pico_lcd_spi.c
     ${CMAKE_CURRENT_LIST_DIR}/pico_sdcard_spi.c
+    ${CMAKE_CURRENT_LIST_DIR}/pico_i2s.c
 )
 
-include_directories(../../src ../../hal ../../library)
+include_directories(../../src ../../hal ../../library .)
 
 add_library(
     ${PROJECT_NAME}
     INTERFACE
-
-    # ${PICO_SRCS}
 )
+
+pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/pico_i2s.pio)
+pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/i2s.pio)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE pico_stdlib)
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_LIST_DIR})

@@ -35,7 +35,9 @@ set(OST_SRCS
     system/debug.c
     system/picture.c
     system/filesystem.c
-    system/ost_tasker.c
+    system/os.c
+    system/qor_armv6m.s
+    system/audio_player.c
     system/ff/ff.c
     system/ff/ffsystem.c
     system/ff/ff_stubs.c
@@ -132,7 +134,7 @@ elseif(${OST_BUNDLE} STREQUAL "RASPI_PICO")
 
     # ------ Link
     target_link_libraries(${PROJECT_NAME} PUBLIC "-Wl,--start-group"
-        gcc m c stdc++ raspberry-pico-w pico_stdlib hardware_spi hardware_dma "-Wl,--end-group")
+        gcc m c stdc++ raspberry-pico-w pico_stdlib hardware_spi hardware_dma hardware_pio "-Wl,--end-group")
     set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
 
     pico_add_extra_outputs(${PROJECT_NAME})

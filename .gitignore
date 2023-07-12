@@ -44,3 +44,7 @@ build-story-player-Desktop_Qt_GCC_64bit-Debug/
 software/build/
 
 software/.vscode/.cortex-debug.registers.state.json
+
+story-player/build/
+
+story-editor/tools/build-audio-System_Qt5_15_8-Debug/
