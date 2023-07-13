@@ -3,7 +3,7 @@
 #include "debug.h"
 #include "filesystem.h"
 #include "picture.h"
-#include "os.h"
+#include "qor.h"
 #include "rotary-button.h"
 
 #define RUN_TESTS 1
@@ -64,16 +64,32 @@ void ost_hal_panic()
 
 extern void qor_sleep();
 
+static qor_mbox_t b;
+
+typedef struct
+{
+    uint8_t ev;
+} ost_event_t;
+
+ost_event_t ev_queue[10];
+
+qor_tcb_t tcb1;
+qor_tcb_t tcb2;
+
 void UserTask_0(void *args)
 {
     //  InstrumentTriggerPE11_Init();
     //  uint32_t count = 0;
+
+    qor_mbox_init(&b, (void **)&ev_queue, 10);
     while (1)
     {
 
         ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
 
         //        qor_sleep();
+        ost_event_t *e = NULL;
+        qor_mbox_wait(&b, (void **)&e, 3);
 
         for (int i = 0; i < 65500; i++)
         {
@@ -97,9 +113,17 @@ void UserTask_1(void *args)
 {
     while (1)
     {
-        ost_system_delay_ms(1000);
+        for (int i = 0; i < 65500; i++)
+        {
+            for (int j = 0; j < 100; j++)
+                ;
+        }
         debug_printf("X\n");
-        ost_system_delay_ms(1000);
+        for (int i = 0; i < 65500; i++)
+        {
+            for (int j = 0; j < 100; j++)
+                ;
+        }
     }
 }
 /*
@@ -129,7 +153,7 @@ void UserTask_3(void)
 }
 */
 #include "pico/stdlib.h"
-extern size_t __StackTop;
+
 int main()
 {
     ost_system_initialize();
@@ -144,8 +168,8 @@ int main()
     // ost_audio_play("out2.wav");
 
     OS_Init(THREADFREQ);
-    qor_create_thread(UserTask_0, 1, "UserTask_0");
-    // qor_create_thread(UserTask_1, 2, "UserTask_1");
+    qor_create_thread(&tcb1, UserTask_0, 1, "UserTask_0");
+    qor_create_thread(&tcb2, UserTask_1, 2, "UserTask_1");
     // OS_Thread_Create(UserTask_2, OS_SCHEDL_PRIO_MAIN_THREAD, "UserTask_2");
     // OS_Thread_Create(OnboardUserButton_Task, OS_SCHEDL_PRIO_EVENT_THREAD, "OnboardUserButton_Task");
     qor_start();

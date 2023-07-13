@@ -6,8 +6,6 @@
 .thumb_func
  
 @ The .global directive gives the symbols external linkage.
-@ For clarity, the fn OSAsm_ThreadSwitch is exported as TIM2_IRQHandler, so that the vector table
-@   in startup.s doesn't need to be modified.
 .global qor_go
 .global qor_switch_context
 .global qor_sleep
@@ -86,27 +84,13 @@ qor_go:
     bx   r3             @        /* Finally, jump to the user defined task code. */
 
 
-@ .section    .text.qor_sleep
-@ .type	qor_sleep, %function
-
-@ qor_sleep:
-@     mov r1, r0  @ copy sleep value in second argument
-@     movs r0, #1  @ sleep is SVC 1
-@     mov r2, lr @ remember where we are
-@     bl qor_svc_call
-@     wfi
-@     bx lr
-
-@ EnterCriticalSection:
-@     MRS r0, PRIMASK /* Save interrupt state. */
-@     CPSID i /* Turn off interrupts. */
-@     BX lr /* Return. */
-
-@ ExitCriticalSection:
-@     MSR PRIMASK, r0 /* Restore interrupt states. */
-@     BX lr /* Return. */
 
 
+@   The fn OSAsm_ThreadSwitch, implemented in os_asm.s, is periodically called by the SchedlTimer (ISR).
+@   It preemptively switches to the next thread, that is, it stores the stack of the running
+@   thread and restores the stack of the next thread.
+@   It calls OS_Schedule to determine which thread is run next and update RunPt.
+ 
 
 @ EXC_RETURN value to return to Thread mode, while restoring state from PSP.
 .equ EXC_RETURN, 0xfffffffd

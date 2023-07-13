@@ -64,7 +64,7 @@ const uint8_t SD_CARD_CS = 17;
 
 const uint8_t SD_CARD_PRESENCE = 24;
 
-#include "os.h"
+#include "qor.h"
 
 static bool sys_timer_callback(struct repeating_timer *t)
 {
