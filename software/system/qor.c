@@ -15,8 +15,18 @@
 #include "qor.h"
 #include <stdlib.h>
 
+// Raspberry Pico SDK
+#include "pico/stdlib.h"
+#include "hardware/uart.h"
+#include "hardware/spi.h"
+#include "hardware/dma.h"
+#include "hardware/irq.h"
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "pico.h"
 #include "pico/critical_section.h"
 #include "hardware/exception.h"
+#include "RP2040.h"
 
 // ===========================================================================================================
 // ARM GENERIC
@@ -35,23 +45,6 @@ void qor_sleep_ms(uint8_t svc, uint32_t ms)
 {
 
     __wfi;
-}
-
-static inline void __set_PRIMASK(uint32_t priMask)
-{
-    __asm volatile("MSR primask, %0"
-                   :
-                   : "r"(priMask)
-                   : "memory");
-}
-
-static inline uint32_t __get_PRIMASK(void)
-{
-    uint32_t result;
-
-    __asm volatile("MRS %0, primask"
-                   : "=r"(result));
-    return (result);
 }
 
 static inline uint32_t qor_enter_critical(void)
@@ -104,6 +97,44 @@ static const bool qor_inside_interrupt(void)
 }
 
 // ===========================================================================================================
+// RASPBERRY PICO
+// ===========================================================================================================
+
+static volatile uint32_t timer_period;
+
+#define ALARM_NUM 0
+#define ALARM_IRQ TIMER_IRQ_0
+
+//-----------------------------------------------------------------------------
+
+static void alarm_irq(void)
+{
+    // Clear the alarm irq
+    hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
+}
+
+//-----------------------------------------------------------------------------
+static void timer_init(uint32_t delay_us)
+{
+    // Enable the interrupt for our alarm (the timer outputs 4 alarm irqs)
+    hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM);
+    // Set irq handler for alarm irq
+    irq_set_exclusive_handler(ALARM_IRQ, alarm_irq);
+    // Enable the alarm irq
+    irq_set_enabled(ALARM_IRQ, true);
+    // Enable interrupt in block and at processor
+
+    // Alarm is only 32 bits so if trying to delay more
+    // than that need to be careful and keep track of the upper
+    // bits
+    uint64_t target = timer_hw->timerawl + delay_us;
+
+    // Write the lower 32 bits of the target time to the alarm which
+    // will arm it
+    timer_hw->alarm[ALARM_NUM] = (uint32_t)target;
+}
+
+// ===========================================================================================================
 // GLOBAL AND STATIC VARIABLES
 // ===========================================================================================================
 
@@ -112,6 +143,8 @@ static uint32_t Stacks[MAXNUMTHREADS][STACKSIZE];
 /* Pointer to the currently running thread */
 qor_tcb_t *RunPt = NULL;
 static qor_tcb_t *TcbHead = NULL;
+static qor_tcb_t *IdleTcb = NULL;
+static thread_func_t IdleTask = NULL;
 
 /* The variable ActiveTCBsCount tracks the number of TCBs in use by the OS */
 static uint32_t ActiveTCBsCount = 0;
@@ -162,7 +195,6 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
     tcb->name = name;
     tcb->next = NULL;
     tcb->mbox = NULL;
-    tcb->message = NULL;
     tcb->wait_next = NULL;
     tcb->sp = qor_initialize_stack(&Stacks[ActiveTCBsCount][STACKSIZE], task, (void *)name);
 
@@ -186,11 +218,20 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
     enable_irq();
 }
 
-void qor_start(void)
+bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
 {
     assert_or_panic(ActiveTCBsCount > 0);
 
+    if ((idle_task == NULL) || (idle_tcb == NULL))
+    {
+        return false;
+    }
+
+    qor_create_thread(idle_tcb, idle_task, 0, "IdleTask");
+
     // FIXME: use the scheduler to find the best first thread to start
+    IdleTcb = idle_tcb;
+    IdleTask = idle_task;
     RunPt = TcbHead;
     /* Prevent the timer's ISR from firing before OSAsm_Start is called */
     disable_irq();
@@ -199,33 +240,55 @@ void qor_start(void)
 
     /* This statement should not be reached */
     ost_hal_panic();
+
+    return true;
 }
 
 void qor_scheduler(void)
 {
+
+    /*
+        La stratégie est la suivante:
+        - On va circuler parmi tous les TCB (liste chaînée)
+        - On va retenir le TCB dont la priorité est la plus élevée parmi les actifs
+        - On va retenir le TCB dont la priorité est la plus élevée parmi les endormis
+        - On va élir le TCB actif trouvé, sinon l'endormi, et finalement la tâche idle si aucune autre tâche n'est éligible
+     */
+    uint32_t max_priority = 0;
+    qor_tcb_t *best_active = NULL;
+    qor_tcb_t *best_sleeping = NULL;
     qor_tcb_t *t = TcbHead;
 
-    /* Search for highest priority thread not sleeping or blocked */
-    uint32_t max_priority = RunPt->priority;
-    qor_tcb_t *best_pt = RunPt;
     while (t != NULL)
     {
         if ((t->priority > max_priority) &&
-            (t->wait_time == 0) &&
-            (t->state == qor_tcb_state_active))
+            (t->wait_time == 0))
         {
-            best_pt = t;
             max_priority = t->priority;
+            if (t->state == qor_tcb_state_active)
+            {
+                best_active = t;
+            }
+            else
+            {
+                best_sleeping = t;
+            }
         }
         t = t->next;
     }
 
-    RunPt = best_pt;
-}
-
-void OS_Thread_Suspend(void)
-{
-    // SchedlTimer_ResetCounter();
+    if (best_active != NULL)
+    {
+        RunPt = best_active;
+    }
+    else if (best_sleeping != NULL)
+    {
+        RunPt = best_sleeping;
+    }
+    else
+    {
+        RunPt = IdleTcb;
+    }
 }
 
 void qor_sleep(uint32_t sleep_duration_ms)
@@ -273,9 +336,6 @@ void OS_Thread_Kill(void)
 // MAILBOX IMPLEMENTATION
 // ===========================================================================================================
 
-#define qor_mbox_tSendNormal 0x0
-#define qor_mbox_tSendFront 0x1
-
 void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount)
 {
     mbox->msgBuffer = msgBuffer;
@@ -289,49 +349,35 @@ uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t waitTicks)
 {
     uint32_t status = qor_enter_critical();
 
+    // No any data, block on that resource
     if (mbox->count == 0)
     {
         if (waitTicks > 0)
         {
-            // No any data, block on that resource
             RunPt->mbox = mbox;
-            RunPt->state = qor_tcb_state_wait_mbox;
+            RunPt->state = qor_tcb_state_sleep;
             RunPt->wait_time = waitTicks;
+            mbox->head = RunPt;
             qor_exit_critical(status);
-            qor_svc_call(); // call scheduler
+            qor_svc_call(); // call scheduler, wait for message
+        }
+        else
+        {
+            qor_exit_critical(status);
+            return QOR_MBOX_ERROR;
+        }
+    }
 
-            status = qor_enter_critical();
-            if ((RunPt->wait_time >= 0) && (RunPt->message != NULL))
-            {
-                *msg = RunPt->message;
-                qor_exit_critical(status);
-                return QOR_MBOX_OK;
-            }
-            else
-            {
-                qor_exit_critical(status);
-                return QOR_MBOX_ERROR;
-            }
-        }
-        else
-        {
-            return QOR_MBOX_ERROR;
-        }
-    }
-    else
+    status = qor_enter_critical();
+
+    --mbox->count;
+    *msg = mbox->msgBuffer[mbox->read++];
+    if (mbox->read >= mbox->maxCount)
     {
-        if ((RunPt->message != NULL))
-        {
-            *msg = RunPt->message;
-            qor_exit_critical(status);
-            return QOR_MBOX_OK;
-        }
-        else
-        {
-            qor_exit_critical(status);
-            return QOR_MBOX_ERROR;
-        }
+        mbox->read = 0;
     }
+    qor_exit_critical(status);
+    return QOR_MBOX_OK;
 }
 
 /*
@@ -357,52 +403,51 @@ uint32_t qor_mbox_get(qor_mbox_t *mbox, void **msg)
 }
 */
 
-/*
+#define QOR_MBOX_OPTION_SEND_FRONT 1
+#define QOR_MBOX_OPTION_SEND_BACK 2
 
 uint32_t qor_mbox_notify(qor_mbox_t *mbox, void *msg, uint32_t notifyOption)
 {
     uint32_t status = qor_enter_critical();
-    if (tEventWaitCount(&mbox->event) > 0)
+
+    if (mbox->count >= mbox->maxCount)
     {
-        tTask *task = tEventWakeUp(&mbox->event, (void *)msg, tErrorNoError);
-        if (task->prio < currentTask->prio)
-        {
-            tTaskSched();
-        }
+        qor_exit_critical(status);
+        return QOR_MBOX_FULL;
     }
-    else
+    if (notifyOption == QOR_MBOX_OPTION_SEND_FRONT)
     {
-        if (mbox->count >= mbox->maxCount)
+        if (mbox->read <= 0)
         {
-            qor_exit_critical(status);
-            return tErrorResourceFull;
-        }
-        if (notifyOption & qor_mbox_tSendFront)
-        {
-            if (mbox->read <= 0)
-            {
-                mbox->read = mbox->maxCount - 1;
-            }
-            else
-            {
-                --mbox->read;
-            }
-            mbox->msgBuffer[mbox->read] = msg;
+            mbox->read = mbox->maxCount - 1;
         }
         else
         {
-            mbox->msgBuffer[mbox->write++] = msg;
-            if (mbox->write >= mbox->maxCount)
-            {
-                mbox->write = 0;
-            }
+            --mbox->read;
         }
-        mbox->count++;
+        mbox->msgBuffer[mbox->read] = msg;
     }
+    else
+    {
+        mbox->msgBuffer[mbox->write++] = msg;
+        if (mbox->write >= mbox->maxCount)
+        {
+            mbox->write = 0;
+        }
+    }
+    mbox->count++;
+
+    // We warn all waiting threads that a new message is available
+    qor_tcb_t *t = mbox->head;
+    if (t != NULL)
+    {
+        t->wait_time = 0;
+    }
+
     qor_exit_critical(status);
-    return tErrorNoError;
+    qor_svc_call(); // call scheduler
+    return QOR_MBOX_OK;
 }
-*/
 
 void qor_mbox_flush(qor_mbox_t *mbox)
 {

@@ -1,6 +1,9 @@
 #ifndef QOR_H
 #define QOR_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 extern void ost_hal_panic();
 
 /**
@@ -12,8 +15,6 @@ extern void ost_hal_panic();
  * The module os encapsulates the core functionality of the operating system and
  * exposes the functions for interacting with it.
  */
-
-#include <stdint.h>
 
 #define MAXNUMTHREADS 10 /* Maximum number of threads, allocated at compile time */
 #define STACKSIZE 100    /* Number of 32-bit words in each TCB's stack */
@@ -42,7 +43,6 @@ typedef void (*thread_func_t)(void *args);
 typedef enum
 {
     qor_tcb_state_active,
-    qor_tcb_state_wait_mbox,
     qor_tcb_state_sleep
 } qor_tcb_state_t;
 
@@ -62,7 +62,6 @@ typedef struct TCB
     qor_tcb_state_t state; /* TCB active or free */
     uint32_t wait_time;    //!< Timeout for mbox maiting or sleep
     qor_mbox_t *mbox;      /* Pointer to mailbox on which the thread is blocked, NULL if not blocked */
-    void *message;         //<! Actually the message transmitted
     uint8_t priority;      /* Thread priority, 0 is highest, 255 is lowest */
     const char *name;      /* Descriptive name to facilitate debugging */
 
@@ -76,9 +75,7 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
 
 void qor_switch_context();
 
-void qor_start(void);
-
-void OS_Thread_Suspend(void);
+bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task);
 
 void qor_sleep(uint32_t sleep_duration_ms);
 
@@ -110,8 +107,14 @@ typedef struct
 
 #define QOR_MBOX_OK 1
 #define QOR_MBOX_ERROR 2
+#define QOR_MBOX_FULL 3
 
 void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount);
 uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t waitTicks);
+
+#define QOR_MBOX_OPTION_SEND_FRONT 1
+#define QOR_MBOX_OPTION_SEND_BACK 2
+
+uint32_t qor_mbox_notify(qor_mbox_t *mbox, void *msg, uint32_t notifyOption);
 
 #endif // QOR_H
