@@ -75,9 +75,10 @@ ost_event_t ev_queue[10];
 
 qor_tcb_t tcb1;
 qor_tcb_t tcb2;
+qor_tcb_t tcb3;
 qor_tcb_t idle;
 
-void UserTask_0(void *args)
+void UserTask_1(void *args)
 {
     //  InstrumentTriggerPE11_Init();
     //  uint32_t count = 0;
@@ -110,7 +111,7 @@ void UserTask_0(void *args)
     }
 }
 
-void UserTask_1(void *args)
+void UserTask_2(void *args)
 {
     static ost_event_t wake_up;
 
@@ -120,7 +121,7 @@ void UserTask_1(void *args)
     {
         for (int i = 0; i < 65500; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 300; j++)
                 ;
         }
         debug_printf("X\n");
@@ -134,12 +135,38 @@ void UserTask_1(void *args)
     }
 }
 
+// Raspberry Pico SDK
+#include "pico/stdlib.h"
+#include "hardware/uart.h"
+#include "hardware/spi.h"
+#include "hardware/dma.h"
+#include "hardware/irq.h"
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "pico.h"
+
+void UserTask_3(void *args)
+{
+    gpio_init(1);
+    gpio_set_dir(1, GPIO_OUT);
+
+    while (1)
+    {
+        // gpio_put(1, 0);
+        ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
+        qor_sleep(1000);
+        // gpio_put(1, 1);
+        ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
+        qor_sleep(1000);
+    }
+}
+
 void IdleTaskFunction(void *args)
 {
     while (1)
     {
         // Instrumentation, power saving, os functions won't work here
-        __asm volatile("wfi");
+        //     __asm volatile("wfi");
     }
 }
 
@@ -184,11 +211,12 @@ int main()
   */
     // ost_audio_play("out2.wav");
 
-    OS_Init(THREADFREQ);
-    qor_create_thread(&tcb1, UserTask_0, 2, "UserTask_0");
-    qor_create_thread(&tcb2, UserTask_1, 1, "UserTask_1");
-    // OS_Thread_Create(UserTask_2, OS_SCHEDL_PRIO_MAIN_THREAD, "UserTask_2");
-    // OS_Thread_Create(OnboardUserButton_Task, OS_SCHEDL_PRIO_EVENT_THREAD, "OnboardUserButton_Task");
+    qor_init(THREADFREQ);
+
+    //  qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_0");
+    //   qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_1");
+    qor_create_thread(&tcb3, UserTask_3, 3, "UserTask_3");
+
     qor_start(&idle, IdleTaskFunction);
 
     for (;;)

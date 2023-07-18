@@ -28,6 +28,7 @@
             "servertype": "bmp",
             "interface": "swd",
             "gdbPath": "gdb-multiarch",
+            "svdFile": "${workspaceRoot}/platform/raspberry-pico-w/rp2040.svd",
             // "device": "STM32L431VC",
             "runToMain": true,
             "preRestartCommands": [

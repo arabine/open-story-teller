@@ -5,6 +5,7 @@
 #include "st7789.h"
 #include <ff.h>
 #include "diskio.h"
+#include "qor.h"
 
 // Raspberry Pico SDK
 #include "pico/stdlib.h"
@@ -64,8 +65,6 @@ const uint8_t SD_CARD_CS = 17;
 
 const uint8_t SD_CARD_PRESENCE = 24;
 
-#include "qor.h"
-
 static bool sys_timer_callback(struct repeating_timer *t)
 {
   msTicks++;
@@ -89,7 +88,7 @@ void gpio_callback(uint gpio, uint32_t events)
     // debouncer
     debug_printf("G\n");
 
-    qor_switch_context();
+    qor_svc_call();
   }
 }
 

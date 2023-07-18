@@ -23,13 +23,6 @@ extern void ost_hal_panic();
 #define OS_SCHEDL_PRIO_MIN 1         /* Lowest priority that can be assigned to a thread */
 #define OS_SCHEDL_PRIO_MAX UINT8_MAX /* Highest priority that can be assigned to a thread */
 
-/**
- * The type Semaphore_t abstracts the semaphore's counter.
- * A value of type *Semaphore_t should only be updated through the fn OS_Semaphore_Wait
- * and OS_Semaphore_Signal.
- */
-typedef int32_t Semaphore_t;
-
 typedef void (*thread_func_t)(void *args);
 
 // ===========================================================================================================
@@ -56,34 +49,27 @@ typedef enum
 typedef struct qor_mbox_t qor_mbox_t;
 typedef struct TCB
 {
-    uint32_t *sp;          /* Stack pointer, valid for threads not running */
-    struct TCB *next;      /* Pointer to circular-linked-list of TCBs */
-    struct TCB *wait_next; // Next TCB in waiting list
-    qor_tcb_state_t state; /* TCB active or free */
+    uint32_t *sp;          //!< Stack pointer, valid for threads not running
+    struct TCB *next;      //!< Pointer to circular-linked-list of TCBs
+    struct TCB *wait_next; //!< Next TCB in waiting list
+    qor_tcb_state_t state; //!< TCB active or free
     uint32_t wait_time;    //!< Timeout for mbox maiting or sleep
-    qor_mbox_t *mbox;      /* Pointer to mailbox on which the thread is blocked, NULL if not blocked */
-    uint8_t priority;      /* Thread priority, 0 is highest, 255 is lowest */
-    const char *name;      /* Descriptive name to facilitate debugging */
+    qor_mbox_t *mbox;      //!< Pointer to mailbox on which the thread is blocked, NULL if not blocked
+    uint8_t priority;      //!< Thread priority, 0 is highest, 255 is lowest
+    uint64_t ts;           //!< system timestamp
+    const char *name;      //!< Descriptive name to facilitate debugging
 
 } qor_tcb_t;
 
-void OS_Init(uint32_t scheduler_frequency_hz);
-
-// void OS_Thread_CreateFirst(thread_func_t task, uint8_t priority, const char *name);
+void qor_init(uint32_t scheduler_frequency_hz);
 
 void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, const char *name);
-
-void qor_switch_context();
 
 bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task);
 
 void qor_sleep(uint32_t sleep_duration_ms);
 
-void OS_Thread_Kill(void);
-
-void OS_Semaphore_Wait(Semaphore_t *sem);
-
-void OS_Semaphore_Signal(Semaphore_t *sem);
+void qor_svc_call(void);
 
 // ===========================================================================================================
 // MAILBOX API
@@ -110,7 +96,7 @@ typedef struct
 #define QOR_MBOX_FULL 3
 
 void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount);
-uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t waitTicks);
+uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms);
 
 #define QOR_MBOX_OPTION_SEND_FRONT 1
 #define QOR_MBOX_OPTION_SEND_BACK 2

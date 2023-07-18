@@ -26,6 +26,14 @@
         "gpio.h": "c",
         "pico_i2s.h": "c",
         "stdlib.h": "c",
-        "os.h": "c"
+        "os.h": "c",
+        "system_error": "c",
+        "timer.h": "c",
+        "pico.h": "c",
+        "platform.h": "c",
+        "config.h": "c",
+        "rp2040.h": "c",
+        "numbers": "c",
+        "systick.h": "c"
     }
 }
