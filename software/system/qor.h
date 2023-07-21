@@ -11,18 +11,6 @@ extern void ost_hal_panic();
  */
 #define assert_or_panic(expr) ((expr) ? (void)0U : ost_hal_panic())
 
-/**
- * The module os encapsulates the core functionality of the operating system and
- * exposes the functions for interacting with it.
- */
-
-#define MAXNUMTHREADS 4 /* Maximum number of threads, allocated at compile time */
-#define STACKSIZE 100   /* Number of 32-bit words in each TCB's stack */
-#define THREADFREQ 1    /* Maximum time-slice, in Hz, before the scheduler is run */
-
-#define OS_SCHEDL_PRIO_MIN 1         /* Lowest priority that can be assigned to a thread */
-#define OS_SCHEDL_PRIO_MAX UINT8_MAX /* Highest priority that can be assigned to a thread */
-
 typedef void (*thread_func_t)(void *args);
 
 // ===========================================================================================================
@@ -52,6 +40,7 @@ typedef struct TCB
     uint32_t *sp;          //!< Stack pointer, valid for threads not running
     struct TCB *next;      //!< Pointer to circular-linked-list of TCBs
     struct TCB *wait_next; //!< Next TCB in waiting list
+    uint32_t stack_size;
     qor_tcb_state_t state; //!< TCB active or free
     uint32_t wait_time;    //!< Timeout for mbox maiting or sleep
     qor_mbox_t *mbox;      //!< Pointer to mailbox on which the thread is blocked, NULL if not blocked
@@ -68,9 +57,9 @@ typedef struct TCB
 
 void qor_init(uint32_t scheduler_frequency_hz);
 
-void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, const char *name);
+void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint32_t *stack, uint32_t stack_size, uint8_t priority, const char *name);
 
-bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task);
+bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task, uint32_t *idle_stack, uint32_t idle_stack_size);
 
 void qor_sleep(uint32_t sleep_duration_ms);
 

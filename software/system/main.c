@@ -86,8 +86,6 @@ ost_event_t ev_queue[10];
 
 qor_tcb_t tcb1;
 qor_tcb_t tcb2;
-qor_tcb_t tcb3;
-qor_tcb_t idle;
 
 void UserTask_1(void *args)
 {
@@ -146,10 +144,15 @@ void UserTask_2(void *args)
     }
 }
 
-void UserTask_3(void *args)
+// ===========================================================================================================
+// SD CARD TASK
+// ===========================================================================================================
+static qor_tcb_t AudioTcb;
+static uint32_t AudioStack[1024];
+void AudioTask(void *args)
 {
-    int cpt = 0;
-
+    picture_show("example.bmp");
+    // ost_audio_play("out2.wav");
     while (1)
     {
 
@@ -157,16 +160,15 @@ void UserTask_3(void *args)
         qor_sleep(500);
         ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
         qor_sleep(500);
-
-        // if (++cpt >= 10)
-        // {
-        //     cpt = 0;
-        //     debug_printf("SU: %d, SO: %d\r\n", tcb3.stack_usage, tcb3.so);
-        // }
     }
 }
 
-void IdleTaskFunction(void *args)
+// ===========================================================================================================
+// IDLE TASK
+// ===========================================================================================================
+static qor_tcb_t IdleTcb;
+static uint32_t IdleStack[1024];
+void IdleTask(void *args)
 {
     while (1)
     {
@@ -175,41 +177,28 @@ void IdleTaskFunction(void *args)
     }
 }
 
+// ===========================================================================================================
+// MAIN ENTRY POINT
+// ===========================================================================================================
 int main()
 {
-    // timer_hw->inte = 0;
-    // timer_hw->alarm[3] = 0;
-    // timer_hw->dbgpause = 1;
-
+    // 1. Call the platform initialization
     ost_system_initialize();
 
-    // 1. Test the printf output
+    // 2. Test the printf output
     debug_printf("\r\n [OST] Starting OpenStoryTeller tests: V%d.%d\r\n", 1, 0);
-    /*
-      filesystem_mount();
 
-      picture_show("example.bmp");
-  */
-    // ost_audio_play("out2.wav");
+    // 3. Filesystem / SDCard initialization
+    filesystem_mount();
 
-    qor_init(THREADFREQ);
+    // 4. Initialize OS and threads
+    qor_init(125000000UL);
 
     // qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_1");
     // qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_2");
-    qor_create_thread(&tcb3, UserTask_3, 3, "UserTask_3");
+    qor_create_thread(&AudioTcb, AudioTask, AudioStack, 1024, 3, "AudioTask"); ///< High priority for audio
+    qor_start(&IdleTcb, IdleTask, IdleStack, 1024);
 
-    qor_start(&idle, IdleTaskFunction);
-
-    for (;;)
-    {
-
-        // ost_hal_audio_loop();
-
-        // ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
-        // ost_system_delay_ms(1000);
-        // ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
-        // ost_system_delay_ms(1000);
-    }
     return 0;
 }
 #endif

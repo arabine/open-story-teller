@@ -149,9 +149,6 @@ static void timer_init()
 // ===========================================================================================================
 // GLOBAL AND STATIC VARIABLES
 // ===========================================================================================================
-
-static uint32_t Stacks[MAXNUMTHREADS][STACKSIZE];
-
 /* Pointer to the currently running thread */
 qor_tcb_t *RunPt = NULL;
 static qor_tcb_t *TcbHead = NULL;
@@ -210,14 +207,15 @@ uint32_t *qor_initialize_stack(uint32_t *top_of_stack, thread_func_t task, void 
     return top_of_stack;
 }
 
-void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, const char *name)
+void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint32_t *stack, uint32_t stack_size, uint8_t priority, const char *name)
 {
-    assert_or_panic(ActiveTCBsCount >= 0 && ActiveTCBsCount < MAXNUMTHREADS);
+    // assert_or_panic(ActiveTCBsCount >= 0 && ActiveTCBsCount < MAXNUMTHREADS);
     disable_irq();
 
-    memset(&Stacks[ActiveTCBsCount][0], 0xAAAAAAAA, sizeof(Stacks[ActiveTCBsCount][0]) * STACKSIZE);
+    memset(&stack[0], 0xAAAAAAAA, sizeof(stack[0]) * stack_size);
 
-    tcb->stack_bottom = &Stacks[ActiveTCBsCount][0];
+    tcb->stack_bottom = &stack[0];
+    tcb->stack_size = stack_size;
     tcb->stack_usage = 0;
     tcb->so = false;
 
@@ -229,7 +227,8 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
     tcb->next = NULL;
     tcb->mbox = NULL;
     tcb->wait_next = NULL;
-    tcb->sp = qor_initialize_stack(&Stacks[ActiveTCBsCount][STACKSIZE], task, (void *)name);
+    // The ARM architecture is full-descending task, so we indicate the last occupied entry (not a free cell)
+    tcb->sp = qor_initialize_stack(&stack[stack_size], task, (void *)name);
 
     if (TcbHead == NULL)
     {
@@ -251,7 +250,7 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
     enable_irq();
 }
 
-bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
+bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task, uint32_t *idle_stack, uint32_t idle_stack_size)
 {
     assert_or_panic(ActiveTCBsCount > 0);
 
@@ -260,7 +259,7 @@ bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_ta
         return false;
     }
 
-    qor_create_thread(idle_tcb, idle_task, 0, "IdleTask");
+    qor_create_thread(idle_tcb, idle_task, idle_stack, idle_stack_size, 0, "IdleTask");
 
     // FIXME: use the scheduler to find the best first thread to start
     IdleTcb = idle_tcb;
