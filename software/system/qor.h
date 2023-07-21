@@ -16,9 +16,9 @@ extern void ost_hal_panic();
  * exposes the functions for interacting with it.
  */
 
-#define MAXNUMTHREADS 10 /* Maximum number of threads, allocated at compile time */
-#define STACKSIZE 100    /* Number of 32-bit words in each TCB's stack */
-#define THREADFREQ 1     /* Maximum time-slice, in Hz, before the scheduler is run */
+#define MAXNUMTHREADS 4 /* Maximum number of threads, allocated at compile time */
+#define STACKSIZE 100   /* Number of 32-bit words in each TCB's stack */
+#define THREADFREQ 1    /* Maximum time-slice, in Hz, before the scheduler is run */
 
 #define OS_SCHEDL_PRIO_MIN 1         /* Lowest priority that can be assigned to a thread */
 #define OS_SCHEDL_PRIO_MAX UINT8_MAX /* Highest priority that can be assigned to a thread */
@@ -59,6 +59,11 @@ typedef struct TCB
     uint64_t ts;           //!< system timestamp
     const char *name;      //!< Descriptive name to facilitate debugging
 
+    // Debug/traces
+    uint32_t stack_usage;
+    uint32_t *stack_bottom;
+    bool so; // stack overflow detected
+
 } qor_tcb_t;
 
 void qor_init(uint32_t scheduler_frequency_hz);
@@ -68,8 +73,6 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
 bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task);
 
 void qor_sleep(uint32_t sleep_duration_ms);
-
-void qor_svc_call(void);
 
 // ===========================================================================================================
 // MAILBOX API

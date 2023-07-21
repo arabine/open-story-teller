@@ -36,6 +36,17 @@ int main(void)
 }
 #else
 
+// Raspberry Pico SDK
+#include "pico/stdlib.h"
+#include "hardware/uart.h"
+#include "hardware/spi.h"
+#include "hardware/dma.h"
+#include "hardware/irq.h"
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "pico.h"
+#include "pico/stdlib.h"
+
 #include "sdcard.h"
 
 const uint16_t tones[3][8] =
@@ -135,29 +146,23 @@ void UserTask_2(void *args)
     }
 }
 
-// Raspberry Pico SDK
-#include "pico/stdlib.h"
-#include "hardware/uart.h"
-#include "hardware/spi.h"
-#include "hardware/dma.h"
-#include "hardware/irq.h"
-#include "hardware/pio.h"
-#include "hardware/clocks.h"
-#include "pico.h"
-
 void UserTask_3(void *args)
 {
-    gpio_init(1);
-    gpio_set_dir(1, GPIO_OUT);
+    int cpt = 0;
 
     while (1)
     {
-        // gpio_put(1, 0);
+
         ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
-        qor_sleep(1000);
-        // gpio_put(1, 1);
+        qor_sleep(500);
         ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
-        qor_sleep(1000);
+        qor_sleep(500);
+
+        // if (++cpt >= 10)
+        // {
+        //     cpt = 0;
+        //     debug_printf("SU: %d, SO: %d\r\n", tcb3.stack_usage, tcb3.so);
+        // }
     }
 }
 
@@ -166,40 +171,16 @@ void IdleTaskFunction(void *args)
     while (1)
     {
         // Instrumentation, power saving, os functions won't work here
-        //     __asm volatile("wfi");
+        // __asm volatile("wfi");
     }
 }
-
-/*
-void UserTask_2(void)
-{
-    InstrumentTriggerPE13_Init();
-    uint32_t count = 0;
-    while (1)
-    {
-        InstrumentTriggerPE13_Toggle();
-        count++;
-        if (count % 35 == 0)
-            OS_Thread_Sleep(4500);
-        else
-            HAL_Delay(70);
-    }
-}
-
-void UserTask_3(void)
-{
-    InstrumentTriggerPE14_Init();
-    while (1)
-    {
-        InstrumentTriggerPE14_Toggle();
-        HAL_Delay(60);
-    }
-}
-*/
-#include "pico/stdlib.h"
 
 int main()
 {
+    // timer_hw->inte = 0;
+    // timer_hw->alarm[3] = 0;
+    // timer_hw->dbgpause = 1;
+
     ost_system_initialize();
 
     // 1. Test the printf output
@@ -213,8 +194,8 @@ int main()
 
     qor_init(THREADFREQ);
 
-    //  qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_0");
-    //   qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_1");
+    // qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_1");
+    // qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_2");
     qor_create_thread(&tcb3, UserTask_3, 3, "UserTask_3");
 
     qor_start(&idle, IdleTaskFunction);

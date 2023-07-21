@@ -105,6 +105,7 @@ qor_switch_context:
 
 @ Les registers r0-r3 r12 etc. sont sauvegardés par le processeur
         
+        cpsid i
         mrs     r0, psp  @ get the current stack address ()
 
         ldr     r1, =RunPt
@@ -125,11 +126,9 @@ qor_switch_context:
         mov     r7, r11
         stmia   r0!, {r4-r7}
 
-        cpsid i
         bl  qor_scheduler
-        cpsie   i
 
-        ldr     R0, =RunPt
+        ldr     r0, =RunPt
         ldr     r1, [r0]
         ldr     r0, [r1]   @ R0 is the stack address
         
@@ -143,6 +142,7 @@ qor_switch_context:
 
 
         msr     psp, r0      @ new task stack top address
+        str     r0, [r1]     @                   Save the new top of stack
 
         subs r0, r0, #32
         ldmia r0!, {r4-r7} 
@@ -150,6 +150,6 @@ qor_switch_context:
         // Exit handler. Using a bx to the special EXC_RETURN values causes the
         // processor to perform the exception return behavior.
         ldr     r0, =EXC_RETURN
-        
+        cpsie   i
         bx      r0
 

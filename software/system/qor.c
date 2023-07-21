@@ -14,6 +14,7 @@
 #include "debug.h"
 #include "qor.h"
 #include <stdlib.h>
+#include <string.h>
 
 // Raspberry Pico SDK
 #include "pico/stdlib.h"
@@ -29,64 +30,58 @@
 #include "RP2040.h"
 
 void qor_switch_context();
-static void timer_stop();
+void qor_go();
+// void qor_svc_call(void);
+
+#define portNVIC_INT_CTRL_REG (*((volatile uint32_t *)0xe000ed04))
+#define portNVIC_PENDSVSET_BIT (1UL << 28UL)
+
+#define qor_svc_call()                                  \
+    do                                                  \
+    {                                                   \
+        portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT; \
+    } while (0)
 
 // ===========================================================================================================
 // ARM GENERIC
 // ===========================================================================================================
-inline static void enable_irq()
-{
-    __asm volatile("cpsie i");
-}
 
-inline static void disable_irq()
-{
-    __asm volatile("cpsid i");
-}
+static uint32_t gCritialNesting = 0;
 
-void qor_sleep_ms(uint8_t svc, uint32_t ms)
-{
+#define enable_irq() __asm volatile("cpsie i")
+#define disable_irq() __asm volatile("cpsid i")
 
-    __wfi;
-}
-
+/*
 static inline uint32_t qor_enter_critical(void)
 {
     uint32_t primask = __get_PRIMASK();
     disable_irq();
+    gCritialNesting++;
+    __asm volatile("dsb" ::
+                       : "memory");
+    __asm volatile("isb");
     return primask;
 }
 
 void qor_exit_critical(uint32_t status)
 {
+    gCritialNesting--;
+
+    if (gCritialNesting == 0)
+    {
+        enable_irq();
+    }
     __set_PRIMASK(status);
 }
-
-__attribute__((naked)) void PendSV_Handler()
-{
-    qor_switch_context();
-}
+*/
 
 static const bool qor_inside_interrupt(void)
 {
     uint32_t ulCurrentInterrupt;
-    bool xReturn;
-
     // Obtain the number of the currently executing interrupt
     __asm volatile("mrs %0, ipsr"
                    : "=r"(ulCurrentInterrupt)::"memory");
     return ulCurrentInterrupt == 0 ? false : true;
-}
-
-void qor_svc_call(void)
-{
-    timer_stop();
-    volatile uint32_t *icsr = (void *)0xE000ED04;
-    // Pend a PendSV exception using by writing 1 to PENDSVSET at bit 28
-    *icsr = 0x1 << 28;
-    // flush pipeline to ensure exception takes effect before we
-    // return from this routine
-    __asm("isb");
 }
 
 // ===========================================================================================================
@@ -101,40 +96,52 @@ static volatile uint32_t timer_period;
 #include "hardware/structs/systick.h"
 
 //-----------------------------------------------------------------------------
+// Beware, do not consume any local variable here, and keep the "naked" attribute
+// Since it is an Exception (interrupt), we work on the MSB
+// The syscall wil then call the scheduler so we will never free any local variables consumed
+// It will result on a MSP infinite growing (0x42000 on the Pico) until user data overriding and at the end an hardfault will occur
+// static void timer_irq(void)
+// {
+//     // Clear the alarm irq
+//     hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
+//     qor_svc_call();
+// }
 
-static void timer_irq(void)
-{
-    // Clear the alarm irq
-    hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
-    qor_svc_call();
-}
+static uint64_t gNextAlarm = 0;
 
-static void timer_set_alam(uint32_t delay_ms)
+static void timer_set_alarm(uint32_t delay_ms)
 {
     if (delay_ms > 0)
     {
         // Alarm is only 32 bits so if trying to delay more
         // than that need to be careful and keep track of the upper
         // bits
-        uint64_t target = timer_hw->timerawl + delay_ms * 1000;
-        timer_hw->alarm[ALARM_NUM] = (uint32_t)target;
+        gNextAlarm = timer_hw->timerawl + delay_ms * 1000;
+        timer_hw->alarm[ALARM_NUM] = (uint32_t)gNextAlarm;
         // Enable the interrupt for our alarm (the timer outputs 4 alarm irqs)
         hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM);
     }
 }
 
-static void timer_stop()
+//  __attribute__((naked))
+static void timer_end()
 {
+    timer_hw->armed = 0xF;
+    // Clear the alarm irq
+    hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
+    // Disable the intterupt for this alarm
     hw_clear_bits(&timer_hw->inte, 1u << ALARM_NUM);
+
+    qor_svc_call();
 }
 
 //-----------------------------------------------------------------------------
 static void timer_init()
 {
     // Set irq handler for alarm irq
-    irq_set_exclusive_handler(ALARM_IRQ, timer_irq);
-    // Enable the interrupt for our alarm (the timer outputs 4 alarm irqs)
-    hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM);
+    irq_set_exclusive_handler(ALARM_IRQ, timer_end);
+    // Disable the intterupt for this alarm
+    hw_clear_bits(&timer_hw->inte, 1u << ALARM_NUM);
     // Enable the alarm irq
     irq_set_enabled(ALARM_IRQ, true);
 }
@@ -157,18 +164,33 @@ static uint32_t ActiveTCBsCount = 0;
 // ===========================================================================================================
 // Quite Ok RTOS private and public functions
 // ===========================================================================================================
-void qor_init(uint32_t scheduler_frequency_hz)
+// void qor_svc_call(void)
+// {
+//     //  hw_clear_bits(&timer_hw->inte, 1u << ALARM_NUM);
+//     // volatile uint32_t *icsr = (void *)0xE000ED04;
+//     // // Pend a PendSV exception using by writing 1 to PENDSVSET at bit 28
+//     // *icsr = 0x1 << 28;
+//     // // flush pipeline to ensure exception takes effect before we
+//     // // return from this routine
+//     //
+//     // __asm volatile("svc 0");
+// }
+
+void __attribute__((naked)) swc()
 {
-    exception_set_exclusive_handler(PENDSV_EXCEPTION, PendSV_Handler);
+    qor_switch_context();
 }
 
-void qor_exit_loop()
+void qor_init(uint32_t scheduler_frequency_hz)
+{
+    exception_set_exclusive_handler(PENDSV_EXCEPTION, qor_switch_context);
+}
+
+static void qor_exit_loop()
 {
     for (;;)
         ;
 }
-
-extern void qor_go();
 
 uint32_t *qor_initialize_stack(uint32_t *top_of_stack, thread_func_t task, void *args)
 {
@@ -192,6 +214,12 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
 {
     assert_or_panic(ActiveTCBsCount >= 0 && ActiveTCBsCount < MAXNUMTHREADS);
     disable_irq();
+
+    memset(&Stacks[ActiveTCBsCount][0], 0xAAAAAAAA, sizeof(Stacks[ActiveTCBsCount][0]) * STACKSIZE);
+
+    tcb->stack_bottom = &Stacks[ActiveTCBsCount][0];
+    tcb->stack_usage = 0;
+    tcb->so = false;
 
     tcb->state = qor_tcb_state_active;
     tcb->wait_time = 0;
@@ -223,7 +251,7 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint8_t priority, con
     enable_irq();
 }
 
-bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
+bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
 {
     assert_or_panic(ActiveTCBsCount > 0);
 
@@ -242,8 +270,7 @@ bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
     timer_init();
 
     /* Prevent the timer's ISR from firing before start is called */
-    disable_irq();
-
+    enable_irq();
     qor_go();
 
     /* This statement should not be reached */
@@ -252,6 +279,7 @@ bool qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task)
     return true;
 }
 
+// void __not_in_flash_func(qor_scheduler)(void)
 void qor_scheduler(void)
 {
     /*
@@ -321,17 +349,27 @@ void qor_scheduler(void)
         RunPt = IdleTcb;
     }
 
-    timer_set_alam(next_alarm);
+    // Statistics
+    if (RunPt->stack_bottom[0] != 0xAAAAAAAA)
+    {
+        RunPt->so = true;
+    }
+    RunPt->stack_usage = RunPt->sp - RunPt->stack_bottom;
+
+    timer_set_alarm(next_alarm);
 }
 
 void qor_sleep(uint32_t sleep_duration_ms)
 {
-    uint32_t status = qor_enter_critical();
-    RunPt->state = qor_tcb_state_sleep;
-    RunPt->ts = time_us_64() / 1000;
-    RunPt->wait_time = sleep_duration_ms;
-    qor_exit_critical(status);
-    qor_svc_call(); // call scheduler, recompute next timeout
+    if (sleep_duration_ms > 0)
+    {
+        disable_irq();
+        RunPt->state = qor_tcb_state_sleep;
+        RunPt->ts = time_us_64() / 1000;
+        RunPt->wait_time = sleep_duration_ms;
+        enable_irq();
+        qor_svc_call(); // call scheduler, recompute next timeout
+    }
 }
 
 // ===========================================================================================================
@@ -349,7 +387,7 @@ void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount)
 
 uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
 {
-    uint32_t status = qor_enter_critical();
+    disable_irq();
 
     // No any data, block on that resource
     if (mbox->count == 0)
@@ -362,12 +400,10 @@ uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
         }
         else
         {
-            qor_exit_critical(status);
+            enable_irq();
             return QOR_MBOX_ERROR;
         }
     }
-
-    status = qor_enter_critical();
 
     --mbox->count;
     *msg = mbox->msgBuffer[mbox->read++];
@@ -375,17 +411,17 @@ uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
     {
         mbox->read = 0;
     }
-    qor_exit_critical(status);
+    enable_irq();
     return QOR_MBOX_OK;
 }
 
 uint32_t qor_mbox_notify(qor_mbox_t *mbox, void *msg, uint32_t notifyOption)
 {
-    uint32_t status = qor_enter_critical();
+    disable_irq();
 
     if (mbox->count >= mbox->maxCount)
     {
-        qor_exit_critical(status);
+        enable_irq();
         return QOR_MBOX_FULL;
     }
     if (notifyOption == QOR_MBOX_OPTION_SEND_FRONT)
@@ -417,14 +453,14 @@ uint32_t qor_mbox_notify(qor_mbox_t *mbox, void *msg, uint32_t notifyOption)
         t->wait_time = 0;
     }
 
-    qor_exit_critical(status);
+    enable_irq();
     qor_svc_call(); // call scheduler
     return QOR_MBOX_OK;
 }
 
 void qor_mbox_get_stats(qor_mbox_t *mbox, mbox_stats_t *info)
 {
-    uint32_t status = qor_enter_critical();
+    disable_irq();
 
     info->count = mbox->count;
     info->maxCount = mbox->maxCount;
@@ -437,5 +473,5 @@ void qor_mbox_get_stats(qor_mbox_t *mbox, mbox_stats_t *info)
         head = head->wait_next;
     }
 
-    qor_exit_critical(status);
+    enable_irq();
 }

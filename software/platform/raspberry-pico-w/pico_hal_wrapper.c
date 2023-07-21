@@ -48,7 +48,7 @@ static __attribute__((aligned(8))) pio_i2s i2s;
 
 void ost_system_delay_ms(uint32_t delay)
 {
-  sleep_ms(delay);
+  busy_wait_ms(delay);
 }
 const uint8_t LED_PIN = 14; // GP 14
 
@@ -87,8 +87,6 @@ void gpio_callback(uint gpio, uint32_t events)
     one_time = false;
     // debouncer
     debug_printf("G\n");
-
-    qor_svc_call();
   }
 }
 
