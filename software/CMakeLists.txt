@@ -35,6 +35,7 @@ set(OST_SRCS
     system/debug.c
     system/picture.c
     system/filesystem.c
+    system/sdcard.c
     system/qor.c
     system/qor_armv6m.s
     system/audio_player.c

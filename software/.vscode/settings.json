@@ -34,6 +34,8 @@
         "config.h": "c",
         "rp2040.h": "c",
         "numbers": "c",
-        "systick.h": "c"
+        "systick.h": "c",
+        "critical_section.h": "c",
+        "serializers.h": "c"
     }
 }

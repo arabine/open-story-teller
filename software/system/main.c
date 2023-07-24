@@ -148,13 +148,66 @@ void UserTask_2(void *args)
 // SD CARD TASK
 // ===========================================================================================================
 static qor_tcb_t AudioTcb;
-static uint32_t AudioStack[1024];
+static uint32_t AudioStack[4096];
+
+static qor_mbox_t AudioMailBox;
+
+typedef struct
+{
+    uint8_t ev;
+} ost_audio_event_t;
+
+ost_audio_event_t audio_queue[10];
+
+// End of DMA transfer callback
+static void audio_callback(void)
+{
+}
+
 void AudioTask(void *args)
 {
     picture_show("example.bmp");
     // ost_audio_play("out2.wav");
+
+    qor_mbox_init(&AudioMailBox, (void **)&audio_queue, 10);
+
+    ost_audio_register_callback(audio_callback);
+
+    gpio_init(1);
+    gpio_set_dir(1, GPIO_OUT);
+
+    static bool onetime = true;
+    gpio_put(1, 0);
+
     while (1)
     {
+
+        if (onetime)
+        {
+            onetime = false;
+
+            gpio_put(1, 1);
+            ost_audio_play("out2.wav");
+            gpio_put(1, 0);
+
+            int isPlaying = 0;
+            int count = 0;
+            do
+            {
+
+                isPlaying = ost_audio_process();
+                count++;
+
+            } while (isPlaying);
+            debug_printf("Packets: %d\r\n", count);
+        }
+
+        // ost_event_t *e = NULL;
+        // uint32_t res = qor_mbox_wait(&b, (void **)&e, 30);
+
+        // if (res == QOR_MBOX_OK)
+        // {
+        // }
 
         ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
         qor_sleep(500);
@@ -196,7 +249,7 @@ int main()
 
     // qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_1");
     // qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_2");
-    qor_create_thread(&AudioTcb, AudioTask, AudioStack, 1024, 3, "AudioTask"); ///< High priority for audio
+    qor_create_thread(&AudioTcb, AudioTask, AudioStack, sizeof(AudioStack) / sizeof(AudioStack[0]), 3, "AudioTask"); ///< High priority for audio
     qor_start(&IdleTcb, IdleTask, IdleStack, 1024);
 
     return 0;

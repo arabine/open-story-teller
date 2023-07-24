@@ -48,6 +48,9 @@ extern "C"
     void ost_system_delay_ms(uint32_t delay);
 
     void ost_audio_play(const char *filename);
+    int ost_audio_process();
+    typedef void (*ost_audio_callback_t)(void);
+    void ost_audio_register_callback(ost_audio_callback_t cb);
 
     // ----------------------------------------------------------------------------
     // GPIO HAL
@@ -58,6 +61,9 @@ extern "C"
     // ----------------------------------------------------------------------------
     // SDCARD HAL
     // ----------------------------------------------------------------------------
+
+    void ost_hal_sdcard_set_slow_clock(void);
+    void ost_hal_sdcard_set_fast_clock(void);
 
     /**
      * @brief Deselect the SD-Card by driving the Chip Select to high level (eg: 3.3V)
@@ -71,13 +77,13 @@ extern "C"
      */
     void ost_hal_sdcard_cs_low();
 
-    /**
-     * @brief
-     *
-     * @param dat Data to send
-     * @return uint8_t
-     */
-    uint8_t ost_hal_sdcard_spi_transfer(uint8_t dat);
+    // We have a separated API here to allow specific optimizations such as the use of DMA
+
+    void ost_hal_sdcard_spi_exchange(const uint8_t *buffer, uint8_t *out, uint32_t size);
+
+    void ost_hal_sdcard_spi_write(const uint8_t *buffer, uint32_t size);
+
+    void ost_hal_sdcard_spi_read(uint8_t *out, uint32_t size);
 
     /**
      * @brief Return 1 if the SD card is physically inserted, otherwise 0
@@ -103,7 +109,6 @@ extern "C"
     // ----------------------------------------------------------------------------
     void ost_hal_audio_frame_end();
     void ost_hal_audio_frame_start(const volatile void *, int dma_trans_number);
-    void ost_hal_audio_loop();
 
 #ifdef __cplusplus
 }

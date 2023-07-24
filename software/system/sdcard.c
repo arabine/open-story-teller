@@ -125,6 +125,12 @@ static void SD_Bus_Hold(void)
 	ost_hal_sdcard_cs_low();
 }
 
+static uint8_t SD_SpiWriteByte(uint8_t byte)
+{
+	ost_hal_sdcard_spi_exchange(&byte, &byte, 1);
+	return byte;
+}
+
 /**
  * @brief  Release SPI bus used by SD card
  * @param  None
@@ -133,7 +139,7 @@ static void SD_Bus_Hold(void)
 static void SD_Bus_Release(void)
 { /* Deselect SD Card: set SD chip select pin high */
 	ost_hal_sdcard_cs_high();
-	ost_hal_sdcard_spi_transfer(0xFF); /* send dummy byte: 8 Clock pulses of delay */
+	SD_SpiWriteByte(0xFF); /* send dummy byte: 8 Clock pulses of delay */
 }
 
 /**
@@ -148,20 +154,20 @@ static SD_Error SD_SendCmd(uint8_t cmd, uint32_t arg, uint8_t crc)
 	uint8_t res;
 	uint16_t i = SD_NUM_TRIES;
 	/* send a command */
-	ost_hal_sdcard_spi_transfer((cmd & 0x3F) | 0x40);  /*!< byte 1 */
-	ost_hal_sdcard_spi_transfer((uint8_t)(arg >> 24)); /*!< byte 2 */
-	ost_hal_sdcard_spi_transfer((uint8_t)(arg >> 16)); /*!< byte 3 */
-	ost_hal_sdcard_spi_transfer((uint8_t)(arg >> 8));  /*!< byte 4 */
-	ost_hal_sdcard_spi_transfer((uint8_t)arg);		   /*!< byte 5 */
-	ost_hal_sdcard_spi_transfer(crc | 0x01);		   /*!< byte 6: CRC */
+	SD_SpiWriteByte((cmd & 0x3F) | 0x40);  /*!< byte 1 */
+	SD_SpiWriteByte((uint8_t)(arg >> 24)); /*!< byte 2 */
+	SD_SpiWriteByte((uint8_t)(arg >> 16)); /*!< byte 3 */
+	SD_SpiWriteByte((uint8_t)(arg >> 8));  /*!< byte 4 */
+	SD_SpiWriteByte((uint8_t)arg);		   /*!< byte 5 */
+	SD_SpiWriteByte(crc | 0x01);		   /*!< byte 6: CRC */
 	/* a byte received immediately after CMD12 should be discarded... */
 	if (cmd == SD_CMD_STOP_TRANSMISSION)
-		ost_hal_sdcard_spi_transfer(0xFF);
+		SD_SpiWriteByte(0xFF);
 	/* SD Card responds within Ncr (response time),
 	   which is 0-8 bytes for SDSC cards, 1-8 bytes for MMC cards */
 	do
 	{
-		res = ost_hal_sdcard_spi_transfer(0xFF);
+		res = SD_SpiWriteByte(0xFF);
 		/* R1 response always starts with 7th bit set to 0 */
 	} while ((res & SD_CHECK_BIT) != 0x00 && i-- > 0);
 	return (SD_Error)res;
@@ -177,7 +183,7 @@ static SD_Error SD_WaitReady(void)
 	uint16_t i = SD_NUM_TRIES;
 	while (i-- > 0)
 	{
-		if (ost_hal_sdcard_spi_transfer(0xFF) == 0xFF)
+		if (SD_SpiWriteByte(0xFF) == 0xFF)
 		{
 			// debug_printf( " [[ WAIT delay %d ]] ", SD_NUM_TRIES - i );
 			return SD_RESPONSE_NO_ERROR;
@@ -194,10 +200,10 @@ static SD_Error SD_WaitReady(void)
  */
 static void SD_GetResponse4b(uint8_t *pres)
 {
-	pres[3] = ost_hal_sdcard_spi_transfer(0xFF);
-	pres[2] = ost_hal_sdcard_spi_transfer(0xFF);
-	pres[1] = ost_hal_sdcard_spi_transfer(0xFF);
-	pres[0] = ost_hal_sdcard_spi_transfer(0xFF);
+	pres[3] = SD_SpiWriteByte(0xFF);
+	pres[2] = SD_SpiWriteByte(0xFF);
+	pres[1] = SD_SpiWriteByte(0xFF);
+	pres[0] = SD_SpiWriteByte(0xFF);
 }
 
 /**
@@ -222,7 +228,7 @@ static uint8_t SD_WaitBytesRead(void)
 	uint8_t b;
 	do
 	{
-		b = ost_hal_sdcard_spi_transfer(0xFF);
+		b = SD_SpiWriteByte(0xFF);
 	} while (b == 0xFF && i-- > 0);
 
 	// if (b != 0xFF)
@@ -243,7 +249,7 @@ static SD_Error SD_WaitBytesWritten(void)
 	uint32_t i = SD_NUM_TRIES_WRITE;
 	while (i-- > 0)
 	{
-		if (ost_hal_sdcard_spi_transfer(0xFF) == 0xFF)
+		if (SD_SpiWriteByte(0xFF) == 0xFF)
 		{
 			//	debug_printf(" [[ WRITE delay %lu ]] ", SD_NUM_TRIES_WRITE - i);
 			return SD_RESPONSE_NO_ERROR;
@@ -263,7 +269,7 @@ static SD_Error SD_WaitBytesErased(void)
 	uint32_t i = SD_NUM_TRIES_ERASE;
 	while (i-- > 0)
 	{
-		if (ost_hal_sdcard_spi_transfer(0xFF) == 0xFF)
+		if (SD_SpiWriteByte(0xFF) == 0xFF)
 		{
 			//		debug_printf(" [[ ERASE delay %lu ]] ", SD_NUM_TRIES_ERASE - i);
 			return SD_RESPONSE_NO_ERROR;
@@ -292,16 +298,17 @@ static SD_Error SD_ReceiveData(uint8_t *data, uint16_t len)
 	if (b != 0xFF)
 	{ /* most cards send transmission start token, don't fail if it's not the case... */
 		data[i] = b;
-		if (data[i] == SD_DATA_BLOCK_READ_START)		 /* 0xFE */
-			data[i] = ost_hal_sdcard_spi_transfer(0xFF); /* just get the next byte... */
+		if (data[i] == SD_DATA_BLOCK_READ_START) /* 0xFE */
+			data[i] = SD_SpiWriteByte(0xFF);	 /* just get the next byte... */
 
 		/* receive the rest of data... */
-		for (i = 1; i < len; ++i)
-			data[i] = ost_hal_sdcard_spi_transfer(0xFF);
+		// for (i = 1; i < len; ++i)
+		// 	data[i] = SD_SpiWriteByte(0xFF);
+		ost_hal_sdcard_spi_read(&data[1], len);
 
 		/* get CRC bytes (not really needed by us, but required by SD) */
-		ost_hal_sdcard_spi_transfer(0xFF);
-		ost_hal_sdcard_spi_transfer(0xFF);
+		SD_SpiWriteByte(0xFF);
+		SD_SpiWriteByte(0xFF);
 
 		return SD_RESPONSE_NO_ERROR;
 	}
@@ -434,7 +441,7 @@ static SD_Error SD_GoIdleState(void)
 		break;
 	}
 
-	debug_printf(" card initialized successfully\n");
+	debug_printf(" card initialized successfully\r\n");
 
 	return SD_RESPONSE_NO_ERROR;
 }
@@ -466,7 +473,7 @@ SD_Error sdcard_init()
 	/* send dummy byte 0xFF (rise MOSI high for 2500*8 SPI bus clock cycles) */
 	while (i++ < SD_NUM_TRIES_RUMPUP)
 	{
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
 	}
 
 	/* step 3:
@@ -517,10 +524,10 @@ SD_Error sdcard_sector_read(uint32_t readAddr, uint8_t *pBuffer)
 
 	SD_Bus_Release(); /* release SPI bus... */
 
-	if (state == SD_RESPONSE_NO_ERROR)
-		debug_printf("OK\n");
-	else
-		debug_printf("KO(%d)\n", state);
+	// if (state == SD_RESPONSE_NO_ERROR)
+	// 	debug_printf("OK\r\n");
+	// else
+	// 	debug_printf("KO(%d)\r\n", state);
 
 	return state;
 }
@@ -566,10 +573,10 @@ SD_Error sdcard_sectors_read(uint32_t readAddr, uint8_t *pBuffer, uint32_t nbSec
 
 	SD_Bus_Release(); /* release SPI bus... */
 
-	if (state == SD_RESPONSE_NO_ERROR)
-		debug_printf("OK\n");
-	else
-		debug_printf("KO(%d)\n", state);
+	// if (state == SD_RESPONSE_NO_ERROR)
+	// 	debug_printf("OK\r\n");
+	// else
+	// 	debug_printf("KO(%d)\r\n", state);
 
 	return state;
 }
@@ -602,19 +609,19 @@ SD_Error sdcard_sector_write(uint32_t writeAddr, const uint8_t *pBuffer)
 	state = SD_SendCmd(SD_CMD_WRITE_SINGLE_BLOCK, writeAddr, 0xFF);
 	if (state == SD_RESPONSE_NO_ERROR)
 	{ /* wait at least 8 clock cycles (send >=1 0xFF bytes) before transmission starts */
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
 		/* send data token to signify the start of data transmission... */
-		ost_hal_sdcard_spi_transfer(SD_DATA_SINGLE_BLOCK_WRITE_START); /* 0xFE */
+		SD_SpiWriteByte(SD_DATA_SINGLE_BLOCK_WRITE_START); /* 0xFE */
 		/* send data... */
 		while (BlockSize-- > 0)
-			ost_hal_sdcard_spi_transfer(*pBuffer++);
+			SD_SpiWriteByte(*pBuffer++);
 		/* put 2 CRC bytes (not really needed by us, but required by SD) */
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
-		ost_hal_sdcard_spi_transfer(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
+		SD_SpiWriteByte(SD_DUMMY_BYTE);
 		/* check data response... */
-		res = (SD_DataResponse)(ost_hal_sdcard_spi_transfer(0xFF) & SD_RESPONSE_MASK); /* mask unused bits */
+		res = (SD_DataResponse)(SD_SpiWriteByte(0xFF) & SD_RESPONSE_MASK); /* mask unused bits */
 		if ((res & SD_RESPONSE_ACCEPTED) != 0)
 		{								   /* card is now processing data and goes to BUSY mode, wait until it finishes... */
 			state = SD_WaitBytesWritten(); /* make sure card is ready before we go further... */
@@ -625,10 +632,10 @@ SD_Error sdcard_sector_write(uint32_t writeAddr, const uint8_t *pBuffer)
 
 	SD_Bus_Release(); /* release SPI bus... */
 
-	if (state == SD_RESPONSE_NO_ERROR)
-		debug_printf("OK\n");
-	else
-		debug_printf("KO(%d)\n", state);
+	// if (state == SD_RESPONSE_NO_ERROR)
+	// 	debug_printf("OK\r\n");
+	// else
+	// 	debug_printf("KO(%d)\r\n", state);
 
 	return state;
 }
@@ -675,22 +682,22 @@ SD_Error sdcard_sectors_write(uint32_t writeAddr, const uint8_t *pBuffer, uint32
 	if (state == SD_RESPONSE_NO_ERROR)
 	{
 		/* send some dummy bytes before transmission starts... */
-		ost_hal_sdcard_spi_transfer(0xFF);
-		ost_hal_sdcard_spi_transfer(0xFF);
-		ost_hal_sdcard_spi_transfer(0xFF);
+		SD_SpiWriteByte(0xFF);
+		SD_SpiWriteByte(0xFF);
+		SD_SpiWriteByte(0xFF);
 		/* transfer data... */
 		while (nbSectors-- > 0 && state != SD_RESPONSE_FAILURE)
-		{																	 /* --- {{ send data packet */
-			ost_hal_sdcard_spi_transfer(SD_DATA_MULTIPLE_BLOCK_WRITE_START); /* 0xFC */
+		{														 /* --- {{ send data packet */
+			SD_SpiWriteByte(SD_DATA_MULTIPLE_BLOCK_WRITE_START); /* 0xFC */
 			/* send data... */
 			while (BlockSize-- > 0)
-				ost_hal_sdcard_spi_transfer(*pBuffer++);
+				SD_SpiWriteByte(*pBuffer++);
 			/* put CRC bytes (not really needed by us, but required by SD) */
-			ost_hal_sdcard_spi_transfer(0xFF);
-			ost_hal_sdcard_spi_transfer(0xFF);
+			SD_SpiWriteByte(0xFF);
+			SD_SpiWriteByte(0xFF);
 			/* --- }} */
 			/* check data response... */
-			res = (SD_DataResponse)(ost_hal_sdcard_spi_transfer(0xFF) & SD_RESPONSE_MASK); /* mask unused bits */
+			res = (SD_DataResponse)(SD_SpiWriteByte(0xFF) & SD_RESPONSE_MASK); /* mask unused bits */
 			if ((res & SD_RESPONSE_ACCEPTED) != 0)
 			{								   /* card is now processing data and goes to BUSY mode, wait until it finishes... */
 				state = SD_WaitBytesWritten(); /* make sure card is ready before we go further... */
@@ -699,8 +706,8 @@ SD_Error sdcard_sectors_write(uint32_t writeAddr, const uint8_t *pBuffer, uint32
 				state = SD_RESPONSE_FAILURE;
 		}
 		/* notify SD card that we finished sending data to write on it */
-		ost_hal_sdcard_spi_transfer(SD_DATA_MULTIPLE_BLOCK_WRITE_STOP); /* 0xFD */
-		ost_hal_sdcard_spi_transfer(0xFF);								/* read and discard 1 byte from card */
+		SD_SpiWriteByte(SD_DATA_MULTIPLE_BLOCK_WRITE_STOP); /* 0xFD */
+		SD_SpiWriteByte(0xFF);								/* read and discard 1 byte from card */
 		/* card is now processing data and goes to BUSY mode, wait until it finishes... */
 		state = SD_WaitReady(); /* make sure card is ready before we go further... */
 	}
@@ -763,10 +770,10 @@ SD_Error sdcard_sectors_erase(uint32_t eraseAddrFrom, uint32_t eraseAddrTo)
 
 	SD_Bus_Release(); /* release SPI bus... */
 
-	if (state == SD_RESPONSE_NO_ERROR)
-		debug_printf("OK\n");
-	else
-		debug_printf("KO(%d)\n", state);
+	// if (state == SD_RESPONSE_NO_ERROR)
+	// 	debug_printf("OK\r\n");
+	// else
+	// 	debug_printf("KO(%d)\r\n", state);
 
 	return state;
 }

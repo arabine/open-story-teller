@@ -8,17 +8,16 @@
 #include <string.h>
 
 #include "ost_hal.h"
-#include "libutil.h"
+#include "serializers.h"
 
-// 1 sample = one 16-bit data for left, one 16-bit data for right (stereo example)
-#define SIZE_OF_SAMPLES (1024)
+#define SIZE_OF_SAMPLES (128) // in bytes
 
 // Audio Double Buffer for DMA transfer
 int32_t audio_buf[2][SIZE_OF_SAMPLES];
 
 // int16_t audio_buf16[2][SIZE_OF_SAMPLES];
 // Audio Buffer for File Read
-uint8_t raw_buf[SIZE_OF_SAMPLES * 2 * 2]; // x2 for 16-bit, L+R
+uint8_t raw_buf[SIZE_OF_SAMPLES * 2 * 2]; // x2 for 16-bit, and x2 for L+R
 
 int32_t DAC_ZERO_VALUE = 1; //
 
@@ -237,14 +236,14 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
     return _next_is_end;
 }
 
-void audio_process(audio_ctx_t *ctx)
+int audio_process(audio_ctx_t *ctx)
 {
     int nxt1 = (ctx->count & 0x1) ^ 0x1;
     int nxt2 = 1 - nxt1;
     // dma_flag_clear(DMA1, DMA_CH1, DMA_FLAG_FTF);
     // dma_channel_disable(DMA1, DMA_CH1);
 
-     ost_hal_audio_frame_end();
+    ost_hal_audio_frame_end();
 
     if (ctx->next_is_end)
     {
@@ -269,7 +268,8 @@ void audio_process(audio_ctx_t *ctx)
         ctx->dma_trans_number = SIZE_OF_SAMPLES / 4;
     }
     ctx->count++;
-    // dma_interrupt_flag_clear(DMA1, DMA_CH1, DMA_INT_FLAG_G);  /* not needed */
+
+    return ctx->playing;
 }
 
 int audio_play(audio_ctx_t *ctx, const char *fname_ptr)

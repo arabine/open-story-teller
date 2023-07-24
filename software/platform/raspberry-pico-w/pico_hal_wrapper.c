@@ -19,7 +19,6 @@
 
 // Local
 #include "pico_lcd_spi.h"
-#include "pico_sdcard_spi.h"
 #include "audio_player.h"
 #include "pico_i2s.h"
 
@@ -61,8 +60,10 @@ const uint8_t ROTARY_A = 6;
 const uint8_t ROTARY_B = 7;
 const uint8_t ROTARY_BUTTON = 3;
 
+#define SDCARD_SCK 18
+#define SDCARD_MOSI 19
+#define SDCARD_MISO 16
 const uint8_t SD_CARD_CS = 17;
-
 const uint8_t SD_CARD_PRESENCE = 24;
 
 static bool sys_timer_callback(struct repeating_timer *t)
@@ -144,14 +145,20 @@ void ost_system_initialize()
   gpio_set_irq_enabled_with_callback(ROTARY_BUTTON, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
 
   //------------------- Init SDCARD
-  // gpio_init(SD_CARD_CS);
-  // gpio_put(SD_CARD_CS, 1);
-  // gpio_set_dir(SD_CARD_CS, GPIO_OUT);
+  gpio_init(SD_CARD_CS);
+  gpio_put(SD_CARD_CS, 1);
+  gpio_set_dir(SD_CARD_CS, GPIO_OUT);
 
-  // gpio_init(SD_CARD_PRESENCE);
-  // gpio_set_dir(SD_CARD_PRESENCE, GPIO_IN);
+  gpio_init(SD_CARD_PRESENCE);
+  gpio_set_dir(SD_CARD_PRESENCE, GPIO_IN);
 
-  // pico_sdcard_spi_init(1000000);
+  spi_init(spi0, 1000 * 1000); // slow clock
+
+  spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
+  gpio_set_function(SDCARD_SCK, GPIO_FUNC_SPI);
+  gpio_set_function(SDCARD_MOSI, GPIO_FUNC_SPI);
+  gpio_set_function(SDCARD_MISO, GPIO_FUNC_SPI);
 
   //------------------- Init Sound
   static const audio_i2s_config_t config = {
@@ -163,8 +170,6 @@ void ost_system_initialize()
   // i2s_program_start_synched(pio0, audio_i2s_dma_irq_handler, &i2s, &config);
 
   // pico_i2s_setup(&config);
-
-  init_spi();
 
   audio_init(&audio_ctx);
 
@@ -217,15 +222,14 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
 // ----------------------------------------------------------------------------
 // SDCARD HAL
 // ----------------------------------------------------------------------------
-void sdcard_set_slow_clock()
+void ost_hal_sdcard_set_slow_clock()
 {
-  // spi_init(100000, 0);
   spi_set_baudrate(spi0, 10000);
 }
 
-void sdcard_set_fast_clock()
+void ost_hal_sdcard_set_fast_clock()
 {
-  spi_set_baudrate(spi0, 1000 * 1000);
+  spi_set_baudrate(spi0, 40000000UL);
 }
 
 void ost_hal_sdcard_cs_high()
@@ -238,12 +242,19 @@ void ost_hal_sdcard_cs_low()
   gpio_put(SD_CARD_CS, 0);
 }
 
-uint8_t ost_hal_sdcard_spi_transfer(uint8_t dat)
+void ost_hal_sdcard_spi_exchange(const uint8_t *buffer, uint8_t *out, uint32_t size)
 {
-  uint8_t out;
-  pico_ost_hal_sdcard_spi_transfer(&dat, &out, 1);
+  spi_write_read_blocking(spi0, buffer, out, size);
+}
 
-  return out;
+void ost_hal_sdcard_spi_write(const uint8_t *buffer, uint32_t size)
+{
+  spi_write_blocking(spi0, buffer, size);
+}
+
+void ost_hal_sdcard_spi_read(uint8_t *out, uint32_t size)
+{
+  spi_read_blocking(spi0, 0xFF, out, size);
 }
 
 uint8_t ost_hal_sdcard_get_presence()
@@ -295,37 +306,32 @@ void ost_display_transfer_multi(uint8_t *buff, uint32_t btr)
 
 // extern shared_state_t shared_state;
 
-void hal_audio_test();
+// #include "pico/critical_section.h"
 
-#include "pico/critical_section.h"
-
-critical_section_t acrit;
+// critical_section_t acrit;
 
 void ost_audio_play(const char *filename)
 {
 
-#ifndef OST_AUDIO_TEST
-
   audio_play(&audio_ctx, filename);
 
-  critical_section_init(&acrit);
-
   // audio_i2s_set_enabled(true);
-  audio_process(&audio_ctx);
-#else
-  hal_audio_test();
-#endif
+  // audio_process(&audio_ctx);
 
   // audio_step = 1;
 }
 
-#ifndef OST_AUDIO_TEST
+int ost_audio_process()
+{
+  return audio_process(&audio_ctx);
+}
+
+void ost_audio_register_callback(ost_audio_callback_t cb)
+{
+}
 
 void ost_hal_audio_frame_end()
 {
-
-  critical_section_enter_blocking(&acrit);
-  critical_section_exit(&acrit);
 
   // uint dma_channel = shared_state.dma_channel;
   // if (dma_irqn_get_channel_status(PICO_AUDIO_I2S_DMA_IRQ, dma_channel))
@@ -355,11 +361,7 @@ void __isr __time_critical_func(audio_i2s_dma_irq_handler)()
   */
 }
 
-void ost_hal_audio_loop()
-{
-}
-
-#else
+#if 0 // legacy audio test
 
 #define SAMPLE_RATE (44100)
 #define DMA_BUF_LEN (32)
