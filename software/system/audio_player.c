@@ -10,10 +10,8 @@
 #include "ost_hal.h"
 #include "serializers.h"
 
-#define SIZE_OF_SAMPLES (128) // in bytes
-
 // Audio Double Buffer for DMA transfer
-int32_t audio_buf[2][SIZE_OF_SAMPLES];
+int32_t audio_buf[SIZE_OF_SAMPLES];
 
 // int16_t audio_buf16[2][SIZE_OF_SAMPLES];
 // Audio Buffer for File Read
@@ -64,14 +62,10 @@ void audio_init(audio_ctx_t *ctx)
 
     for (int i = 0; i < SIZE_OF_SAMPLES; i++)
     {
-        audio_buf[0][i] = DAC_ZERO_VALUE;
-        audio_buf[1][i] = DAC_ZERO_VALUE;
-
-        // audio_buf16[0][i] = DAC_ZERO_VALUE;
-        // audio_buf16[1][i] = DAC_ZERO_VALUE;
+        audio_buf[i] = DAC_ZERO_VALUE;
     }
 
-    ctx->dma_trans_number = SIZE_OF_SAMPLES / 4;
+    ctx->transfer_size = SIZE_OF_SAMPLES / 4;
 }
 
 static int list_chunk_is_info_type(audio_ctx_t *ctx)
@@ -188,7 +182,7 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
         {
             debug_printf("ERROR: f_read %d, data_offset = %d\n\r", (int)fr, (int)ctx->audio_info.data_offset);
             f_close(&ctx->fil);
-            ctx->dma_trans_number = number / 4;
+            ctx->transfer_size = number / 4;
             return 1;
         }
         if (ctx->audio_info.data_size <= ctx->audio_info.data_offset)
@@ -232,40 +226,31 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
     */
     // ctx->audio_info.lvl_l = get_level(lvl_l / (number / 4));
     // ctx->audio_info.lvl_r = get_level(lvl_r / (number / 4));
-    ctx->dma_trans_number = (number / 4); // 32 bytes tranfers
+    ctx->transfer_size = (number / 4); // 32 bytes tranfers
     return _next_is_end;
 }
 
 int audio_process(audio_ctx_t *ctx)
 {
-    int nxt1 = (ctx->count & 0x1) ^ 0x1;
-    int nxt2 = 1 - nxt1;
-    // dma_flag_clear(DMA1, DMA_CH1, DMA_FLAG_FTF);
-    // dma_channel_disable(DMA1, DMA_CH1);
-
-    ost_hal_audio_frame_end();
-
     if (ctx->next_is_end)
     {
         ctx->playing = 0;
         ctx->pausing = 0;
     }
-    // init_dma_i2s2(audio_buf[nxt1], dma_trans_number);
-    // dma_channel_enable(DMA1, DMA_CH1);
-
-    ost_hal_audio_frame_start(audio_buf[nxt1], ctx->dma_trans_number);
 
     if (ctx->playing && !ctx->pausing)
     {
-        ctx->next_is_end = get_audio_buf(ctx, audio_buf[nxt2]);
+        // Récupération du buffer audio à partir du disque
+        ctx->next_is_end = get_audio_buf(ctx, &audio_buf[0]);
+        ost_hal_audio_new_frame(&audio_buf[0], ctx->transfer_size);
     }
     else
     {
         for (int i = 0; i < SIZE_OF_SAMPLES; i++)
         {
-            audio_buf[nxt2][i] = DAC_ZERO_VALUE;
+            audio_buf[i] = DAC_ZERO_VALUE;
         }
-        ctx->dma_trans_number = SIZE_OF_SAMPLES / 4;
+        ctx->transfer_size = SIZE_OF_SAMPLES / 4;
     }
     ctx->count++;
 

@@ -221,7 +221,6 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint32_t *stack, uint
 
     tcb->state = qor_tcb_state_active;
     tcb->wait_time = 0;
-    tcb->state = qor_tcb_state_active;
     tcb->priority = priority;
     tcb->name = name;
     tcb->next = NULL;
@@ -341,7 +340,10 @@ void qor_scheduler(void)
     }
     else if (best_sleeping != NULL)
     {
+        // On va réveiller un endormi, car son temps d'attente est dépassé (ok ou timeout, ça dépend si c'est un sleep volontaire ou attente de mailbox dépassée)
         RunPt = best_sleeping;
+        RunPt->state = qor_tcb_state_active; // devient actif
+        RunPt->ts = 0;                       // means timeout
     }
     else
     {
@@ -382,6 +384,7 @@ void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount)
     mbox->read = 0;
     mbox->read = 0;
     mbox->head = NULL;
+    mbox->count = 0;
 }
 
 uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
@@ -396,6 +399,13 @@ uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
             RunPt->mbox = mbox;
             mbox->head = RunPt;
             qor_sleep(wait_ms);
+
+            disable_irq();
+            if (RunPt->ts == 0)
+            {
+                enable_irq();
+                return QOR_MBOX_TIMEOUT;
+            }
         }
         else
         {
@@ -445,11 +455,12 @@ uint32_t qor_mbox_notify(qor_mbox_t *mbox, void *msg, uint32_t notifyOption)
     }
     mbox->count++;
 
-    // We warn all waiting threads that a new message is available
+    // We warn waiting thread that a new message is available
     qor_tcb_t *t = mbox->head;
     if (t != NULL)
     {
         t->wait_time = 0;
+        t->state = qor_tcb_state_active; // force wake up
     }
 
     enable_irq();

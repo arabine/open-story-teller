@@ -120,30 +120,6 @@ void UserTask_1(void *args)
     }
 }
 
-void UserTask_2(void *args)
-{
-    static ost_event_t wake_up;
-
-    wake_up.ev = 34;
-
-    while (1)
-    {
-        for (int i = 0; i < 65500; i++)
-        {
-            for (int j = 0; j < 300; j++)
-                ;
-        }
-        debug_printf("X\n");
-        for (int i = 0; i < 65500; i++)
-        {
-            for (int j = 0; j < 100; j++)
-                ;
-        }
-
-        qor_mbox_notify(&b, (void **)&wake_up, 1);
-    }
-}
-
 // ===========================================================================================================
 // SD CARD TASK
 // ===========================================================================================================
@@ -151,6 +127,8 @@ static qor_tcb_t AudioTcb;
 static uint32_t AudioStack[4096];
 
 static qor_mbox_t AudioMailBox;
+
+static ost_event_t wake_up;
 
 typedef struct
 {
@@ -162,12 +140,16 @@ ost_audio_event_t audio_queue[10];
 // End of DMA transfer callback
 static void audio_callback(void)
 {
+    qor_mbox_notify(&b, (void **)&wake_up, QOR_MBOX_OPTION_SEND_BACK);
+    gpio_xor_mask(1 << 1);
 }
 
 void AudioTask(void *args)
 {
     picture_show("example.bmp");
     // ost_audio_play("out2.wav");
+
+    wake_up.ev = 34;
 
     qor_mbox_init(&AudioMailBox, (void **)&audio_queue, 10);
 
@@ -182,37 +164,54 @@ void AudioTask(void *args)
     while (1)
     {
 
+// Benchmark code
+#if 0
         if (onetime)
         {
             onetime = false;
 
-            gpio_put(1, 1);
             ost_audio_play("out2.wav");
-            gpio_put(1, 0);
 
             int isPlaying = 0;
             int count = 0;
             do
             {
-
+                gpio_put(1, 1);
                 isPlaying = ost_audio_process();
+                gpio_put(1, 0);
                 count++;
 
             } while (isPlaying);
             debug_printf("Packets: %d\r\n", count);
         }
+#endif
 
-        // ost_event_t *e = NULL;
-        // uint32_t res = qor_mbox_wait(&b, (void **)&e, 30);
+        ost_audio_play("out2.wav");
 
-        // if (res == QOR_MBOX_OK)
-        // {
-        // }
+        ost_event_t *e = NULL;
 
-        ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
-        qor_sleep(500);
-        ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
-        qor_sleep(500);
+        int isPlaying = 0;
+        int count = 0;
+        do
+        {
+            uint32_t res = qor_mbox_wait(&AudioMailBox, (void **)&e, 30); // On devrait recevoir un message toutes les 3ms (durée d'envoi d'un buffer I2S)
+
+            if (res == QOR_MBOX_OK)
+            {
+                isPlaying = ost_audio_process();
+            }
+
+            count++;
+
+        } while (isPlaying);
+
+        for (;;)
+        {
+            ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
+            qor_sleep(500);
+            ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
+            qor_sleep(500);
+        }
     }
 }
 

@@ -1,4 +1,9 @@
 
+
+// C library
+#include <string.h>
+#include <stdlib.h>
+
 // OST common files
 #include "ost_hal.h"
 #include "debug.h"
@@ -22,33 +27,10 @@
 #include "audio_player.h"
 #include "pico_i2s.h"
 
-static volatile uint32_t msTicks = 0;
-static audio_ctx_t audio_ctx;
+// ===========================================================================================================
+// CONSTANTS / DEFINES
+// ===========================================================================================================
 
-void __isr __time_critical_func(audio_i2s_dma_irq_handler)();
-
-// ----------------------------------------------------------------------------
-// SYSTEM HAL
-// ----------------------------------------------------------------------------
-
-#define UART_ID uart0
-#define BAUD_RATE 115200
-
-// We are using pins 0 and 1, but see the GPIO function select table in the
-// datasheet for information on which other pins can be used.
-#define UART_TX_PIN 0
-#define UART_RX_PIN 1
-
-static struct repeating_timer sys_timer;
-
-// static audio_i2s_config_t i2s_config = {28, 26, 0};
-
-static __attribute__((aligned(8))) pio_i2s i2s;
-
-void ost_system_delay_ms(uint32_t delay)
-{
-  busy_wait_ms(delay);
-}
 const uint8_t LED_PIN = 14; // GP 14
 
 const uint8_t LCD_DC = 8;
@@ -66,18 +48,36 @@ const uint8_t ROTARY_BUTTON = 3;
 const uint8_t SD_CARD_CS = 17;
 const uint8_t SD_CARD_PRESENCE = 24;
 
-static bool sys_timer_callback(struct repeating_timer *t)
-{
-  msTicks++;
+#define UART_ID uart0
+#define BAUD_RATE 115200
 
-  // qor_switch_context();
+// We are using pins 0 and 1, but see the GPIO function select table in the
+// datasheet for information on which other pins can be used.
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
 
-  return true;
-}
+// ===========================================================================================================
+// GLOBAL VARIABLES
+// ===========================================================================================================
+static __attribute__((aligned(8))) pio_i2s i2s;
+static volatile uint32_t msTicks = 0;
+static audio_ctx_t audio_ctx;
 
+// ===========================================================================================================
+// PROTOTYPES
+// ===========================================================================================================
 extern void init_spi(void);
-
 void dma_init();
+void __isr __time_critical_func(audio_i2s_dma_irq_handler)();
+
+// ===========================================================================================================
+// OST HAL IMPLEMENTATION
+// ===========================================================================================================
+
+void ost_system_delay_ms(uint32_t delay)
+{
+  busy_wait_ms(delay);
+}
 
 void gpio_callback(uint gpio, uint32_t events)
 {
@@ -167,14 +167,9 @@ void ost_system_initialize()
       .data_pin = 28,
       .clock_pin_base = 26};
 
-  // i2s_program_start_synched(pio0, audio_i2s_dma_irq_handler, &i2s, &config);
-
-  // pico_i2s_setup(&config);
+  i2s_program_setup(pio0, audio_i2s_dma_irq_handler, &i2s, &config);
 
   audio_init(&audio_ctx);
-
-  //------------------- System timer (1ms)
-  // add_repeating_timer_ms(1, sys_timer_callback, NULL, &sys_timer);
 
   // ------------ Everything is initialized, print stuff here
   debug_printf("System Clock: %lu\n", clock_get_hz(clk_sys));
@@ -304,21 +299,20 @@ void ost_display_transfer_multi(uint8_t *buff, uint32_t btr)
 // AUDIO HAL
 // ----------------------------------------------------------------------------
 
-// extern shared_state_t shared_state;
-
-// #include "pico/critical_section.h"
-
-// critical_section_t acrit;
-
 void ost_audio_play(const char *filename)
 {
-
   audio_play(&audio_ctx, filename);
 
-  // audio_i2s_set_enabled(true);
-  // audio_process(&audio_ctx);
+  i2s.buffer_index = 0;
 
-  // audio_step = 1;
+  // On appelle une première fois le process pour récupérer et initialiser le premier buffer...
+  audio_process(&audio_ctx);
+
+  // Puis le deuxième ... (pour avoir un buffer d'avance)
+  audio_process(&audio_ctx);
+
+  // On lance les DMA
+  i2s_start(&i2s);
 }
 
 int ost_audio_process()
@@ -326,39 +320,39 @@ int ost_audio_process()
   return audio_process(&audio_ctx);
 }
 
+static ost_audio_callback_t AudioCallBack = NULL;
+
 void ost_audio_register_callback(ost_audio_callback_t cb)
 {
+  AudioCallBack = cb;
 }
 
-void ost_hal_audio_frame_end()
+void ost_hal_audio_new_frame(const void *buff, int dma_trans_number)
 {
+  if (dma_trans_number > STEREO_BUFFER_SIZE)
+  {
+    // Problème
+    return;
+  }
+  memcpy(i2s.out_ctrl_blocks[i2s.buffer_index], buff, dma_trans_number * sizeof(uint32_t));
+  i2s.buffer_index = 1 - i2s.buffer_index;
 
-  // uint dma_channel = shared_state.dma_channel;
-  // if (dma_irqn_get_channel_status(PICO_AUDIO_I2S_DMA_IRQ, dma_channel))
-  // {
-  //   dma_irqn_acknowledge_channel(PICO_AUDIO_I2S_DMA_IRQ, dma_channel);
-  // }
-}
-
-void ost_hal_audio_frame_start(const volatile void *buff, int dma_trans_number)
-{
+  //
   // dma_channel_transfer_from_buffer_now(shared_state.dma_channel, buff, dma_trans_number);
   // dma_channel_start(shared_state.dma_channel);
 
-  dma_hw->ints0 = 1u << i2s.dma_ch_out_data; // clear the IRQ
+  //  dma_hw->ints0 = 1u << i2s.dma_ch_out_data; // clear the IRQ
 }
 
 void __isr __time_critical_func(audio_i2s_dma_irq_handler)()
 {
-  /*
-  uint dma_channel = shared_state.dma_channel;
-  if (dma_irqn_get_channel_status(PICO_AUDIO_I2S_DMA_IRQ, dma_channel))
-  {
-    dma_irqn_acknowledge_channel(PICO_AUDIO_I2S_DMA_IRQ, dma_channel);
-  }
+  dma_hw->ints0 = 1u << i2s.dma_ch_out_data; // clear the IRQ
 
-  audio_process(&audio_ctx);
-  */
+  // Warn the application layer that we have done on that channel
+  if (AudioCallBack != NULL)
+  {
+    AudioCallBack();
+  }
 }
 
 #if 0 // legacy audio test

@@ -36,6 +36,7 @@
         "numbers": "c",
         "systick.h": "c",
         "critical_section.h": "c",
-        "serializers.h": "c"
+        "serializers.h": "c",
+        "cstring": "c"
     }
 }

@@ -20,46 +20,6 @@
 @   The Cortex-M0 is limited on the thumb number of instructionss
 @ the context restore is therefore a bit more complex that M3 or M4 CPU
 @  One limitation is the POP instruction that cannot access to the HI registers (registers after R7)
-@
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@       |           |
-@       -------------
-@  
-@
-@
-@
-
 
 qor_go:
     

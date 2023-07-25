@@ -107,8 +107,7 @@ extern "C"
     // ----------------------------------------------------------------------------
     // AUDIO HAL
     // ----------------------------------------------------------------------------
-    void ost_hal_audio_frame_end();
-    void ost_hal_audio_frame_start(const volatile void *, int dma_trans_number);
+    void ost_hal_audio_new_frame(const void *buffer, int size);
 
 #ifdef __cplusplus
 }

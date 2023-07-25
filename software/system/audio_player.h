@@ -6,6 +6,7 @@
 
 #include <ff.h>
 
+#define SIZE_OF_SAMPLES (128) // in bytes
 #define FILENAME_MAX_SIZE 260
 
 typedef struct
@@ -29,7 +30,7 @@ typedef struct
 {
     FIL fil;
     audio_info_type_t audio_info;
-    int32_t dma_trans_number;
+    int32_t transfer_size;
     uint16_t idx_play;
     int next_is_end;
     int playing;

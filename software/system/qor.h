@@ -84,8 +84,9 @@ typedef struct
 } mbox_stats_t;
 
 #define QOR_MBOX_OK 1
-#define QOR_MBOX_ERROR 2
-#define QOR_MBOX_FULL 3
+#define QOR_MBOX_TIMEOUT 2
+#define QOR_MBOX_ERROR 3
+#define QOR_MBOX_FULL 4
 
 void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount);
 uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms);
