@@ -30,8 +30,8 @@
 // ===========================================================================================================
 // CONSTANTS / DEFINES
 // ===========================================================================================================
-
-const uint8_t LED_PIN = 14; // GP 14
+const uint8_t DEBUG_PIN = 1;
+const uint8_t LED_PIN = 14;
 
 const uint8_t LCD_DC = 8;
 const uint8_t LCD_CS = 9;
@@ -98,6 +98,10 @@ void ost_system_initialize()
   ////------------------- Init DEBUG LED
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
+
+  //------------------- Init DEBUG PIN
+  gpio_init(DEBUG_PIN);
+  gpio_set_dir(DEBUG_PIN, GPIO_OUT);
 
   //------------------- Init UART
 
@@ -180,6 +184,25 @@ void system_putc(char ch)
   uart_putc_raw(UART_ID, ch);
 }
 
+#include <time.h>
+clock_t clock()
+{
+  return (clock_t)time_us_64() / 1000;
+}
+static uint64_t stopwatch_start_time;
+static uint64_t stopwatch_end_time;
+
+void ost_system_stopwatch_start()
+{
+  stopwatch_start_time = clock();
+}
+
+uint32_t ost_system_stopwatch_stop()
+{
+  stopwatch_end_time = clock();
+  return (stopwatch_end_time - stopwatch_start_time);
+}
+
 int ost_hal_gpio_get(ost_hal_gpio_t gpio)
 {
   int value = 0;
@@ -204,6 +227,9 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
   {
   case OST_GPIO_DEBUG_LED:
     gpio_put(LED_PIN, value);
+    break;
+  case OST_GPIO_DEBUG_PIN:
+    gpio_put(DEBUG_PIN, value);
     break;
 
   // Nothing to do for these inputes

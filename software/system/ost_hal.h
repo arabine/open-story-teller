@@ -38,6 +38,7 @@ extern "C"
         OST_GPIO_ROTARY_A,
         OST_GPIO_ROTARY_B,
         OST_GPIO_DEBUG_LED,
+        OST_GPIO_DEBUG_PIN,
     } ost_hal_gpio_t;
 
     // ----------------------------------------------------------------------------
@@ -46,6 +47,9 @@ extern "C"
     void ost_system_initialize();
     void system_putc(char ch);
     void ost_system_delay_ms(uint32_t delay);
+
+    void ost_system_stopwatch_start();
+    uint32_t ost_system_stopwatch_stop();
 
     void ost_audio_play(const char *filename);
     void ost_audio_stop();

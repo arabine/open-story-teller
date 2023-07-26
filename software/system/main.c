@@ -6,47 +6,6 @@
 #include "qor.h"
 #include "rotary-button.h"
 
-#define RUN_TESTS 1
-
-#ifndef RUN_TESTS
-int main(void)
-{
-    // Low level initialization, mainly platform stuff
-    // After this call, debug_printf *MUST* be available
-    ost_system_initialize();
-    debug_printf("\r\n [OST] Starting OpenStoryTeller tests: V%d.%d\r\n", 1, 0);
-
-    // File system access
-    filesystem_mount();
-
-    // Display
-    ost_display_initialize();
-    decompress();
-
-    // Audio
-
-    // Tasker
-    ost_tasker_init();
-
-    for (;;)
-    {
-    }
-
-    return 0;
-}
-#else
-
-// Raspberry Pico SDK
-#include "pico/stdlib.h"
-#include "hardware/uart.h"
-#include "hardware/spi.h"
-#include "hardware/dma.h"
-#include "hardware/irq.h"
-#include "hardware/pio.h"
-#include "hardware/clocks.h"
-#include "pico.h"
-#include "pico/stdlib.h"
-
 #include "sdcard.h"
 
 #include <stdint.h>
@@ -54,13 +13,76 @@ int main(void)
 #include <stdlib.h>
 
 #include "audio_player.h"
+#include "chip32_vm.h"
 
 void ost_hal_panic()
 {
 }
 
 // ===========================================================================================================
-// SD CARD TASK
+// VIRTUAL MACHINE TASK
+// ===========================================================================================================
+static qor_tcb_t VmTcb;
+static uint32_t VmStack[4096];
+
+static qor_mbox_t VmMailBox;
+
+typedef struct
+{
+    uint8_t ev;
+} ost_vm_event_t;
+ost_vm_event_t VmQueue[10];
+
+static ost_vm_event_t VmEvent;
+
+static uint8_t m_rom_data[16 * 1024];
+static uint8_t m_ram_data[16 * 1024];
+static chip32_ctx_t m_chip32_ctx;
+
+uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t signum)
+{
+}
+
+void VmTask(void *args)
+{
+
+    // VM Initialize
+    m_chip32_ctx.stack_size = 512;
+
+    m_chip32_ctx.rom.mem = m_rom_data;
+    m_chip32_ctx.rom.addr = 0;
+    m_chip32_ctx.rom.size = sizeof(m_rom_data);
+
+    m_chip32_ctx.ram.mem = m_ram_data;
+    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
+    m_chip32_ctx.ram.size = sizeof(m_ram_data);
+
+    m_chip32_ctx.syscall = vm_syscall;
+
+    chip32_initialize(&m_chip32_ctx);
+
+    chip32_result_t run_result;
+    ost_vm_event_t *e = NULL;
+
+    while (1)
+    {
+        uint32_t res = qor_mbox_wait(&VmMailBox, (void **)&e, 300); // On devrait recevoir un message toutes les 3ms (durée d'envoi d'un buffer I2S)
+
+        if (res == QOR_MBOX_OK)
+        {
+            if (VmEvent.ev == 1)
+            {
+                do
+                {
+                    run_result = chip32_step(&m_chip32_ctx);
+                } while (run_result != VM_OK);
+            }
+        }
+    }
+}
+
+// ===========================================================================================================
+// FILE SYSTEM TASK
 // ===========================================================================================================
 static qor_tcb_t AudioTcb;
 static uint32_t AudioStack[4096];
@@ -82,13 +104,7 @@ static int dbg_state = 0;
 static void audio_callback(void)
 {
     dbg_state = 1 - dbg_state;
-    gpio_put(1, dbg_state);
     qor_mbox_notify(&AudioMailBox, (void **)&wake_up, QOR_MBOX_OPTION_SEND_BACK);
-}
-#include <time.h>
-clock_t clock()
-{
-    return (clock_t)time_us_64() / 1000;
 }
 
 void show_duration(uint32_t millisecondes)
@@ -116,16 +132,12 @@ void AudioTask(void *args)
 
     ost_audio_register_callback(audio_callback);
 
-    gpio_init(1);
-    gpio_set_dir(1, GPIO_OUT);
-
     static bool onetime = true;
-    gpio_put(1, 0);
 
     while (1)
     {
         debug_printf("\r\n-------------------------------------------------------\r\nPlaying: out2.wav\r\n");
-        clock_t startTime = clock();
+        ost_system_stopwatch_start();
         ost_audio_play("out2.wav");
 
         ost_audio_event_t *e = NULL;
@@ -145,9 +157,8 @@ void AudioTask(void *args)
 
         } while (isPlaying);
 
+        uint32_t executionTime = ost_system_stopwatch_stop();
         ost_audio_stop();
-        clock_t endTime = clock();
-        uint32_t executionTime = endTime - startTime;
 
         debug_printf("\r\nPackets: %d\r\n", count);
         show_duration(executionTime);
@@ -190,14 +201,15 @@ int main()
     // 3. Filesystem / SDCard initialization
     filesystem_mount();
 
-    // 4. Initialize OS and threads
+    // 4. Initialize OS before all other OS calls
     qor_init(125000000UL);
 
-    // qor_create_thread(&tcb1, UserTask_1, 2, "UserTask_1");
-    // qor_create_thread(&tcb2, UserTask_2, 1, "UserTask_2");
+    // 5. Initialize the tasks
+    qor_create_thread(&VmTcb, VmTask, VmStack, sizeof(VmStack) / sizeof(VmStack[0]), 2, "VmTask");
     qor_create_thread(&AudioTcb, AudioTask, AudioStack, sizeof(AudioStack) / sizeof(AudioStack[0]), 3, "AudioTask"); ///< High priority for audio
+
+    // 6. Start the operating system!
     qor_start(&IdleTcb, IdleTask, IdleStack, 1024);
 
     return 0;
 }
-#endif
