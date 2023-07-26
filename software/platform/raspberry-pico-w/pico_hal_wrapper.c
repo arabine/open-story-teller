@@ -315,6 +315,14 @@ void ost_audio_play(const char *filename)
   i2s_start(&i2s);
 }
 
+void ost_audio_stop()
+{
+  memset(i2s.out_ctrl_blocks[0], 0, STEREO_BUFFER_SIZE * sizeof(uint32_t));
+  memset(i2s.out_ctrl_blocks[1], 0, STEREO_BUFFER_SIZE * sizeof(uint32_t));
+  audio_stop(&audio_ctx);
+  i2s_stop(&i2s);
+}
+
 int ost_audio_process()
 {
   return audio_process(&audio_ctx);
@@ -327,21 +335,15 @@ void ost_audio_register_callback(ost_audio_callback_t cb)
   AudioCallBack = cb;
 }
 
-void ost_hal_audio_new_frame(const void *buff, int dma_trans_number)
+void ost_hal_audio_new_frame(const void *buff, int size)
 {
-  if (dma_trans_number > STEREO_BUFFER_SIZE)
+  if (size > STEREO_BUFFER_SIZE)
   {
     // Problème
     return;
   }
-  memcpy(i2s.out_ctrl_blocks[i2s.buffer_index], buff, dma_trans_number * sizeof(uint32_t));
+  memcpy(i2s.out_ctrl_blocks[i2s.buffer_index], buff, size * sizeof(uint32_t));
   i2s.buffer_index = 1 - i2s.buffer_index;
-
-  //
-  // dma_channel_transfer_from_buffer_now(shared_state.dma_channel, buff, dma_trans_number);
-  // dma_channel_start(shared_state.dma_channel);
-
-  //  dma_hw->ints0 = 1u << i2s.dma_ch_out_data; // clear the IRQ
 }
 
 void __isr __time_critical_func(audio_i2s_dma_irq_handler)()
@@ -354,58 +356,3 @@ void __isr __time_critical_func(audio_i2s_dma_irq_handler)()
     AudioCallBack();
   }
 }
-
-#if 0 // legacy audio test
-
-#define SAMPLE_RATE (44100)
-#define DMA_BUF_LEN (32)
-#define I2S_NUM (0)
-#define WAVE_FREQ_HZ (235.0f)
-#define TWOPI (6.28318531f)
-#define PHASE_INC (TWOPI * WAVE_FREQ_HZ / SAMPLE_RATE)
-
-// Accumulated phase
-static float p = 0.0f;
-
-// Output buffer (2ch interleaved)
-static uint32_t out_buf[DMA_BUF_LEN * 2];
-
-uint32_t audio_count = 0;
-
-#include <math.h>
-
-// Fill the output buffer and write to I2S DMA
-static void write_buffer()
-{
-  // out_buf[0] = 0x70010001;
-  // out_buf[1] = 0xAAAA0001;
-
-  dma_channel_transfer_from_buffer_now(shared_state.dma_channel, out_buf, 2);
-  dma_channel_start(shared_state.dma_channel);
-
-  // You could put a taskYIELD() here to ensure other tasks always have a chance to run.
-  // taskYIELD();
-}
-
-void hal_audio_test()
-{
-  audio_i2s_set_enabled(true);
-  audio_count = 0;
-  write_buffer();
-}
-
-// irq handler for DMA
-void __isr __time_critical_func(audio_i2s_dma_irq_handler)()
-{
-  uint dma_channel = shared_state.dma_channel;
-  if (dma_irqn_get_channel_status(PICO_AUDIO_I2S_DMA_IRQ, dma_channel))
-  {
-    dma_irqn_acknowledge_channel(PICO_AUDIO_I2S_DMA_IRQ, dma_channel);
-  }
-
-  write_buffer();
-  // busy_wait_ms(1);
-  // audio_process(&audio_ctx);
-}
-
-#endif

@@ -382,7 +382,6 @@ void qor_mbox_init(qor_mbox_t *mbox, void **msgBuffer, uint32_t maxCount)
     mbox->msgBuffer = msgBuffer;
     mbox->maxCount = maxCount;
     mbox->read = 0;
-    mbox->read = 0;
     mbox->head = NULL;
     mbox->count = 0;
 }

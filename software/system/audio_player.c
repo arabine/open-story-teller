@@ -11,9 +11,8 @@
 #include "serializers.h"
 
 // Audio Double Buffer for DMA transfer
-int32_t audio_buf[SIZE_OF_SAMPLES];
+int32_t audio_buf[SIZE_OF_SAMPLES * 2]; // x2 because we store L+R
 
-// int16_t audio_buf16[2][SIZE_OF_SAMPLES];
 // Audio Buffer for File Read
 uint8_t raw_buf[SIZE_OF_SAMPLES * 2 * 2]; // x2 for 16-bit, and x2 for L+R
 
@@ -203,8 +202,8 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
 
         // Avec le AUDIO PICO de waveshare, on entend un truc
 
-        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4])));
-        buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4 + 2])));
+        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4]))) << 16;
+        buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4 + 2]))) << 16;
 
         // buf_32b[i * 2] = 1;
         // buf_32b[i * 2 + 1] = 4;
@@ -226,7 +225,7 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
     */
     // ctx->audio_info.lvl_l = get_level(lvl_l / (number / 4));
     // ctx->audio_info.lvl_r = get_level(lvl_r / (number / 4));
-    ctx->transfer_size = (number / 4); // 32 bytes tranfers
+    ctx->transfer_size = (number / 2); // 32 bytes tranfers
     return _next_is_end;
 }
 

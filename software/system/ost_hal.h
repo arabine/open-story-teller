@@ -48,6 +48,7 @@ extern "C"
     void ost_system_delay_ms(uint32_t delay);
 
     void ost_audio_play(const char *filename);
+    void ost_audio_stop();
     int ost_audio_process();
     typedef void (*ost_audio_callback_t)(void);
     void ost_audio_register_callback(ost_audio_callback_t cb);
