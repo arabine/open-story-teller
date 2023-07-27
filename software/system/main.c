@@ -20,6 +20,50 @@ void ost_hal_panic()
 }
 
 // ===========================================================================================================
+// GLOBAL STORY VARIABLES
+// ===========================================================================================================
+static ost_context_t OstContext;
+
+// ===========================================================================================================
+// HMI TASK (user interface, buttons manager, LCD)
+// ===========================================================================================================
+static qor_tcb_t HmiTcb;
+static uint32_t HmiStack[4096];
+
+static qor_mbox_t HmiMailBox;
+
+typedef struct
+{
+    uint8_t ev;
+} ost_hmi_event_t;
+
+static ost_hmi_event_t HmiEvent;
+
+ost_hmi_event_t HmiQueue[10];
+
+void HmiTask(void *args)
+{
+    qor_mbox_init(&HmiMailBox, (void **)&HmiQueue, 10);
+
+    ost_hmi_event_t *e = NULL;
+
+    filesystem_read_index_file(&OstContext);
+
+    while (1)
+    {
+        uint32_t res = qor_mbox_wait(&HmiMailBox, (void **)&e, 1000);
+
+        if (res == QOR_MBOX_OK)
+        {
+        }
+        else
+        {
+            debug_printf("H"); // pour le debug only
+        }
+    }
+}
+
+// ===========================================================================================================
 // VIRTUAL MACHINE TASK
 // ===========================================================================================================
 static qor_tcb_t VmTcb;
@@ -39,13 +83,14 @@ static uint8_t m_rom_data[16 * 1024];
 static uint8_t m_ram_data[16 * 1024];
 static chip32_ctx_t m_chip32_ctx;
 
+// Index file parameter, reference an index in the file
+
 uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t signum)
 {
 }
 
 void VmTask(void *args)
 {
-
     // VM Initialize
     m_chip32_ctx.stack_size = 512;
 
@@ -60,6 +105,8 @@ void VmTask(void *args)
     m_chip32_ctx.syscall = vm_syscall;
 
     chip32_initialize(&m_chip32_ctx);
+
+    qor_mbox_init(&VmMailBox, (void **)&VmQueue, 10);
 
     chip32_result_t run_result;
     ost_vm_event_t *e = NULL;
@@ -82,7 +129,7 @@ void VmTask(void *args)
 }
 
 // ===========================================================================================================
-// FILE SYSTEM TASK
+// AUDIO TASK
 // ===========================================================================================================
 static qor_tcb_t AudioTcb;
 static uint32_t AudioStack[4096];
@@ -123,8 +170,7 @@ void show_duration(uint32_t millisecondes)
 
 void AudioTask(void *args)
 {
-    picture_show("example.bmp");
-    // ost_audio_play("out2.wav");
+    // picture_show("example.bmp");
 
     wake_up.ev = 34;
 
@@ -205,6 +251,7 @@ int main()
     qor_init(125000000UL);
 
     // 5. Initialize the tasks
+    qor_create_thread(&HmiTcb, HmiTask, HmiStack, sizeof(HmiStack) / sizeof(HmiStack[0]), 1, "HmiTask"); // less priority is the HMI (user inputs and LCD)
     qor_create_thread(&VmTcb, VmTask, VmStack, sizeof(VmStack) / sizeof(VmStack[0]), 2, "VmTask");
     qor_create_thread(&AudioTcb, AudioTask, AudioStack, sizeof(AudioStack) / sizeof(AudioStack[0]), 3, "AudioTask"); ///< High priority for audio
 
