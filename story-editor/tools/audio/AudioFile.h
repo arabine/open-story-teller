@@ -116,6 +116,8 @@ public:
     
     /** Sets the sample rate for the audio file. If you use the save() function, this sample rate will be used */
     void setSampleRate (uint32_t newSampleRate);
+
+    void initializeAudioBuffer(int16_t *buffer, int size, int channels);
     
     //=============================================================
     /** A vector of vectors holding the audio samples for the AudioFile. You can 

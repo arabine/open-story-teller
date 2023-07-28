@@ -804,6 +804,21 @@ void AudioFile<T>::clearAudioBuffer()
     
     samples.clear();
 }
+//=============================================================
+template<class T>
+void AudioFile<T>::initializeAudioBuffer(int16_t *buffer, int size, int channels)
+{
+    clearAudioBuffer();
+    samples.resize (channels);
+
+    for (int i = 0; i < size; i++)
+    {
+        for (int channel = 0; channel < getNumChannels(); channel++)
+        {
+            samples[channel].push_back(buffer[i]);
+        }
+    }
+}
 
 //=============================================================
 template <class T>

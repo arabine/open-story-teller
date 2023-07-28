@@ -38,6 +38,16 @@
 #include "main_window.h"
 #include "media_node_model.h"
 
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_NO_LINEAR
+#include "stb_image.h"
+
+#define QOI_IMPLEMENTATION
+#undef QOI_NO_STDIO
+#include "qoi.h"
+
 using QtNodes::CreateCommand;
 using QtNodes::BasicGraphicsScene;
 using QtNodes::ConnectionStyle;
@@ -129,8 +139,8 @@ MainWindow::MainWindow()
     m_chip32_ctx.ram.addr = sizeof(m_rom_data);
     m_chip32_ctx.ram.size = sizeof(m_ram_data);
 
-    Callback<uint8_t(uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1);
-    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(uint8_t)>::callback);
+    Callback<uint8_t(chip32_ctx_t *, uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1, std::placeholders::_2);
+    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
 
     // Install event handler now that everything is initialized
     Callback<void(QtMsgType , const QMessageLogContext &, const QString &)>::func = std::bind(&MainWindow::MessageOutput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -161,7 +171,7 @@ MainWindow::MainWindow()
     });
 
     connect(m_vmDock, &VmDock::sigCompile, [&]() {
-        //  m_scriptEditorDock->setScript(m_project.BuildResources());
+        CompileToAssembler();
     });
 
     connect(m_vmDock, &VmDock::sigStepInstruction, [&]() {
@@ -169,7 +179,7 @@ MainWindow::MainWindow()
     });
 
     connect(m_vmDock, &VmDock::sigBuild, [&]() {
-        BuildScript();
+        BuildAll();
     });
 
     connect(&m_model, &StoryGraphModel::sigChooseFile, [&](NodeId id, const QString &type) {
@@ -278,7 +288,7 @@ MainWindow::MainWindow()
 //    QMetaObject::invokeMethod(this, "slotWelcome", Qt::QueuedConnection);
 }
 
-void MainWindow::BuildAndRun()
+bool MainWindow::CompileToAssembler()
 {
     // 1. Check if the model can be compiled, check for errors and report
     // FIXME
@@ -289,14 +299,82 @@ void MainWindow::BuildAndRun()
     // Add global functions
     code += ReadResourceFile(":/scripts/media.asm").toStdString();
 
-//    code += "\thalt\r\n";
-
     m_scriptEditorDock->setScript(code.c_str());
 
-    // 3. Compile the assembly to machine binary
-    BuildScript();
+    return true;
+}
 
-    // 4. Run the VM code!
+// Convert media into desired output format
+void MainWindow::ConvertResources()
+{
+    std::vector<Resource>::const_iterator ptr = m_project.Begin();
+    for (; ptr != m_project.End(); ++ptr)
+    {
+        if (ptr->format == "PNG")
+        {
+            QString inputfile = m_model.BuildFullImagePath(ptr->file.c_str());
+            void *pixels = NULL;
+            int w = 0;
+            int h = 0;
+            int channels = 0;
+
+            if(!stbi_info(inputfile.toStdString().c_str(), &w, &h, &channels))
+            {
+                qCritical() << "Couldn't read header " << inputfile;
+            }
+
+            // Force all odd encodings to be RGBA
+            if(channels != 3) {
+                channels = 4;
+            }
+
+            pixels = (void *)stbi_load(inputfile.toStdString().c_str(), &w, &h, NULL, channels);
+
+            if (pixels != NULL)
+            {
+                qoi_desc desc;
+                desc.channels = channels;
+                desc.colorspace = QOI_SRGB;
+                desc.width = w;
+                desc.height = h;
+
+                std::string outputfile = m_project.ImagesPath() / StoryProject::RemoveFileExtension(ptr->file);
+                outputfile += ".qoi";
+                int encoded = qoi_write(outputfile.c_str(), pixels, &desc);
+
+                if (!encoded)
+                {
+                    qCritical() << "Couldn't write/encode " << outputfile;
+                }
+
+                free(pixels);
+            }
+            else
+            {
+                qCritical() << "Couldn't load/decode" << inputfile;
+            }
+        }
+    }
+}
+
+
+void MainWindow::BuildAll()
+{
+    // 1. First compile nodes to assembly
+    CompileToAssembler();
+
+    // 2. Compile the assembly to machine binary
+    GenerateBinary();
+
+    // 3. Conert all media
+    ConvertResources();
+}
+
+void MainWindow::BuildAndRun()
+{
+    BuildAll();
+
+    // Then run the VM code!
     if (m_dbg.run_result == VM_OK)
     {
         m_dbg.free_run = true;
@@ -310,11 +388,11 @@ QString MainWindow::ReadResourceFile(const QString &fileName)
     QString data;
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "filenot opened";
+        qDebug() << "ReadResourceFile(): file not opened";
     }
     else
     {
-        qDebug() << "file opened";
+//        qDebug() << "file opened";
         data = file.readAll();
     }
 
@@ -538,7 +616,7 @@ bool MainWindow::event(QEvent *event)
     return QMainWindow::event(event);
 }
 
-uint8_t MainWindow::Syscall(uint8_t code)
+uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
 {
     uint8_t retCode = SYSCALL_RET_OK;
     qDebug() << "SYSCALL: " << (int)code;
@@ -592,7 +670,7 @@ void MainWindow::stepInstruction()
     updateAll();
 }
 
-void MainWindow::BuildScript()
+void MainWindow::GenerateBinary()
 {
     m_dbg.run_result = VM_FINISHED;
     m_dbg.free_run = false;
@@ -602,6 +680,8 @@ void MainWindow::BuildScript()
         if (m_assembler.BuildBinary(m_program, m_result) == true)
         {
             m_result.Print();
+
+            qDebug() << "Binary successfully generated.";
 
             // Update ROM memory
             std::copy(m_program.begin(), m_program.end(), m_rom_data);

@@ -146,11 +146,11 @@ std::string MediaNodeModel::GenerateConstants()
     std::string sound = m_mediaData["sound"].get<std::string>();
     if (image.size() > 0)
     {
-        s = StoryProject::FileToConstant(image);
+        s = StoryProject::FileToConstant(image, ".qoi");  // FIXME: Generate the extension setup in user option of output format
     }
     if (sound.size() > 0)
     {
-        s += StoryProject::FileToConstant(sound);
+        s += StoryProject::FileToConstant(sound, ".wav");  // FIXME: Generate the extension setup in user option of output format
     }
 
     int nb_out_conns = ComputeOutputConnections();

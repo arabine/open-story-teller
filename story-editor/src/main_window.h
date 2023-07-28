@@ -173,11 +173,11 @@ private:
     void createStatusBar();
     void SaveProject();
     void DisplayNode(StoryNode *m_tree, QtNodes::NodeId parentId);
-    void BuildScript();
+    void GenerateBinary();
     void highlightNextLine();
     void readSettings();
     void updateAll();
-    uint8_t Syscall(uint8_t code);
+    uint8_t Syscall(chip32_ctx_t *ctx, uint8_t code);
     QString GetFileNameFromMemory(uint32_t addr);
 
     bool event(QEvent *event);
@@ -192,6 +192,9 @@ private:
     void OpenProject(const QString &filePath);
     QString ReadResourceFile(const QString &fileName);
     void EventFinished(uint32_t replyEvent);
+    bool CompileToAssembler();
+    void ConvertResources();
+    void BuildAll();
 };
 
 #endif // MAIN_WINDOW_H

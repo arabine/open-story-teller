@@ -260,6 +260,22 @@ void ST7789_Fill_Line(uint16_t y, const uint8_t *data, const uint8_t *palette)
 	ost_display_ss_high();
 }
 
+void ST7789_Fill_LineRgb888(uint16_t y, const color_t *data)
+{
+	ST7789_SetAddressWindow(0, y, ST7789_WIDTH - 1, ST7789_HEIGHT - 1);
+	ost_display_dc_high();
+	ost_display_ss_low();
+
+	color_t color;
+
+	for (uint16_t i = 0; i < ST7789_WIDTH; i++)
+	{
+		uint16_t pixel = color565(data[i].r, data[i].g, data[i].b);
+		ost_display_transfer_byte(pixel >> 8);
+		ost_display_transfer_byte(pixel & 0xFF);
+	}
+}
+
 /**
  * @brief Fill the DisplayWindow with single color
  * @param color -> color to Fill with

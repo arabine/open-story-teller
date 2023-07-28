@@ -86,7 +86,7 @@ struct StoryProject
     static std::string GetFileName(const std::string &path);
     static std::string RemoveFileExtension(const std::string &FileName);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
-    static std::string FileToConstant(const std::string &FileName);
+    static std::string FileToConstant(const std::string &FileName, const std::string &extension);
 
     // -------------  Resources Management
     void AppendResource(const Resource &res);

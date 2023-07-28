@@ -108,6 +108,7 @@ extern "C"
     void ost_display_ss_low();
     uint8_t ost_display_transfer_byte(uint8_t dat);
     void ost_display_transfer_multi(uint8_t *buff, uint32_t btr);
+    void ost_display_draw_h_line_rgb888(uint16_t y, const color_t *data);
 
     // ----------------------------------------------------------------------------
     // AUDIO HAL

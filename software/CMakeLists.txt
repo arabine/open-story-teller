@@ -43,6 +43,7 @@ set(OST_SRCS
     system/ff/ffsystem.c
     system/ff/ff_stubs.c
     chip32/chip32_vm.c
+    library/mini_qoi.c
 )
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include

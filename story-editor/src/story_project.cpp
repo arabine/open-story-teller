@@ -261,10 +261,10 @@ std::string StoryProject::RemoveFileExtension(const std::string &FileName)
     return f;
 }
 
-std::string StoryProject::FileToConstant(const std::string &FileName)
+std::string StoryProject::FileToConstant(const std::string &FileName, const std::string &extension)
 {
     std::string f = RemoveFileExtension(FileName);
-    return "$" + f + " DC8 \"" + FileName + "\", 8\r\n";
+    return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
 }
 
 void StoryProject::AppendResource(const Resource &res)

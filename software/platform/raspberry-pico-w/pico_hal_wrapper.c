@@ -311,6 +311,11 @@ void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
   ST7789_Fill_Line(y, pixels, palette);
 }
 
+void ost_display_draw_h_line_rgb888(uint16_t y, const color_t *data)
+{
+  ST7789_Fill_LineRgb888(y, data);
+}
+
 uint8_t ost_display_transfer_byte(uint8_t dat)
 {
   pico_lcd_spi_transfer(&dat, 1);
