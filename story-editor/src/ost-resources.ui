@@ -14,8 +14,8 @@
    <string>Story Resources</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="addSoundButton">
@@ -40,7 +40,57 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="0">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Title image</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="titleImage">
+        <property name="text">
+         <string>&lt;no file !&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="chooseTitleImageButton">
+        <property name="text">
+         <string>Choose file</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Title sound</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="titleSound">
+        <property name="text">
+         <string>&lt;no file !&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="chooseTitleSoundButton">
+        <property name="text">
+         <string>Choose file</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
      <widget class="QTableView" name="resourcesView">
       <property name="selectionMode">
        <enum>QAbstractItemView::SingleSelection</enum>

@@ -19,6 +19,12 @@ public:
 
     void SetFilterType(const QString &type) { m_proxyModel.setFilterType(type); }
 
+    void SetTitleImage(const QString &name);
+    void SetTitleSound(const QString &name);
+
+signals:
+    void sigChooseTitle(bool isImage);
+
 private:
     StoryProject &m_project;
     Ui::ostResources m_uiOstResources;

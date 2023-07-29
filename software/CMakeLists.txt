@@ -33,12 +33,14 @@ set(OST_SRCS
     system/sdcard.c
     system/ff_diskio_sdcard.c
     system/debug.c
-    system/picture.c
     system/filesystem.c
     system/sdcard.c
     system/qor.c
     system/qor_armv6m.s
     system/audio_player.c
+    system/vm_task.c
+    system/hmi_task.c
+    system/fs_task.c
     system/ff/ff.c
     system/ff/ffsystem.c
     system/ff/ff_stubs.c

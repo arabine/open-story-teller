@@ -88,6 +88,12 @@ struct StoryProject
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
     static std::string FileToConstant(const std::string &FileName, const std::string &extension);
 
+    void SetTitleImage(const std::string &titleImage);
+    void SetTitleSound(const std::string &titleSound);
+
+    std::string GetTitleImage() const { return m_titleImage; }
+    std::string GetTitleSound() const { return m_titleSound; }
+
     // -------------  Resources Management
     void AppendResource(const Resource &res);
     bool GetResourceAt(int index, Resource &resOut);
@@ -116,6 +122,9 @@ private:
     std::filesystem::path m_imagesPath;
     std::filesystem::path m_soundsPath;
     bool m_initialized{false};
+
+    std::string m_titleImage;
+    std::string m_titleSound;
 
     std::vector<Resource> m_resources;
     std::string m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped

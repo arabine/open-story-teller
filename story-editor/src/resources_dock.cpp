@@ -67,6 +67,24 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             }
         }
     });
+
+    connect(m_uiOstResources.chooseTitleImageButton, &QPushButton::clicked, [&](bool enable) {
+        emit sigChooseTitle(true);
+    });
+
+    connect(m_uiOstResources.chooseTitleSoundButton, &QPushButton::clicked, [&](bool enable) {
+        emit sigChooseTitle(false);
+    });
+}
+
+void ResourcesDock::SetTitleImage(const QString &name)
+{
+    m_uiOstResources.titleImage->setText(name);
+}
+
+void ResourcesDock::SetTitleSound(const QString &name)
+{
+    m_uiOstResources.titleSound->setText(name);
 }
 
 

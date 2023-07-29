@@ -202,6 +202,34 @@ MainWindow::MainWindow()
         }
     });
 
+    connect(m_resourcesDock, &ResourcesDock::sigChooseTitle, [&](bool isImage) {
+        m_chooseFileUi.tableView->setModel(&m_resourcesDock->getModel());
+        m_chooseFileDialog->exec();
+
+        // Get the file choosen
+        QModelIndexList selection = m_chooseFileUi.tableView->selectionModel()->selectedRows();
+
+        if (selection.count() > 0)
+        {
+            // Take first
+            QModelIndex index = selection.at(0);
+            Resource res;
+            if (m_project.GetResourceAt(index.row(), res))
+            {
+                if (isImage)
+                {
+                    m_project.SetTitleImage(res.file);
+                    m_resourcesDock->SetTitleImage(res.file.c_str());
+                }
+                else
+                {
+                    m_project.SetTitleSound(res.file);
+                    m_resourcesDock->SetTitleSound(res.file.c_str());
+                }
+            }
+        }
+    });
+
     connect(m_toolbar, &ToolBar::sigNew, this, [&]() {
         NewProject();
     });
@@ -366,7 +394,7 @@ void MainWindow::BuildAll()
     // 2. Compile the assembly to machine binary
     GenerateBinary();
 
-    // 3. Conert all media
+    // 3. Convert all media to desired type format
     ConvertResources();
 }
 
@@ -422,6 +450,9 @@ void MainWindow::ExitProgram()
 void MainWindow::RefreshProjectInformation()
 {
     setWindowTitle(QString("StoryTeller Editor - ") + m_project.GetProjectFilePath().c_str());
+
+    m_resourcesDock->SetTitleImage(m_project.GetTitleImage().c_str());
+    m_resourcesDock->SetTitleSound(m_project.GetTitleSound().c_str());
 }
 
 void MainWindow::MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)

@@ -17,6 +17,13 @@ void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
     std::ofstream o(m_working_dir + std::filesystem::path::preferred_separator + "story.c32", std::ios::out | std::ios::binary);
     o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
     o.close();
+
+    // Generate title files
+    std::ofstream index(m_working_dir + std::filesystem::path::preferred_separator + "index.ost");
+    index << "/" << m_uuid << "/images/" << m_titleImage << "\n";
+    index << "/" << m_uuid << "/sounds/" << m_titleSound << "\n";
+    index.close();
+
 }
 
 void StoryProject::Initialize(const std::string &file_path)
@@ -63,6 +70,8 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
 
             m_name = projectData["name"].get<std::string>();
             m_uuid = projectData["uuid"].get<std::string>();
+            m_titleImage = projectData.value("title_image", "");
+            m_titleSound = projectData.value("title_sound", "");
 
             if (j.contains("resources"))
             {
@@ -159,7 +168,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
 void StoryProject::Save(const nlohmann::json &model)
 {
     nlohmann::json j;
-    j["project"] = { {"name", m_name}, {"uuid", m_uuid} };
+    j["project"] = { {"name", m_name}, {"uuid", m_uuid}, { "title_image", m_titleImage }, { "title_sound", m_titleSound } };
 
     {
         nlohmann::json resourcesData;
@@ -265,6 +274,16 @@ std::string StoryProject::FileToConstant(const std::string &FileName, const std:
 {
     std::string f = RemoveFileExtension(FileName);
     return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
+}
+
+void StoryProject::SetTitleImage(const std::string &titleImage)
+{
+    m_titleImage = titleImage;
+}
+
+void StoryProject::SetTitleSound(const std::string &titleSound)
+{
+    m_titleSound = titleSound;
 }
 
 void StoryProject::AppendResource(const Resource &res)

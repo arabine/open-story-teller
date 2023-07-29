@@ -4,6 +4,19 @@
 #include "ost_hal.h"
 
 #include "filesystem.h"
+#include "mini_qoi.h"
+
+#ifdef OST_USE_FF_LIBRARY
+#include "ff.h"
+#include "diskio.h"
+typedef FIL file_t;
+#else
+
+// Use standard library
+typedef FILE *file_t;
+typedef int FRESULT;
+#define F_OK
+#endif
 
 // SD_FAT_TYPE = 0 for SdFat/File as defined in SdFatConfig.h,
 // 1 for FAT16/FAT32, 2 for exFAT, 3 for FAT16/FAT32 and exFAT.
@@ -149,5 +162,132 @@ bool filesystem_read_index_file(ost_context_t *ctx)
     else
     {
         debug_printf("ERROR: index.ost not found\r\n");
+    }
+}
+
+static mqoi_dec_t dec;
+static mqoi_desc_t desc;
+
+static uint8_t bmpImage[256];
+
+static color_t line[320];
+
+file_t file_open(const char *filename)
+{
+#ifdef OST_USE_FF_LIBRARY
+    file_t fil;
+    FRESULT fr = f_open(&fil, filename, FA_READ);
+    if (fr != FR_OK)
+    {
+        debug_printf("ERROR: f_open %d\n\r", (int)fr);
+    }
+    return fil;
+#else
+    return fopen(filename, "r");
+#endif
+}
+
+void filesystem_display_image(const char *filename)
+{
+    file_t fil;
+    unsigned int br;
+
+    fil = file_open(filename);
+    uint32_t imgW, imgH;
+
+    mqoi_desc_init(&desc);
+
+    // 1. Read header
+    f_read(&fil, &desc.magic[0], sizeof(mqoi_desc_t) - 1, &br);
+
+    uint8_t errn = mqoi_desc_verify(&desc, &imgW, &imgH);
+
+    if (errn)
+    {
+        debug_printf("Invalid image, code %d\n", errn);
+        return;
+    }
+
+    debug_printf("Image dimensions: %d, %d\n", imgW, imgH);
+
+    uint32_t start, end, pxCount = 0;
+
+    volatile mqoi_rgba_t *px;
+
+    mqoi_dec_init(&dec, imgW * imgH);
+
+    // Serial.println("starting decode...");
+    int index = 256; // force refill first time
+    int x = 0;
+    int y = 0;
+    while (!mqoi_dec_done(&dec))
+    {
+        if (index >= sizeof(bmpImage))
+        {
+            // refill buffer
+            f_read(&fil, bmpImage, sizeof(bmpImage), &br);
+            index = 0;
+        }
+
+        mqoi_dec_push(&dec, bmpImage[index++]);
+
+        while ((px = mqoi_dec_pop(&dec)) != NULL)
+        {
+            pxCount++;
+
+            line[x].r = px->r;
+            line[x].g = px->g;
+            line[x].b = px->b;
+
+            x++;
+            if (x >= 320)
+            {
+                ost_display_draw_h_line_rgb888(y, line);
+                x = 0;
+                y++;
+            }
+        }
+    }
+
+    f_close(&fil);
+}
+
+#define FS_MAX_SIZE_READ 256
+
+void filesystem_load_rom(uint8_t *mem, const char *filename)
+{
+    file_t fil;
+    FILINFO fno;
+    unsigned int br;
+
+    FRESULT fr = f_stat(filename, &fno);
+
+    if (fr == FR_OK)
+    {
+        int total_size = fno.fsize;
+        fil = file_open(filename);
+        int copied_size = 0;
+
+        do
+        {
+            int read_size = total_size > FS_MAX_SIZE_READ ? FS_MAX_SIZE_READ : total_size;
+
+            f_read(&fil, &mem[copied_size], read_size, &br);
+
+            if (br == read_size)
+            {
+                total_size -= read_size;
+                copied_size += read_size;
+            }
+            else
+            {
+                debug_printf("Read file error\n");
+                total_size = 0; // force exit
+                return;
+            }
+
+        } while (total_size > 0);
+
+        f_close(&fil);
     }
 }
