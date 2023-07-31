@@ -5,6 +5,7 @@
 
 #include "filesystem.h"
 #include "mini_qoi.h"
+#include "serializers.h"
 
 #ifdef OST_USE_FF_LIBRARY
 #include "ff.h"
@@ -26,6 +27,21 @@ static FATFS fs;
 static FIL File[2]; /* File object */
 static DIR Dir;     /* Directory object */
 static FILINFO Finfo;
+
+file_t file_open(const char *filename)
+{
+#ifdef OST_USE_FF_LIBRARY
+    file_t fil;
+    FRESULT fr = f_open(&fil, filename, FA_READ);
+    if (fr != FR_OK)
+    {
+        debug_printf("ERROR: f_open %d\n\r", (int)fr);
+    }
+    return fil;
+#else
+    return fopen(filename, "r");
+#endif
+}
 
 static FRESULT scan_files(
     char *path /* Pointer to the working buffer with start path */
@@ -82,20 +98,6 @@ void filesystem_mount()
     scan_files("");
 }
 
-// Ouvre le fichier d'index d'histoires
-// Le format est le suivant :
-//  - Fichier texte, avec fin de ligne \n
-//  - Une ligne par histoire
-//  - la ligne contient le nom du répertoire au format UUIDv4 (36 caractères ASCII avec 4 tirets '-')
-
-// Exemple: d0ad13e4-06de-4e00-877c-d922fdd37d13
-
-int is_multiple_of_37(int nombre)
-{
-    int plusGrandMultiple = (nombre / 37) * 37;
-    return (nombre - plusGrandMultiple) == 0;
-}
-
 /*
 // Loop in all directories
 void disk_start()
@@ -138,30 +140,55 @@ void disk_start()
 }
 */
 
+static file_t IndexFile;
+
+static uint8_t IndexBuf[260];
+
+static const char *IndexFileName = "index.ost";
+
+#define TLV_ARRAY_TYPE 0xAB
+#define TLV_OBJECT_TYPE 0xE7
+#define TLV_STRING_TYPE 0x3D
+
 bool filesystem_read_index_file(ost_context_t *ctx)
 {
     FILINFO fno;
-    FRESULT fr = f_stat("index.ost", &fno);
+    FRESULT fr = f_stat(IndexFileName, &fno);
 
     ctx->number_of_stories = 0;
     ctx->current_story = 0;
 
     if (fr == FR_OK)
     {
+
+        ctx->index_file_size = fno.fsize;
+        UINT br;
+
         bool valid_file = false;
-        int size = fno.fsize;
-        // une ligne = 36 octets (UUID) + 1 octet (\n) = 37
-        // Déjà, la taille doit être multiple de 37
-        if (is_multiple_of_37(size) && (size > 0))
+
+        // Minimum size of TLV is type + length, so check if there is potential data
+        if (ctx->index_file_size > 3)
         {
-            valid_file = true;
-            ctx->number_of_stories = size / 37;
-            debug_printf("SUCCESS: found %d stories\r\n", ctx->number_of_stories);
+            FRESULT fr = f_open(&IndexFile, IndexFileName, FA_READ);
+            if (fr == FR_OK)
+            {
+                fr = f_read(&IndexFile, IndexBuf, 3, &br);
+                if (fr == FR_OK)
+                {
+                    if ((br == 3) && (IndexBuf[0] = TLV_ARRAY_TYPE)) // Must be an array
+                    {
+                        // nomber of stories
+                        ctx->number_of_stories = leu16_get(&IndexBuf[1]);
+                        ctx->rd = 3;
+                        debug_printf("SUCCESS: found %d stories\r\n", ctx->number_of_stories);
+                    }
+                }
+            }
         }
-    }
-    else
-    {
-        debug_printf("ERROR: index.ost not found\r\n");
+        else
+        {
+            debug_printf("ERROR: index.ost not found\r\n");
+        }
     }
 }
 
@@ -171,21 +198,6 @@ static mqoi_desc_t desc;
 static uint8_t bmpImage[256];
 
 static color_t line[320];
-
-file_t file_open(const char *filename)
-{
-#ifdef OST_USE_FF_LIBRARY
-    file_t fil;
-    FRESULT fr = f_open(&fil, filename, FA_READ);
-    if (fr != FR_OK)
-    {
-        debug_printf("ERROR: f_open %d\n\r", (int)fr);
-    }
-    return fil;
-#else
-    return fopen(filename, "r");
-#endif
-}
 
 void filesystem_display_image(const char *filename)
 {

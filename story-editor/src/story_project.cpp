@@ -12,18 +12,68 @@ void StoryProject::New(const std::string &uuid, const std::string &file_path)
     Initialize(file_path);
 }
 
+#define TLV_ARRAY_TYPE  0xAB
+#define TLV_OBJECT_TYPE  0xE7
+#define TLV_STRING_TYPE  0x3D
+
+
+class Tlv
+{
+public:
+    explicit Tlv(const std::string &filename)
+    {
+        m_file = std::ofstream(filename, std::ios::out | std::ios::binary);
+    }
+
+    ~Tlv() {
+        m_file.close();
+    }
+
+    void add_array(uint16_t size)
+    {
+        m_file.write(reinterpret_cast<const char*>(&m_objectType), sizeof(m_objectType));
+        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    }
+
+    void add_string(const char *s, uint16_t size)
+    {
+        m_file.write(reinterpret_cast<const char*>(&m_stringType), sizeof(m_stringType));
+        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        m_file.write(s, size);
+    }
+
+    void add_object(uint16_t entries)
+    {
+        m_file.write(reinterpret_cast<const char*>(&m_arrayType), sizeof(m_arrayType));
+        m_file.write(reinterpret_cast<const char*>(&entries), sizeof(entries));
+    }
+
+private:
+    std::ofstream m_file;
+
+    uint8_t m_arrayType = TLV_ARRAY_TYPE;
+    uint8_t m_objectType = TLV_OBJECT_TYPE;
+    uint8_t m_stringType = TLV_STRING_TYPE;
+
+};
+
+
+
 void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
 {
     std::ofstream o(m_working_dir + std::filesystem::path::preferred_separator + "story.c32", std::ios::out | std::ios::binary);
     o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
     o.close();
 
-    // Generate title files
-    std::ofstream index(m_working_dir + std::filesystem::path::preferred_separator + "index.ost");
-    index << "/" << m_uuid << "/images/" << m_titleImage << "\n";
-    index << "/" << m_uuid << "/sounds/" << m_titleSound << "\n";
-    index.close();
 
+    Tlv tlv(m_working_dir + std::filesystem::path::preferred_separator + "index.ost");
+
+    tlv.add_array(1);
+
+    tlv.add_object(3);
+    tlv.add_string(m_uuid.c_str(), m_uuid.size()); // uuid
+    tlv.add_string(m_titleImage.c_str(), m_titleImage.size()); // title image
+    tlv.add_string(m_titleSound.c_str(), m_titleSound.size()); // title sound
 }
 
 void StoryProject::Initialize(const std::string &file_path)

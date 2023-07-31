@@ -304,7 +304,7 @@ static SD_Error SD_ReceiveData(uint8_t *data, uint16_t len)
 		/* receive the rest of data... */
 		// for (i = 1; i < len; ++i)
 		// 	data[i] = SD_SpiWriteByte(0xFF);
-		ost_hal_sdcard_spi_read(&data[1], len);
+		ost_hal_sdcard_spi_read(&data[1], (len - 1));
 
 		/* get CRC bytes (not really needed by us, but required by SD) */
 		SD_SpiWriteByte(0xFF);

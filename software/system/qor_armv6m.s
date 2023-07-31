@@ -102,7 +102,7 @@ qor_switch_context:
 
 
         msr     psp, r0      @ new task stack top address
-        str     r0, [r1]     @                   Save the new top of stack
+     //   str     r0, [r1]     @                   Save the new top of stack
 
         subs r0, r0, #32
         ldmia r0!, {r4-r7} 

@@ -2,12 +2,7 @@
 #define FILESYSTEM_H
 
 #include <stdbool.h>
-
-typedef struct
-{
-    uint32_t number_of_stories;
-    uint32_t current_story;
-} ost_context_t;
+#include "system.h"
 
 bool filesystem_read_index_file(ost_context_t *ctx);
 void filesystem_mount();

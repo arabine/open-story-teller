@@ -27,7 +27,12 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             Resource res;
-            res.format = "BMP";
+
+            std::string ext = p.extension();
+            ext.erase(ext.begin()); // remove '.' dot sign
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+
+            res.format = ext;
             res.type = "image";
             res.file = p.filename().generic_string();
             m_resourcesModel.Append(res);
@@ -38,7 +43,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                         ".",
-                                                        tr("Sound files (*.wav *.mp3 *.m4a)"));
+                                                        tr("Sound files (*.wav *.mp3)"));
 
         if (std::filesystem::exists(fileName.toStdString()))
         {
@@ -47,7 +52,12 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             Resource res;
-            res.format = "WAV";
+
+            std::string ext = p.extension();
+            ext.erase(ext.begin()); // remove '.' dot sign
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+
+            res.format = ext;
             res.type = "sound";
             res.file = p.filename().generic_string();
             m_resourcesModel.Append(res);

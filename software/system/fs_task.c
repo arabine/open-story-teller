@@ -133,25 +133,25 @@ void FsTask(void *args)
     {
         switch (FsState)
         {
-        FS_PLAY_SOUND:
+        case FS_PLAY_SOUND:
             play_sound_file(fs_ev->filename);
             FsState = FS_WAIT_FOR_EVENT;
             break;
-        FS_DISPLAY_IMAGE:
+        case FS_DISPLAY_IMAGE:
             filesystem_display_image(fs_ev->filename);
             FsState = FS_WAIT_FOR_EVENT;
             break;
-        FS_LOAD_INDEX:
+        case FS_LOAD_INDEX:
             filesystem_read_index_file(&OstContext);
             FsState = FS_WAIT_FOR_EVENT;
             break;
-        FS_LOAD_STORY:
+        case FS_LOAD_STORY:
             filesystem_load_rom(fs_ev->mem, fs_ev->filename);
             // ROM loaded, execute story
             FsState = FS_WAIT_FOR_EVENT;
             break;
 
-        FS_WAIT_FOR_EVENT:
+        case FS_WAIT_FOR_EVENT:
         default:
             res = qor_mbox_wait(&FsMailBox, (void **)&fs_ev, 1000);
             if (res == QOR_MBOX_OK)
