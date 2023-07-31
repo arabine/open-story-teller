@@ -140,15 +140,23 @@ void disk_start()
 }
 */
 
+// ===========================================================================================================
+// INDEX FILE MANAGEMENT
+// ===========================================================================================================
+
 static file_t IndexFile;
 
 static uint8_t IndexBuf[260];
+static uint8_t ImageBuf[100];
+static uint8_t SoundBuf[100];
 
 static const char *IndexFileName = "index.ost";
 
 #define TLV_ARRAY_TYPE 0xAB
 #define TLV_OBJECT_TYPE 0xE7
 #define TLV_STRING_TYPE 0x3D
+
+#define TL_SIZE 3
 
 bool filesystem_read_index_file(ost_context_t *ctx)
 {
@@ -167,21 +175,17 @@ bool filesystem_read_index_file(ost_context_t *ctx)
         bool valid_file = false;
 
         // Minimum size of TLV is type + length, so check if there is potential data
-        if (ctx->index_file_size > 3)
+        if (ctx->index_file_size > TL_SIZE)
         {
             FRESULT fr = f_open(&IndexFile, IndexFileName, FA_READ);
             if (fr == FR_OK)
             {
-                fr = f_read(&IndexFile, IndexBuf, 3, &br);
-                if (fr == FR_OK)
+                fr = f_read(&IndexFile, &IndexBuf[0], TL_SIZE, &br);
+                if ((fr == FR_OK) && (br == TL_SIZE) && (IndexBuf[0] = TLV_ARRAY_TYPE))
                 {
-                    if ((br == 3) && (IndexBuf[0] = TLV_ARRAY_TYPE)) // Must be an array
-                    {
-                        // nomber of stories
-                        ctx->number_of_stories = leu16_get(&IndexBuf[1]);
-                        ctx->rd = 3;
-                        debug_printf("SUCCESS: found %d stories\r\n", ctx->number_of_stories);
-                    }
+                    // nomber of stories
+                    ctx->number_of_stories = leu16_get(&IndexBuf[1]);
+                    debug_printf("SUCCESS: found %d stories\r\n", ctx->number_of_stories);
                 }
             }
         }
@@ -192,6 +196,57 @@ bool filesystem_read_index_file(ost_context_t *ctx)
     }
 }
 
+static uint32_t tlv_get_string(char *destination)
+{
+    uint32_t size = 0;
+    UINT br;
+    FRESULT fr = f_read(&IndexFile, &IndexBuf[0], TL_SIZE, &br);
+    if ((fr == FR_OK) && (br == TL_SIZE) && (IndexBuf[0] = TLV_STRING_TYPE))
+    {
+        size = leu16_get(&IndexBuf[1]);
+
+        // read string, directly fill destination
+        f_read(&IndexFile, destination, size, &br);
+        if ((fr == FR_OK) && (br == size))
+        {
+            // good, end propertly with zero
+            destination[size] = 0;
+        }
+        else
+        {
+            size = 0;
+        }
+    }
+
+    return size;
+}
+
+void filesystem_get_story_title(ost_context_t *ctx)
+{
+    UINT br;
+
+    ctx->current_story++;
+    if (ctx->current_story >= ctx->number_of_stories)
+    {
+        // Rewind to the begining of the index file data (first array element)
+        f_lseek(&IndexFile, TL_SIZE);
+    }
+
+    FRESULT fr = f_read(&IndexFile, &IndexBuf[0], 3, &br);
+    if ((fr == FR_OK) && (br == 3) && (IndexBuf[0] = TLV_OBJECT_TYPE))
+    {
+        tlv_get_string(ctx->uuid);
+        tlv_get_string(ImageBuf);
+        tlv_get_string(SoundBuf);
+
+        ctx->image = ImageBuf;
+        ctx->sound = SoundBuf;
+    }
+}
+
+// ===========================================================================================================
+// IMAGE DECODER
+// ===========================================================================================================
 static mqoi_dec_t dec;
 static mqoi_desc_t desc;
 

@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ost_hal.h"
 #include "debug.h"
@@ -125,25 +126,78 @@ void play_sound_file(const char *filename)
     show_duration(executionTime);
 }
 
+static char ScratchFile[260];
+
+static const char *ImagesDir = "/images/";
+static const char *SoundsDir = "/sounds/";
+
+#define STORY_DIR_OFFSET (UUID_SIZE + 1)
+
+static uint8_t LedState = 0;
+
 void FsTask(void *args)
 {
     ost_fs_event_t *fs_ev = NULL;
     uint32_t res = 0;
+
+    filesystem_read_index_file(&OstContext);
+    FsState = FS_LOAD_INDEX;
+
     while (1)
     {
         switch (FsState)
         {
         case FS_PLAY_SOUND:
-            play_sound_file(fs_ev->filename);
+            ScratchFile[STORY_DIR_OFFSET] = 0;
+            strcat(ScratchFile, SoundsDir);
+            strcat(ScratchFile, OstContext.sound);
+            play_sound_file(ScratchFile);
             FsState = FS_WAIT_FOR_EVENT;
             break;
         case FS_DISPLAY_IMAGE:
-            filesystem_display_image(fs_ev->filename);
-            FsState = FS_WAIT_FOR_EVENT;
+            ScratchFile[STORY_DIR_OFFSET] = 0;
+            strcat(ScratchFile, ImagesDir);
+            strcat(ScratchFile, OstContext.image);
+
+            filesystem_display_image(ScratchFile);
+            if (OstContext.sound != NULL)
+            {
+                FsState = FS_PLAY_SOUND;
+            }
+            else
+            {
+                FsState = FS_WAIT_FOR_EVENT;
+            }
             break;
+
         case FS_LOAD_INDEX:
-            filesystem_read_index_file(&OstContext);
-            FsState = FS_WAIT_FOR_EVENT;
+            if (OstContext.number_of_stories > 0)
+            {
+                filesystem_get_story_title(&OstContext);
+
+                // Init current directory
+                ScratchFile[0] = '/';
+                memcpy(&ScratchFile[1], OstContext.uuid, UUID_SIZE);
+                ScratchFile[1 + UUID_SIZE] = 0;
+
+                // first, display image, then sound
+                if (OstContext.image != NULL)
+                {
+                    FsState = FS_DISPLAY_IMAGE;
+                }
+                else if (OstContext.sound != NULL)
+                {
+                    FsState = FS_PLAY_SOUND;
+                }
+                else
+                {
+                    FsState = FS_WAIT_FOR_EVENT;
+                }
+            }
+            else
+            {
+                FsState = FS_WAIT_FOR_EVENT;
+            }
             break;
         case FS_LOAD_STORY:
             filesystem_load_rom(fs_ev->mem, fs_ev->filename);
@@ -159,16 +213,13 @@ void FsTask(void *args)
                 // valid event, accept it
                 FsState = fs_ev->ev;
             }
+            else
+            {
+                LedState = 1 - LedState;
+                ost_hal_gpio_set(OST_GPIO_DEBUG_LED, LedState);
+            }
             break;
         }
-
-        // for (;;)
-        // {
-        //     ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 0);
-        //     qor_sleep(500);
-        //     ost_hal_gpio_set(OST_GPIO_DEBUG_LED, 1);
-        //     qor_sleep(500);
-        // }
     }
 }
 

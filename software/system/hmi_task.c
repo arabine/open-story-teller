@@ -66,7 +66,7 @@ void HmiTask(void *args)
     // filesystem_display_image("/ba869e4b-03d6-4249-9202-85b4cec767a7/images/bird.qoi");
 
     // Start by scanning the index file
-    fs_task_scan_index();
+    // fs_task_scan_index();
 
     while (1)
     {

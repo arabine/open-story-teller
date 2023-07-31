@@ -8,12 +8,16 @@
 #define VM_TASK_PRIORITY 2
 #define FS_TASK_PRIORITY 3 ///< High priority for audio / file system access
 
+#define UUID_SIZE 36 // 32 + 4 dashes in string format
 typedef struct
 {
     uint32_t number_of_stories;
     uint32_t current_story;
     uint32_t index_file_size;
-    uint32_t rd; ///!< Read index in the Index file
+
+    char uuid[UUID_SIZE + 1]; // +1 for end of string zero marker
+    char *image;
+    char *sound;
 
 } ost_context_t;
 
