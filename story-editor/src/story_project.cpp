@@ -72,8 +72,13 @@ void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
 
     tlv.add_object(3);
     tlv.add_string(m_uuid.c_str(), m_uuid.size()); // uuid
-    tlv.add_string(m_titleImage.c_str(), m_titleImage.size()); // title image
-    tlv.add_string(m_titleSound.c_str(), m_titleSound.size()); // title sound
+
+    // Title image
+    std::string image =  RemoveFileExtension(m_titleImage) + ".qoi";
+    tlv.add_string(image.c_str(), image.size());
+
+    std::string sound =  RemoveFileExtension(m_titleSound) + ".wav";
+    tlv.add_string(sound.c_str(), sound.size()); // title sound
 }
 
 void StoryProject::Initialize(const std::string &file_path)

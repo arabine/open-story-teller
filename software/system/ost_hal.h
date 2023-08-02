@@ -10,11 +10,6 @@ extern "C"
 
 #define OST_ID_SPI_FOR_SDCARD 0
 
-#define portDISABLE_INTERRUPTS() __asm volatile("csrc mstatus, 8")
-#define portENABLE_INTERRUPTS() __asm volatile("csrs mstatus, 8")
-
-#define portNOP() __asm volatile(" nop ")
-
     // ----------------------------------------------------------------------------
     // SHARED TYPES
     // ----------------------------------------------------------------------------
@@ -35,31 +30,44 @@ extern "C"
 
     typedef enum
     {
-        OST_GPIO_ROTARY_A,
-        OST_GPIO_ROTARY_B,
         OST_GPIO_DEBUG_LED,
-        OST_GPIO_DEBUG_PIN,
+        OST_GPIO_DEBUG_PIN
     } ost_hal_gpio_t;
+
+    typedef enum
+    {
+        OST_BUTTON_OK = 0x01,
+        OST_BUTTON_HOME = 0x02,
+        OST_BUTTON_PAUSE = 0x04,
+        OST_BUTTON_VOLUME_UP = 0x08,
+        OST_BUTTON_VOLUME_DOWN = 0x10
+    } ost_button_t;
 
     // ----------------------------------------------------------------------------
     // HIGH LEVEL API
     // ----------------------------------------------------------------------------
+    // System API
     void ost_system_initialize();
     void system_putc(char ch);
     void ost_system_delay_ms(uint32_t delay);
-
     void ost_system_stopwatch_start();
     uint32_t ost_system_stopwatch_stop();
 
+    // Audio API
     void ost_audio_play(const char *filename);
     void ost_audio_stop();
     int ost_audio_process();
     typedef void (*ost_audio_callback_t)(void);
     void ost_audio_register_callback(ost_audio_callback_t cb);
 
+    // Buttons APU
+    typedef void (*ost_button_callback_t)(uint32_t flags);
+    void ost_button_register_callback(ost_button_callback_t cb);
+
     // ----------------------------------------------------------------------------
     // GPIO HAL
     // ----------------------------------------------------------------------------
+
     int ost_hal_gpio_get(ost_hal_gpio_t gpio);
     void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value);
 

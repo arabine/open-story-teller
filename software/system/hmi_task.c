@@ -49,7 +49,7 @@ static qor_mbox_t HmiMailBox;
 
 static ost_hmi_event_t HmiEvent;
 
-static ost_hmi_event_t HmiQueue[10];
+static ost_hmi_event_t *HmiQueue[10];
 
 static ost_system_state_t OstState = OST_SYS_WAIT_INDEX;
 

@@ -62,6 +62,7 @@ const uint8_t SD_CARD_PRESENCE = 24;
 static __attribute__((aligned(8))) pio_i2s i2s;
 static volatile uint32_t msTicks = 0;
 static audio_ctx_t audio_ctx;
+static ost_button_callback_t ButtonCallback = NULL;
 
 // ===========================================================================================================
 // PROTOTYPES
@@ -79,15 +80,38 @@ void ost_system_delay_ms(uint32_t delay)
   busy_wait_ms(delay);
 }
 
+static uint32_t DebounceTs = 0;
+static bool IsDebouncing = false;
+static uint32_t ButtonsState = 0;
+static uint32_t ButtonsStatePrev = 0;
+
 void gpio_callback(uint gpio, uint32_t events)
 {
   static bool one_time = true;
 
-  // if (one_time)
+  if (events & GPIO_IRQ_EDGE_FALL)
   {
-    one_time = false;
-    // debouncer
-    debug_printf("G\n");
+    DebounceTs = time_us_32() / 1000;
+    IsDebouncing = true;
+  }
+  else if (IsDebouncing)
+  {
+    IsDebouncing = false;
+    uint32_t current = time_us_32() / 1000;
+    if (current - DebounceTs > 50)
+    {
+      if (gpio_get(ROTARY_BUTTON))
+      {
+        ButtonsState |= OST_BUTTON_OK;
+      }
+
+      if ((ButtonsStatePrev != ButtonsState) && (ButtonCallback != NULL))
+      {
+        ButtonCallback(ButtonsState);
+      }
+
+      ButtonsStatePrev = ButtonsState;
+    }
   }
 }
 
@@ -146,7 +170,7 @@ void ost_system_initialize()
   gpio_set_dir(ROTARY_BUTTON, GPIO_IN);
   gpio_disable_pulls(ROTARY_BUTTON);
 
-  gpio_set_irq_enabled_with_callback(ROTARY_BUTTON, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+  gpio_set_irq_enabled_with_callback(ROTARY_BUTTON, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
 
   //------------------- Init SDCARD
   gpio_init(SD_CARD_CS);
@@ -203,16 +227,16 @@ uint32_t ost_system_stopwatch_stop()
   return (stopwatch_end_time - stopwatch_start_time);
 }
 
+void ost_button_register_callback(ost_button_callback_t cb)
+{
+  ButtonCallback = cb;
+}
+
 int ost_hal_gpio_get(ost_hal_gpio_t gpio)
 {
   int value = 0;
   switch (gpio)
   {
-  case OST_GPIO_ROTARY_A:
-    value = gpio_get(ROTARY_A);
-    break;
-  case OST_GPIO_ROTARY_B:
-    value = gpio_get(ROTARY_B);
     break;
   default:
     break;
@@ -231,10 +255,6 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
   case OST_GPIO_DEBUG_PIN:
     gpio_put(DEBUG_PIN, value);
     break;
-
-  // Nothing to do for these inputes
-  case OST_GPIO_ROTARY_A:
-  case OST_GPIO_ROTARY_B:
   default:
     break;
   }
@@ -245,7 +265,7 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
 // ----------------------------------------------------------------------------
 void ost_hal_sdcard_set_slow_clock()
 {
-  spi_set_baudrate(spi0, 10000);
+  spi_set_baudrate(spi0, 1000000UL);
 }
 
 void ost_hal_sdcard_set_fast_clock()
