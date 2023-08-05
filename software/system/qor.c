@@ -260,10 +260,23 @@ bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_ta
 
     qor_create_thread(idle_tcb, idle_task, idle_stack, idle_stack_size, 0, "IdleTask");
 
-    // FIXME: use the scheduler to find the best first thread to start
     IdleTcb = idle_tcb;
     IdleTask = idle_task;
-    RunPt = TcbHead;
+    RunPt = IdleTcb;
+
+    // Find the best first thread to start (highest priority)
+    qor_tcb_t *t = TcbHead;
+    if (t != NULL)
+    {
+        while (t->next != NULL)
+        {
+            if (t->priority > RunPt->priority)
+            {
+                RunPt = t;
+            }
+            t = t->next;
+        }
+    }
 
     timer_init();
 

@@ -20,7 +20,10 @@ typedef enum
 {
     VM_EV_NO_EVENT = 0,
     VM_EV_START_STORY_EVENT = 0xA1,
-    VM_EV_BUTTON_EVENT = 0x88
+    VM_EV_EXEC_HOME_INDEX = 0xB5,
+    VM_EV_BUTTON_EVENT = 0x88,
+    VM_EV_END_OF_SOUND = 0x4E,
+    VM_EV_ERROR = 0xE0
 } ost_vm_ev_type_t;
 typedef struct
 {
@@ -31,9 +34,12 @@ typedef struct
 
 typedef enum
 {
-    OST_VM_STATE_WAIT_EVENT,
     OST_VM_STATE_HOME,
+    OST_VM_STATE_HOME_WAIT_FS,
     OST_VM_STATE_RUN_STORY,
+    OST_VM_STATE_WAIT_BUTTON,
+    OST_VM_STATE_ERROR //!< General error, cannot continue
+
 } ost_vm_state_t;
 
 // ===========================================================================================================
@@ -50,8 +56,6 @@ static chip32_ctx_t m_chip32_ctx;
 static char CurrentStory[260]; // Current story path
 static char ImageFile[260];
 static char SoundFile[260];
-
-static ost_vm_state_t VmState = OST_VM_STATE_WAIT_EVENT;
 
 // ===========================================================================================================
 // VIRTUAL MACHINE TASK
@@ -80,19 +84,13 @@ uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t code)
     // Media
     if (code == 1) // Execute media
     {
-        char *image_ptr = NULL;
-        char *sound_ptr = NULL;
         if (m_chip32_ctx.registers[R0] != 0)
         {
             // image file name address is in R0
             // QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
             // m_ostHmiDock->SetImage(imageFile);
             get_file_from_memory(ImageFile, m_chip32_ctx.registers[R0]);
-            image_ptr = ImageFile;
-        }
-        else
-        {
-            //  m_ostHmiDock->ClearImage();
+            fs_task_image_start(ImageFile);
         }
 
         if (m_chip32_ctx.registers[R1] != 0)
@@ -102,9 +100,8 @@ uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t code)
             // qDebug() << ", Sound: " << soundFile;
             // m_model.PlaySoundFile(soundFile);
             get_file_from_memory(SoundFile, m_chip32_ctx.registers[R1]);
-            sound_ptr = SoundFile;
+            fs_task_sound_start(SoundFile);
         }
-        fs_task_media_start(image_ptr, sound_ptr);
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     // WAIT EVENT bits:
@@ -135,6 +132,16 @@ static void button_callback(uint32_t flags)
     qor_mbox_notify(&VmMailBox, (void **)&ButtonEv, QOR_MBOX_OPTION_SEND_BACK);
 }
 
+static void read_index_callback(bool success)
+{
+    static ost_vm_event_t ReadIndexEv = {
+        .ev = VM_EV_BUTTON_EVENT,
+        .story_dir = NULL};
+
+    ReadIndexEv.ev = success ? VM_EV_EXEC_HOME_INDEX : VM_EV_ERROR;
+    qor_mbox_notify(&VmMailBox, (void **)&ReadIndexEv, QOR_MBOX_OPTION_SEND_BACK);
+}
+
 void VmTask(void *args)
 {
     // VM Initialize
@@ -151,57 +158,37 @@ void VmTask(void *args)
     m_chip32_ctx.syscall = vm_syscall;
 
     chip32_result_t run_result;
-    ost_vm_event_t *e = NULL;
+    ost_vm_event_t *message = NULL;
     uint32_t res = 0;
     bool isHome = true;
 
+    ost_vm_state_t VmState = OST_VM_STATE_HOME;
+    fs_task_scan_index(read_index_callback);
+    isHome = true;
+
     while (1)
     {
+        res = qor_mbox_wait(&VmMailBox, (void **)&message, 300); // On devrait recevoir un message toutes les 3ms (durée d'envoi d'un buffer I2S)
 
-        switch (VmState)
+        if (res == QOR_MBOX_OK)
         {
-        case OST_VM_STATE_RUN_STORY:
-            do
+            switch (VmState)
             {
-                run_result = chip32_step(&m_chip32_ctx);
-
-            } while (run_result == VM_OK);
-
-            // pour le moment, dans tous les cas on attend un événement
-            // Que ce soit par erreur, ou l'attente un appui boutton...
-            VmState = OST_VM_STATE_WAIT_EVENT;
-            break;
-
-        case OST_VM_STATE_WAIT_EVENT:
-        default:
-            res = qor_mbox_wait(&VmMailBox, (void **)&e, 300); // On devrait recevoir un message toutes les 3ms (durée d'envoi d'un buffer I2S)
-
-            if (res == QOR_MBOX_OK)
-            {
-
-                if (isHome)
+            case OST_VM_STATE_HOME:
+                switch (message->ev)
                 {
-                    if (e->ev == VM_EV_BUTTON_EVENT)
-                    {
-                        if ((e->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
-                        {
-                            // Load story from disk
-                            debug_printf("Clicked OK\r\n");
-                            fs_task_load_story(m_rom_data);
-                        }
-                    }
-                    else if (e->ev == VM_EV_START_STORY_EVENT)
-                    {
-                        // Launch the execution of a story
-                        chip32_initialize(&m_chip32_ctx);
-                        VmState = OST_VM_STATE_RUN_STORY;
-                    }
+                case VM_EV_EXEC_HOME_INDEX:
+                    // La lecture de l'index est terminée, on demande l'affichage des médias
+                    fs_task_play_index();
+                    break;
+                case VM_EV_ERROR:
+                default:
+                    break;
                 }
-                else
-                {
-                }
+
+            default:
+                break;
             }
-            break;
         }
     }
 }
@@ -213,12 +200,66 @@ void vm_task_start_story()
     qor_mbox_notify(&VmMailBox, (void **)&VmStartEvent, QOR_MBOX_OPTION_SEND_BACK);
 }
 
+void vm_task_sound_finished()
+{
+    static ost_vm_event_t VmEndOfSoundEvent;
+    VmEndOfSoundEvent.ev = VM_EV_END_OF_SOUND;
+    qor_mbox_notify(&VmMailBox, (void **)&VmEndOfSoundEvent, QOR_MBOX_OPTION_SEND_BACK);
+}
+
 void vm_task_initialize()
 {
-    VmState = OST_VM_STATE_WAIT_EVENT;
-
     qor_mbox_init(&VmMailBox, (void **)&VmQueue, 10);
     qor_create_thread(&VmTcb, VmTask, VmStack, sizeof(VmStack) / sizeof(VmStack[0]), VM_TASK_PRIORITY, "VmTask");
 
     ost_button_register_callback(button_callback);
 }
+
+/*
+            case OST_VM_STATE_RUN_STORY:
+                do
+                {
+                    run_result = chip32_step(&m_chip32_ctx);
+
+                } while (run_result == VM_OK);
+
+                // pour le moment, dans tous les cas on attend un événement
+                // Que ce soit par erreur, ou l'attente un appui boutton...
+                VmState = OST_VM_STATE_WAIT_BUTTON;
+                break;
+
+case OST_VM_STATE_ERROR:
+qor_sleep(20);
+break;
+case OST_VM_STATE_WAIT_BUTTON:
+default:
+
+if (isHome)
+{
+    if (message->ev == VM_EV_BUTTON_EVENT)
+    {
+        if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
+        {
+            // Load story from disk
+            debug_printf("Clicked OK\r\n");
+            fs_task_load_story(m_rom_data);
+        }
+    }
+    else if (message->ev == VM_EV_START_STORY_EVENT)
+    {
+        // Launch the execution of a story
+        chip32_initialize(&m_chip32_ctx);
+        isHome = false;
+        VmState = OST_VM_STATE_RUN_STORY;
+    }
+}
+else
+{
+    // VM en cours d'exécution
+    if (message->ev == VM_EV_END_OF_SOUND)
+    {
+        VmState = OST_VM_STATE_RUN_STORY;
+    }
+}
+}
+*/

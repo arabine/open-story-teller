@@ -6,6 +6,7 @@
 #include "filesystem.h"
 #include "mini_qoi.h"
 #include "serializers.h"
+#include "sdcard.h"
 
 #ifdef OST_USE_FF_LIBRARY
 #include "ff.h"
@@ -27,6 +28,8 @@ static FATFS fs;
 static FIL File[2]; /* File object */
 static DIR Dir;     /* Directory object */
 static FILINFO Finfo;
+
+static SD_CardInfo cardinfo;
 
 file_t file_open(const char *filename)
 {
@@ -95,7 +98,22 @@ void filesystem_mount()
     debug_printf("[OST] SD Card File System = %d\r\n", fs.fs_type); // FS_EXFAT = 4
     // debug_printf("[OST] Starting with CPU=%d\r\n", (int)SystemCoreClock);
 
+    // Get SD Card info
+    if (sdcard_get_card_info(&cardinfo) == SD_RESPONSE_NO_ERROR)
+    {
+        debug_printf("[OST] Sectors: %d, sector size: %d\r\n", cardinfo.CardCapacity, cardinfo.CardBlockSize);
+    }
+    else
+    {
+        debug_printf("[OST] Cannot read SDCard info\r\n");
+    }
+
     scan_files("");
+}
+
+uint32_t filesystem_get_capacity()
+{
+    return cardinfo.CardCapacity;
 }
 
 /*

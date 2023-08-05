@@ -22,6 +22,7 @@
 #include "system.h"
 #include "vm_task.h"
 #include "fs_task.h"
+#include "tusb.h"
 
 // ===========================================================================================================
 // DEFINITIONS
@@ -63,51 +64,55 @@ void HmiTask(void *args)
 
     ost_hmi_event_t *e = NULL;
 
-    // filesystem_display_image("/ba869e4b-03d6-4249-9202-85b4cec767a7/images/bird.qoi");
-
-    // Start by scanning the index file
-    // fs_task_scan_index();
+    // init device stack on configured roothub port
+    tusb_init();
 
     while (1)
     {
-        uint32_t res = qor_mbox_wait(&HmiMailBox, (void **)&e, 1000);
-
-        if (res == QOR_MBOX_OK)
-        {
-            switch (OstState)
-            {
-            case OST_SYS_PLAY_STORY_TITLE:
-                break;
-
-            case OST_SYS_WAIT_USER_EVENT:
-                break;
-
-            case OST_SYS_WAIT_INDEX:
-            default:
-                break;
-            }
-        }
-        else
-        {
-            debug_printf("H"); // pour le debug only
-        }
+        // tud_task(); // tinyusb device task
+        qor_sleep(10);
     }
 }
 
-void hmi_task_ost_ready(uint32_t number_of_stories)
-{
-    static ost_hmi_event_t OsReadyEv = {
-        .ev = OST_SYS_PLAY_STORY_TITLE};
-
-    OstContext.number_of_stories = number_of_stories;
-    OstContext.current_story = 0;
-    qor_mbox_notify(&HmiMailBox, (void **)&OsReadyEv, QOR_MBOX_OPTION_SEND_BACK);
-}
+#include "msc_disk.h"
 
 void hmi_task_initialize()
 {
     OstState = OST_SYS_WAIT_INDEX;
     qor_mbox_init(&HmiMailBox, (void **)&HmiQueue, 10);
 
+    msc_disk_initialize();
+
     qor_create_thread(&HmiTcb, HmiTask, HmiStack, sizeof(HmiStack) / sizeof(HmiStack[0]), HMI_TASK_PRIORITY, "HmiTask"); // less priority is the HMI (user inputs and LCD)
+}
+
+//--------------------------------------------------------------------+
+// Device callbacks
+//--------------------------------------------------------------------+
+
+// Invoked when device is mounted
+void tud_mount_cb(void)
+{
+    // blink_interval_ms = BLINK_MOUNTED;
+}
+
+// Invoked when device is unmounted
+void tud_umount_cb(void)
+{
+    // blink_interval_ms = BLINK_NOT_MOUNTED;
+}
+
+// Invoked when usb bus is suspended
+// remote_wakeup_en : if host allow us  to perform remote wakeup
+// Within 7ms, device must draw an average of current less than 2.5 mA from bus
+void tud_suspend_cb(bool remote_wakeup_en)
+{
+    (void)remote_wakeup_en;
+    //  blink_interval_ms = BLINK_SUSPENDED;
+}
+
+// Invoked when usb bus is resumed
+void tud_resume_cb(void)
+{
+    // blink_interval_ms = BLINK_MOUNTED;
 }

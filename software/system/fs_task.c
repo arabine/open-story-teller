@@ -23,32 +23,34 @@
 #include "system.h"
 #include "vm_task.h"
 #include "fs_task.h"
+#include "sdcard.h"
 
 // ===========================================================================================================
 // DEFINITIONS
 // ===========================================================================================================
-typedef struct
-{
-    uint8_t ev;
-} ost_audio_event_t;
-
 typedef enum
 {
-    FS_WAIT_FOR_EVENT,
+    FS_NO_EVENT,
     FS_PLAY_SOUND,
     FS_DISPLAY_IMAGE,
     FS_LOAD_INDEX,
-    FS_LOAD_STORY
+    FS_LOAD_STORY,
+    FS_READ_SDCARD_BLOCK,
+    FS_AUDIO_NEXT_SAMPLES
 } fs_state_t;
 
 typedef struct
 {
     fs_state_t ev;
     uint8_t *mem;
+    uint32_t addr;
     ost_button_t button;
     char *image;
     char *sound;
+    fs_result_cb_t cb;
 } ost_fs_event_t;
+
+#define STORY_DIR_OFFSET (UUID_SIZE + 1)
 
 // ===========================================================================================================
 // PRIVATE GLOBAL VARIABLES
@@ -56,21 +58,20 @@ typedef struct
 static qor_tcb_t FsTcb;
 static uint32_t FsStack[4096];
 
-static qor_mbox_t AudioMailBox;
-
-static ost_audio_event_t wake_up;
-
-static ost_audio_event_t *AudioQueue[10];
-
-static int dbg_state = 0;
-
-static fs_state_t FsState = FS_WAIT_FOR_EVENT;
-
 static qor_mbox_t FsMailBox;
 
 static ost_fs_event_t *FsEventQueue[10];
 
 static ost_context_t OstContext;
+
+static int PacketCounter = 0;
+
+static char ScratchFile[260];
+
+static const char *ImagesDir = "/images/";
+static const char *SoundsDir = "/sounds/";
+
+static uint8_t LedState = 0;
 
 // ===========================================================================================================
 // FILE SYSTEM TASK
@@ -79,8 +80,9 @@ static ost_context_t OstContext;
 // End of DMA transfer callback
 static void audio_callback(void)
 {
-    dbg_state = 1 - dbg_state;
-    qor_mbox_notify(&AudioMailBox, (void **)&wake_up, QOR_MBOX_OPTION_SEND_BACK);
+    static ost_fs_event_t NextSamplesEv = {
+        .ev = FS_AUDIO_NEXT_SAMPLES};
+    qor_mbox_notify(&FsMailBox, (void **)&NextSamplesEv, QOR_MBOX_OPTION_SEND_BACK);
 }
 
 static void show_duration(uint32_t millisecondes)
@@ -97,165 +99,173 @@ static void show_duration(uint32_t millisecondes)
     debug_printf("Temps : %d minutes, %d secondes, %d millisecondes\r\n", minutes, secondes, reste);
 }
 
-static void play_sound_file(const char *filename)
-{
-    debug_printf("\r\n-------------------------------------------------------\r\nPlaying: %s\r\n", filename);
-    ost_system_stopwatch_start();
-    ost_audio_play(filename);
-
-    ost_audio_event_t *e = NULL;
-
-    int isPlaying = 0;
-    int count = 0;
-    uint32_t res = 0;
-    do
-    {
-        uint32_t res = qor_mbox_wait(&AudioMailBox, (void **)&e, 300); // On devrait recevoir un message toutes les 3ms (durée d'envoi d'un buffer I2S)
-
-        if (res == QOR_MBOX_OK)
-        {
-            isPlaying = ost_audio_process();
-        }
-
-        count++;
-
-    } while (isPlaying);
-
-    uint32_t executionTime = ost_system_stopwatch_stop();
-    ost_audio_stop();
-
-    debug_printf("\r\nPackets: %d\r\n", count);
-    show_duration(executionTime);
-}
-
-static char ScratchFile[260];
-
-static const char *ImagesDir = "/images/";
-static const char *SoundsDir = "/sounds/";
-
-#define STORY_DIR_OFFSET (UUID_SIZE + 1)
-
-static uint8_t LedState = 0;
-
 void FsTask(void *args)
 {
-    ost_fs_event_t *fs_ev = NULL;
+    ost_fs_event_t *message = NULL;
     uint32_t res = 0;
 
     filesystem_read_index_file(&OstContext);
-    FsState = FS_LOAD_INDEX;
+
+    int isPlaying = 0;
 
     while (1)
     {
-        switch (FsState)
+        res = qor_mbox_wait(&FsMailBox, (void **)&message, 1000);
+        if (res == QOR_MBOX_OK)
         {
-        case FS_PLAY_SOUND:
-            if (OstContext.sound != NULL)
+            switch (message->ev)
             {
+            case FS_PLAY_SOUND:
+                if (OstContext.sound != NULL)
+                {
+                    ScratchFile[STORY_DIR_OFFSET] = 0;
+                    strcat(ScratchFile, SoundsDir);
+                    strcat(ScratchFile, message->sound);
+
+                    debug_printf("\r\n-------------------------------------------------------\r\nPlaying: %s\r\n", ScratchFile);
+
+                    ost_system_stopwatch_start();
+                    ost_audio_play(ScratchFile);
+                    PacketCounter = 0;
+                    isPlaying = 1;
+                }
+                break;
+
+            case FS_AUDIO_NEXT_SAMPLES:
+                isPlaying = ost_audio_process();
+                PacketCounter++;
+
+                if (isPlaying == 0)
+                {
+                    uint32_t executionTime = ost_system_stopwatch_stop();
+                    ost_audio_stop();
+
+                    debug_printf("\r\nPackets: %d\r\n", PacketCounter);
+                    show_duration(executionTime);
+                    vm_task_sound_finished();
+                }
+                break;
+
+            case FS_DISPLAY_IMAGE:
+
+                if (OstContext.image != NULL)
+                {
+                    ScratchFile[STORY_DIR_OFFSET] = 0;
+                    strcat(ScratchFile, ImagesDir);
+                    strcat(ScratchFile, message->image);
+
+                    filesystem_display_image(ScratchFile);
+                }
+                break;
+
+            case FS_LOAD_INDEX:
+            {
+                bool success = false;
+                if (OstContext.number_of_stories > 0)
+                {
+                    filesystem_get_story_title(&OstContext);
+
+                    // Init current directory
+                    ScratchFile[0] = '/';
+                    memcpy(&ScratchFile[1], OstContext.uuid, UUID_SIZE);
+                    ScratchFile[1 + UUID_SIZE] = 0;
+                    success = true;
+                }
+
+                if (message->cb != NULL)
+                {
+                    message->cb(success);
+                }
+            }
+            break;
+            case FS_LOAD_STORY:
                 ScratchFile[STORY_DIR_OFFSET] = 0;
-                strcat(ScratchFile, SoundsDir);
-                strcat(ScratchFile, OstContext.sound);
-                play_sound_file(ScratchFile);
-            }
-            FsState = FS_WAIT_FOR_EVENT;
-            break;
-        case FS_DISPLAY_IMAGE:
+                strcat(ScratchFile, "/story.c32");
+                filesystem_load_rom(message->mem, ScratchFile);
+                // ROM loaded, execute story
+                vm_task_start_story();
+                break;
 
-            if (OstContext.image != NULL)
-            {
-                ScratchFile[STORY_DIR_OFFSET] = 0;
-                strcat(ScratchFile, ImagesDir);
-                strcat(ScratchFile, OstContext.image);
+            case FS_READ_SDCARD_BLOCK:
+                sdcard_sector_read(message->addr, message->mem);
+                if (message->cb != NULL)
+                {
+                    message->cb(true);
+                }
+                break;
 
-                filesystem_display_image(ScratchFile);
+            default:
+                break;
             }
-
-            if (OstContext.sound != NULL)
-            {
-                FsState = FS_PLAY_SOUND;
-            }
-            else
-            {
-                FsState = FS_WAIT_FOR_EVENT;
-            }
-            break;
-
-        case FS_LOAD_INDEX:
-            if (OstContext.number_of_stories > 0)
-            {
-                filesystem_get_story_title(&OstContext);
-
-                // Init current directory
-                ScratchFile[0] = '/';
-                memcpy(&ScratchFile[1], OstContext.uuid, UUID_SIZE);
-                ScratchFile[1 + UUID_SIZE] = 0;
-
-                FsState = FS_DISPLAY_IMAGE; // Always display image (then sound), if there is one
-            }
-            else
-            {
-                FsState = FS_WAIT_FOR_EVENT;
-            }
-            break;
-        case FS_LOAD_STORY:
-            ScratchFile[STORY_DIR_OFFSET] = 0;
-            strcat(ScratchFile, "/story.c32");
-            filesystem_load_rom(fs_ev->mem, ScratchFile);
-            // ROM loaded, execute story
-            vm_task_start_story();
-            FsState = FS_WAIT_FOR_EVENT;
-            break;
-
-        case FS_WAIT_FOR_EVENT:
-        default:
-            res = qor_mbox_wait(&FsMailBox, (void **)&fs_ev, 1000);
-            if (res == QOR_MBOX_OK)
-            {
-                // valid event, accept it
-                FsState = fs_ev->ev;
-                OstContext.image = fs_ev->image;
-                OstContext.sound = fs_ev->sound;
-            }
-            else
-            {
-                LedState = 1 - LedState;
-                ost_hal_gpio_set(OST_GPIO_DEBUG_LED, LedState);
-            }
-            break;
+        }
+        else
+        {
+            LedState = 1 - LedState;
+            ost_hal_gpio_set(OST_GPIO_DEBUG_LED, LedState);
         }
     }
 }
 
-void fs_task_scan_index()
+void fs_task_read_block(uint32_t addr, uint8_t *block, fs_result_cb_t cb)
+{
+    static ost_fs_event_t ReadBlockEv = {
+        .ev = FS_READ_SDCARD_BLOCK};
+
+    ReadBlockEv.mem = block;
+    ReadBlockEv.addr = addr;
+    ReadBlockEv.cb = cb;
+    qor_mbox_notify(&FsMailBox, (void **)&ReadBlockEv, QOR_MBOX_OPTION_SEND_BACK);
+}
+
+void fs_task_scan_index(fs_result_cb_t cb)
 {
     static ost_fs_event_t ScanIndexEv = {
-        .ev = FS_LOAD_INDEX};
-
+        .ev = FS_LOAD_INDEX,
+        .cb = NULL};
+    ScanIndexEv.cb = cb;
     qor_mbox_notify(&FsMailBox, (void **)&ScanIndexEv, QOR_MBOX_OPTION_SEND_BACK);
+}
+
+void fs_task_play_index()
+{
+    fs_task_image_start(OstContext.image);
+    fs_task_sound_start(OstContext.sound);
 }
 
 void fs_task_load_story(uint8_t *mem)
 {
     static ost_fs_event_t LoadRomxEv = {
-        .ev = FS_LOAD_STORY};
+        .ev = FS_LOAD_STORY,
+        .cb = NULL};
 
     LoadRomxEv.mem = mem;
     qor_mbox_notify(&FsMailBox, (void **)&LoadRomxEv, QOR_MBOX_OPTION_SEND_BACK);
 }
 
-void fs_task_media_start(char *image, char *sound)
+void fs_task_sound_start(char *sound)
 {
     static ost_fs_event_t MediaStartEv = {
-        .ev = FS_DISPLAY_IMAGE};
+        .ev = FS_PLAY_SOUND,
+        .cb = NULL};
+
+    MediaStartEv.image = NULL;
+    MediaStartEv.sound = sound;
+    qor_mbox_notify(&FsMailBox, (void **)&MediaStartEv, QOR_MBOX_OPTION_SEND_BACK);
+}
+
+void fs_task_image_start(char *image)
+{
+    static ost_fs_event_t MediaStartEv = {
+        .ev = FS_DISPLAY_IMAGE,
+        .cb = NULL};
 
     MediaStartEv.image = image;
-    MediaStartEv.sound = sound;
+    MediaStartEv.sound = NULL;
     qor_mbox_notify(&FsMailBox, (void **)&MediaStartEv, QOR_MBOX_OPTION_SEND_BACK);
 }
 
 void fs_task_initialize()
 {
-    qor_mbox_init(&AudioMailBox, (void **)&AudioQueue, 10);
     qor_mbox_init(&FsMailBox, (void **)&FsEventQueue, 10);
 
     ost_audio_register_callback(audio_callback);

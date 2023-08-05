@@ -24,22 +24,22 @@ Here is an example of components.
 | 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ) |
 | Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX) |
 | UPS module or Pimoroni LiPo Shim      | 15 €     | Waveshare | [Buy on Amazon](https://amzn.to/44p8Exo) |
-| LiPo battery 500mAh                   |  9 €     | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
+| LiPo battery 500mAh                   | 9 €      | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
 | GPIO Expander Pico 4 modules          | 17 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
-| SDCard breakout board                 |  5 €     | Any       |  |
+| SDCard breakout board                 | 5 €      | Any       | [Buy on Amazon](https://amzn.to/3qf3chr) |  |
 | **TOTAL**                             | **86 €** |
 
 
 A much more optimization of price is possible using the Marble Pico board which is completely compatible to the original Pico pinout but with embedded battery management and SDCard holder. Price is still low: 5€!
 
-| Part                                  | Price    | Shop      | Link                                     |
-| ------------------------------------- | -------- | --------- | ---------------------------------------- |
-| Audio board + speaker                 | 13 €     | Waveshare | [Buy on Amazon](https://amzn.to/41nWgeB) |
-| Marble Pico                           | 5 €      | ArduShop  | [Buy on Amazon](https://ardushop.ro/en/home/2652-marble-pico.html) |
-| 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ) |
-| Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX) |
-| LiPo battery 500mAh                   | 9 €      | Any       | [Buy on Amazon](https://amzn.to/3VCl3df) |
-| GPIO Expander Pico 2 modules          | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4) |
+| Part                                  | Price    | Shop      | Link                                                                    |
+| ------------------------------------- | -------- | --------- | ----------------------------------------------------------------------- |
+| Audio board + speaker                 | 13 €     | Waveshare | [Buy on Amazon](https://amzn.to/41nWgeB)                                |
+| Marble Pico                           | 5 €      | ArduShop  | [Buy on ardushop.ro](https://ardushop.ro/en/home/2652-marble-pico.html) |
+| 2inch LCD  (320x240)                  | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/3LyG5oJ)                                |
+| Some push buttons and rotary switches | 4 €      | Any       | [Buy on Amazon](https://amzn.to/3AX6MOX)                                |
+| LiPo battery 500mAh                   | 9 €      | Any       | [Buy on Amazon](https://amzn.to/3VCl3df)                                |
+| GPIO Expander Pico 2 modules          | 14 €     | Waveshare | [Buy on Amazon](https://amzn.to/42ukJQ4)                                |
 | **TOTAL**                             | **59 €** |
 
 

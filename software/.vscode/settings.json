@@ -38,6 +38,9 @@
         "critical_section.h": "c",
         "serializers.h": "c",
         "cstring": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "mutex.h": "c",
+        "sem.h": "c",
+        "msc_disk.h": "c"
     }
 }

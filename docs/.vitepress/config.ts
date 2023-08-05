@@ -28,9 +28,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Bundles introduction', link: '/guide-intro' },
-          { text: 'Dev kit (Raspberry Pico)', link: '/guide-devkit-pico' },
-          { text: 'SeeedStudio Wio Lite', link: '/guide-wio-lite' },
-          { text: 'Arduino MKR Zero', link: '/guide-mkr-zero' }
+          { text: 'Dev kit (Raspberry Pico)', link: '/guide-devkit-pico' }
         ]
       },
       {
