@@ -126,7 +126,7 @@ static void timer_set_alarm(uint32_t delay_ms)
 //  __attribute__((naked))
 static void timer_end()
 {
-    timer_hw->armed = 0xF;
+    // timer_hw->armed = 0xF;
     // Clear the alarm irq
     hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
     // Disable the intterupt for this alarm
@@ -249,6 +249,9 @@ void qor_create_thread(qor_tcb_t *tcb, thread_func_t task, uint32_t *stack, uint
     enable_irq();
 }
 
+#define portNVIC_SHPR3_REG (*((volatile uint32_t *)0xe000ed20))
+#define portNVIC_PENDSV_PRI (0xFF << 16UL) // 0xFF is the lowest priority
+
 bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_task, uint32_t *idle_stack, uint32_t idle_stack_size)
 {
     assert_or_panic(ActiveTCBsCount > 0);
@@ -257,6 +260,8 @@ bool __attribute__((naked)) qor_start(qor_tcb_t *idle_tcb, thread_func_t idle_ta
     {
         return false;
     }
+
+    portNVIC_SHPR3_REG |= portNVIC_PENDSV_PRI;
 
     qor_create_thread(idle_tcb, idle_task, idle_stack, idle_stack_size, 0, "IdleTask");
 
@@ -422,7 +427,7 @@ uint32_t qor_mbox_wait(qor_mbox_t *mbox, void **msg, uint32_t wait_ms)
         else
         {
             enable_irq();
-            return QOR_MBOX_ERROR;
+            return QOR_MBOX_EMPTY;
         }
     }
 

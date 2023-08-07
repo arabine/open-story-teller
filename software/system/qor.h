@@ -127,6 +127,7 @@ typedef struct
 #define QOR_MBOX_TIMEOUT 2
 #define QOR_MBOX_ERROR 3
 #define QOR_MBOX_FULL 4
+#define QOR_MBOX_EMPTY 5
 
 /**
  * @brief
