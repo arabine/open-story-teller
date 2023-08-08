@@ -40,7 +40,9 @@ extern "C"
         OST_BUTTON_HOME = 0x02,
         OST_BUTTON_PAUSE = 0x04,
         OST_BUTTON_VOLUME_UP = 0x08,
-        OST_BUTTON_VOLUME_DOWN = 0x10
+        OST_BUTTON_VOLUME_DOWN = 0x10,
+        OST_BUTTON_LEFT = 0x20,
+        OST_BUTTON_RIGHT = 0x40
     } ost_button_t;
 
     // ----------------------------------------------------------------------------

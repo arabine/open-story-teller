@@ -1,7 +1,7 @@
 #ifndef QOR_H
 #define QOR_H
 
-#define QOR_VERSION "0.1"
+#define QOR_VERSION "0.2"
 
 #include <stdint.h>
 #include <stdbool.h>

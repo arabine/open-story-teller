@@ -27,15 +27,15 @@ typedef enum
 } ost_vm_ev_type_t;
 typedef struct
 {
+    uint32_t button_mask;
     ost_vm_ev_type_t ev;
     const char *story_dir;
-    uint32_t button_mask;
 } ost_vm_event_t;
 
 typedef enum
 {
     OST_VM_STATE_HOME,
-    OST_VM_STATE_HOME_WAIT_FS,
+    OST_VM_STATE_HOME_WAIT_LOAD_STORY,
     OST_VM_STATE_RUN_STORY,
     OST_VM_STATE_WAIT_BUTTON,
     OST_VM_STATE_ERROR //!< General error, cannot continue
@@ -160,11 +160,10 @@ void VmTask(void *args)
     chip32_result_t run_result;
     ost_vm_event_t *message = NULL;
     uint32_t res = 0;
-    bool isHome = true;
 
     ost_vm_state_t VmState = OST_VM_STATE_HOME;
     fs_task_scan_index(read_index_callback);
-    isHome = true;
+    bool run_script = false;
 
     while (1)
     {
@@ -181,11 +180,72 @@ void VmTask(void *args)
                     // La lecture de l'index est terminée, on demande l'affichage des médias
                     fs_task_play_index();
                     break;
+                case VM_EV_BUTTON_EVENT:
+                    // debug_printf("B: %x", message->button_mask);
+                    if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
+                    {
+                        VmState = OST_VM_STATE_HOME_WAIT_LOAD_STORY;
+                        debug_printf("OK\r\n");
+                        fs_task_load_story(m_rom_data);
+                    }
+                    break;
                 case VM_EV_ERROR:
                 default:
                     break;
                 }
+            case OST_VM_STATE_HOME_WAIT_LOAD_STORY:
+                if (message->ev == VM_EV_START_STORY_EVENT)
+                {
+                    // Launch the execution of a story
+                    chip32_initialize(&m_chip32_ctx);
 
+                    VmState = OST_VM_STATE_RUN_STORY;
+                    run_script = true;
+                }
+
+            // Pas de break, on enchaîne sur le déroulement du script
+            case OST_VM_STATE_RUN_STORY:
+            {
+
+                if (message->ev == VM_EV_END_OF_SOUND)
+                {
+                    run_script = true;
+                }
+
+                if (message->ev == VM_EV_BUTTON_EVENT)
+                {
+                    if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
+                    {
+                        debug_printf("OK\r\n");
+                        m_chip32_ctx.registers[R0] = 0x01;
+                        run_script = true;
+                    }
+                    else if ((message->button_mask & OST_BUTTON_LEFT) == OST_BUTTON_LEFT)
+                    {
+                        debug_printf("<-\r\n");
+                        m_chip32_ctx.registers[R0] = 0x02;
+                        run_script = true;
+                    }
+                    else if ((message->button_mask & OST_BUTTON_RIGHT) == OST_BUTTON_RIGHT)
+                    {
+                        debug_printf("->\r\n");
+                        m_chip32_ctx.registers[R0] = 0x04;
+                        run_script = true;
+                    }
+                }
+
+                if (run_script)
+                {
+                    do
+                    {
+                        run_result = chip32_step(&m_chip32_ctx);
+
+                    } while (run_result == VM_OK);
+                }
+                run_script = false;
+
+                break;
+            }
             default:
                 break;
             }
@@ -214,52 +274,3 @@ void vm_task_initialize()
 
     ost_button_register_callback(button_callback);
 }
-
-/*
-            case OST_VM_STATE_RUN_STORY:
-                do
-                {
-                    run_result = chip32_step(&m_chip32_ctx);
-
-                } while (run_result == VM_OK);
-
-                // pour le moment, dans tous les cas on attend un événement
-                // Que ce soit par erreur, ou l'attente un appui boutton...
-                VmState = OST_VM_STATE_WAIT_BUTTON;
-                break;
-
-case OST_VM_STATE_ERROR:
-qor_sleep(20);
-break;
-case OST_VM_STATE_WAIT_BUTTON:
-default:
-
-if (isHome)
-{
-    if (message->ev == VM_EV_BUTTON_EVENT)
-    {
-        if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
-        {
-            // Load story from disk
-            debug_printf("Clicked OK\r\n");
-            fs_task_load_story(m_rom_data);
-        }
-    }
-    else if (message->ev == VM_EV_START_STORY_EVENT)
-    {
-        // Launch the execution of a story
-        chip32_initialize(&m_chip32_ctx);
-        isHome = false;
-        VmState = OST_VM_STATE_RUN_STORY;
-    }
-}
-else
-{
-    // VM en cours d'exécution
-    if (message->ev == VM_EV_END_OF_SOUND)
-    {
-        VmState = OST_VM_STATE_RUN_STORY;
-    }
-}
-}
-*/

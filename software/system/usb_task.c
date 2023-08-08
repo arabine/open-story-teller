@@ -43,14 +43,14 @@ typedef enum
 // GLOBAL STORY VARIABLES
 // ===========================================================================================================
 
-static qor_tcb_t HmiTcb;
-static uint32_t HmiStack[4096];
+static qor_tcb_t UsbTcb;
+static uint32_t UsbStack[4096];
 
-static qor_mbox_t HmiMailBox;
+static qor_mbox_t UsbMailBox;
 
-static ost_hmi_event_t HmiEvent;
+static ost_hmi_event_t UsbEvent;
 
-static ost_hmi_event_t *HmiQueue[10];
+static ost_hmi_event_t *UsbQueue[10];
 
 static ost_system_state_t OstState = OST_SYS_WAIT_INDEX;
 
@@ -59,7 +59,7 @@ static ost_context_t OstContext;
 // ===========================================================================================================
 // HMI TASK (user interface, buttons manager, LCD)
 // ===========================================================================================================
-void HmiTask(void *args)
+void UsbTask(void *args)
 {
 
     ost_hmi_event_t *e = NULL;
@@ -76,14 +76,14 @@ void HmiTask(void *args)
 
 #include "msc_disk.h"
 
-void hmi_task_initialize()
+void usb_task_initialize()
 {
     OstState = OST_SYS_WAIT_INDEX;
-    qor_mbox_init(&HmiMailBox, (void **)&HmiQueue, 10);
+    qor_mbox_init(&UsbMailBox, (void **)&UsbQueue, 10);
 
     msc_disk_initialize();
 
-    qor_create_thread(&HmiTcb, HmiTask, HmiStack, sizeof(HmiStack) / sizeof(HmiStack[0]), HMI_TASK_PRIORITY, "HmiTask"); // less priority is the HMI (user inputs and LCD)
+    qor_create_thread(&UsbTcb, UsbTask, UsbStack, sizeof(UsbStack) / sizeof(UsbStack[0]), HMI_TASK_PRIORITY, "UsbTask"); // less priority is the HMI (user inputs and LCD)
 }
 
 //--------------------------------------------------------------------+

@@ -31,7 +31,7 @@ add_library(
 )
 
 pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/pico_i2s.pio)
-pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/i2s.pio)
+pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/pio_rotary_encoder.pio)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE pico_stdlib hardware_exception cmsis_core tinyusb_device tinyusb_board)
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_LIST_DIR})

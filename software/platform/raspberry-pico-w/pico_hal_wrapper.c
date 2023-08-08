@@ -26,6 +26,7 @@
 #include "pico_lcd_spi.h"
 #include "audio_player.h"
 #include "pico_i2s.h"
+#include "pio_rotary_encoder.pio.h"
 
 // ===========================================================================================================
 // CONSTANTS / DEFINES
@@ -56,13 +57,31 @@ const uint8_t SD_CARD_PRESENCE = 24;
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
+// PICO alarm (RTOS uses Alarm 0 and IRQ 0)
+#define ALARM_NUM 1
+#define ALARM_IRQ TIMER_IRQ_1
+
 // ===========================================================================================================
 // GLOBAL VARIABLES
 // ===========================================================================================================
 static __attribute__((aligned(8))) pio_i2s i2s;
 static volatile uint32_t msTicks = 0;
 static audio_ctx_t audio_ctx;
+
+// Buttons
 static ost_button_callback_t ButtonCallback = NULL;
+static uint32_t DebounceTs = 0;
+static bool IsDebouncing = false;
+static uint32_t ButtonsState = 0;
+static uint32_t ButtonsStatePrev = 0;
+
+// Rotary encoder
+// pio 0 is used
+PIO pio = pio1;
+// state machine 0
+uint8_t sm = 0;
+
+static int new_value, delta, old_value = 0;
 
 // ===========================================================================================================
 // PROTOTYPES
@@ -74,45 +93,93 @@ void __isr __time_critical_func(audio_i2s_dma_irq_handler)();
 // ===========================================================================================================
 // OST HAL IMPLEMENTATION
 // ===========================================================================================================
-
 void ost_system_delay_ms(uint32_t delay)
 {
   busy_wait_ms(delay);
 }
 
-static uint32_t DebounceTs = 0;
-static bool IsDebouncing = false;
-static uint32_t ButtonsState = 0;
-static uint32_t ButtonsStatePrev = 0;
-
-void gpio_callback(uint gpio, uint32_t events)
+void check_buttons()
 {
-  static bool one_time = true;
-
-  if (events & GPIO_IRQ_EDGE_FALL)
+  if (!gpio_get(ROTARY_BUTTON))
   {
-    DebounceTs = time_us_32() / 1000;
-    IsDebouncing = true;
+    ButtonsState |= OST_BUTTON_OK;
   }
-  else if (IsDebouncing)
+  else
   {
-    IsDebouncing = false;
-    uint32_t current = time_us_32() / 1000;
-    if (current - DebounceTs > 50)
-    {
-      if (gpio_get(ROTARY_BUTTON))
-      {
-        ButtonsState |= OST_BUTTON_OK;
-      }
+    ButtonsState &= ~OST_BUTTON_OK;
+  }
 
-      if ((ButtonsStatePrev != ButtonsState) && (ButtonCallback != NULL))
+  // note: thanks to two's complement arithmetic delta will always
+  // be correct even when new_value wraps around MAXINT / MININT
+  new_value = quadrature_encoder_get_count(pio, sm);
+  delta = new_value - old_value;
+  old_value = new_value;
+
+  if (delta > 0)
+  {
+    ButtonsState |= OST_BUTTON_LEFT;
+  }
+  else if (delta < 0)
+  {
+    ButtonsState |= OST_BUTTON_RIGHT;
+  }
+  else
+  {
+    ButtonsState &= ~OST_BUTTON_LEFT;
+    ButtonsState &= ~OST_BUTTON_RIGHT;
+  }
+
+  if (IsDebouncing)
+  {
+    // Même état pendant X millisecondes, on valide
+    if ((ButtonsStatePrev == ButtonsState) && (ButtonCallback != NULL))
+    {
+      if (ButtonsState != 0)
       {
         ButtonCallback(ButtonsState);
       }
+    }
 
+    IsDebouncing = false;
+    ButtonsStatePrev = ButtonsState;
+  }
+  else
+  {
+    // Changement d'état détecté
+    if (ButtonsStatePrev != ButtonsState)
+    {
       ButtonsStatePrev = ButtonsState;
+      IsDebouncing = true;
     }
   }
+}
+
+static void alarm_in_us(uint32_t delay_us);
+
+static void alarm_irq(void)
+{
+  // Clear the alarm irq
+  hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
+  alarm_in_us(10000);
+
+  check_buttons();
+}
+
+static void alarm_in_us(uint32_t delay_us)
+{
+  // Enable the interrupt for our alarm (the timer outputs 4 alarm irqs)
+  hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM);
+
+  // Enable interrupt in block and at processor
+
+  // Alarm is only 32 bits so if trying to delay more
+  // than that need to be careful and keep track of the upper
+  // bits
+  uint64_t target = timer_hw->timerawl + delay_us;
+
+  // Write the lower 32 bits of the target time to the alarm which
+  // will arm it
+  timer_hw->alarm[ALARM_NUM] = (uint32_t)target;
 }
 
 void ost_system_initialize()
@@ -160,17 +227,22 @@ void ost_system_initialize()
   ST7789_Fill_Color(MAGENTA);
 
   //------------------- Rotary encoder init
-  gpio_init(ROTARY_A);
-  gpio_set_dir(ROTARY_A, GPIO_IN);
-
-  gpio_init(ROTARY_B);
-  gpio_set_dir(ROTARY_B, GPIO_IN);
-
   gpio_init(ROTARY_BUTTON);
   gpio_set_dir(ROTARY_BUTTON, GPIO_IN);
   gpio_disable_pulls(ROTARY_BUTTON);
 
-  gpio_set_irq_enabled_with_callback(ROTARY_BUTTON, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
+  // Rotary Encoder is managed by the PIO !
+  // we don't really need to keep the offset, as this program must be loaded
+  // at offset 0
+  pio_add_program(pio, &quadrature_encoder_program);
+  quadrature_encoder_program_init(pio, sm, ROTARY_A, 0);
+
+  // Set irq handler for alarm irq
+  irq_set_exclusive_handler(ALARM_IRQ, alarm_irq);
+  // Enable the alarm irq
+  irq_set_enabled(ALARM_IRQ, true);
+
+  alarm_in_us(100000);
 
   //------------------- Init SDCARD
   gpio_init(SD_CARD_CS);

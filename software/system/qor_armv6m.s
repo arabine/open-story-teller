@@ -40,7 +40,7 @@ qor_go:
     mov  lr, r5         @ Update LR
     pop  {r3}           @ Task code
     pop  {r2}           @ Pop and discard XPSR. */
-    cpsie i             @ Enable interrupts before launching the 
+    cpsie i             @ Enable interrupts
     bx   r3             @        /* Finally, jump to the user defined task code. */
 
 

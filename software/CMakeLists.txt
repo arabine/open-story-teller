@@ -39,7 +39,7 @@ set(OST_SRCS
     system/qor_armv6m.s
     system/audio_player.c
     system/vm_task.c
-    system/hmi_task.c
+    system/usb_task.c
     system/fs_task.c
     system/ff/ff.c
     system/ff/ffsystem.c

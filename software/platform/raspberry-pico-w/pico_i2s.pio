@@ -1,25 +1,5 @@
 ; i2s.pio
 ;
-; Author: Daniel Collins
-; Date:   2022-02-25
-;
-; Copyright (c) 2022 Daniel Collins
-;
-; This file is part of rp2040_i2s_example.
-;
-; rp2040_i2s_example is free software: you can redistribute it and/or modify it under
-; the terms of the GNU General Public License, version 3 as published by the
-; Free Software Foundation.
-;
-; rp2040_i2s_example is distributed in the hope that it will be useful, but WITHOUT ANY
-; WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-; A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License along with
-; rp2040_i2s_example. If not, see <https://www.gnu.org/licenses/>.
-
-; An I2S bi-directional peripheral with master clock (SCK) output.
-
 
 .program i2s_out_master
 ; I2S audio output block. Synchronous with clock and input.

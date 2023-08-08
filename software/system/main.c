@@ -14,7 +14,7 @@
 
 #include "chip32_vm.h"
 #include "system.h"
-#include "hmi_task.h"
+#include "usb_task.h"
 #include "vm_task.h"
 #include "fs_task.h"
 
@@ -32,7 +32,7 @@ void IdleTask(void *args)
     while (1)
     {
         // Instrumentation, power saving, os functions won't work here
-        // __asm volatile("wfi");
+        __asm volatile("wfi");
     }
 }
 
@@ -45,7 +45,7 @@ int main()
     ost_system_initialize();
 
     // 2. Test the printf output
-    debug_printf("\r\n [OST] Starting OpenStoryTeller tests: V%d.%d\r\n", 1, 0);
+    debug_printf("\r\n[OST] Starting OpenStoryTeller tests: V%d.%d\r\n", 1, 0);
 
     // 3. Filesystem / SDCard initialization
     filesystem_mount();
@@ -54,7 +54,7 @@ int main()
     qor_init(125000000UL);
 
     // 5. Initialize the tasks
-    hmi_task_initialize();
+    usb_task_initialize();
     vm_task_initialize();
     fs_task_initialize();
 
