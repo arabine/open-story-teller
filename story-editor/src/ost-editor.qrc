@@ -16,5 +16,6 @@
         <file>../assets/pause-button.png</file>
         <file>../assets/right.png</file>
         <file>../assets/check-mark.png</file>
+        <file>../../art/logo-color2.png</file>
     </qresource>
 </RCC>

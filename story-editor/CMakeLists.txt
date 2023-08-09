@@ -58,12 +58,16 @@ set(PROJECT_SOURCES
     src/event_node_model.cpp
     src/highlighter.h
     src/highlighter.cpp
+    src/dr_mp3.h
+    src/media_converter.h
+    src/media_converter.cpp
     src/ost-hmi.ui
     src/ost-vm.ui
     src/ost-data.ui
     src/ost-script.ui
     src/ost-resources.ui
     src/ost-log.ui
+    src/about.ui
     src/media-node.ui
     src/event-node.ui
     src/choose-file.ui
@@ -71,6 +75,7 @@ set(PROJECT_SOURCES
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
     ../software/library/miniaudio.c
+    ../software/library/miniaudio.h
 )
 
 include_directories(../software/chip32)

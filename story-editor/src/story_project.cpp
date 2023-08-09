@@ -92,11 +92,9 @@ void StoryProject::Initialize(const std::string &file_path)
     {
         std::filesystem::create_directories(m_working_dir);
     }
-    m_imagesPath = std::filesystem::path(m_working_dir) /  "images";
-    m_soundsPath = std::filesystem::path(m_working_dir) /  "sounds";
+    m_assetsPath = std::filesystem::path(m_working_dir) /  "assets";
 
-    std::filesystem::create_directories(m_imagesPath);
-    std::filesystem::create_directories(m_soundsPath);
+    std::filesystem::create_directories(m_assetsPath);
 
     m_initialized = true;
 }

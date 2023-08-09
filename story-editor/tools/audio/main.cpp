@@ -7,6 +7,10 @@
 
 #include "AudioFile.h"
 
+#define MINIMP3_IMPLEMENTATION
+#include "minimp3.h"
+#include "minimp3_ex.h"
+
 std::string GetSuffix(const std::string &path)
 {
     return path.substr(path.find_last_of(".") + 1);
@@ -52,6 +56,48 @@ void WavInspector(const std::string &inputFileName)
     }
 }
 
+int Mp3ToWav(const std::string &inputfile, const std::string &outputfile)
+{
+    int ret = -1;
+
+    FILE* fp = fopen(inputfile.c_str(), "rb");
+    if (!fp) {
+        printf("Could not open file\n");
+        return -1;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    long mp3_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    uint8_t* mp3_data = new uint8_t[mp3_size];
+    if (fread(mp3_data, 1, mp3_size, fp) == mp3_size)
+    {
+
+        // MP3 to WAV
+        mp3dec_t mp3d;
+        mp3dec_file_info_t info;
+        mp3dec_load_buf(&mp3d, mp3_data, mp3_size, &info, NULL, NULL);
+
+        AudioFile<int16_t> audioFile;
+
+        audioFile.initializeAudioBuffer(info.buffer, info.samples, info.channels);
+
+        audioFile.save(outputfile, AudioFileFormat::Wave);
+
+        free(info.buffer);
+    }
+    else
+    {
+        printf("Could not read file\n");
+    }
+
+    delete[] mp3_data;
+    fclose(fp);
+
+    return ret;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -63,9 +109,23 @@ int main(int argc, char *argv[])
         std::string baseName = GetFullBaseName(argv[1]);
         std::string suffix = GetSuffix(argv[1]);
 
-        if(suffix == "wav")
+        if (suffix == "wav")
         {
             WavInspector(argv[1]);
+        }
+        else
+        {
+            ret = -1;
+        }
+
+    }
+    if (argc > 2)
+    {
+        std::string suffix = GetSuffix(argv[1]);
+        if (suffix == "mp3")
+        {
+
+            Mp3ToWav(argv[1], argv[2]);
         }
         else
         {

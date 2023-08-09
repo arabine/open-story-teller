@@ -8,6 +8,10 @@ ToolBar::ToolBar()
 {
     setObjectName("MainToolBar");
 
+    m_aboutDialog = new QDialog();
+    m_aboutUi.setupUi(m_aboutDialog);
+
+    m_aboutUi.versionLabel->setText(OST_EDITOR_VERSION);
 //    setIconSize(QSize(10, 10));
 //    setFixedHeight(36);
 }
@@ -151,9 +155,7 @@ void ToolBar::SetActionsActive(bool enable)
 
 void ToolBar::slotAbout()
 {
-    QMessageBox::about(this, tr("About OST Editor"),
-                       tr("OpenStoryTeller node editor."
-                          "Build your own stories on an open source hardware."));
+    m_aboutDialog->exec();
 }
 
 void ToolBar::AddDockToMenu(QAction *action, DockWidgetBase *dock)

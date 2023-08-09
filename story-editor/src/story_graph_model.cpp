@@ -583,24 +583,14 @@ void StoryGraphModel::removePort(NodeId nodeId, PortType portType, PortIndex por
     portsDeleted();
 }
 
-QString StoryGraphModel::GetImagesDir() const
+QString StoryGraphModel::GetAssetsDir() const
 {
-    return QString(m_project.GetWorkingDir().c_str()) + QDir::separator() + "images";
+    return QString(m_project.GetWorkingDir().c_str()) + QDir::separator() + "assets";
 }
 
-QString StoryGraphModel::BuildFullImagePath(const QString &fileName) const
+QString StoryGraphModel::BuildFullAssetsPath(const QString &fileName) const
 {
-    return GetImagesDir() + QDir::separator() + fileName;
-}
-
-QString StoryGraphModel::GetSoundsDir() const
-{
-    return QString(m_project.GetWorkingDir().c_str()) + QDir::separator() + "sounds";
-}
-
-QString StoryGraphModel::BuildFullSoundPath(const QString &fileName) const
-{
-    return GetSoundsDir() + QDir::separator() + fileName;
+    return GetAssetsDir() + QDir::separator() + fileName;
 }
 
 void StoryGraphModel::Clear()

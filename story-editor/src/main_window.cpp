@@ -37,16 +37,7 @@
 
 #include "main_window.h"
 #include "media_node_model.h"
-
-
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#define STBI_NO_LINEAR
-#include "stb_image.h"
-
-#define QOI_IMPLEMENTATION
-#undef QOI_NO_STDIO
-#include "qoi.h"
+#include "media_converter.h"
 
 using QtNodes::CreateCommand;
 using QtNodes::BasicGraphicsScene;
@@ -150,7 +141,7 @@ MainWindow::MainWindow()
 
     readSettings(); // restore all windows preferences
     qDebug() << "Settings location: " << m_settings.fileName();
-    qDebug() << "Welcome to StoryTeller Editor";
+    qDebug() << "Welcome to StoryTeller Editor " << OST_EDITOR_VERSION;
 
     CloseProject();
     RefreshProjectInformation();
@@ -338,49 +329,32 @@ void MainWindow::ConvertResources()
     std::vector<Resource>::const_iterator ptr = m_project.Begin();
     for (; ptr != m_project.End(); ++ptr)
     {
+        QString inputfile = m_model.BuildFullAssetsPath(ptr->file.c_str());
+        std::string outputfile = m_project.AssetsPath() / StoryProject::RemoveFileExtension(ptr->file);
+
+        int retCode = 0;
         if (ptr->format == "PNG")
         {
-            QString inputfile = m_model.BuildFullImagePath(ptr->file.c_str());
-            void *pixels = NULL;
-            int w = 0;
-            int h = 0;
-            int channels = 0;
+            outputfile += ".qoi"; // FIXME: prendre la congif en cours désirée
+            retCode = MediaConverter::ImageToQoi(inputfile.toStdString(), outputfile);
+        }
+        else if (ptr->format == "MP3")
+        {
+            outputfile += ".wav"; // FIXME: prendre la congif en cours désirée
+            retCode = MediaConverter::Mp3ToWav(inputfile.toStdString(), outputfile);
+        }
+        else
+        {
+            qCritical() << "Skipped: " << inputfile << ", unknown format" << outputfile;
+        }
 
-            if(!stbi_info(inputfile.toStdString().c_str(), &w, &h, &channels))
-            {
-                qCritical() << "Couldn't read header " << inputfile;
-            }
-
-            // Force all odd encodings to be RGBA
-            if(channels != 3) {
-                channels = 4;
-            }
-
-            pixels = (void *)stbi_load(inputfile.toStdString().c_str(), &w, &h, NULL, channels);
-
-            if (pixels != NULL)
-            {
-                qoi_desc desc;
-                desc.channels = channels;
-                desc.colorspace = QOI_SRGB;
-                desc.width = w;
-                desc.height = h;
-
-                std::string outputfile = m_project.ImagesPath() / StoryProject::RemoveFileExtension(ptr->file);
-                outputfile += ".qoi";
-                int encoded = qoi_write(outputfile.c_str(), pixels, &desc);
-
-                if (!encoded)
-                {
-                    qCritical() << "Couldn't write/encode " << outputfile;
-                }
-
-                free(pixels);
-            }
-            else
-            {
-                qCritical() << "Couldn't load/decode" << inputfile;
-            }
+        if (retCode < 0)
+        {
+            qCritical() << "Failed to convert media file " << inputfile << ", error code: " << retCode << outputfile;
+        }
+        else if (retCode == 0)
+        {
+            qDebug() << "Convertered file: " << inputfile;
         }
     }
 }
@@ -449,7 +423,7 @@ void MainWindow::ExitProgram()
 
 void MainWindow::RefreshProjectInformation()
 {
-    setWindowTitle(QString("StoryTeller Editor - ") + m_project.GetProjectFilePath().c_str());
+    setWindowTitle(QString("StoryTeller Editor %1 - %2").arg(OST_EDITOR_VERSION).arg(m_project.GetProjectFilePath().c_str()));
 
     m_resourcesDock->SetTitleImage(m_project.GetTitleImage().c_str());
     m_resourcesDock->SetTitleSound(m_project.GetTitleSound().c_str());
@@ -658,7 +632,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R0] != 0)
         {
             // image file name address is in R0
-            QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            QString imageFile = m_model.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
             qDebug() << "Image: " << imageFile;
             m_ostHmiDock->SetImage(imageFile);
         }
@@ -670,7 +644,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R1] != 0)
         {
             // sound file name address is in R1
-            QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            QString soundFile = m_model.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
             qDebug() << ", Sound: " << soundFile;
             m_model.PlaySoundFile(soundFile);
         }

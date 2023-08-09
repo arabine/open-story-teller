@@ -4,6 +4,9 @@
 #include <QToolBar>
 #include <QMenuBar>
 #include "dock_widget_base.h"
+#include "ui_about.h"
+
+#define OST_EDITOR_VERSION  "0.1.0"
 
 class ToolBar : public QToolBar
 {
@@ -39,6 +42,8 @@ private:
     QAction *m_runAction{nullptr};
     QList<QAction *> m_actionDockList;
     QList<DockWidgetBase *> m_docksList;
+    Ui::aboutDialog m_aboutUi;
+    QDialog *m_aboutDialog;
 };
 
 #endif // TOOLBAR_H

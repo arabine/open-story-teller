@@ -79,8 +79,7 @@ struct StoryProject
     std::string GetName() const { return m_name; }
     std::string GetUuid() const { return m_uuid; }
 
-    std::filesystem::path ImagesPath() const { return m_imagesPath; }
-    std::filesystem::path SoundsPath() const { return m_soundsPath; }
+    std::filesystem::path AssetsPath() const { return m_assetsPath; }
 
     static std::string GetFileExtension(const std::string &FileName);
     static std::string GetFileName(const std::string &path);
@@ -119,8 +118,8 @@ private:
     // Project properties and location
     std::string m_name; /// human readable name
     std::string m_uuid;
-    std::filesystem::path m_imagesPath;
-    std::filesystem::path m_soundsPath;
+    std::filesystem::path m_assetsPath;
+
     bool m_initialized{false};
 
     std::string m_titleImage;

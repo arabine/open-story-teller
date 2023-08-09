@@ -23,7 +23,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
         if (std::filesystem::exists(fileName.toStdString()))
         {
             std::filesystem::path p(fileName.toStdString());
-            std::filesystem::path p2 = m_project.ImagesPath() /  p.filename().generic_string();
+            std::filesystem::path p2 = m_project.AssetsPath() /  p.filename().generic_string();
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             Resource res;
@@ -48,7 +48,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
         if (std::filesystem::exists(fileName.toStdString()))
         {
             std::filesystem::path p(fileName.toStdString());
-            std::filesystem::path p2 = m_project.SoundsPath() /  p.filename().generic_string();
+            std::filesystem::path p2 = m_project.AssetsPath() /  p.filename().generic_string();
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             Resource res;

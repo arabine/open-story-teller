@@ -109,7 +109,7 @@ void MediaNodeModel::FromJson(nlohmann::json &j)
 
 void MediaNodeModel::setImage(const QString &fileName)
 {
-    QPixmap pix(m_model.BuildFullImagePath(fileName));
+    QPixmap pix(m_model.BuildFullAssetsPath(fileName));
 
     if (!pix.isNull())
     {
@@ -129,7 +129,7 @@ void MediaNodeModel::setInternalData(const nlohmann::json &j)
 
     if (j.contains("sound")) {
         QString fileName = j["sound"].get<std::string>().c_str();
-        m_soundFilePath = m_model.BuildFullSoundPath(fileName);
+        m_soundFilePath = m_model.BuildFullAssetsPath(fileName);
         m_ui.soundName->setText(fileName);
         m_ui.playSoundButton->setEnabled(true);
     }

@@ -161,10 +161,8 @@ public:
     }
 
     StoryProject &GetProject()  { return m_project; };
-    QString GetImagesDir() const;
-    QString GetSoundsDir() const;
-    QString BuildFullImagePath(const QString &fileName) const;
-    QString BuildFullSoundPath(const QString &fileName) const;
+    QString GetAssetsDir() const;
+    QString BuildFullAssetsPath(const QString &fileName) const;
     void Clear();
     void SetInternalData(NodeId nodeId, nlohmann::json &j);
 
