@@ -127,7 +127,7 @@ private:
     std::string m_titleSound;
 
     std::vector<Resource> m_resources;
-    std::string m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
+    std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
     std::string m_project_file_path; /// JSON project file
 
     int m_display_w{320};

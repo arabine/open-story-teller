@@ -61,12 +61,12 @@ private:
 
 void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
 {
-    std::ofstream o(m_working_dir + std::filesystem::path::preferred_separator + "story.c32", std::ios::out | std::ios::binary);
+    std::ofstream o(m_working_dir / "story.c32", std::ios::out | std::ios::binary);
     o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
     o.close();
 
-
-    Tlv tlv(m_working_dir + std::filesystem::path::preferred_separator + "index.ost");
+    auto p = m_working_dir / "index.ost";
+    Tlv tlv(p.string());
 
     tlv.add_array(1);
 
@@ -401,6 +401,6 @@ std::string StoryProject::GetProjectFilePath() const
 
 std::string StoryProject::GetWorkingDir() const
 {
-    return m_working_dir;
+    return m_working_dir.string();
 }
 
