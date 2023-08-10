@@ -24,11 +24,10 @@ jobs:
             sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev libvulkan1 vulkan-tools vulkan-utils mesa-vulkan-drivers
             sudo apt-get install libxcb-*
             sudo apt-get install libxkb-*
-            sudo apt-get install libcln-dev libqalculate-dev
             sudo apt-get install libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
         - name: install_qt
           run : |
-               python3 -m aqt install-qt -m qtwebengine qtmultimedia -O ${{ github.workspace }}/Qt/ linux desktop ${{ env.QT_VERSION }}
+               python3 -m aqt install-qt -m qtmultimedia -O ${{ github.workspace }}/Qt/ linux desktop ${{ env.QT_VERSION }}
                echo ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/ >> $GITHUB_PATH
         - name: build
           run: |
