@@ -28,7 +28,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
             Resource res;
 
-            std::string ext = p.extension();
+            std::string ext = p.extension().string();
             ext.erase(ext.begin()); // remove '.' dot sign
             std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 
@@ -53,7 +53,7 @@ ResourcesDock::ResourcesDock(StoryProject &project, ResourceModel &model)
 
             Resource res;
 
-            std::string ext = p.extension();
+            std::string ext = p.extension().string();
             ext.erase(ext.begin()); // remove '.' dot sign
             std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 

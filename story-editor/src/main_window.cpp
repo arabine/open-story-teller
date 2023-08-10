@@ -330,7 +330,7 @@ void MainWindow::ConvertResources()
     for (; ptr != m_project.End(); ++ptr)
     {
         QString inputfile = m_model.BuildFullAssetsPath(ptr->file.c_str());
-        std::string outputfile = m_project.AssetsPath() / StoryProject::RemoveFileExtension(ptr->file);
+        std::string outputfile = std::filesystem::path(m_project.AssetsPath() / StoryProject::RemoveFileExtension(ptr->file)).string();
 
         int retCode = 0;
         if (ptr->format == "PNG")

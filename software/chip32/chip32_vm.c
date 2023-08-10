@@ -34,31 +34,19 @@ THE SOFTWARE.
 // =======================================================================================
 
 #define _NEXT_BYTE ctx->rom.mem[++ctx->registers[PC]]
-#define _NEXT_SHORT ({ ctx->registers[PC] += 2; ctx->rom.mem[ctx->registers[PC]-1]\
-                     | ctx->rom.mem[ctx->registers[PC]] << 8; })
-#define _NEXT_INT ({                                                                     \
-    ctx->registers[PC] += 4;                                                             \
-    ctx->rom.mem[ctx->registers[PC] - 3] | ctx->rom.mem[ctx->registers[PC] - 2] << 8 |   \
-    ctx->rom.mem[ctx->registers[PC] - 1] << 16 | ctx->rom.mem[ctx->registers[PC]] << 24; \
-})
 
-static inline uint32_t leu32_get(const uint8_t *a)
+inline uint16_t _NEXT_SHORT (chip32_ctx_t *ctx)
 {
-    uint32_t val = 0;
-    val |= (((uint32_t) a[3]) << 24);
-    val |= (((uint32_t) a[2]) << 16);
-    val |= (((uint32_t) a[1]) << 8);
-    val |= ((uint32_t) a[0]);
-
-    return val;
+    ctx->registers[PC] += 2;
+    return ctx->rom.mem[ctx->registers[PC]-1] | ctx->rom.mem[ctx->registers[PC]] << 8;
 }
 
-static inline void leu32_put(uint8_t *buff, uint32_t data)
+inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
 {
-    buff[3] = (data >> 24U) & 0xFFU;
-    buff[2] = (data >> 16U) & 0xFFU;
-    buff[1] = (data >> 8U) & 0xFFU;
-    buff[0] = data & 0xFFU;
+    ctx->registers[PC] += 4;
+
+    return ctx->rom.mem[ctx->registers[PC] - 3] | ctx->rom.mem[ctx->registers[PC] - 2] << 8 |
+    ctx->rom.mem[ctx->registers[PC] - 1] << 16 | ctx->rom.mem[ctx->registers[PC]] << 24;
 }
 
 #define _CHECK_SKIP if (skip) continue;
@@ -157,7 +145,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     {
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
-        ctx->registers[reg] = _NEXT_INT;
+        ctx->registers[reg] = _NEXT_INT(ctx);
         break;
     }
     case OP_MOV:
@@ -193,22 +181,11 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         ctx->registers[PC] = ctx->registers[reg] - 1;
-//        // save all temporary registers on stack
-//        ctx->registers[SP] -= 4*10; // reserve memory
-//        // fill memory
-//        for (int i = 0; i < 10; i++) {
-//            leu32_put(&ctx->ram.mem[ctx->registers[SP] + i*4], ctx->registers[T0 + i]);
-//        }
         break;
     }
     case OP_RET:
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
-        // restore all temporary registers on stack
-//        for (int i = 0; i < 10; i++) {
-//            ctx->registers[T0 + i] = leu32_get(&ctx->ram.mem[ctx->registers[SP] + i*4]);
-//        }
-//        ctx->registers[SP] += 4*10; // free memory
         break;
     }
     case OP_STORE:
@@ -351,7 +328,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     }
     case OP_JUMP:
     {
-        ctx->registers[PC] = _NEXT_SHORT - 1;
+        ctx->registers[PC] = _NEXT_SHORT(ctx) - 1;
         break;
     }
     case OP_JUMPR:
