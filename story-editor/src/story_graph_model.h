@@ -74,6 +74,10 @@ struct AudioCommand {
     std::string filename;
 };
 
+#if !defined(__PRETTY_FUNCTION__) && !defined(__GNUC__)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 
 /**
  * The class implements a bare minimum required to demonstrate a model-based
