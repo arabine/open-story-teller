@@ -33,7 +33,7 @@ jobs:
         - name: build
           run: |
               mkdir build && cd build
-              cmake ../story-editor CMAKE_BUILD_TYPE+=Release
+              cmake ../story-editor -DCMAKE_BUILD_TYPE+=Release -DQt6_DIR=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/gcc_64/lib/cmake/Qt6
               make
         - name: appimage
           run: |
