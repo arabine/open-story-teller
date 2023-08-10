@@ -21,7 +21,7 @@ jobs:
             pip install aqtinstall
             sudo apt-get update
             sudo apt-get upgrade
-            sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev libvulkan1 vulkan-tools vulkan-utils mesa-vulkan-drivers vulkan
+            sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev libvulkan1 vulkan-tools vulkan-utils mesa-vulkan-drivers
             sudo apt-get install libxcb-*
             sudo apt-get install libxkb-*
             sudo apt-get install libcln-dev libqalculate-dev
