@@ -10,11 +10,10 @@
 #include "ost_hal.h"
 #include "serializers.h"
 
-// Audio Double Buffer for DMA transfer
-int32_t audio_buf[SIZE_OF_SAMPLES * 2]; // x2 because we store L+R
+int32_t audio_buf[STEREO_BUFFER_SIZE]; // x2 because we store L+R
 
 // Audio Buffer for File Read
-uint8_t raw_buf[SIZE_OF_SAMPLES * 2 * 2]; // x2 for 16-bit, and x2 for L+R
+uint8_t raw_buf[AUDIO_BUFFER_FRAMES * 2 * 2]; // x2 for 16-bit, and x2 for L+R
 
 int32_t DAC_ZERO_VALUE = 1; //
 
@@ -59,12 +58,12 @@ void audio_init(audio_ctx_t *ctx)
     ctx->volume = 65;
     ctx->count = 0;
 
-    for (int i = 0; i < SIZE_OF_SAMPLES; i++)
+    for (int i = 0; i < STEREO_BUFFER_SIZE; i++)
     {
         audio_buf[i] = DAC_ZERO_VALUE;
     }
 
-    ctx->transfer_size = SIZE_OF_SAMPLES / 4;
+    ctx->transfer_size = STEREO_BUFFER_SIZE;
 }
 
 static int list_chunk_is_info_type(audio_ctx_t *ctx)
@@ -95,12 +94,14 @@ static int load_next_file(audio_ctx_t *ctx, const char *fname_ptr)
         fr = f_open(&ctx->fil, ctx->audio_info.filename, FA_READ);
         if (fr != FR_OK)
         {
-            debug_printf("ERROR: f_open %d\n\r", (int)fr);
+            debug_printf("ERROR: f_open %d for file: %s\n\r", (int)fr, fname_ptr);
         }
         ctx->idx_play++;
         FRESULT res = f_read(&ctx->fil, ctx->header, sizeof(ctx->header), &br);
-        // Find 'data' chunk
 
+        ctx->audio_info.channels = leu16_get(&ctx->header[22]);
+        ctx->audio_info.sample_rate = leu32_get(&ctx->header[24]);
+        // Find 'data' chunk
         offset = 0;
         while (1)
         {
@@ -116,17 +117,29 @@ static int load_next_file(audio_ctx_t *ctx, const char *fname_ptr)
             }
             else
             {
+                debug_printf("[AUDIO_PLAYER] Data not found, invalid file\r\n");
+                return 0;
                 break;
             }
         }
-        ctx->audio_info.data_size = size;
-        // printf("Audio data size = %d\n\r", (int) audio_info.data_size);
-        ctx->audio_info.data_start = offset;
-        ctx->audio_info.data_offset = 0;
-        return 1;
-    }
 
-    return 0;
+        if (size == 0)
+        {
+            debug_printf("[AUDIO_PLAYER] Empty audio file\r\n");
+            return 0;
+        }
+        else
+        {
+            debug_printf("[AUDIO_PLAYER] Load WAV: \r\n - Channels: %d\r\n - Sample rate: %d\r\n", ctx->audio_info.channels, ctx->audio_info.sample_rate);
+            ctx->audio_info.data_size = size;
+            // printf("Audio data size = %d\n\r", (int) audio_info.data_size);
+            ctx->audio_info.data_start = offset;
+            ctx->audio_info.data_offset = 0;
+            return 1;
+        }
+
+        return 0;
+    }
 }
 
 static int get_level(uint32_t val)
@@ -164,6 +177,7 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
     uint32_t lvl_r = 0;
 
     number = 0; // number to transfer (en octets)
+
     while (number < sizeof(raw_buf))
     {
         file_rest = ctx->audio_info.data_size - ctx->audio_info.data_offset;
@@ -192,18 +206,31 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
         }
     }
 
-    static bool onetime = true;
+    bool mono = ctx->audio_info.channels == 1;
+    uint32_t index = 4;
+    if (mono)
+    {
+        index = 2;
+    }
 
     // samples : total bytes devided by 2 (16 bits) and by two again (2 channels)
-    for (i = 0; i < number / 4; i++)
+    for (i = 0; i < number / index; i++)
     {
         // buf_32b[i * 2 + 0] = (int32_t)swap16b((int32_t)buf_16b[i * 2 + 0] * vol_table[ctx->volume]) + DAC_ZERO_VALUE; // L
         // buf_32b[i * 2 + 1] = (int32_t)swap16b((int32_t)buf_16b[i * 2 + 1] * vol_table[ctx->volume]) + DAC_ZERO_VALUE; // R
 
         // Avec le AUDIO PICO de waveshare, on entend un truc
 
-        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4]))) << 16;
-        buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * 4 + 2]))) << 16;
+        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * index]))) << 16;
+
+        if (mono)
+        {
+            buf_32b[i * 2 + 1] = buf_32b[i * 2];
+        }
+        else
+        {
+            buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * index + 2]))) << 16;
+        }
 
         // buf_32b[i * 2] = 1;
         // buf_32b[i * 2 + 1] = 4;
@@ -211,21 +238,9 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
         // lvl_l += ((int32_t)buf_16b[i * 2 + 0] * buf_16b[i * 2 + 0]) / 32768;
         // lvl_r += ((int32_t)buf_16b[i * 2 + 1] * buf_16b[i * 2 + 1]) / 32768;
     }
-    /*
-        if (onetime)
-        {
-            onetime = false;
-
-            for (int i = 0; i < 10; i++)
-            {
-                debug_printf("Sample left:  %d\r\n", buf_32b[i * 2]);
-                debug_printf("Sample right: %d\r\n", buf_32b[i * 2 + 1]);
-            }
-        }
-    */
     // ctx->audio_info.lvl_l = get_level(lvl_l / (number / 4));
     // ctx->audio_info.lvl_r = get_level(lvl_r / (number / 4));
-    ctx->transfer_size = (number / 2); // 32 bytes tranfers
+    ctx->transfer_size = number / 2; // 32 bytes tranfers
     return _next_is_end;
 }
 
@@ -245,11 +260,11 @@ int audio_process(audio_ctx_t *ctx)
     }
     else
     {
-        for (int i = 0; i < SIZE_OF_SAMPLES; i++)
+        for (int i = 0; i < STEREO_BUFFER_SIZE; i++)
         {
             audio_buf[i] = DAC_ZERO_VALUE;
         }
-        ctx->transfer_size = SIZE_OF_SAMPLES / 4;
+        ctx->transfer_size = STEREO_BUFFER_SIZE;
     }
     ctx->count++;
 

@@ -109,6 +109,7 @@ void filesystem_mount()
     }
 
     scan_files("");
+    scan_files("/ba869e4b-03d6-4249-9202-85b4cec767a7/assets");
 }
 
 uint32_t filesystem_get_capacity()

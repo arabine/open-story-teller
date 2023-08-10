@@ -164,6 +164,7 @@ void VmTask(void *args)
     ost_vm_state_t VmState = OST_VM_STATE_HOME;
     fs_task_scan_index(read_index_callback);
     bool run_script = false;
+    bool block_keys = false;
 
     while (1)
     {
@@ -176,17 +177,28 @@ void VmTask(void *args)
             case OST_VM_STATE_HOME:
                 switch (message->ev)
                 {
+                case VM_EV_END_OF_SOUND:
+                    block_keys = false;
+                    break;
+
                 case VM_EV_EXEC_HOME_INDEX:
                     // La lecture de l'index est terminée, on demande l'affichage des médias
-                    fs_task_play_index();
+                    if (!block_keys)
+                    {
+                        block_keys = true;
+                        fs_task_play_index();
+                    }
                     break;
                 case VM_EV_BUTTON_EVENT:
-                    // debug_printf("B: %x", message->button_mask);
-                    if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
+                    if (!block_keys)
                     {
-                        VmState = OST_VM_STATE_HOME_WAIT_LOAD_STORY;
-                        debug_printf("OK\r\n");
-                        fs_task_load_story(m_rom_data);
+                        // debug_printf("B: %x", message->button_mask);
+                        if ((message->button_mask & OST_BUTTON_OK) == OST_BUTTON_OK)
+                        {
+                            VmState = OST_VM_STATE_HOME_WAIT_LOAD_STORY;
+                            debug_printf("OK\r\n");
+                            fs_task_load_story(m_rom_data);
+                        }
                     }
                     break;
                 case VM_EV_ERROR:

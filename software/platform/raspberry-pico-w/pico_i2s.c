@@ -18,49 +18,12 @@
 
 void pico_i2s_set_frequency(const pio_i2s *i2s, const audio_i2s_config_t *config)
 {
-    float bitClk = config->freq * config->bps * 2.0 /* channels */ * 2.0 /* edges per clock */;
+    // Pour le calcul de la fréquence, le nombre de canaux est toujours fixé à 2
+    // car c'est notre format de sortie I2S
+    // Dans le cas du mono, on l'a détecté en amont et on a copié l'échantillon dans la voie de droite
+    float bitClk = config->freq * config->bps * config->channels /* channels */ * 2.0 /* edges per clock */;
     pio_sm_set_clkdiv(i2s->pio, i2s->sm_dout, (float)clock_get_hz(clk_sys) / bitClk);
 }
-
-#if 0
-
-static bool audio_enabled;
-
-void audio_i2s_set_enabled(bool enabled)
-{
-    if (enabled != audio_enabled)
-    {
-#ifndef NDEBUG
-        if (enabled)
-        {
-            puts("Enabling PIO I2S audio\n");
-            printf("(on core %d\n", get_core_num());
-        }
-#endif
-        irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, enabled);
-
-        if (enabled)
-        {
-            //  audio_start_dma_transfer();
-        }
-        else
-        {
-            /*
-            // if there was a buffer in flight, it will not be freed by DMA IRQ, let's do it manually
-            if (shared_state.playing_buffer)
-            {
-                give_audio_buffer(audio_i2s_consumer, shared_state.playing_buffer);
-                shared_state.playing_buffer = NULL;
-            }
-            */
-        }
-
-        pio_sm_set_enabled(audio_pio, shared_state.pio_sm, enabled);
-
-        audio_enabled = enabled;
-    }
-}
-#endif
 
 //---------------------------------------------------------------------------------------------------------------------------
 

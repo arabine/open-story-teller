@@ -50,7 +50,8 @@ typedef struct
     fs_result_cb_t cb;
 } ost_fs_event_t;
 
-#define STORY_DIR_OFFSET (UUID_SIZE + 1)
+#define ASSETS_DIR "/assets/"
+#define STORY_DIR_OFFSET (UUID_SIZE + 1) // +1 for the first '/' (filesystem root)
 
 // ===========================================================================================================
 // PRIVATE GLOBAL VARIABLES
@@ -67,9 +68,6 @@ static ost_context_t OstContext;
 static int PacketCounter = 0;
 
 static char ScratchFile[260];
-
-static const char *ImagesDir = "/images/";
-static const char *SoundsDir = "/sounds/";
 
 static uint8_t LedState = 0;
 
@@ -119,7 +117,7 @@ void FsTask(void *args)
                 if (OstContext.sound != NULL)
                 {
                     ScratchFile[STORY_DIR_OFFSET] = 0;
-                    strcat(ScratchFile, SoundsDir);
+                    strcat(ScratchFile, ASSETS_DIR);
                     strcat(ScratchFile, message->sound);
 
                     debug_printf("\r\n-------------------------------------------------------\r\nPlaying: %s\r\n", ScratchFile);
@@ -151,7 +149,7 @@ void FsTask(void *args)
                 if (OstContext.image != NULL)
                 {
                     ScratchFile[STORY_DIR_OFFSET] = 0;
-                    strcat(ScratchFile, ImagesDir);
+                    strcat(ScratchFile, ASSETS_DIR);
                     strcat(ScratchFile, message->image);
 
                     filesystem_display_image(ScratchFile);
@@ -168,7 +166,7 @@ void FsTask(void *args)
                     // Init current directory
                     ScratchFile[0] = '/';
                     memcpy(&ScratchFile[1], OstContext.uuid, UUID_SIZE);
-                    ScratchFile[1 + UUID_SIZE] = 0;
+                    ScratchFile[STORY_DIR_OFFSET] = 0;
                     success = true;
                 }
 

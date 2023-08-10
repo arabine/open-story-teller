@@ -6,7 +6,8 @@
 
 #include <ff.h>
 
-#define SIZE_OF_SAMPLES (128) // in bytes
+#define AUDIO_BUFFER_FRAMES (128)                  // in bytes
+#define STEREO_BUFFER_SIZE AUDIO_BUFFER_FRAMES * 2 // for left + right
 #define FILENAME_MAX_SIZE 260
 
 typedef struct
@@ -18,6 +19,8 @@ typedef struct
     uint32_t data_start;
     uint32_t data_size;
     uint32_t data_offset;
+    uint32_t sample_rate;
+    uint16_t channels;
     char artist[256];
     char title[256];
     char album[256];

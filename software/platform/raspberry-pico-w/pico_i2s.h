@@ -20,13 +20,11 @@ extern "C"
 {
 #endif
 
-#define AUDIO_BUFFER_FRAMES SIZE_OF_SAMPLES
-#define STEREO_BUFFER_SIZE AUDIO_BUFFER_FRAMES * 2 // for left + right
-
     typedef struct
     {
         uint32_t freq;
         uint32_t bps;
+        uint16_t channels;
         uint8_t data_pin;
         uint8_t clock_pin_base;
 
@@ -48,6 +46,7 @@ extern "C"
 
     void i2s_program_setup(PIO pio, void (*dma_handler)(void), pio_i2s *i2s, const audio_i2s_config_t *config);
 
+    void pico_i2s_set_frequency(const pio_i2s *i2s, const audio_i2s_config_t *config);
     void i2s_start(pio_i2s *i2s);
     void i2s_stop(pio_i2s *i2s);
 

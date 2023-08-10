@@ -77,11 +77,17 @@ static uint32_t ButtonsStatePrev = 0;
 
 // Rotary encoder
 // pio 0 is used
-PIO pio = pio1;
+static PIO pio = pio1;
 // state machine 0
-uint8_t sm = 0;
+static uint8_t sm = 0;
 
 static int new_value, delta, old_value = 0;
+
+static audio_i2s_config_t config = {
+    .freq = 44100,
+    .bps = 32,
+    .data_pin = 28,
+    .clock_pin_base = 26};
 
 // ===========================================================================================================
 // PROTOTYPES
@@ -261,14 +267,7 @@ void ost_system_initialize()
   gpio_set_function(SDCARD_MISO, GPIO_FUNC_SPI);
 
   //------------------- Init Sound
-  static const audio_i2s_config_t config = {
-      .freq = 44100,
-      .bps = 32,
-      .data_pin = 28,
-      .clock_pin_base = 26};
-
   i2s_program_setup(pio0, audio_i2s_dma_irq_handler, &i2s, &config);
-
   audio_init(&audio_ctx);
 
   // ------------ Everything is initialized, print stuff here
@@ -425,6 +424,9 @@ void ost_display_transfer_multi(uint8_t *buff, uint32_t btr)
 void ost_audio_play(const char *filename)
 {
   audio_play(&audio_ctx, filename);
+  config.freq = audio_ctx.audio_info.sample_rate;
+  config.channels = audio_ctx.audio_info.channels;
+  pico_i2s_set_frequency(&i2s, &config);
 
   i2s.buffer_index = 0;
 
