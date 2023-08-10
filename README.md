@@ -1,5 +1,7 @@
 # Open Story Teller (OST)
 
+[![continous_build](https://github.com/arabine/open-story-teller/actions/workflows/build.yml/badge.svg)](https://github.com/arabine/open-story-teller/actions/workflows/build.yml)
+
 Open Story Teller is an Open Source project to provide guidelines and software to build your own story teller box (electronics, mechanical).
 
 The main goal is to *not* make electronics boards but instead buy or reuse existing ones. This will allow you to easily repair your device with spare parts.
@@ -11,6 +13,8 @@ This project can be used as a base platform for any device that is composed by:
 - An Audio output
 - A SD card or memory
 - Some Buttons / rotary encoder / potentiometer
+
+<hr >
 
 # Links
 
