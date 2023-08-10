@@ -172,6 +172,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::OpenGL
     Qt${QT_VERSION_MAJOR}::Multimedia
     QHexView
+    dl
     )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
