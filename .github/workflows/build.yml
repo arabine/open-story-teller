@@ -23,7 +23,7 @@ jobs:
             pip install aqtinstall
             sudo apt-get update
             sudo apt-get upgrade
-            sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev libvulkan1 vulkan-tools vulkan-utils mesa-vulkan-drivers
+            sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev
             sudo apt-get install libxcb-*
             sudo apt-get install libxkb-*
             sudo apt-get install libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
@@ -34,24 +34,25 @@ jobs:
         - name: build
           run: |
               mkdir build && cd build
-              cmake ../story-editor -DCMAKE_BUILD_TYPE+=Release -DQt6_DIR=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/gcc_64/lib/cmake/Qt6
+              cmake ../story-editor -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/gcc_64/lib/cmake/Qt6
               make
         - name: appimage
           run: |
               wget -O deploy.AppImage https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
               chmod +x deploy.AppImage
-              mkdir appdir
-              cp story-editor appdir/
-              export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/lib/
-              ./deploy.AppImage appdir/story-editor -no-translations -bundle-non-qt-libs -extra-plugins=platforms/,sqldrivers/
-              mkdir -p appdir/usr/share/open-story-teller/
-              cp *.qm appdir/usr/share/open-story-teller
-              wget -O tool.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
-              chmod +x tool.AppImage
-              ./tool.AppImage appdir/
+              mkdir -p appdir/usr/bin
+              mkdir -p appdir/usr/lib
+              mkdir -p appdir/usr/share/applications
+              mkdir -p appdir/usr/share/icons/hicolor/512x512
+              cp story-editor appdir/usr/bin
+              cp ../story-editor.desktop appdir/usr/share/applications
+              
+              cd appdir
+              ../deploy.AppImage usr/share/applications/story-editor.desktop -qmake=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -appimage -always-overwrite
+              
         - name: upload_artefact
-          uses: actions/upload-artifact@v2
+          uses: actions/upload-artifact@v3
           with:
-            name: OpenJournalLinux
-            path: ./build/StoryEditorl-x86_64.AppImage
+            name: StoryEditorLinux
+            path: ./build/StoryEditor*.AppImage
   
