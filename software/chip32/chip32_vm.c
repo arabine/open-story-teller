@@ -35,13 +35,13 @@ THE SOFTWARE.
 
 #define _NEXT_BYTE ctx->rom.mem[++ctx->registers[PC]]
 
-inline uint16_t _NEXT_SHORT (chip32_ctx_t *ctx)
+static inline uint16_t _NEXT_SHORT (chip32_ctx_t *ctx)
 {
     ctx->registers[PC] += 2;
     return ctx->rom.mem[ctx->registers[PC]-1] | ctx->rom.mem[ctx->registers[PC]] << 8;
 }
 
-inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
+static inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
 {
     ctx->registers[PC] += 4;
 
