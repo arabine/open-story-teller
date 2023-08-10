@@ -1,0 +1,136 @@
+name: continous_build
+
+on:
+  push:
+    branches: [ master ]
+env:
+  QT_VERSION: 5.15.2
+
+jobs:
+  build_linux:
+      runs-on: ubuntu-20.04
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.8'
+        - name: install_deps
+          run : |
+            pip install aqtinstall
+            sudo apt-get update
+            sudo apt-get upgrade
+            sudo apt-get install build-essential cmake libgl1-mesa-dev libpulse-dev
+            sudo apt-get install libxcb-*
+            sudo apt-get install libxkb-*
+            sudo apt-get install libcln-dev libqalculate-dev
+            sudo apt-get install libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
+        - name: install_qt
+          run : |
+               python3 -m aqt install-qt -m qtwebengine -O ${{ github.workspace }}/Qt/ linux desktop ${{ env.QT_VERSION }}
+               echo ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/ >> $GITHUB_PATH
+        - name: build
+          run: |
+              ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake src/OpenJournal.pro CONFIG+=release
+              make
+        - name: appimage
+          run: |
+              cd build
+              wget -O deploy.AppImage https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+              chmod +x deploy.AppImage
+              mkdir appdir
+              cp ../io.github.bgallois.openjournal.desktop appdir/
+              cp ../resources/openjournal.png appdir
+              cp openjournal appdir/
+              export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/lib/
+              ./deploy.AppImage appdir/openjournal -no-translations -bundle-non-qt-libs -extra-plugins=platforms/,sqldrivers/ -unsupported-allow-new-glibc -qmake=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -exclude-libs=libgmodule-2.0.so
+              mkdir -p appdir/usr/share/openjournal/
+              cp *.qm appdir/usr/share/openjournal
+              wget -O tool.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
+              chmod +x tool.AppImage
+              ./tool.AppImage appdir/
+        - name: upload_artefact
+          uses: actions/upload-artifact@v2
+          with:
+            name: OpenJournalLinux
+            path: ./build/OpenJournal-x86_64.AppImage
+  build_win:
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: ilammy/msvc-dev-cmd@v1
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.8'
+        - name: install_deps
+          run : |
+               choco install wget -y
+               choco install nsis -y
+               pip install aqtinstall
+        - name: install_qt
+          run : |
+               python3 -m aqt install-qt -m qtwebengine -O ${{ github.workspace }}/Qt/ windows desktop ${{ env.QT_VERSION }} win64_msvc2019_64
+               echo "${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        - name: build
+          run : |
+               cd src/
+               qmake OpenJournal.pro -spec win32-msvc CONFIG+=release
+               nmake release
+               mkdir OpenJournal
+               cp build/OpenJournal.exe OpenJournal/OpenJournal.exe
+               cp build/*.qm OpenJournal/
+               windeployqt OpenJournal/OpenJournal.exe --release
+               copy C:\Windows\System32\vccorlib140.dll OpenJournal\
+               copy C:\Windows\System32\msvcp140.dll OpenJournal\
+               copy C:\Windows\System32\vcruntime140.dll OpenJournal\
+               wget https://github.com/bgallois/QMYSQL_driver_prebuilt/releases/download/5.15.2/QMYSQL_MSVC2019_5.15.2.zip
+               unzip QMYSQL_MSVC2019_5.15.2.zip
+               copy libmariadb.dll OpenJournal\
+               copy plugins\sqldrivers\* OpenJournal\sqldrivers\
+               wget https://github.com/Qalculate/libqalculate/releases/download/v4.6.1/qalculate-4.6.1-x64.zip
+               unzip qalculate-4.6.1-x64.zip -d OpenJournal/
+               cd ..
+               makensis.exe /V3 resources/installer.nsi
+        - name: upload_artefact
+          uses: actions/upload-artifact@v2
+          with:
+            name: OpenJournalWin
+            path: src/OpenJournal/
+        - name: upload_installer_artefact
+          uses: actions/upload-artifact@v2
+          with:
+            name: OpenJournalWinInstaller
+            path: src/OpenJournalInstaller.exe
+
+  build_mac:
+      runs-on: macos-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.8'
+        - name: install_deps
+          run: |
+              brew install sqlite mariadb gmp libqalculate pkg-config
+              brew unlink unixodbc
+              brew install libiodbc
+              export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
+              pip install aqtinstall
+        - name: install_qt
+          run : |
+               python3 -m aqt install-qt -m qtwebengine -O ${{ github.workspace }}/Qt/ mac desktop ${{ env.QT_VERSION }}
+               echo ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/clang_64/bin/ >> $GITHUB_PATH
+        - name: build
+          run: |
+              qmake src/OpenJournal.pro
+              make
+              cd build/
+              macdeployqt OpenJournal.app -always-overwrite -verbose=0
+              cp *.qm OpenJournal.app/Contents/Resources/
+              wget https://raw.githubusercontent.com/arl/macdeployqtfix/master/macdeployqtfix.py
+              python2.7 macdeployqtfix.py OpenJournal.app/Contents/MacOS/OpenJournal ../../Qt/${{ env.QT_VERSION }}/
+              hdiutil create -volname OpenJournal -srcfolder OpenJournal.app -ov -format UDZO OpenJournal.dmg
+        - name: upload_artefact
+          uses: actions/upload-artifact@v2
+          with:
+            name: OpenJournalMac
+            path: ./build/OpenJournal.dmg
