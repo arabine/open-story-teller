@@ -1,8 +1,10 @@
-name: continous_build
+name: BuildAndPackage
 
 on:
+  workflow_dispatch: {}
   push:
-    branches: [ master ]
+    branches:
+      - main
 env:
   QT_VERSION: 6.5.1
 
