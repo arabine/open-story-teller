@@ -57,5 +57,5 @@ jobs:
           uses: actions/upload-artifact@v3
           with:
             name: StoryEditorLinux
-            path: ./story-editor/build/StoryEditor*.AppImage
+            path: ./story-editor/build/appdir/StoryEditor*.AppImage
   
