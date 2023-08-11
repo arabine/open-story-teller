@@ -48,6 +48,7 @@ jobs:
               mkdir -p appdir/usr/share/icons/hicolor/512x512
               cp -r story-editor appdir/usr/bin
               cp -r ../story-editor.desktop appdir/usr/share/applications
+              cp -r ../story-editor-logo.png appdir/usr/share/icons/hicolor/512x512/
               
               cd appdir
               ../deploy.AppImage usr/share/applications/story-editor.desktop -qmake=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -appimage -always-overwrite
