@@ -32,12 +32,13 @@ jobs:
                python3 -m aqt install-qt -m qtmultimedia -O ${{ github.workspace }}/Qt/ linux desktop ${{ env.QT_VERSION }}
                echo ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/ >> $GITHUB_PATH
         - name: build
+          working-directory: ./story-editor
           run: |
-              cd story-editor
               mkdir build && cd build
               cmake -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/gcc_64/lib/cmake/Qt6 ..
               make
         - name: appimage
+          working-directory: ./story-editor/build
           run: |
               wget -O deploy.AppImage https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
               chmod +x deploy.AppImage
@@ -54,6 +55,7 @@ jobs:
         - name: upload_artefact
           uses: actions/upload-artifact@v3
           with:
+            working-directory: ./story-editor
             name: StoryEditorLinux
             path: ./build/StoryEditor*.AppImage
   
