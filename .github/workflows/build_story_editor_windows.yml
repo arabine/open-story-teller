@@ -3,7 +3,8 @@ name: BuildStoryEditor-Windows
 on:
   workflow_dispatch: {}
   push:
-    branches: [ master ]
+    branches:
+      - main
 env:
   QT_VERSION: 6.5.1
 
@@ -12,6 +13,8 @@ jobs:
       runs-on: windows-latest
       steps:
         - uses: actions/checkout@v2
+          with:
+            submodules: recursive
         - uses: ilammy/msvc-dev-cmd@v1
         - uses: actions/setup-python@v2
           with:
@@ -30,7 +33,8 @@ jobs:
         - name: build
           working-directory: ./story-editor
           run : |
-              mkdir build && cd build
+              mkdir build
+              cd build
               cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}\Qt\6.5.1\msvc2019_64 -DQT_DIR=${{ github.workspace }}\Qt\6.5.1\msvc2019_64\lib\cmake\Qt6 -G Ninja ..
               ninja
               ls
