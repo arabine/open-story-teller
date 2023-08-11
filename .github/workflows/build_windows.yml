@@ -1,6 +1,7 @@
-name: continous_build
+name: BuildStoryEditor-Windows
 
 on:
+  workflow_dispatch: {}
   push:
     branches: [ master ]
 env:
