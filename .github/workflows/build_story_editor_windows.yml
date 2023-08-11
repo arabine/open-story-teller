@@ -35,6 +35,26 @@ jobs:
           run : |
               mkdir build
               cd build
-              cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}\Qt\6.5.1\msvc2019_64 -DQT_DIR=${{ github.workspace }}\Qt\6.5.1\msvc2019_64\lib\cmake\Qt6 -G Ninja ..
+              cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}\Qt\${{ env.QT_VERSION }}\msvc2019_64 -DQT_DIR=${{ github.workspace }}\Qt\6.5.1\msvc2019_64\lib\cmake\Qt6 -G Ninja ..
               ninja
               ls
+              mkdir story-editor
+              cp story-editor.exe story-editor
+              windeployqt story-editor/story-editor.exe --release
+              copy C:\Windows\System32\vccorlib140.dll story-editor\
+              copy C:\Windows\System32\msvcp140.dll story-editor\
+              copy C:\Windows\System32\vcruntime140.dll story-editor\
+              ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/windeployqt.exe story-editor\story-editor.exe
+              Compress-Archive story-editor StoryEditor-Windows.zip
+              makensis.exe /V3 nsis-installer.nsi
+        - name: upload_artefact
+          uses: actions/upload-artifact@v3
+          with:
+            name: StoryEditorWindows-Zip
+            path: ./story-editor/build/StoryEditor-Windows.zip
+        - name: upload_artefact
+          uses: actions/upload-artifact@v3
+          with:
+            name: StoryEditorWindows-Setup
+            path: ./story-editor/build/story-editor-setup.exe
+
