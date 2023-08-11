@@ -1,0 +1,35 @@
+name: continous_build
+
+on:
+  push:
+    branches: [ master ]
+env:
+  QT_VERSION: 5.15.2
+
+jobs:
+  build_win:
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: ilammy/msvc-dev-cmd@v1
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.8'
+        - name: install_deps
+          run : |
+               choco install wget -y
+               choco install nsis -y
+               choco install ninja -y
+               choco install cmake -y
+               pip install aqtinstall
+        - name: install_qt
+          run : |
+               python3 -m aqt install-qt -m qtmultimedia -O ${{ github.workspace }}/Qt/ windows desktop ${{ env.QT_VERSION }} win64_msvc2019_64
+               echo "${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        - name: build
+          working-directory: ./story-editor
+          run : |
+              mkdir build && cd build
+              cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}\Qt\6.5.1\msvc2019_64 -DQT_DIR=${{ github.workspace }}\Qt\6.5.1\msvc2019_64\lib\cmake\Qt6 -G Ninja ..
+              ninja
+              ls
