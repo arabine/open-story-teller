@@ -5,7 +5,7 @@ on:
   push:
     branches: [ master ]
 env:
-  QT_VERSION: 5.15.2
+  QT_VERSION: 6.5.1
 
 jobs:
   build_win:
