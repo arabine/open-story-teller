@@ -48,7 +48,7 @@ jobs:
         - name: package
           working-directory: ./story-editor
           run : |
-              Compress-Archive story-editor/build/story-editor StoryEditor-Windows.zip
+              Compress-Archive build/story-editor StoryEditor-Windows.zip
               makensis.exe /V3 nsis-installer.nsi
         - name: upload_zip_artefact
           uses: actions/upload-artifact@v3
