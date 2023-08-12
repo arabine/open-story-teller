@@ -48,6 +48,7 @@ jobs:
         - name: package
           working-directory: ./story-editor
           run : |
+              ls
               Compress-Archive build/story-editor StoryEditor-Windows.zip
               makensis.exe /V3 nsis-installer.nsi
         - name: upload_zip_artefact
@@ -60,4 +61,10 @@ jobs:
           with:
             name: StoryEditorWindows-Setup
             path: ./story-editor/build/story-editor-setup.exe
-
+        - name: Release
+          uses: softprops/action-gh-release@v1
+          if: startsWith(github.ref, 'refs/tags/')
+          with:
+            files: |
+                ./story-editor/build/story-editor-setup.exe
+                ./story-editor/build/StoryEditor-Windows.zip
