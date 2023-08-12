@@ -45,18 +45,15 @@ jobs:
               copy C:\Windows\System32\msvcp140.dll story-editor\
               copy C:\Windows\System32\vcruntime140.dll story-editor\
               ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/windeployqt.exe story-editor\story-editor.exe
-        - name: package
+        - name: package_setup
           working-directory: ./story-editor
           run : |
-              ls  build/story-editor
-              Compress-Archive build/story-editor StoryEditor-Windows.zip
-              ls
               makensis.exe /V3 nsis-installer.nsi
         - name: upload_zip_artefact
           uses: actions/upload-artifact@v3
           with:
             name: StoryEditorWindows-Zip
-            path: ./story-editor/build/StoryEditor-Windows.zip
+            path: ./story-editor/build/story-editor
         - name: upload_stup_artefact
           uses: actions/upload-artifact@v3
           with:
