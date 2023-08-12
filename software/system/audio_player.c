@@ -176,12 +176,15 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
     uint32_t lvl_l = 0;
     uint32_t lvl_r = 0;
 
+    bool mono = ctx->audio_info.channels == 1;
     number = 0; // number to transfer (en octets)
 
-    while (number < sizeof(raw_buf))
+    int raw_max_size = mono ? sizeof(raw_buf) / 2 : sizeof(raw_buf);
+
+    while (number < raw_max_size)
     {
         file_rest = ctx->audio_info.data_size - ctx->audio_info.data_offset;
-        trans_rest = sizeof(raw_buf) - number; // en octets, 2048 au début
+        trans_rest = raw_max_size - number; // en octets, 2048 au début
         trans = (file_rest >= trans_rest) ? trans_rest : file_rest;
         // LEDR(1);
         fr = f_read(&ctx->fil, &raw_buf[number], trans, &br);
@@ -206,41 +209,32 @@ static int get_audio_buf(audio_ctx_t *ctx, int32_t *buf_32b)
         }
     }
 
-    bool mono = ctx->audio_info.channels == 1;
-    uint32_t index = 4;
-    if (mono)
-    {
-        index = 2;
-    }
+    uint32_t index = 0;
 
     // samples : total bytes devided by 2 (16 bits) and by two again (2 channels)
-    for (i = 0; i < number / index; i++)
+    for (i = 0; i < STEREO_BUFFER_SIZE / 2; i++)
     {
         // buf_32b[i * 2 + 0] = (int32_t)swap16b((int32_t)buf_16b[i * 2 + 0] * vol_table[ctx->volume]) + DAC_ZERO_VALUE; // L
         // buf_32b[i * 2 + 1] = (int32_t)swap16b((int32_t)buf_16b[i * 2 + 1] * vol_table[ctx->volume]) + DAC_ZERO_VALUE; // R
 
-        // Avec le AUDIO PICO de waveshare, on entend un truc
-
-        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * index]))) << 16;
-
+        buf_32b[i * 2] = ((int32_t)((int16_t)leu16_get(&raw_buf[index]))) << 16;
+        index += 2;
         if (mono)
         {
             buf_32b[i * 2 + 1] = buf_32b[i * 2];
         }
         else
         {
-            buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[i * index + 2]))) << 16;
+            buf_32b[i * 2 + 1] = ((int32_t)((int16_t)leu16_get(&raw_buf[index]))) << 16;
+            index += 2;
         }
-
-        // buf_32b[i * 2] = 1;
-        // buf_32b[i * 2 + 1] = 4;
 
         // lvl_l += ((int32_t)buf_16b[i * 2 + 0] * buf_16b[i * 2 + 0]) / 32768;
         // lvl_r += ((int32_t)buf_16b[i * 2 + 1] * buf_16b[i * 2 + 1]) / 32768;
     }
     // ctx->audio_info.lvl_l = get_level(lvl_l / (number / 4));
     // ctx->audio_info.lvl_r = get_level(lvl_r / (number / 4));
-    ctx->transfer_size = number / 2; // 32 bytes tranfers
+    ctx->transfer_size = STEREO_BUFFER_SIZE; // 32 bytes tranfers
     return _next_is_end;
 }
 

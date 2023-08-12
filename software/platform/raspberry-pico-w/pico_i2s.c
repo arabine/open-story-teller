@@ -21,7 +21,7 @@ void pico_i2s_set_frequency(const pio_i2s *i2s, const audio_i2s_config_t *config
     // Pour le calcul de la fréquence, le nombre de canaux est toujours fixé à 2
     // car c'est notre format de sortie I2S
     // Dans le cas du mono, on l'a détecté en amont et on a copié l'échantillon dans la voie de droite
-    float bitClk = config->freq * config->bps * config->channels /* channels */ * 2.0 /* edges per clock */;
+    float bitClk = config->freq * config->bps * 2.0 /* channels */ * 2.0 /* edges per clock */;
     pio_sm_set_clkdiv(i2s->pio, i2s->sm_dout, (float)clock_get_hz(clk_sys) / bitClk);
 }
 
