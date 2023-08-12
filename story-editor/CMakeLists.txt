@@ -151,7 +151,9 @@ set(NODEEDITOR_HEADER_FILES
   ./nodeeditor/include/QtNodes/internal/UndoCommands.hpp
 )
 
-
+if (WIN32)
+    list(APPEND PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/icon.rc")
+endif()
 
 qt_add_executable(${PROJECT_NAME}
     MANUAL_FINALIZATION
@@ -173,6 +175,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::Multimedia
     QHexView
     )
+
+
+
 
 if (UNIX)
     target_link_libraries(${PROJECT_NAME} PUBLIC dl)
