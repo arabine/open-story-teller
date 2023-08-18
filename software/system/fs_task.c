@@ -36,6 +36,7 @@ typedef enum
     FS_LOAD_INDEX,
     FS_LOAD_STORY,
     FS_READ_SDCARD_BLOCK,
+    FS_WRITE_SDCARD_BLOCK,
     FS_AUDIO_NEXT_SAMPLES
 } fs_state_t;
 
@@ -95,6 +96,18 @@ static void show_duration(uint32_t millisecondes)
 
     // Affichage du temps
     debug_printf("Temps : %d minutes, %d secondes, %d millisecondes\r\n", minutes, secondes, reste);
+}
+
+static bool UsbConnected = false;
+
+void fs_task_usb_connected()
+{
+    UsbConnected = true;
+}
+
+void fs_task_usb_disconnected()
+{
+    UsbConnected = true;
 }
 
 void FsTask(void *args)
@@ -192,6 +205,14 @@ void FsTask(void *args)
                 }
                 break;
 
+            case FS_WRITE_SDCARD_BLOCK:
+                sdcard_sector_write(message->addr, message->mem);
+                if (message->cb != NULL)
+                {
+                    message->cb(true);
+                }
+                break;
+
             default:
                 break;
             }
@@ -213,6 +234,17 @@ void fs_task_read_block(uint32_t addr, uint8_t *block, fs_result_cb_t cb)
     ReadBlockEv.addr = addr;
     ReadBlockEv.cb = cb;
     qor_mbox_notify(&FsMailBox, (void **)&ReadBlockEv, QOR_MBOX_OPTION_SEND_BACK);
+}
+
+void fs_task_write_block(uint32_t addr, uint8_t *block, fs_result_cb_t cb)
+{
+    static ost_fs_event_t WriteBlockEv = {
+        .ev = FS_WRITE_SDCARD_BLOCK};
+
+    WriteBlockEv.mem = block;
+    WriteBlockEv.addr = addr;
+    WriteBlockEv.cb = cb;
+    qor_mbox_notify(&FsMailBox, (void **)&WriteBlockEv, QOR_MBOX_OPTION_SEND_BACK);
 }
 
 void fs_task_scan_index(fs_result_cb_t cb)

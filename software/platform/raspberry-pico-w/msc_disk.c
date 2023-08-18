@@ -4,6 +4,7 @@
 
 #include "pico.h"
 #include "filesystem.h"
+#include "debug.h"
 
 // whether host does safe-eject
 static bool ejected = false;
@@ -75,6 +76,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
 }
 
 static uint8_t blockBuf[512];
+static uint8_t WrBlockBuf[512];
 
 #include "fs_task.h"
 #include "qor.h"
@@ -89,7 +91,14 @@ void msc_disk_initialize()
 void fs_read_cb(bool success)
 {
   (void)success;
-  static uint8_t dummy;
+  static const uint8_t dummy = 0x42;
+  qor_mbox_notify(&ReadFsMailBox, (void **)&dummy, QOR_MBOX_OPTION_SEND_BACK);
+}
+
+void fs_write_cb(bool success)
+{
+  (void)success;
+  static uint8_t dummy = 0x88;
   qor_mbox_notify(&ReadFsMailBox, (void **)&dummy, QOR_MBOX_OPTION_SEND_BACK);
 }
 
@@ -99,16 +108,17 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
 {
   (void)lun;
 
-  // out of ramdisk
-  // if (lba >= DISK_BLOCK_NUM)
-  //   return -1;
-
   fs_task_read_block(lba, blockBuf, fs_read_cb);
 
-  uint8_t *ev;
-  uint32_t res = qor_mbox_wait(&ReadFsMailBox, (void **)&ev, 200);
+  uint8_t *ev_ptr = NULL;
+  uint32_t res = qor_mbox_wait(&ReadFsMailBox, (void **)&ev_ptr, 200);
 
-  // printf("lba 0x%x, bufsize %d, offset %d\n",lba, bufsize, offset);
+  if (res != QOR_MBOX_OK)
+  {
+    return 0;
+  }
+
+  debug_printf("lba 0x%x, bufsize %d, offset %d\n", lba, bufsize, offset);
   // uint8_t const *addr = msc_disk[lba] + offset;
 
   uint8_t const *addr = blockBuf + offset;
@@ -129,7 +139,19 @@ bool tud_msc_is_writable_cb(uint8_t lun)
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
 {
   (void)lun;
-  printf("write - lba 0x%x, bufsize%d\n", lba, bufsize);
+  // debug_printf("write - lba 0x%x, bufsize%d\n", lba, bufsize);
+
+  memcpy(WrBlockBuf, buffer + offset, bufsize);
+
+  fs_task_write_block(lba, WrBlockBuf, fs_write_cb);
+
+  uint8_t *ev_ptr = NULL;
+
+  uint32_t res = qor_mbox_wait(&ReadFsMailBox, (void **)&ev_ptr, 200);
+  if (res != QOR_MBOX_OK)
+  {
+    return 0;
+  }
 
   return (int32_t)bufsize;
 }

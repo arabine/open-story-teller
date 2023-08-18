@@ -12,5 +12,8 @@ void fs_task_image_start(char *image);
 void fs_task_sound_start(char *sound);
 void fs_task_play_index();
 void fs_task_read_block(uint32_t addr, uint8_t *block, fs_result_cb_t cb);
+void fs_task_write_block(uint32_t addr, uint8_t *block, fs_result_cb_t cb);
+void fs_task_usb_connected();
+void fs_task_usb_disconnected();
 
 #endif // FS_TASK_H

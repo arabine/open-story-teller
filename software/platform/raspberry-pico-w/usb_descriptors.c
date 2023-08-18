@@ -1,6 +1,9 @@
 #include "tusb.h"
 #include "class/msc/msc.h"
 #include "device/usbd.h"
+
+#include "fs_task.h"
+
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
  *
@@ -42,6 +45,9 @@ tusb_desc_device_t const desc_device =
         .iSerialNumber = 0x03,
 
         .bNumConfigurations = 0x01};
+
+#include "debug.h"
+#include "usb_task.h"
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
@@ -154,6 +160,8 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index)
 //--------------------------------------------------------------------+
 
 /*
+Caractéristiques USB de la Lunii
+
 T:  Bus=03 Lev=03 Prnt=04 Port=00 Cnt=01 Dev#= 75 Spd=480 MxCh= 0
 D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
 P:  Vendor=0c45 ProdID=6840 Rev=01.00
