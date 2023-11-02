@@ -4,7 +4,7 @@
 #include "IconsFontAwesome5_c.h"
 
 #include "media_node.h"
-#include "Gui.h"
+#include "gui.h"
 
 
 NodeEditorWindow::NodeEditorWindow()

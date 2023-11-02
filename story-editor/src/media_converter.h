@@ -2,7 +2,7 @@
 #define MEDIA_CONVERTER_H
 
 #include <string>
-
+#include <cstdint>
 class MediaConverter
 {
 public:

@@ -6,7 +6,7 @@
 #include <set>
 
 #include "base_node.h"
-#include "Gui.h"
+#include "gui.h"
 #include <imgui_node_editor.h>
 
 

@@ -53,3 +53,9 @@ software/.vscode/.cortex-debug.peripherals.state.json
 story-editor/build
 
 build-story-editor-v2-System_Qt5_15_8-Debug/
+
+story-editor-v2/src/CMakeSettings.json
+
+story-editor-v2/imgui.ini
+
+story-editor-v2/src/.vscode/

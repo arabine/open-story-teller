@@ -98,7 +98,7 @@ void MainWindow::Initialize()
   //  gui.ApplyTheme();
 
     editor.Initialize();
-    imgWindow.Initialize();
+    m_emulatorWindow.Initialize();
     m_nodeEditorWindow.Initialize();
 
     LoadParams();
@@ -245,7 +245,7 @@ void MainWindow::Loop()
         SetupMainMenuBar();
 
         console.Draw("Console", nullptr);
-        imgWindow.Draw("ImageWindow", nullptr);
+        m_emulatorWindow.Draw("Emulator", nullptr);
         editor.Draw("Code Editor", nullptr);
 
         m_resourcesWindow.Draw("Resources", nullptr);

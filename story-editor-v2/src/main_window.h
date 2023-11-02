@@ -1,11 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "Gui.h"
-#include "ConsoleWindow.h"
-#include "CodeEditor.h"
+#include "gui.h"
+#include "console_window.h"
+#include "code_editor.h"
 
-#include "ImageWindow.h"
+#include "emulator_window.h"
 #include "resources_window.h"
 #include "node_editor_window.h"
 
@@ -94,7 +94,7 @@ private:
 
 
     Gui gui;
-    ImageWindow imgWindow;
+    EmulatorWindow m_emulatorWindow;
     ConsoleWindow console;
     CodeEditor editor;
 

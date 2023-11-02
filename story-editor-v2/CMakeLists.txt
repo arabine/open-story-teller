@@ -80,11 +80,11 @@ set(SRCS
 
     src/main.cpp
     src/window_base.h
-    src/ConsoleWindow.cpp
-    src/ConsoleWindow.h
+    src/console_window.cpp
+    src/console_window.h
 
-    src/ImageWindow.cpp
-    src/ImageWindow.h
+    src/emulator_window.cpp
+    src/emulator_window.h
 
     src/main_window.cpp
     src/main_window.h
@@ -101,11 +101,11 @@ set(SRCS
     src/resources_window.cpp
     src/resources_window.h
 
-    src/Gui.h
-    src/Gui.cpp
+    src/gui.h
+    src/gui.cpp
 
-    src/CodeEditor.cpp
-    src/CodeEditor.h
+    src/code_editor.cpp
+    src/code_editor.h
 
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
