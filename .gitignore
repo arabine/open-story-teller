@@ -51,3 +51,5 @@ story-editor/tools/build-audio-System_Qt5_15_8-Debug/
 
 software/.vscode/.cortex-debug.peripherals.state.json
 story-editor/build
+
+build-story-editor-v2-System_Qt5_15_8-Debug/
