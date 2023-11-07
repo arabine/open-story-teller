@@ -118,7 +118,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     return 0;
   }
 
-  debug_printf("lba 0x%x, bufsize %d, offset %d\n", lba, bufsize, offset);
+  // debug_printf("lba 0x%x, bufsize %d, offset %d\n", lba, bufsize, offset);
   // uint8_t const *addr = msc_disk[lba] + offset;
 
   uint8_t const *addr = blockBuf + offset;

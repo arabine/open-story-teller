@@ -92,6 +92,7 @@ private:
     Chip32::Result m_result;
    // DebugContext m_dbg;
 
+    std::vector<std::string> m_recentProjects;
 
     Gui gui;
     EmulatorWindow m_emulatorWindow;
@@ -121,6 +122,10 @@ private:
     void ShowOptionsWindow();
     bool ShowQuitConfirm();
 
+    void NewProjectPopup();
+    void SaveProject();
+    void EnableProject();
+    void CloseProject();
 };
 
 #endif // MAINWINDOW_H

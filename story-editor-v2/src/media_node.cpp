@@ -8,6 +8,11 @@ MediaNode::MediaNode(const std::string &title)
     : BaseNode(title)
 {
     Gui::LoadRawImage("fairy.png", m_image);
+
+    // Create defaut one input and one output
+    AddInput();
+    AddOutput();
+
 }
 
 void MediaNode::Draw()
@@ -95,9 +100,12 @@ void MediaNode::Draw()
     ImGui::SameLine();
     ImGui::Text("%d", counter);
 
-    if (counter != Outputs())
+    if (counter > Outputs())
     {
-        SetOutputs(counter);
+        for (int i = 0; i < (counter - Outputs()); i++)
+        {
+            AddOutput();
+        }
     }
 
 

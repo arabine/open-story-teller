@@ -130,7 +130,9 @@ set(SRCS
     ../software/library/miniaudio.h
 
     src/story_project.cpp
+    src/story_project.h
     src/media_converter.cpp
+    src/media_converter.h
 )
 
 if(WIN32)

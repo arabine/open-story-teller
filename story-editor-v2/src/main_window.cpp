@@ -12,7 +12,8 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-
+#include "IconsMaterialDesignIcons.h"
+#include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
     : m_resourcesWindow(m_project)
@@ -25,20 +26,31 @@ MainWindow::~MainWindow()
 
 }
 
-
-
 void MainWindow::SetupMainMenuBar()
 {
     bool showAboutPopup = false;
     bool showParameters = false;
+    bool showNewProject = false;
+
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
+            if (ImGui::MenuItem("New project"))
+            {
+                showNewProject = true;
+            }
+
+            if (ImGui::MenuItem("Close project"))
+            {
+                CloseProject();
+            }
+
             if (ImGui::MenuItem("Paramètres"))
             {
                 showParameters = true;
             }
+
             ImGui::EndMenu();
         }
 
@@ -64,6 +76,11 @@ void MainWindow::SetupMainMenuBar()
         ImGui::OpenPopup("Options");
     }
 
+    if (showNewProject)
+    {
+        ImGui::OpenPopup("NewProjectPopup");
+    }
+
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     //ImVec2 parent_pos = ImGui::GetWindowPos();
@@ -73,7 +90,7 @@ void MainWindow::SetupMainMenuBar()
 
     if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Moniteo");
+        ImGui::Text("Story Editor V1");
         ImGui::Separator();
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
 //        ImGui::Text("%s", SDL_GetPlatform());
@@ -230,6 +247,227 @@ bool MainWindow::ShowQuitConfirm()
 }
 
 
+void MainWindow::NewProjectPopup()
+{
+    static std::string projdir;
+    // Always center this window when appearing
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopupModal("NewProjectPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("New project parameters (directory must be empty)");
+        ImGui::Separator();
+
+        ImGui::Text("Directory: "); ImGui::SameLine();
+        static char project_dir[256] = "";
+        ImGui::InputTextWithHint("##project_path", "Project path", project_dir, IM_ARRAYSIZE(project_dir));
+        if (ImGui::Button( ICON_MDI_FOLDER " ..."))
+        {
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose File", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+        }
+
+        // display
+        if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
+        {
+            // action if OK
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+                projdir = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+            }
+
+            // close
+            ImGuiFileDialog::Instance()->Close();
+        }
+
+
+        ImGui::Text("Project name: "); ImGui::SameLine();
+        static char project_name[256] = "";
+        ImGui::InputTextWithHint("##project_name", "Project name", project_name, IM_ARRAYSIZE(project_name));
+
+        ImGui::Text("Size of display screen: ");
+        ImGui::SameLine();
+
+        static ImGuiComboFlags flags = 0;
+
+        static int display_item_current_idx = 0; // Here we store our selection data as an index.
+        static int image_item_current_idx = 0; // Here we store our selection data as an index.
+        static int sound_item_current_idx = 0; // Here we store our selection data as an index.
+
+        {
+            // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
+            // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
+            // stored in the object itself, etc.)
+            const char* display_items[] = { "320x240", "640x480" };
+
+            const char* combo_preview_value = display_items[display_item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
+            if (ImGui::BeginCombo("##ComboDisplay", combo_preview_value, flags))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(display_items); n++)
+                {
+                    const bool is_selected = (display_item_current_idx == n);
+                    if (ImGui::Selectable(display_items[n], is_selected))
+                        display_item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        ImGui::Text("Image format: ");
+        ImGui::SameLine();
+        {
+            // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
+            // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
+            // stored in the object itself, etc.)
+            const char* image_items[] = { "BMP (compressed 4-bit palette)", "QOIF (Quite Ok Image Format" };
+            const char* image_combo_preview_value = image_items[image_item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
+            if (ImGui::BeginCombo("##ComboImage", image_combo_preview_value, flags))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(image_items); n++)
+                {
+                    const bool is_selected = (image_item_current_idx == n);
+                    if (ImGui::Selectable(image_items[n], is_selected))
+                        image_item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+
+        ImGui::Text("Sound format: ");
+        ImGui::SameLine();
+        {
+            // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
+            // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
+            // stored in the object itself, etc.)
+            const char* sound_items[] = { "WAV (16-bit stereo)", "QOAF (Quite Ok Audio Format" };
+            const char* sound_combo_preview_value = sound_items[sound_item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
+            if (ImGui::BeginCombo("##ComboSound", sound_combo_preview_value, flags))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(sound_items); n++)
+                {
+                    const bool is_selected = (sound_item_current_idx == n);
+                    if (ImGui::Selectable(sound_items[n], is_selected))
+                        sound_item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+
+        auto GetImageFormat = [](int idx) -> StoryProject::ImageFormat
+        {
+            StoryProject::ImageFormat img{StoryProject::IMG_FORMAT_BMP_4BITS};
+            if (idx < StoryProject::IMG_FORMAT_COUNT) {
+                img = static_cast<StoryProject::ImageFormat>(idx);
+            }
+            return img;
+        };
+
+        auto GetSoundFormat = [](int idx) -> StoryProject::SoundFormat {
+
+            StoryProject::SoundFormat img{StoryProject::SND_FORMAT_WAV};
+            if (idx < StoryProject::IMG_FORMAT_COUNT) {
+                img = static_cast<StoryProject::SoundFormat>(idx);
+            }
+
+            return img;
+        };
+
+
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            bool valid{true};
+
+            if (!std::filesystem::is_directory(projdir))
+            {
+                valid = false;
+            }
+
+            if (valid)
+            {
+                m_project.Initialize(std::filesystem::path(projdir) / "project.json");
+
+                if (display_item_current_idx == 0)
+                {
+                    m_project.SetDisplayFormat(320, 240);
+                }
+                else
+                {
+                    m_project.SetDisplayFormat(640, 480);
+                }
+
+                m_project.SetImageFormat(GetImageFormat(image_item_current_idx));
+                m_project.SetSoundFormat(GetSoundFormat(sound_item_current_idx));
+                m_project.SetName(project_name);
+                m_project.SetUuid(UUID().String());
+
+                SaveProject();
+                EnableProject();
+
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    else
+    {
+        projdir = "";
+    }
+}
+
+void MainWindow::SaveProject()
+{
+    nlohmann::json model; // = m_model.Save();
+    m_project.Save(model);
+}
+
+void MainWindow::EnableProject()
+{
+    // FIXME
+}
+
+void MainWindow::CloseProject()
+{
+    m_project.Clear();
+
+//    m_model.Clear();
+
+//    m_ostHmiDock->Close();
+//    m_resourcesDock->Close();
+//    m_scriptEditorDock->Close();
+//    m_vmDock->Close();
+//    m_ramView->Close();
+//    m_romView->Close();
+//    m_logDock->Close();
+
+//    m_toolbar->SetActionsActive(false);
+//    m_view->setEnabled(false);
+}
+
+
+
 void MainWindow::Loop()
 {
     // Main loop
@@ -251,6 +489,8 @@ void MainWindow::Loop()
         m_resourcesWindow.Draw("Resources", nullptr);
         m_nodeEditorWindow.Draw("Blueprint", nullptr);
         ShowOptionsWindow();
+
+        NewProjectPopup();
 
         if (aboutToClose)
         {

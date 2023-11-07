@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "sdcard-libs")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/sdcard-libs.pretty")(options "")(descr ""))
+)

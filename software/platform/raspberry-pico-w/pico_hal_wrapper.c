@@ -31,8 +31,6 @@
 // ===========================================================================================================
 // CONSTANTS / DEFINES
 // ===========================================================================================================
-const uint8_t DEBUG_PIN = 1;
-const uint8_t LED_PIN = 14;
 
 const uint8_t LCD_DC = 8;
 const uint8_t LCD_CS = 9;
@@ -41,7 +39,7 @@ const uint8_t LCD_BL = 13;
 
 const uint8_t ROTARY_A = 6;
 const uint8_t ROTARY_B = 7;
-const uint8_t ROTARY_BUTTON = 3;
+const uint8_t ROTARY_BUTTON = 1;
 
 #define SDCARD_SCK 18
 #define SDCARD_MOSI 19
@@ -52,9 +50,6 @@ const uint8_t SD_CARD_PRESENCE = 24;
 #define UART_ID uart0
 #define BAUD_RATE 115200
 
-// We are using pins 0 and 1, but see the GPIO function select table in the
-// datasheet for information on which other pins can be used.
-#define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
 // PICO alarm (RTOS uses Alarm 0 and IRQ 0)
