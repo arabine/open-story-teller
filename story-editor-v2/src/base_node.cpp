@@ -75,12 +75,13 @@ void BaseNode::DrawPins()
         ed::EndPin();
     }
 
+    int i = 1;
     for (auto& output : m_node->Outputs)
     {
         ImGui::Dummy(ImVec2(320 - textWidth * 2, 0)); // Hacky magic number to space out the output pin.
         ImGui::SameLine();
         ed::BeginPin(output.ID, ed::PinKind::Output);
-        ImGui::Text( "#1 " ICON_MDI_OCTAGON_OUTLINE );
+        ImGui::Text( "#%d " ICON_MDI_OCTAGON_OUTLINE, i++);
         ed::EndPin();
     }
 }

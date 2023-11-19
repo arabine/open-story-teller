@@ -31,6 +31,7 @@ void MainWindow::SetupMainMenuBar()
     bool showAboutPopup = false;
     bool showParameters = false;
     bool showNewProject = false;
+    bool showOpenProject = false;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -39,6 +40,11 @@ void MainWindow::SetupMainMenuBar()
             if (ImGui::MenuItem("New project"))
             {
                 showNewProject = true;
+            }
+
+            if (ImGui::MenuItem("Open project"))
+            {
+                showOpenProject = true;
             }
 
             if (ImGui::MenuItem("Close project"))
@@ -79,6 +85,11 @@ void MainWindow::SetupMainMenuBar()
     if (showNewProject)
     {
         ImGui::OpenPopup("NewProjectPopup");
+    }
+
+    if (showOpenProject)
+    {
+        ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", "project.json", ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
 
     // Always center this window when appearing
@@ -244,6 +255,89 @@ bool MainWindow::ShowQuitConfirm()
     }
 
     return quitRequest;
+}
+
+
+void MainWindow::OpenProjectDialog()
+{
+    if (ImGuiFileDialog::Instance()->Display("OpenProjectDlgKey"))
+    {
+        // action if OK
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+            bool success = false;
+
+            m_project.Initialize(filePathName);
+
+            nlohmann::json model;
+
+            if (m_project.Load(filePathName, model))
+            {
+                m_model.Load(model);
+                EnableProject();
+            }
+            else
+            {
+                qWarning() << errorMsg;
+                QMessageBox::critical(this, tr("Open project error"), errorMsg);
+            }
+
+            m_resourceModel.EndChange();
+            RefreshProjectInformation();
+
+            /*
+
+            // action
+
+
+            std::filesystem::path p(filePathName);
+            std::filesystem::path p2 = m_project.AssetsPath() /  p.filename().generic_string();
+            std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
+
+            Resource res;
+
+            std::string ext = p.extension().string();
+            ext.erase(ext.begin()); // remove '.' dot sign
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+
+            res.format = ext;
+            res.type = m_soundFile ? "sound" : "image";
+            res.file = p.filename().generic_string();
+            m_project.AppendResource(res);
+*/
+        }
+
+        // close
+        ImGuiFileDialog::Instance()->Close();
+    }
+}
+
+void MainWindow::EnableProject()
+{
+    // Add to recent if not exists
+    if (!m_recentProjects.contains(m_project.GetProjectFilePath().c_str()))
+    {
+        m_recentProjects.push_front(m_project.GetProjectFilePath().c_str());
+        // Limit to 10 recent projects
+        if (m_recentProjects.size() > 10) {
+            m_recentProjects.pop_back();
+        }
+        m_toolbar->GenerateRecentProjectsMenu(m_recentProjects);
+    }
+
+    m_ostHmiDock->Open();
+    m_resourcesDock->Open();
+    m_scriptEditorDock->Open();
+    m_vmDock->Open();
+    m_ramView->Open();
+    m_romView->Open();
+    m_logDock->Open();
+
+    m_toolbar->SetActionsActive(true);
+    m_view->setEnabled(true);
 }
 
 
@@ -443,14 +537,10 @@ void MainWindow::SaveProject()
     m_project.Save(model);
 }
 
-void MainWindow::EnableProject()
-{
-    // FIXME
-}
-
 void MainWindow::CloseProject()
 {
     m_project.Clear();
+    m_nodeEditorWindow.Clear();
 
 //    m_model.Clear();
 
@@ -491,6 +581,7 @@ void MainWindow::Loop()
         ShowOptionsWindow();
 
         NewProjectPopup();
+        OpenProjectDialog();
 
         if (aboutToClose)
         {

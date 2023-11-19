@@ -35,6 +35,11 @@ void NodeEditorWindow::Initialize()
 
 }
 
+void NodeEditorWindow::Clear()
+{
+    m_nodes.clear();
+}
+
 void NodeEditorWindow::Draw(const char *title, bool *p_open)
 {
     static bool resetDockspace = true;

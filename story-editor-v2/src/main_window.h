@@ -126,6 +126,7 @@ private:
     void SaveProject();
     void EnableProject();
     void CloseProject();
+    void OpenProjectDialog();
 };
 
 #endif // MAINWINDOW_H

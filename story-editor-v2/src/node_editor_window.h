@@ -37,6 +37,7 @@ public:
     void Draw(const char *title, bool *p_open);
 
     void Initialize();
+    void Clear();
 private:
     ed::EditorContext* m_context = nullptr;
 

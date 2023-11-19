@@ -107,6 +107,13 @@ void MediaNode::Draw()
             AddOutput();
         }
     }
+    else if (counter < Outputs())
+    {
+        for (int i = 0; i < (Outputs() - counter); i++)
+        {
+            DeleteOutput();
+        }
+    }
 
 
     DrawPins();
