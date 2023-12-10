@@ -1,25 +1,26 @@
-#ifndef WINDOW_BASE_H
-#define WINDOW_BASE_H
+#ifndef WINDOWBASE_H
+#define WINDOWBASE_H
+
+#include <string>
 
 class WindowBase
 {
 public:
-    WindowBase(bool display = false)
-    {
-        mDisplay = display;
+    WindowBase(const std::string &title);
+
+    bool IsDisabled() const {
+        return m_disabled;
     }
 
-    void SetVisible(bool enable)
-    {
-        mDisplay = enable;
-    }
+    virtual void Draw() = 0;
 
-    bool IsVisible() const {
-        return mDisplay;
-    }
+    bool BeginDraw();
+    void EndDraw();
+
 private:
-    bool mDisplay;
+
+    bool m_disabled{false};
+    std::string m_title;
 };
 
-#endif // WINDOW_BASE_H
-
+#endif // WINDOWBASE_H

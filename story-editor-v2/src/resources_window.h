@@ -4,13 +4,14 @@
 #include <map>
 #include <mutex>
 #include "story_project.h"
+#include "window_base.h"
 
-class ResourcesWindow
+class ResourcesWindow : public WindowBase
 {
 public:
     ResourcesWindow(StoryProject &project);
     ~ResourcesWindow();
-    void Draw(const char *title, bool *p_open);
+    virtual void Draw() override;
 
 private:
     StoryProject &m_project;

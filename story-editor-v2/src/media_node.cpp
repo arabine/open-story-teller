@@ -2,16 +2,17 @@
 
 namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
-#include "IconsFontAwesome5_c.h"
 
-MediaNode::MediaNode(const std::string &title)
-    : BaseNode(title)
+
+MediaNode::MediaNode(const std::string &title, StoryProject &proj)
+    : BaseNode(title, proj)
+    , m_project(proj)
 {
     Gui::LoadRawImage("fairy.png", m_image);
 
     // Create defaut one input and one output
     AddInput();
-    AddOutput();
+    AddOutputs(1);
 
 }
 
@@ -24,7 +25,8 @@ void MediaNode::Draw()
                                    ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_SizingFixedFit;
 
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10.0f, 10.0f));
-    if (ImGui::BeginTable("table1", 1, flags)) {
+    if (ImGui::BeginTable("table1", 1, flags))
+    {
         ImGui::TableNextRow();
         ImU32 bg_color = ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.7f, 1.0f));
         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
@@ -52,12 +54,12 @@ void MediaNode::Draw()
     ImGui::Text("Image");
     ImGui::SameLine();
 
-    ImGui::Text("image.png");
+    ImGui::Text("%s", m_image.name.c_str());
 
     ImGui::SameLine();
 
     bool do_select = false;
-    if (ImGui::Button("Select")) {
+    if (ImGui::Button("Select...")) {
         do_select = true;	// Instead of saying OpenPopup() here, we set this bool, which is used later in the Deferred Pop-up Section
     }
 
@@ -68,15 +70,19 @@ void MediaNode::Draw()
     ImGui::Text("Sound");
     ImGui::SameLine();
 
-    ImGui::Text("sound.mp3");
+    ImGui::Text("%s", m_soundName.c_str());
 
     ImGui::SameLine();
 
-    bool do_select_sound = false;
-    if (ImGui::Button("Select")) {
-        do_select_sound = true;	// Instead of saying OpenPopup() here, we set this bool, which is used later in the Deferred Pop-up Section
+    if (ImGui::Button("Play " ICON_MDI_PLAY))
+    {
+        m_project.PlaySoundFile(m_soundPath);
     }
 
+    bool do_select_sound = false;
+    if (ImGui::Button("Select...")) {
+        do_select_sound = true;	// Instead of saying OpenPopup() here, we set this bool, which is used later in the Deferred Pop-up Section
+    }
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Hold to repeat:");
@@ -87,11 +93,11 @@ void MediaNode::Draw()
     uint32_t counter = Outputs();
     float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
     ImGui::PushButtonRepeat(true);
-    std::string leftSingle = "##left" + GetId();
+    std::string leftSingle = "##left" + std::to_string(GetId());
     if (ImGui::ArrowButton(leftSingle.c_str(), ImGuiDir_Left)) { if (counter > 1) counter--; }
     ImGui::SameLine(0.0f, spacing);
 
-    std::string rightSingle = "##right" + GetId();
+    std::string rightSingle = "##right" + std::to_string(GetId());
     if (ImGui::ArrowButton(rightSingle.c_str(), ImGuiDir_Right))
     {
         counter++;
@@ -100,23 +106,27 @@ void MediaNode::Draw()
     ImGui::SameLine();
     ImGui::Text("%d", counter);
 
-    if (counter > Outputs())
-    {
-        for (int i = 0; i < (counter - Outputs()); i++)
-        {
-            AddOutput();
-        }
-    }
-    else if (counter < Outputs())
-    {
-        for (int i = 0; i < (Outputs() - counter); i++)
-        {
-            DeleteOutput();
-        }
-    }
-
+    SetOutputs(counter);
 
     DrawPins();
 
     BaseNode::FrameEnd();
+}
+
+/*
+
+"internal-data": {
+                    "image": "fairy.png",
+                    "sound": "la_fee_luminelle.mp3"
+                },
+
+*/
+void MediaNode::FromJson(nlohmann::json &j)
+{
+    m_image.name = j["image"].get<std::string>();
+
+    Gui::LoadRawImage(m_project.BuildFullAssetsPath(m_image.name), m_image);
+
+    m_soundName = j["sound"].get<std::string>();
+    m_soundPath = m_project.BuildFullAssetsPath(m_soundName);
 }

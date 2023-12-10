@@ -22,64 +22,79 @@ if(POLICY CMP0072)
 endif()
 find_package(OpenGL REQUIRED)
 
-set(IMGUI_VERSION 1.89.9)
+set(IMGUI_VERSION 1.90)
 
 include(FetchContent)
 
+
+#=========================================================================================================================
+# IMGUI and plugins
+#=========================================================================================================================
 FetchContent_Declare(imgui
   URL https://github.com/ocornut/imgui/archive/refs/tags/v${IMGUI_VERSION}-docking.zip
 )
 
 
 FetchContent_GetProperties(imgui)
-if (NOT imgui_POPULATED) # Have we downloaded raylib yet?
+if (NOT imgui_POPULATED)
     set(FETCHCONTENT_QUIET NO)
     FetchContent_Populate(imgui)
 endif()
 
+# ImGuiFileDialog
+include_directories(${imgui_SOURCE_DIR})
+add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/CustomImGuiFileDialogConfig.h")
+add_compile_definitions(IMGUI_INCLUDE="imgui.h")
+add_subdirectory(libs/ImGuiFileDialog)
 
 
 #=========================================================================================================================
-# SDL3
+# SDL
 #=========================================================================================================================
-include(FetchContent)
+
 Set(FETCHCONTENT_QUIET FALSE)
 
 FetchContent_Declare(
-    SDL3
+    sdl2
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        origin/main
+    GIT_TAG        origin/SDL2
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
 )
 
 set(BUILD_SHARED_LIBS TRUE)
 set(SDL_STATIC TRUE)
-FetchContent_MakeAvailable(SDL3)
+FetchContent_MakeAvailable(sdl2)
+#add_subdirectory(libs/SDL)
+#include_directories(libs/SDL/include)
+
 
 #=========================================================================================================================
 # SDL3-Image
 #=========================================================================================================================
-FetchContent_Declare(
-        SDL2_image
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-        GIT_TAG origin/main
-        GIT_SHALLOW TRUE
-        GIT_PROGRESS TRUE
-)
+#FetchContent_Declare(
+#        SDL2_image
+#        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+#        GIT_TAG origin/main
+#        GIT_SHALLOW TRUE
+#        GIT_PROGRESS TRUE
+#)
 
-# START ADDITION
-set(SDL2IMAGE_INSTALL OFF)
-set(BUILD_SHARED_LIBS FALSE)
-# END ADDITION
+## START ADDITION
+#set(SDL2IMAGE_INSTALL OFF)
+#set(BUILD_SHARED_LIBS FALSE)
+## END ADDITION
 
-FetchContent_MakeAvailable(SDL2_image)
+#FetchContent_MakeAvailable(SDL2_image)
 
 
 set(SRCS
 
     src/main.cpp
+
     src/window_base.h
+    src/window_base.cpp
+
     src/console_window.cpp
     src/console_window.h
 
@@ -94,6 +109,9 @@ set(SRCS
 
     src/media_node.h
     src/media_node.cpp
+
+    src/platform_folders.cpp
+    src/platform_folders.h
 
     src/base_node.h
     src/base_node.cpp
@@ -115,8 +133,8 @@ set(SRCS
     libs/imgui-node-editor/crude_json.cpp
     libs/ImGuiFileDialog/ImGuiFileDialog.cpp
 
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
@@ -144,11 +162,13 @@ endif()
 
 add_executable(${STORY_EDITOR_PROJECT}
     ${SRCS}
+    src/uuid.h
+    src/window_base.h src/window_base.cpp
 )
 
 target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${imgui_SOURCE_DIR}
-    ${sdl3_SOURCE_DIR}/include
+    ${sdl2_SOURCE_DIR}/include
     libs/ImGuiColorTextEdit/
     ${imgui_SOURCE_DIR}/backends
     libs/ImGuiFileDialog
@@ -159,21 +179,23 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
 )
 
 
+
 add_definitions(-DIMGUI_USE_WCHAR32)
 add_link_options(-static-libgcc -static-libstdc++)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR})
-message(${sdl3_BINARY_DIR})
+target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
+
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl2_BINARY_DIR})
+message(${sdl2_BINARY_DIR})
 if (UNIX)
 target_link_libraries(${STORY_EDITOR_PROJECT}
     pthread
     udev
-    glfw
     OpenGL::GL
     dl
-    SDL3
+    SDL2
 )
 elseif(WIN32)
 target_link_libraries(${STORY_EDITOR_PROJECT}

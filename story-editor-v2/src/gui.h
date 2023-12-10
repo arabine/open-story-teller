@@ -18,11 +18,14 @@ public:
         int w;
         int h;
 
+        std::string name;
+
         bool valid() const {
             return (w && h);
         }
 
         Image();
+
     };
 
     struct Size {

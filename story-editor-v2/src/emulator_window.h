@@ -8,7 +8,7 @@ public:
     EmulatorWindow();
 
     void Initialize();
-    void Draw(const char* title, bool* p_open);
+    virtual void Draw() override;
 
 private:
 

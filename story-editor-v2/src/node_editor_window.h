@@ -9,6 +9,8 @@
 #include <imgui_node_editor.h>
 #include "base_node.h"
 #include "window_base.h"
+#include "story_project.h"
+#include "json.hpp"
 
 namespace ed = ax::NodeEditor;
 
@@ -27,26 +29,31 @@ class NodeEditorWindow  : public WindowBase
 public:
     struct LinkInfo
     {
+        // Stuff from ImGuiNodeEditor
         ed::LinkId Id;
         ed::PinId  InputId;
         ed::PinId  OutputId;
+
+        // Stuff from the project.json file, our model
+        Connection model;
     };
 
-    NodeEditorWindow();
+    NodeEditorWindow(StoryProject &proj);
     ~NodeEditorWindow();
-    void Draw(const char *title, bool *p_open);
+    virtual void Draw() override;
 
     void Initialize();
     void Clear();
+    void Load(const nlohmann::json &model);
+
 private:
+    StoryProject &m_project;
+
     ed::EditorContext* m_context = nullptr;
 
-    std::vector<std::shared_ptr<BaseNode>>    m_nodes;
-
-
-
-    ImVector<LinkInfo>   m_Links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
-    int                  m_NextLinkId = 100;     // Counter to help generate link ids. In real application this will probably based on pointer to user data structure.
+    // key: Id
+    std::map<int, std::shared_ptr<BaseNode>>    m_nodes;
+    std::vector<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
 
 
@@ -64,26 +71,34 @@ private:
             output.Kind = PinKind::Output;
         }
     }
-/*
-    void BuildNodes()
-    {
-        for (auto& node : m_Nodes)
-            BuildNode(&node);
+
+    template<class NodeType>
+    struct Factory {
+        static std::shared_ptr<BaseNode> create_func(const std::string &title, StoryProject &proj) {
+            return std::make_shared<NodeType>(title, proj);
+        }
+    };
+
+    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &title, StoryProject &proj);
+    typedef std::map<std::string, GenericCreator> Registry;
+    Registry m_registry;
+
+    template<class Derived>
+    void registerNode(const std::string& key) {
+        m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
     }
 
-    Node* SpawnBranchNode()
-    {
-        m_Nodes.emplace_back(GetNextId(), "Branch");
-        m_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-        m_Nodes.back().Inputs.emplace_back(GetNextId(), "Condition", PinType::Bool);
-        m_Nodes.back().Outputs.emplace_back(GetNextId(), "True", PinType::Flow);
-        m_Nodes.back().Outputs.emplace_back(GetNextId(), "False", PinType::Flow);
-
-        BuildNode(&m_Nodes.back());
-
-        return &m_Nodes.back();
+    std::shared_ptr<BaseNode> createNode(const std::string& key, const std::string &title, StoryProject &proj) {
+        typename Registry::const_iterator i = m_registry.find(key);
+        if (i == m_registry.end()) {
+            throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +
+                                        ": key not registered");
+        }
+        else return i->second(title, proj);
     }
-*/
 
+    void LoadNode(const nlohmann::json &nodeJson);
+    ed::PinId GetInputPin(int modelNodeId, int pinIndex);
+    ed::PinId GetOutputPin(int modelNodeId, int pinIndex);
 };
 

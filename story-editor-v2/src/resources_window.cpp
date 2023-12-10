@@ -7,7 +7,8 @@
 //static thread_pool pool;
 
 ResourcesWindow::ResourcesWindow(StoryProject &project)
-    : m_project(project)
+    : WindowBase("Resources")
+    , m_project(project)
 {
 
 }
@@ -62,11 +63,9 @@ void ResourcesWindow::ChooseFile()
 }
 
 
-void ResourcesWindow::Draw(const char *title, bool *p_open)
+void ResourcesWindow::Draw()
 {
-    (void) p_open;
-
-    ImGui::Begin(title, nullptr);
+    WindowBase::BeginDraw();
 
 
     if (ImGui::Button("Add sound"))
@@ -99,9 +98,11 @@ void ResourcesWindow::Draw(const char *title, bool *p_open)
         ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthStretch);
 
+        ImGui::TableHeadersRow();
+
         for (auto & r : m_project)
         {
-            ImGui::TableHeadersRow();
+
             ImGui::TableNextColumn();
             ImGui::Text("%s", r.file.c_str());
 
@@ -121,6 +122,6 @@ void ResourcesWindow::Draw(const char *title, bool *p_open)
         ImGui::EndTable();
     }
 
-    ImGui::End();
+    WindowBase::EndDraw();
 }
 

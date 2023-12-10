@@ -1,15 +1,21 @@
 #include "node_editor_window.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include <iostream>
+#include <cstdint>
+#include <algorithm>
 #include "IconsFontAwesome5_c.h"
 
 #include "media_node.h"
 #include "gui.h"
 
 
-NodeEditorWindow::NodeEditorWindow()
+NodeEditorWindow::NodeEditorWindow(StoryProject &proj)
+    : WindowBase("Node editor")
+    , m_project(proj)
 {
 
+    registerNode<MediaNode>("media-node");
 }
 
 NodeEditorWindow::~NodeEditorWindow()
@@ -24,15 +30,6 @@ void NodeEditorWindow::Initialize()
     m_context = ed::CreateEditor(&config);
 
     ed::SetCurrentEditor(m_context);
-
-    auto n1 = std::make_shared<MediaNode>("Branch");
-    n1->SetPosition(0, 0);
-    m_nodes.push_back(n1);
-
-    auto n2 = std::make_shared<MediaNode>("Branch 2");
-    n2->SetPosition(100, 100);
-    m_nodes.push_back(n2);
-
 }
 
 void NodeEditorWindow::Clear()
@@ -40,45 +37,123 @@ void NodeEditorWindow::Clear()
     m_nodes.clear();
 }
 
-void NodeEditorWindow::Draw(const char *title, bool *p_open)
+
+
+void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
 {
-    static bool resetDockspace = true;
-
-    float menuHeight = 0;
-
-    if(ImGui::BeginMainMenuBar())
+    try
     {
-        menuHeight = ImGui::GetWindowSize().y;
+        int restoredNodeId = nodeJson["id"].get<int>();
+        nlohmann::json internalDataJson = nodeJson["internal-data"];
+        std::string type = nodeJson["type"].get<std::string>();
 
-        if (ImGui::BeginMenu("Actions"))
+        auto n = createNode(type, "", m_project);
+        if (n)
         {
-            if(ImGui::MenuItem("Quit"))
-            {
-               // mEvent.ExitGame();
-            }
-            ImGui::EndMenu();
-        }
+            n->SetId(restoredNodeId);
+            nlohmann::json posJson = nodeJson["position"];
+            n->SetOutputs(nodeJson["outPortCount"].get<int>());
+            n->SetPosition(posJson["x"].get<int>(), posJson["y"].get<int>());
+            n->FromJson(internalDataJson);
 
-        ImGui::EndMainMenuBar();
+            m_nodes[restoredNodeId] = n;
+        }
+        else
+        {
+            throw std::logic_error(std::string("No registered model with name ") + type);
+        }
+    }
+    catch (std::exception&  e)
+    {
+        std::cout << "ERROR: " << e.what() << std::endl;
     }
 
-    static ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+}
 
 
-    if (ImGui::Begin("EditorView", NULL, window_flags))
+ed::PinId NodeEditorWindow::GetInputPin(int modelNodeId, int pinIndex)
+{
+    ed::PinId id = -1;
+
+    for (auto & n : m_nodes)
+    {
+        if (n.first == modelNodeId)
+        {
+            id = n.second->GetInputPinAt(pinIndex);
+        }
+    }
+
+    return id;
+}
+
+ed::PinId NodeEditorWindow::GetOutputPin(int modelNodeId, int pinIndex)
+{
+    ed::PinId id = -1;
+
+    for (auto & n : m_nodes)
+    {
+        if (n.first == modelNodeId)
+        {
+            id = n.second->GetOutputPinAt(pinIndex);
+        }
+    }
+
+    return id;
+}
+
+void NodeEditorWindow::Load(const nlohmann::json &model)
+{
+    nlohmann::json nodesJsonArray = model["nodes"];
+
+    BaseNode::InitId();
+    m_nodes.clear();
+    m_links.clear();
+
+    for (auto& element : nodesJsonArray) {
+        LoadNode(element);
+    }
+
+    std::cout << model.dump(4) << std::endl;
+
+    nlohmann::json connectionJsonArray = model["connections"];
+
+    for (auto& connection : connectionJsonArray)
+    {
+        auto conn = std::make_shared<LinkInfo>();
+
+        // our model
+        conn->model = connection.get<Connection>();
+
+
+        // ImGui stuff for links
+        conn->Id = 100000 + BaseNode::GetNextId();
+        conn->InputId = GetInputPin(conn->model.inNodeId, conn->model.inPortIndex);
+        conn->OutputId = GetOutputPin(conn->model.outNodeId, conn->model.outPortIndex);
+
+        // Since we accepted new link, lets add one to our list of links.
+        m_links.push_back(conn);
+    }
+
+
+}
+
+void NodeEditorWindow::Draw()
+{
+    if (WindowBase::BeginDraw())
     {
 
         ed::SetCurrentEditor(m_context);
         ed::Begin("My Editor", ImVec2(0.0, 0.0f));
 
-        for (auto & n : m_nodes)
+
+        for (const auto & n : m_nodes)
         {
-            n->Draw();
+            n.second->Draw();
         }
 
-        for (auto& linkInfo : m_Links)
+        for (const auto& linkInfo : m_links)
         {
-            ed::Link(linkInfo.Id, linkInfo.InputId, linkInfo.OutputId);
+            ed::Link(linkInfo->Id, linkInfo->OutputId, linkInfo->InputId);
         }
 
         // Handle creation action, returns true if editor want to create new object (node or link)
@@ -105,10 +180,10 @@ void NodeEditorWindow::Draw(const char *title, bool *p_open)
                    if (ed::AcceptNewItem())
                    {
                        // Since we accepted new link, lets add one to our list of links.
-                       m_Links.push_back({ ed::LinkId(m_NextLinkId++), inputPinId, outputPinId });
+                      // m_Links.push_back({ ed::LinkId(BaseNode::GetNextId()), inputPinId, outputPinId });
 
                        // Draw new link.
-                       ed::Link(m_Links.back().Id, m_Links.back().InputId, m_Links.back().OutputId);
+                      // ed::Link(m_Links.back().Id, m_Links.back().InputId, m_Links.back().OutputId);
                    }
 
                    // You may choose to reject connection between these nodes
@@ -130,15 +205,10 @@ void NodeEditorWindow::Draw(const char *title, bool *p_open)
                // If you agree that link can be deleted, accept deletion.
                if (ed::AcceptDeletedItem())
                {
-                   // Then remove link from your data.
-                   for (auto& link : m_Links)
-                   {
-                       if (link.Id == deletedLinkId)
-                       {
-                           m_Links.erase(&link);
-                           break;
-                       }
-                   }
+
+                   m_links.erase(std::remove_if(m_links.begin(),
+                                  m_links.end(),
+                                                [deletedLinkId](std::shared_ptr<LinkInfo> inf) { return inf->Id == deletedLinkId; }));
                }
 
                // You may reject link deletion by calling:
@@ -153,7 +223,7 @@ void NodeEditorWindow::Draw(const char *title, bool *p_open)
 
     }
 
-    ImGui::End();
+    WindowBase::EndDraw();
 }
 
 void NodeEditorWindow::ToolbarUI()

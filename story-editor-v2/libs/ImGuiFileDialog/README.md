@@ -1,7 +1,7 @@
 [![Win](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Win.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Win.yml)
 [![Linux](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Linux.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Linux.yml)
 [![Osx](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Osx.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Osx.yml)
-[![Wrapped Dear ImGui Version](https://img.shields.io/badge/Dear%20ImGui%20Version-1.89.9-blue.svg)](https://github.com/ocornut/imgui)
+[![Wrapped Dear ImGui Version](https://img.shields.io/badge/Dear%20ImGui%20Version-1.90.1-blue.svg)](https://github.com/ocornut/imgui)
 
 # ImGuiFileDialog
 
@@ -14,7 +14,7 @@ solutions.
 
 ## ImGui Supported Version
 
-ImGuiFileDialog follow the master and docking branch of ImGui . currently ImGui 1.89.9 
+ImGuiFileDialog follow the master and docking branch of ImGui. Currently ImGui 1.90.1
 
 ## Structure
 
@@ -67,7 +67,7 @@ Android Requirements : Api 21 mini
 	- 0 => Infinite
 	- 1 => One file (default)
 	- n => n files
-- Compatible with MacOs, Linux, Windows
+- Compatible with MacOs, Linux, Windows, Emscripten
 	- Windows version can list drives
 - Supports modal or standard dialog types
 - Select files or directories
@@ -86,6 +86,9 @@ Android Requirements : Api 21 mini
 - multi layer extentions like : .a.b.c .json.cpp .vcxproj.filters etc..
 - advanced behavior regarding asterisk based filter. like : .* .*.* .vcx.* .*.filters .vcs*.filt.* etc.. (internally regex is used)
 - result modes GetFilePathName, GetFileName and GetSelection (overwrite file ext, keep file, add ext if no user ext exist)
+- you can use your own FileSystem Api
+    - by default Api Dirent and std::filesystem are defined
+	- you can override GetDrieveList for specify by ex on android other fs, like local and SDCards
 
 ### WARNINGS :
 - the nav system keyboard behavior is not working as expected, so maybe full of bug for ImGuiFileDialog
@@ -938,9 +941,28 @@ to note :
 
 </blockquote></details>
 
-<details open><summary><h2>Api's C/C++ :</h2></summary><blockquote>
+<details open><summary><h2>Custom FileSystem</h2></summary><blockquote>
 
-### the C Api
+you can use your custom file system interface.
+
+by default IGFD come with the File System Interfaces for Dirent or std::filesystem
+but you have now a FileSystem interface called IFileSystem who can be overrided with your needs
+by ex for android, emscripten, or boost
+
+2 steps :
+
+1) create a include file who must contain :
+   - your override of IGFD::IFileSystem
+   - a define of your class name in FILE_SYSTEM_OVERRIDE (ex : #define FILE_SYSTEM_OVERRIDE FileSystemBoost)
+
+2) define your file system include file path in the preprocessor var "CUSTOM_FILESYSTEM_INCLUDE"
+   ex : #define CUSTOM_FILESYSTEM_INCLUDE "src/FileSystemBoost.hpp"
+
+you can check the DemoApp who is using an override for the Boost::filesystem
+
+</blockquote></details>
+
+<details open><summary><h2>C Api :</h2></summary><blockquote>
 
 this api was sucessfully tested with CImGui
 

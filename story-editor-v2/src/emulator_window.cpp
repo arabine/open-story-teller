@@ -2,6 +2,7 @@
 #include "gui.h"
 
 EmulatorWindow::EmulatorWindow()
+    : WindowBase("Emulator")
 {
 
 }
@@ -13,19 +14,17 @@ void EmulatorWindow::Initialize() {
 
 }
 
-void EmulatorWindow::Draw(const char *title, bool *p_open)
+void EmulatorWindow::Draw()
 {
-    if (!IsVisible())
-    {
-        return;
-    }
+//    if (!IsVisible())
+//    {
+//        return;
+//    }
 
-    ImGui::SetNextWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin(title, p_open))
-    {
-        ImGui::End();
-        return;
-    }
+
+
+    WindowBase::BeginDraw();
+    ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
 //    ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(313, 367));
 
@@ -33,5 +32,5 @@ void EmulatorWindow::Draw(const char *title, bool *p_open)
     ImVec2 p = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
 
-    ImGui::End();
+    WindowBase::EndDraw();
 }

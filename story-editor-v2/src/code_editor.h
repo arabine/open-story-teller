@@ -8,7 +8,7 @@ class CodeEditor : public WindowBase
 public:
     CodeEditor();
 
-    void Draw(const char *title, bool *p_open);
+    virtual void Draw() override;
 
     void Initialize();
 private:

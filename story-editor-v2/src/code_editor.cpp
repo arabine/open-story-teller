@@ -3,6 +3,7 @@
 #include <fstream>
 
 CodeEditor::CodeEditor()
+    : WindowBase("Code editor")
 {
 
 }
@@ -33,15 +34,15 @@ void CodeEditor::Initialize()
     }
 }
 
-void CodeEditor::Draw(const char* title, bool* p_open)
+void CodeEditor::Draw()
 {
-    if (!IsVisible())
-    {
-        return;
-    }
+    WindowBase::BeginDraw();
+
 
     auto cpos = mEditor.GetCursorPosition();
-    ImGui::Begin(title, p_open, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
+
+
+
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
     if (ImGui::BeginMenuBar())
     {
@@ -104,5 +105,5 @@ void CodeEditor::Draw(const char* title, bool* p_open)
         mEditor.GetLanguageDefinition().mName.c_str(), mFileToEdit.c_str());
 
     mEditor.Render("TextEditor");
-    ImGui::End();
+    WindowBase::EndDraw();
 }

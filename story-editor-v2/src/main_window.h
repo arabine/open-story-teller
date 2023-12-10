@@ -96,7 +96,7 @@ private:
 
     Gui gui;
     EmulatorWindow m_emulatorWindow;
-    ConsoleWindow console;
+    ConsoleWindow m_consoleWindow;
     CodeEditor editor;
 
     ResourcesWindow m_resourcesWindow;
@@ -118,7 +118,7 @@ private:
     void SaveParams();
     void LoadParams();
 
-    void SetupMainMenuBar();
+    void DrawMainMenuBar();
     void ShowOptionsWindow();
     bool ShowQuitConfirm();
 
@@ -127,6 +127,7 @@ private:
     void EnableProject();
     void CloseProject();
     void OpenProjectDialog();
+    void DrawStatusBar();
 };
 
 #endif // MAINWINDOW_H

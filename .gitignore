@@ -59,3 +59,7 @@ story-editor-v2/src/CMakeSettings.json
 story-editor-v2/imgui.ini
 
 story-editor-v2/src/.vscode/
+
+build-story-editor-v2-Desktop-Debug/
+
+build-story-editor-Desktop-Debug/

@@ -2,6 +2,9 @@
 #include <filesystem>
 #include <random>
 
+#include "platform_folders.h"
+#include "uuid.h"
+
 #ifdef USE_WINDOWS_OS
 #include <winsock2.h>
 #include <iphlpapi.h>
@@ -17,6 +20,7 @@
 
 MainWindow::MainWindow()
     : m_resourcesWindow(m_project)
+    , m_nodeEditorWindow(m_project)
 {
     m_project.Clear();
 }
@@ -26,7 +30,34 @@ MainWindow::~MainWindow()
 
 }
 
-void MainWindow::SetupMainMenuBar()
+void MainWindow::DrawStatusBar()
+{
+    float statusWindowHeight = ImGui::GetFrameHeight() * 1.4f;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + viewport->Size.y - statusWindowHeight));
+    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, statusWindowHeight));
+    ImGui::SetNextWindowViewport(viewport->ID);
+
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
+    ImGui::Begin("StatusBar", nullptr, windowFlags);
+
+
+
+    if (true)
+    {
+        float dy = ImGui::GetFontSize() * 0.15f;
+
+        ImGui::SameLine(ImGui::GetIO().DisplaySize.x - 14.f * ImGui::GetFontSize());
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - dy);
+        ImGui::Text("FPS: %.1f", 1000.0f / ImGui::GetIO().Framerate);
+    }
+
+    ImGui::End();
+}
+
+void MainWindow::DrawMainMenuBar()
 {
     bool showAboutPopup = false;
     bool showParameters = false;
@@ -89,7 +120,13 @@ void MainWindow::SetupMainMenuBar()
 
     if (showOpenProject)
     {
-        ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", "project.json", ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+        std::string home = pf::getUserHome() + "/";
+
+#ifdef DEBUG
+        home = "/home/anthony/ostproj/ba869e4b-03d6-4249-9202-85b4cec767a7/";
+#endif
+
+        ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", ".json", home, 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
 
     // Always center this window when appearing
@@ -268,7 +305,6 @@ void MainWindow::OpenProjectDialog()
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 
-            bool success = false;
 
             m_project.Initialize(filePathName);
 
@@ -276,38 +312,16 @@ void MainWindow::OpenProjectDialog()
 
             if (m_project.Load(filePathName, model))
             {
-                m_model.Load(model);
+                m_nodeEditorWindow.Load(model);
                 EnableProject();
             }
             else
             {
-                qWarning() << errorMsg;
-                QMessageBox::critical(this, tr("Open project error"), errorMsg);
+                m_consoleWindow.AddMessage("Open project error");
             }
 
-            m_resourceModel.EndChange();
-            RefreshProjectInformation();
 
-            /*
-
-            // action
-
-
-            std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_project.AssetsPath() /  p.filename().generic_string();
-            std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
-
-            Resource res;
-
-            std::string ext = p.extension().string();
-            ext.erase(ext.begin()); // remove '.' dot sign
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
-
-            res.format = ext;
-            res.type = m_soundFile ? "sound" : "image";
-            res.file = p.filename().generic_string();
-            m_project.AppendResource(res);
-*/
+     //       RefreshProjectInformation();
         }
 
         // close
@@ -317,17 +331,17 @@ void MainWindow::OpenProjectDialog()
 
 void MainWindow::EnableProject()
 {
+    auto proj = m_project.GetProjectFilePath();
     // Add to recent if not exists
-    if (!m_recentProjects.contains(m_project.GetProjectFilePath().c_str()))
+    if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) != m_recentProjects.end())
     {
-        m_recentProjects.push_front(m_project.GetProjectFilePath().c_str());
+        m_recentProjects.push_back(proj);
         // Limit to 10 recent projects
         if (m_recentProjects.size() > 10) {
             m_recentProjects.pop_back();
         }
-        m_toolbar->GenerateRecentProjectsMenu(m_recentProjects);
     }
-
+/*
     m_ostHmiDock->Open();
     m_resourcesDock->Open();
     m_scriptEditorDock->Open();
@@ -338,6 +352,7 @@ void MainWindow::EnableProject()
 
     m_toolbar->SetActionsActive(true);
     m_view->setEnabled(true);
+*/
 }
 
 
@@ -570,14 +585,19 @@ void MainWindow::Loop()
         gui.StartFrame();
 
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-        SetupMainMenuBar();
+        DrawMainMenuBar();
+       // DrawStatusBar();
 
-        console.Draw("Console", nullptr);
-        m_emulatorWindow.Draw("Emulator", nullptr);
-        editor.Draw("Code Editor", nullptr);
+        // ------------  Draw all windows
+        m_consoleWindow.Draw("Console", nullptr);
+        m_emulatorWindow.Draw();
+        editor.Draw();
+        m_resourcesWindow.Draw();
+        m_nodeEditorWindow.Draw();
 
-        m_resourcesWindow.Draw("Resources", nullptr);
-        m_nodeEditorWindow.Draw("Blueprint", nullptr);
+
+
+
         ShowOptionsWindow();
 
         NewProjectPopup();

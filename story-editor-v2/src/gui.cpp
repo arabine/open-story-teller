@@ -10,14 +10,14 @@ your use of the corresponding standard functions.
 #include <stdio.h>
 
 
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlrenderer3.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
 #include <stdio.h>
-#include <SDL3/SDL.h>
+#include <SDL2/SDL.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <SDL3/SDL_opengles2.h>
+#include <SDL2/SDL_opengles2.h>
 #else
-#include <SDL3/SDL_opengl.h>
+#include <SDL2/SDL_opengl.h>
 #endif
 
 #include "IconsMaterialDesignIcons.h"
@@ -46,7 +46,13 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
         return false;
     }
 
-    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+    // SDL3
+//    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+
+    // SDL2
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
+                                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+
 
     if (surface == nullptr) {
         fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
@@ -59,7 +65,8 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
         fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
     }
 
-    SDL_DestroySurface(surface);
+//    SDL_DestroySurface(surface); // SDL3
+    SDL_FreeSurface(surface); // SDL2
     stbi_image_free(data);
 
     return true;
@@ -76,7 +83,7 @@ Gui::Gui()
 bool Gui::Initialize()
 {
     // Setup SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
         printf("Error: SDL_Init(): %s\n", SDL_GetError());
         return -1;
@@ -87,13 +94,19 @@ bool Gui::Initialize()
 
     // Create window with SDL_Renderer graphics context
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
-    window = SDL_CreateWindow("Dear ImGui SDL3+SDL_Renderer example", 1280, 720, window_flags);
+
+    // SDL3
+    //window = SDL_CreateWindow("Dear ImGui SDL3+SDL_Renderer example", 1280, 720, window_flags);
+
+    // SDL2
+    window = SDL_CreateWindow("Story Editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+
     if (window == nullptr)
     {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
         return -1;
     }
-    renderer = SDL_CreateRenderer(window, NULL, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr)
     {
         SDL_Log("Error: SDL_CreateRenderer(): %s\n", SDL_GetError());
@@ -139,8 +152,15 @@ bool Gui::Initialize()
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
-    ImGui_ImplSDLRenderer3_Init(renderer);
+
+    // SDL3
+//    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+//    ImGui_ImplSDLRenderer3_Init(renderer);
+
+
+    // SDL2
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -169,11 +189,22 @@ bool Gui::PollEvent()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+        // SDL3
+        /*
         ImGui_ImplSDL3_ProcessEvent(&event);
         if (event.type == SDL_EVENT_QUIT)
             done = true;
         if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
             done = true;
+*/
+
+        // SLD2
+        ImGui_ImplSDL2_ProcessEvent(&event);
+        if (event.type == SDL_QUIT)
+            done = true;
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+            done = true;
+
     }
     return done;
 
@@ -182,8 +213,15 @@ bool Gui::PollEvent()
 void Gui::StartFrame()
 {
     // Start the Dear ImGui frame
-    ImGui_ImplSDLRenderer3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
+
+    // SDL3
+//    ImGui_ImplSDLRenderer3_NewFrame();
+//    ImGui_ImplSDL3_NewFrame();
+
+    // SDL2
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+
     ImGui::NewFrame();
 }
 
@@ -192,19 +230,32 @@ void Gui::EndFrame()
     static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Rendering
     // Rendering
-    ImGui::Render();
+
     //SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
     SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
     SDL_RenderClear(renderer);
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData());
+
+    ImGui::Render();
+
+    //ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData()); // SDL3
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData()); // SDL2
+
     SDL_RenderPresent(renderer);
 }
 
 void Gui::Destroy()
 {
     // Cleanup
-    ImGui_ImplSDLRenderer3_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
+
+    // SDL3
+//    ImGui_ImplSDLRenderer3_Shutdown();
+//    ImGui_ImplSDL3_Shutdown();
+
+    // SDL2
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+
+
     ImGui::DestroyContext();
 
     SDL_DestroyRenderer(renderer);

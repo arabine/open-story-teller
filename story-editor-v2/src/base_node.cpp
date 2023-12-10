@@ -1,19 +1,17 @@
 #include "base_node.h"
+#include "uuid.h"
 
 #include "IconsMaterialDesignIcons.h"
 
 int BaseNode::s_nextId = 1;
 
-BaseNode::BaseNode(const std::string &title)
+BaseNode::BaseNode(const std::string &title, StoryProject &proj)
+    : m_project(proj)
 {
-    m_id = UUID().String();
+  //  m_id = UUID().String();
 
+    m_id = -1;
     m_node = std::make_unique<Node>(GetNextId(), title.c_str());
-
-//    m_node->Inputs.emplace_back(GetNextId(), "", PinType::Flow);
-//    m_node->Inputs.emplace_back(GetNextId(), "Condition", PinType::Bool);
-//    m_node->Outputs.emplace_back(GetNextId(), "True", PinType::Flow);
-//    m_node->Outputs.emplace_back(GetNextId(), "False", PinType::Flow);
 }
 
 void BaseNode::AddInput()
@@ -21,9 +19,27 @@ void BaseNode::AddInput()
    m_node->Inputs.emplace_back(GetNextId(), "", PinType::Flow);
 }
 
-void BaseNode::AddOutput()
+void BaseNode::AddOutputs(int num)
 {
-   m_node->Outputs.emplace_back(GetNextId(), "", PinType::Flow);
+   for (int i = 0; i < num; i++)
+   {
+        m_node->Outputs.emplace_back(GetNextId(), "", PinType::Flow);
+   }
+}
+
+void BaseNode::SetOutputs(uint32_t num)
+{
+   if (num > Outputs())
+   {
+        AddOutputs(num - Outputs());
+   }
+   else if (num < Outputs())
+   {
+        for (unsigned int i = 0; i < (Outputs() - num); i++)
+        {
+            DeleteOutput();
+        }
+   }
 }
 
 void BaseNode::DeleteOutput()
@@ -33,28 +49,20 @@ void BaseNode::DeleteOutput()
 
 void BaseNode::SetPosition(int x, int y)
 {
-    ed::SetNodePosition(m_node->ID, ImVec2(0, 0));
+   m_pos.x = x;
+   m_pos.y = y;
+   m_firstFrame = true;
 }
 
 void BaseNode::FrameStart()
 {
     ed::BeginNode(m_node->ID);
 
-//    ImGui::Text("Node A");
-//    for (auto& input : m_node->Inputs)
-//    {
-//        ed::BeginPin(input.ID, ed::PinKind::Input);
-//        ImGui::Text("-> In");
-//        ed::EndPin();
-//    }
-
-//    for (auto& output : m_node->Outputs)
-//    {
-//        ed::BeginPin(output.ID, ed::PinKind::Output);
-//        ImGui::Text("Out ->");
-//        ed::EndPin();
-//    }
-
+    if (m_firstFrame)
+    {
+        ed::SetNodePosition(m_node->ID, ImVec2(m_pos.x, m_pos.y));
+    }
+    m_firstFrame = false;
 }
 
 void BaseNode::FrameEnd()
@@ -71,7 +79,7 @@ void BaseNode::DrawPins()
     {
         ed::BeginPin(input.ID, ed::PinKind::Input);
 
-        ImGui::Text( ICON_MDI_OCTAGON_OUTLINE " In"  );
+        ImGui::Text( ICON_MDI_OCTAGON_OUTLINE " In" );
         ed::EndPin();
     }
 
