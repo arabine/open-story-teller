@@ -4,6 +4,7 @@
 
 
 ConsoleWindow::ConsoleWindow()
+    : WindowBase("Console")
 {
     ClearLog();
     memset(InputBuf, 0, sizeof(InputBuf));
@@ -31,24 +32,12 @@ void ConsoleWindow::ClearLog()
     Items.clear();
 }
 
-void ConsoleWindow::Draw(const char *title, bool *p_open)
+void ConsoleWindow::Draw()
 {
-    ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin(title, p_open))
-    {
-        ImGui::End();
-        return;
-    }
+    WindowBase::BeginDraw();
 
-    // As a specific feature guaranteed by the library, after calling Begin() the last Item represent the title bar.
-    // So e.g. IsItemHovered() will return true when hovering the title bar.
-    // Here we create a context menu only available from the title bar.
-    if (ImGui::BeginPopupContextItem())
-    {
-        if (ImGui::MenuItem("Close Console"))
-            *p_open = false;
-        ImGui::EndPopup();
-    }
+    ImGui::SetWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
+
 
     ImGui::TextWrapped("Console view");
 //    ImGui::TextWrapped("Enter 'HELP' for help.");
@@ -176,7 +165,7 @@ void ConsoleWindow::Draw(const char *title, bool *p_open)
     if (reclaim_focus)
         ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 */
-    ImGui::End();
+   WindowBase::EndDraw();
 }
 
 void ConsoleWindow::ExecCommand(const char *command_line)

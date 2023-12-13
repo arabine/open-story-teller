@@ -12,6 +12,7 @@
 #include "chip32_assembler.h"
 #include "chip32_vm.h"
 #include "story_project.h"
+#include "i_story_project.h"
 
 struct DebugContext
 {
@@ -68,7 +69,7 @@ std::function<Ret(Params...)> Callback<Ret(Params...)>::func;
 
 
 
-class MainWindow
+class MainWindow : public IStoryProject
 {
 public:
     MainWindow();
@@ -94,6 +95,8 @@ private:
 
     std::vector<std::string> m_recentProjects;
 
+    ResourceManager m_resources;
+
     Gui gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
@@ -114,6 +117,18 @@ private:
     std::string mServerRecUrl;
     std::string mServerSndUrl;
     int mServerPort;
+
+
+    // From IStoryProject (proxy to StoryProject class)
+    virtual void PlaySoundFile(const std::string &fileName) override;;
+    virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
+    virtual std::pair<FilterIterator, FilterIterator> Images() override;
+    virtual std::pair<FilterIterator, FilterIterator> Sounds() override;
+
+    virtual void AddResource(std::shared_ptr<Resource> res) override;
+    virtual void ClearResources() override;
+    virtual std::pair<FilterIterator, FilterIterator> Resources() override;
+
 
     void SaveParams();
     void LoadParams();

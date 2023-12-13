@@ -5,13 +5,13 @@
 
 int BaseNode::s_nextId = 1;
 
-BaseNode::BaseNode(const std::string &title, StoryProject &proj)
+BaseNode::BaseNode(const std::string &title, IStoryProject &proj)
     : m_project(proj)
 {
   //  m_id = UUID().String();
 
-    m_id = -1;
-    m_node = std::make_unique<Node>(GetNextId(), title.c_str());
+    m_id = -1; // Story Project Node ID
+    m_node = std::make_unique<Node>(GetNextId(), title.c_str()); // ImGui internal ID
 }
 
 void BaseNode::AddInput()

@@ -10,7 +10,7 @@
 #include "gui.h"
 
 
-NodeEditorWindow::NodeEditorWindow(StoryProject &proj)
+NodeEditorWindow::NodeEditorWindow(IStoryProject &proj)
     : WindowBase("Node editor")
     , m_project(proj)
 {

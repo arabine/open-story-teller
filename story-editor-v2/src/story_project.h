@@ -12,7 +12,7 @@
 #include <thread>
 #include <mutex>
 #include "json.hpp"
-
+#include "resource_manager.h"
 
 template <typename T>
 class ThreadSafeQueue {
@@ -109,14 +109,6 @@ struct StoryNode
 //            "sound": 0
 };
 
-struct Resource
-{
-    std::string file;
-    std::string description;
-    std::string format;
-    std::string type;
-};
-
 struct StoryProject
 {
     enum ImageFormat { IMG_FORMAT_BMP_4BITS, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
@@ -132,14 +124,14 @@ struct StoryProject
 
     StoryNode *m_tree;
 
-    bool Load(const std::string &file_path, nlohmann::json &model);
-    void Save(const nlohmann::json &model);
+    bool Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager);
+    void Save(const nlohmann::json &model, ResourceManager &manager);
 
     void CreateTree();
-    void Clear() {
+    void Clear()
+    {
         m_uuid = "";
         m_working_dir = "";
-        m_resources.clear();
         m_initialized = false;
     }
     
@@ -170,17 +162,6 @@ struct StoryProject
     std::string GetTitleImage() const { return m_titleImage; }
     std::string GetTitleSound() const { return m_titleSound; }
 
-    // -------------  Resources Management
-    void AppendResource(const Resource &res);
-    bool GetResourceAt(int index, Resource &resOut);
-    void ClearResources();
-    void DeleteResourceAt(int index);
-    int ResourcesSize() const { return m_resources.size(); }
-
-    std::vector<Resource>::const_iterator begin() const { return m_resources.begin(); }
-    std::vector<Resource>::const_iterator end() const { return m_resources.end(); }
-
-
 public:
     // Initialize with an existing project
     void Initialize(const std::string &file_path);
@@ -203,7 +184,6 @@ private:
     std::string m_titleImage;
     std::string m_titleSound;
 
-    std::vector<Resource> m_resources;
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
     std::string m_project_file_path; /// JSON project file
 

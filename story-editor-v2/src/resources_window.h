@@ -3,18 +3,18 @@
 #include <vector>
 #include <map>
 #include <mutex>
-#include "story_project.h"
+#include "i_story_project.h"
 #include "window_base.h"
 
 class ResourcesWindow : public WindowBase
 {
 public:
-    ResourcesWindow(StoryProject &project);
+    ResourcesWindow(IStoryProject &project);
     ~ResourcesWindow();
     virtual void Draw() override;
 
 private:
-    StoryProject &m_project;
+    IStoryProject &m_project;
 
     bool m_showImportDialog{false};
     bool m_soundFile{false};

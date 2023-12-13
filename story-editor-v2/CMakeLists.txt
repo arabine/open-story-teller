@@ -6,7 +6,7 @@ project(${STORY_EDITOR_PROJECT} LANGUAGES C CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set (CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # set(CMAKE_VERBOSE_MAKEFILE on)
@@ -125,6 +125,11 @@ set(SRCS
     src/code_editor.cpp
     src/code_editor.h
 
+    src/uuid.h
+    src/resource_manager.h
+    src/i_story_project.h
+    src/resource.h
+
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
     libs/imgui-node-editor/imgui_node_editor.cpp
@@ -162,8 +167,6 @@ endif()
 
 add_executable(${STORY_EDITOR_PROJECT}
     ${SRCS}
-    src/uuid.h
-    src/window_base.h src/window_base.cpp
 )
 
 target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC

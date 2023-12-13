@@ -1,12 +1,14 @@
 #include "resources_window.h"
 #include "imgui.h"
 #include <random>
-
+#include <filesystem>
+#include <memory>
+#include "resource.h"
 #include "ImGuiFileDialog.h"
 
 //static thread_pool pool;
 
-ResourcesWindow::ResourcesWindow(StoryProject &project)
+ResourcesWindow::ResourcesWindow(IStoryProject &project)
     : WindowBase("Resources")
     , m_project(project)
 {
@@ -42,19 +44,19 @@ void ResourcesWindow::ChooseFile()
 
 
             std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_project.AssetsPath() /  p.filename().generic_string();
+            std::filesystem::path p2 = m_project.BuildFullAssetsPath( p.filename());
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
-            Resource res;
+            auto res = std::make_shared<Resource>();
 
             std::string ext = p.extension().string();
             ext.erase(ext.begin()); // remove '.' dot sign
             std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 
-            res.format = ext;
-            res.type = m_soundFile ? "sound" : "image";
-            res.file = p.filename().generic_string();
-            m_project.AppendResource(res);
+            res->format = ext;
+            res->type = m_soundFile ? "sound" : "image";
+            res->file = p.filename().generic_string();
+            m_project.AddResource(res);
         }
 
         // close
@@ -90,33 +92,29 @@ void ResourcesWindow::Draw()
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
                 ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
 
-    if (ImGui::BeginTable("table1", 5, tableFlags))
+    if (ImGui::BeginTable("table1", 4, tableFlags))
     {
         ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Format", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthStretch);
 
         ImGui::TableHeadersRow();
 
-        for (auto & r : m_project)
+        auto [b, e] = m_project.Resources();
+        for (auto it = b; it != e; ++it)
         {
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", (*it)->file.c_str());
 
             ImGui::TableNextColumn();
-            ImGui::Text("%s", r.file.c_str());
+            ImGui::Text("%s", (*it)->format.c_str());
 
             ImGui::TableNextColumn();
-            ImGui::Text("%s", "");
+            ImGui::Text("%s", (*it)->description.c_str());
 
             ImGui::TableNextColumn();
-            ImGui::Text("%s", "");
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%s", "");
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%s", "");
+            ImGui::Text("%s", (*it)->type.c_str());
         }
 
         ImGui::EndTable();

@@ -19,8 +19,8 @@
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
-    : m_resourcesWindow(m_project)
-    , m_nodeEditorWindow(m_project)
+    : m_resourcesWindow(*this)
+    , m_nodeEditorWindow(*this)
 {
     m_project.Clear();
 }
@@ -310,8 +310,9 @@ void MainWindow::OpenProjectDialog()
 
             nlohmann::json model;
 
-            if (m_project.Load(filePathName, model))
+            if (m_project.Load(filePathName, model, m_resources))
             {
+                m_consoleWindow.AddMessage("Open project success");
                 m_nodeEditorWindow.Load(model);
                 EnableProject();
             }
@@ -321,7 +322,7 @@ void MainWindow::OpenProjectDialog()
             }
 
 
-     //       RefreshProjectInformation();
+     //       RefreshProjectInformation();  // FIXME
         }
 
         // close
@@ -341,7 +342,7 @@ void MainWindow::EnableProject()
             m_recentProjects.pop_back();
         }
     }
-/*
+/*  // FIXME
     m_ostHmiDock->Open();
     m_resourcesDock->Open();
     m_scriptEditorDock->Open();
@@ -549,7 +550,7 @@ void MainWindow::NewProjectPopup()
 void MainWindow::SaveProject()
 {
     nlohmann::json model; // = m_model.Save();
-    m_project.Save(model);
+    m_project.Save(model, m_resources);
 }
 
 void MainWindow::CloseProject()
@@ -589,13 +590,11 @@ void MainWindow::Loop()
        // DrawStatusBar();
 
         // ------------  Draw all windows
-        m_consoleWindow.Draw("Console", nullptr);
+        m_consoleWindow.Draw();
         m_emulatorWindow.Draw();
         editor.Draw();
         m_resourcesWindow.Draw();
         m_nodeEditorWindow.Draw();
-
-
 
 
         ShowOptionsWindow();
@@ -618,6 +617,42 @@ void MainWindow::Loop()
     }
 
     gui.Destroy();
+}
+
+void MainWindow::PlaySoundFile(const std::string &fileName)
+{
+    m_consoleWindow.AddMessage("Play sound file: " + fileName);
+    m_project.PlaySoundFile(fileName);
+}
+
+std::string MainWindow::BuildFullAssetsPath(const std::string &fileName) const
+{
+    return m_project.BuildFullAssetsPath(fileName);
+}
+
+std::pair<FilterIterator, FilterIterator> MainWindow::Images()
+{
+    return m_resources.Images();
+}
+
+std::pair<FilterIterator, FilterIterator> MainWindow::Sounds()
+{
+    return m_resources.Sounds();
+}
+
+void MainWindow::AddResource(std::shared_ptr<Resource> res)
+{
+    m_resources.Add(res);
+}
+
+void MainWindow::ClearResources()
+{
+    m_resources.Clear();
+}
+
+std::pair<FilterIterator, FilterIterator> MainWindow::Resources()
+{
+    return m_resources.Items();
 }
 
 void MainWindow::SaveParams()

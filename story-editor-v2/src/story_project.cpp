@@ -116,7 +116,7 @@ void StoryProject::Initialize(const std::string &file_path)
     m_initialized = true;
 }
 
-bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
+bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager)
 {
 
     std::ifstream f(file_path);
@@ -132,7 +132,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
         nlohmann::json j = nlohmann::json::parse(f);
 
         m_nodes.clear();
-
+        manager.Clear();
 
         if (j.contains("project"))
         {
@@ -149,13 +149,13 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
 
                 for (const auto &obj : resourcesData)
                 {
-                    Resource rData;
+                    auto rData = std::make_shared<Resource>();
 
-                    rData.type = obj["type"].get<std::string>();
-                    rData.format = obj["format"].get<std::string>();
-                    rData.description = obj["description"].get<std::string>();
-                    rData.file = obj["file"].get<std::string>();
-                    m_resources.push_back(rData);
+                    rData->type = obj["type"].get<std::string>();
+                    rData->format = obj["format"].get<std::string>();
+                    rData->description = obj["description"].get<std::string>();
+                    rData->file = obj["file"].get<std::string>();
+                    manager.Add(rData);
                 }
 
                 if (j.contains("nodegraph"))
@@ -235,7 +235,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model)
     return success;
 }
 
-void StoryProject::Save(const nlohmann::json &model)
+void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
 {
     nlohmann::json j;
     j["project"] = { {"name", m_name}, {"uuid", m_uuid}, { "title_image", m_titleImage }, { "title_sound", m_titleSound } };
@@ -243,12 +243,13 @@ void StoryProject::Save(const nlohmann::json &model)
     {
         nlohmann::json resourcesData;
 
-        for (auto &r : m_resources)
+        auto [b, e] = manager.filter("");
+        for (auto it = b; it != e; ++it)
         {
-            nlohmann::json obj = {{"type", r.type},
-                                  {"format", r.format},
-                                  {"description", r.description},
-                                  {"file", r.file}};
+            nlohmann::json obj = {{"type", (*it)->type},
+                                  {"format", (*it)->format},
+                                  {"description", (*it)->description},
+                                  {"file", (*it)->file}};
 
             resourcesData.push_back(obj);
         }
@@ -274,9 +275,9 @@ void StoryProject::CreateTree()
         StoryNode *p = nlist.front();
         std::cout << "Node: " << p->id << std::endl;
 
-        for (int i = 0; i < p->jumps.size(); i++)
+        for (size_t i = 0; i < p->jumps.size(); i++)
         {
-            int jump = p->jumps[i];
+            size_t jump = p->jumps[i];
 
             if (jump < m_nodes.size())
             {
@@ -354,35 +355,6 @@ void StoryProject::SetTitleImage(const std::string &titleImage)
 void StoryProject::SetTitleSound(const std::string &titleSound)
 {
     m_titleSound = titleSound;
-}
-
-void StoryProject::AppendResource(const Resource &res)
-{
-    m_resources.push_back(res);
-}
-
-bool StoryProject::GetResourceAt(int index, Resource &resOut)
-{
-    bool success = false;
-    if ((index >= 0) && (index < m_resources.size()))
-    {
-        resOut = m_resources[index];
-        success = true;
-    }
-    return success;
-}
-
-void StoryProject::ClearResources()
-{
-    m_resources.clear();
-}
-
-void StoryProject::DeleteResourceAt(int index)
-{
-    if ((index >= 0) && (index < m_resources.size()))
-    {
-        m_resources.erase(m_resources.begin() + index);
-    }
 }
 
 std::string StoryProject::GetFileExtension(const std::string &fileName)

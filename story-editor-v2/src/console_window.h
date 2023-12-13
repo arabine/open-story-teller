@@ -6,10 +6,12 @@
 #include <mutex>
 #include <vector>
 
+#include "window_base.h"
+
 
 // Demonstrate creating a simple console window, with scrolling, filtering, completion and history.
 // For the console example, we are using a more C++ like approach of declaring a class to hold both data and functions.
-struct ConsoleWindow
+struct ConsoleWindow : public WindowBase
 {
 public:
     ConsoleWindow();
@@ -25,7 +27,7 @@ public:
 
     void AddMessage(const std::string &message) { AddLog("%s", message.c_str()); }
 
-    void Draw(const char* title, bool* p_open);
+    virtual void Draw() override;
 
     void    ExecCommand(const char* command_line);
 
