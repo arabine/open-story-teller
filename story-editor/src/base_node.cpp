@@ -3,7 +3,7 @@
 
 #include "IconsMaterialDesignIcons.h"
 
-int BaseNode::s_nextId = 1;
+unsigned long BaseNode::s_nextId = 1;
 
 BaseNode::BaseNode(const std::string &title, IStoryProject &proj)
     : m_project(proj)

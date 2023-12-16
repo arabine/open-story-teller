@@ -74,14 +74,19 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
 
 ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
 {
-    ed::PinId id = -1;
+    ed::PinId id = 0;
 
     for (auto & n : m_nodes)
     {
-        if (n.first == modelNodeId)
+        if (n.second->GetId() == modelNodeId)
         {
             id = n.second->GetInputPinAt(pinIndex);
         }
+    }
+
+    if (id.Get() == 0)
+    {
+        std::cout << "Invalid Id, input pin not found" << std::endl;
     }
 
     return id;
@@ -89,14 +94,19 @@ ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
 
 ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex)
 {
-    ed::PinId id = -1;
+    ed::PinId id = 0;
 
     for (auto & n : m_nodes)
     {
-        if (n.first == modelNodeId)
+        if (n.second->GetId() == modelNodeId)
         {
             id = n.second->GetOutputPinAt(pinIndex);
         }
+    }
+
+    if (id.Get() == 0)
+    {
+        std::cout << "Invalid Id, output pin not found" << std::endl;
     }
 
     return id;

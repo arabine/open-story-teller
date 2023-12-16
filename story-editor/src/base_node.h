@@ -127,8 +127,8 @@ public:
         return m_type;
     }
 
-    void SetId(const int id) { m_id = id; }
-    int GetId() const { return m_id; }
+    void SetId(unsigned long id) { m_id = id; }
+    unsigned long GetId() const { return m_id; }
     unsigned long GetInternalId() const { return m_node->ID.Get(); }
 
     void seTitle(const std::string &title) { m_title = title; }
@@ -145,7 +145,7 @@ public:
         return j;
     }
 
-    static int GetNextId()
+    static unsigned long GetNextId()
     {
         return s_nextId++;
     }
@@ -157,7 +157,7 @@ public:
 
     ed::PinId GetInputPinAt(int index)
     {
-        ed::PinId id = -1;
+        ed::PinId id = 0;
 
         if (index < static_cast<int>(m_node->Inputs.size()))
         {
@@ -169,7 +169,7 @@ public:
 
     ed::PinId GetOutputPinAt(int index)
     {
-        ed::PinId id = -1;
+        ed::PinId id = 0;
 
         if (index < static_cast<int>(m_node->Outputs.size()))
         {
@@ -192,11 +192,11 @@ private:
 
     std::string m_title{"Base node"};
     std::string m_type;
-    int m_id;
+    unsigned long m_id;
     NodePosition m_pos;
     bool m_firstFrame{true};
 
-    static int s_nextId;
+    static unsigned long s_nextId;
 
 
 
