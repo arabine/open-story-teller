@@ -57,40 +57,9 @@ void MediaNode::Draw()
 
 
 
-    ImGui::AlignTextToFramePadding();
-    ImGui::Text("Image");
-    ImGui::SameLine();
-
-    ImGui::Text("%s", m_image.name.c_str());
-
-    ImGui::SameLine();
-
-    bool do_popup = false;
-    std::string type = "sound";
-    if (ImGui::Button("Select...")) {
-        do_popup = true;	// Instead of saying OpenPopup() here, we set this bool, which is used later in the Deferred Pop-up Section
-        type = "image";
-    }
-
     // Use AlignTextToFramePadding() to align text baseline to the baseline of framed elements
     // (otherwise a Text+SameLine+Button sequence will have the text a little too high by default)
 
-    ImGui::AlignTextToFramePadding();
-    ImGui::Text("Sound");
-    ImGui::SameLine();
-
-    ImGui::Text("%s", m_soundName.c_str());
-
-    ImGui::SameLine();
-
-    if (ImGui::Button(m_buttonUniqueName.c_str()))
-    {
-        m_project.PlaySoundFile(m_soundPath);
-    }
-
-    if (ImGui::Button("Select...")) {
-        do_popup = true;	// Instead of saying OpenPopup() here, we set this bool, which is used later in the Deferred Pop-up Section
-    }
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Outputs:");
@@ -119,47 +88,9 @@ void MediaNode::Draw()
     DrawPins();
 
 
-    if (do_popup) {
-        ImGui::OpenPopup("popup_button"); // Cause openpopup to stick open.
-        do_popup = false; // disable bool so that if we click off the popup, it doesn't open the next frame.
-    }
-
-    // This is the actual popup Gui drawing section.
-    if (ImGui::BeginPopup("popup_button")) {
-        // Note: if it weren't for the child window, we would have to PushItemWidth() here to avoid a crash!
-        ImGui::TextDisabled("Choose media file:");
-
-
-        static int item_current_idx = 0; // Here we store our selection data as an index.
-        if (ImGui::BeginListBox("listbox media"))
-        {
-            auto [filtreDebut, filtreFin] = m_project.Sounds();
-            int n = 0;
-            for (auto it = filtreDebut; it != filtreFin; ++it, n++)
-            {
-                const bool is_selected = (item_current_idx == n);
-                if (ImGui::Selectable((*it)->file.c_str(), is_selected))
-                    item_current_idx = n;
-
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndListBox();
-        }
-
-
-        if (ImGui::Button("Ok")) {
-
-            ImGui::CloseCurrentPopup();  // These calls revoke the popup open state, which was set by OpenPopup above.
-        }
-
-        ImGui::EndChild();
-        ImGui::EndPopup(); // Note this does not do anything to the popup open/close state. It just terminates the content declaration.
-    }
-
 
     BaseNode::FrameEnd();
+
 }
 
 /*
@@ -178,4 +109,58 @@ void MediaNode::FromJson(nlohmann::json &j)
 
     m_soundName = j["sound"].get<std::string>();
     m_soundPath = m_project.BuildFullAssetsPath(m_soundName);
+}
+
+void MediaNode::DrawProperties()
+{
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Image");
+    ImGui::SameLine();
+
+    ImGui::Text("%s", m_image.name.c_str());
+
+    ImGui::SameLine();
+
+    std::string type = "sound";
+    if (ImGui::Button("Select...##image")) {
+        type = "image";
+        ImGui::OpenPopup("popup_button");
+    }
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Sound");
+    ImGui::SameLine();
+
+    ImGui::Text("%s", m_soundName.c_str());
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(m_buttonUniqueName.c_str()))
+    {
+        m_project.PlaySoundFile(m_soundPath);
+    }
+
+    if (ImGui::Button("Select...##sound")) {
+        ImGui::OpenPopup("popup_button");
+    }
+
+
+    // This is the actual popup Gui drawing section.
+    if (ImGui::BeginPopup("popup_button")) {
+        ImGui::SeparatorText("Sounds");
+
+        static int item_current_idx = 0; // Here we store our selection data as an index.
+
+
+        auto [filtreDebut, filtreFin] = m_project.Sounds();
+        int n = 0;
+        for (auto it = filtreDebut; it != filtreFin; ++it, n++)
+        {
+            if (ImGui::Selectable((*it)->file.c_str()), n == item_current_idx)
+                item_current_idx = n;
+        }
+
+        ImGui::EndPopup(); // Note this does not do anything to the popup open/close state. It just terminates the content declaration.
+    }
+
 }

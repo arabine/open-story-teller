@@ -8,6 +8,7 @@
 #include "emulator_window.h"
 #include "resources_window.h"
 #include "node_editor_window.h"
+#include "node_properties_window.h"
 
 #include "chip32_assembler.h"
 #include "chip32_vm.h"
@@ -105,6 +106,9 @@ private:
     ResourcesWindow m_resourcesWindow;
 
     NodeEditorWindow m_nodeEditorWindow;
+
+    NodePropertiesWindow m_nodePropertiesWindow;
+
 
     char mBufAddress[200];
     char mBufReceivePath[200];

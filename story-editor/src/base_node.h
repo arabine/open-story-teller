@@ -106,6 +106,8 @@ public:
 
     virtual void Draw() = 0;
 
+    virtual void DrawProperties() = 0;
+
     void SetPosition(int x, int y);
 
     void FrameStart();
@@ -115,9 +117,19 @@ public:
 
     uint32_t Outputs() const { return m_node->Outputs.size(); }
 
+    void SetType(const std::string &type)
+    {
+        m_type = type;
+    }
+
+    std::string GetType() const
+    {
+        return m_type;
+    }
+
     void SetId(const int id) { m_id = id; }
     int GetId() const { return m_id; }
-    int GetInternalId() const { return m_node->ID.Get(); }
+    unsigned long GetInternalId() const { return m_node->ID.Get(); }
 
     void seTitle(const std::string &title) { m_title = title; }
     std::string getTitle() const { return m_title; }

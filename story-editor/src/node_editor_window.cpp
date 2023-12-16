@@ -50,13 +50,14 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
         auto n = createNode(type, "", m_project);
         if (n)
         {
+            n->SetType(type); // FIXME: set type in createNode factory?
             n->SetId(restoredNodeId);
             nlohmann::json posJson = nodeJson["position"];
             n->SetOutputs(nodeJson["outPortCount"].get<int>());
             n->SetPosition(posJson["x"].get<int>(), posJson["y"].get<int>());
             n->FromJson(internalDataJson);
 
-            m_nodes[restoredNodeId] = n;
+            m_nodes[n->GetInternalId()] = n;
         }
         else
         {
@@ -71,7 +72,7 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
 }
 
 
-ed::PinId NodeEditorWindow::GetInputPin(int modelNodeId, int pinIndex)
+ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
 {
     ed::PinId id = -1;
 
@@ -86,7 +87,7 @@ ed::PinId NodeEditorWindow::GetInputPin(int modelNodeId, int pinIndex)
     return id;
 }
 
-ed::PinId NodeEditorWindow::GetOutputPin(int modelNodeId, int pinIndex)
+ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex)
 {
     ed::PinId id = -1;
 
@@ -126,16 +127,38 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
 
 
         // ImGui stuff for links
-        conn->Id = 100000 + BaseNode::GetNextId();
+        conn->Id = BaseNode::GetNextId();
         conn->InputId = GetInputPin(conn->model.inNodeId, conn->model.inPortIndex);
         conn->OutputId = GetOutputPin(conn->model.outNodeId, conn->model.outPortIndex);
 
         // Since we accepted new link, lets add one to our list of links.
         m_links.push_back(conn);
     }
-
-
 }
+
+std::shared_ptr<BaseNode> NodeEditorWindow::GetSelectedNode()
+{
+    std::shared_ptr<BaseNode> selected;
+
+    ed::SetCurrentEditor(m_context);
+    if (ed::GetSelectedObjectCount() > 0)
+    {
+        ed::NodeId nId;
+        int nodeCount = ed::GetSelectedNodes(&nId, 1);
+
+        if (nodeCount > 0)
+        {
+            if (m_nodes.contains(nId.Get()))
+            {
+                selected = m_nodes[nId.Get()];
+            }
+        }
+    }
+    ed::SetCurrentEditor(nullptr);
+
+    return selected;
+}
+
 
 void NodeEditorWindow::Draw()
 {
@@ -148,7 +171,9 @@ void NodeEditorWindow::Draw()
 
         for (const auto & n : m_nodes)
         {
+            ImGui::PushID(n.first);
             n.second->Draw();
+            ImGui::PopID();
         }
 
         for (const auto& linkInfo : m_links)
@@ -180,10 +205,10 @@ void NodeEditorWindow::Draw()
                    if (ed::AcceptNewItem())
                    {
                        // Since we accepted new link, lets add one to our list of links.
-                      // m_Links.push_back({ ed::LinkId(BaseNode::GetNextId()), inputPinId, outputPinId });
+//                       m_Links.push_back({ ed::LinkId(BaseNode::GetNextId()), inputPinId, outputPinId });
 
                        // Draw new link.
-                      // ed::Link(m_Links.back().Id, m_Links.back().InputId, m_Links.back().OutputId);
+//                       ed::Link(m_Links.back().Id, m_Links.back().InputId, m_Links.back().OutputId);
                    }
 
                    // You may choose to reject connection between these nodes

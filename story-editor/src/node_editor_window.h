@@ -47,13 +47,14 @@ public:
     void Clear();
     void Load(const nlohmann::json &model);
 
+    std::shared_ptr<BaseNode> GetSelectedNode();
 private:
     IStoryProject &m_project;
 
     ed::EditorContext* m_context = nullptr;
 
     // key: Id
-    std::map<int, std::shared_ptr<BaseNode>>    m_nodes;
+    std::map<unsigned long, std::shared_ptr<BaseNode>>    m_nodes;
     std::vector<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
 
@@ -99,7 +100,7 @@ private:
     }
 
     void LoadNode(const nlohmann::json &nodeJson);
-    ed::PinId GetInputPin(int modelNodeId, int pinIndex);
-    ed::PinId GetOutputPin(int modelNodeId, int pinIndex);
+    ed::PinId GetInputPin(unsigned long modelNodeId, int pinIndex);
+    ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
 };
 

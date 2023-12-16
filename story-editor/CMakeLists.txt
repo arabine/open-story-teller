@@ -119,6 +119,9 @@ set(SRCS
     src/resources_window.cpp
     src/resources_window.h
 
+    src/node_properties_window.cpp
+    src/node_properties_window.h
+
     src/gui.h
     src/gui.cpp
 

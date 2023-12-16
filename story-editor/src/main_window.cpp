@@ -165,6 +165,7 @@ void MainWindow::Initialize()
     editor.Initialize();
     m_emulatorWindow.Initialize();
     m_nodeEditorWindow.Initialize();
+    m_nodePropertiesWindow.Initialize();
 
     LoadParams();
 }
@@ -596,6 +597,8 @@ void MainWindow::Loop()
         m_resourcesWindow.Draw();
         m_nodeEditorWindow.Draw();
 
+        m_nodePropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
+        m_nodePropertiesWindow.Draw();
 
         ShowOptionsWindow();
 

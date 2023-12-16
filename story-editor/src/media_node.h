@@ -20,11 +20,15 @@ public:
 
     virtual void FromJson(nlohmann::json &j) override;
 
+    virtual void DrawProperties() override;
+
 private:
     IStoryProject &m_project;
     Gui::Image  m_image;
     std::string m_soundName;
     std::string m_soundPath;
+
+    std::string m_id;
 
     std::string m_buttonUniqueName;
 };
