@@ -46,8 +46,10 @@ public:
     void Initialize();
     void Clear();
     void Load(const nlohmann::json &model);
+    void Save(nlohmann::json &model);
 
     std::shared_ptr<BaseNode> GetSelectedNode();
+    std::string GenerateConstants();
 private:
     IStoryProject &m_project;
 
@@ -102,5 +104,7 @@ private:
     void LoadNode(const nlohmann::json &nodeJson);
     ed::PinId GetInputPin(unsigned long modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
+    std::string ChoiceLabel() const;
+    std::string EntryLabel() const;
 };
 

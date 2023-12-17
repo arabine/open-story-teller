@@ -78,6 +78,11 @@ void MainWindow::DrawMainMenuBar()
                 showOpenProject = true;
             }
 
+            if (ImGui::MenuItem("Save project"))
+            {
+                SaveProject();
+            }
+
             if (ImGui::MenuItem("Close project"))
             {
                 CloseProject();
@@ -138,9 +143,10 @@ void MainWindow::DrawMainMenuBar()
 
     if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Story Editor V1");
+        ImGui::Text("Story Editor V2");
         ImGui::Separator();
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
+        ImGui::Text("http://www.openstoryteller.org");
 //        ImGui::Text("%s", SDL_GetPlatform());
 //        ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
 //        ImGui::Text("RAM: %.2f GB", SDL_GetSystemRAM() / 1024.0f);
@@ -550,7 +556,8 @@ void MainWindow::NewProjectPopup()
 
 void MainWindow::SaveProject()
 {
-    nlohmann::json model; // = m_model.Save();
+    nlohmann::json model;
+    m_nodeEditorWindow.Save(model);
     m_project.Save(model, m_resources);
 }
 

@@ -101,7 +101,7 @@ void MediaNode::Draw()
                 },
 
 */
-void MediaNode::FromJson(nlohmann::json &j)
+void MediaNode::FromJson(const nlohmann::json &j)
 {
     m_image.name = j["image"].get<std::string>();
 
@@ -109,6 +109,12 @@ void MediaNode::FromJson(nlohmann::json &j)
 
     m_soundName = j["sound"].get<std::string>();
     m_soundPath = m_project.BuildFullAssetsPath(m_soundName);
+}
+
+void MediaNode::ToJson(nlohmann::json &j)
+{
+    j["image"] = m_image.name;
+    j["sound"] = m_soundName;
 }
 
 void MediaNode::DrawProperties()

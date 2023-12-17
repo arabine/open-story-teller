@@ -97,8 +97,8 @@ class BaseNode
 public:
     struct NodePosition
     {
-        int x;
-        int y;
+        float x;
+        float y;
     };
 
     BaseNode(const std::string &title, IStoryProject &proj);
@@ -108,13 +108,17 @@ public:
 
     virtual void DrawProperties() = 0;
 
-    void SetPosition(int x, int y);
+    void SetPosition(float x, float y);
 
     void FrameStart();
     void FrameEnd();
 
     void DrawPins();
 
+    float GetX() const;
+    float GetY() const;
+
+    uint32_t Inputs() const { return m_node->Inputs.size(); }
     uint32_t Outputs() const { return m_node->Outputs.size(); }
 
     void SetType(const std::string &type)
@@ -134,9 +138,8 @@ public:
     void seTitle(const std::string &title) { m_title = title; }
     std::string getTitle() const { return m_title; }
 
-    virtual void FromJson(nlohmann::json &) {
-        // default implementation does nothing
-    }
+    virtual void FromJson(const nlohmann::json &) = 0;
+    virtual void ToJson(nlohmann::json &) = 0;
 
     virtual nlohmann::json ToJson() const {
         nlohmann::json j;
@@ -177,6 +180,36 @@ public:
         }
 
         return id;
+    }
+
+    bool HasInputPinId(ed::PinId &pinId, int &atIndex) const
+    {
+        bool found = false;
+        atIndex = 0;
+        for (auto &i : m_node->Inputs)
+        {
+            if (i.ID == pinId)
+            {
+                found = true;
+            }
+            atIndex++;
+        }
+        return found;
+    }
+
+    bool HasOnputPinId(ed::PinId &pinId, int &atIndex) const
+    {
+        bool found = false;
+        atIndex = 0;
+        for (auto &i : m_node->Outputs)
+        {
+            if (i.ID == pinId)
+            {
+                found = true;
+            }
+            atIndex++;
+        }
+        return found;
     }
 
 

@@ -47,7 +47,7 @@ void BaseNode::DeleteOutput()
    m_node->Outputs.pop_back();
 }
 
-void BaseNode::SetPosition(int x, int y)
+void BaseNode::SetPosition(float x, float y)
 {
    m_pos.x = x;
    m_pos.y = y;
@@ -92,4 +92,16 @@ void BaseNode::DrawPins()
         ImGui::Text( "#%d " ICON_MDI_OCTAGON_OUTLINE, i++);
         ed::EndPin();
     }
+}
+
+float BaseNode::GetX() const
+{
+    auto pos = GetNodePosition(m_node->ID);
+    return pos.x;
+}
+
+float BaseNode::GetY() const
+{
+    auto pos = GetNodePosition(m_node->ID);
+    return pos.y;
 }

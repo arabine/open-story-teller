@@ -18,7 +18,8 @@ public:
 
     void Draw() override;
 
-    virtual void FromJson(nlohmann::json &j) override;
+    virtual void FromJson(const nlohmann::json &j) override;
+    virtual void ToJson(nlohmann::json &j) override;
 
     virtual void DrawProperties() override;
 
