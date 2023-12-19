@@ -14,17 +14,22 @@ public:
     struct Texture;
 
     struct Image {
-        void *texture; // Platform specific
+        void *texture{nullptr}; // Platform specific
         int w;
         int h;
 
         std::string name;
 
-        bool valid() const {
+        bool Valid() const {
             return (w && h);
         }
 
+        void Clear();
+
+        void Load(const std::string &filename);
+
         Image();
+        ~Image();
 
     };
 

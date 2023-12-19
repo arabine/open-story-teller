@@ -32,4 +32,6 @@ private:
     std::string m_id;
 
     std::string m_buttonUniqueName;
+    void SetImage(const std::string &f);
+    void SetSound(const std::string &f);
 };

@@ -58,10 +58,7 @@ private:
     // Fonction pour trouver le prochain élément qui correspond au filtre
     void searchNext() {
 
-        if (filterType == "") {
-            ++current;
-        }
-        else
+        if (filterType != "")
         {
             while (current != end && (*current)->type != filterType) {
                 ++current;

@@ -60,38 +60,6 @@ public:
     }
 
 
-    /*
- void StoryProject::AppendResource(const Resource &res)
-{
-    m_resources.push_back(res);
-}
-
-bool StoryProject::GetResourceAt(int index, Resource &resOut)
-{
-    bool success = false;
-    if ((index >= 0) && (index < m_resources.size()))
-    {
-        resOut = m_resources[index];
-        success = true;
-    }
-    return success;
-}
-
-void StoryProject::ClearResources()
-{
-    m_resources.clear();
-}
-
-void StoryProject::DeleteResourceAt(int index)
-{
-    if ((index >= 0) && (index < m_resources.size()))
-    {
-        m_resources.erase(m_resources.begin() + index);
-    }
-}
-*/
-
-
 private:
     std::vector<std::shared_ptr<Resource>> m_items;
     std::pair<FilterIterator, FilterIterator> m_images;

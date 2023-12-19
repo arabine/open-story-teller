@@ -85,25 +85,31 @@ void ResourcesWindow::Draw()
 
     ChooseFile();
 
-    ImGuiTableFlags tableFlags = ImGuiTableFlags_Borders | 
-                ImGuiTableFlags_RowBg |
-                ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | 
-                ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV |
-                ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
-                ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
+    static char description[260];
 
-    if (ImGui::BeginTable("table1", 4, tableFlags))
+    static ImGuiTableFlags tableFlags =
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable
+        | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
+        | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
+        | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
+        | ImGuiTableFlags_SizingFixedFit;
+
+    if (ImGui::BeginTable("table1", 5, tableFlags))
     {
         ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Format", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
 
         ImGui::TableHeadersRow();
 
         auto [b, e] = m_project.Resources();
+
+        int id = 1000;
         for (auto it = b; it != e; ++it)
         {
+            ImGui::PushID(id);
             ImGui::TableNextColumn();
             ImGui::Text("%s", (*it)->file.c_str());
 
@@ -111,10 +117,45 @@ void ResourcesWindow::Draw()
             ImGui::Text("%s", (*it)->format.c_str());
 
             ImGui::TableNextColumn();
+            static bool init = false;
+
+            if (ImGui::SmallButton(".."))
+            {
+                ImGui::OpenPopup("edit-comment-popup");
+                init = true;
+
+            }
+            if (ImGui::BeginPopup("edit-comment-popup"))
+            {
+                if (init)
+                {
+                    strncpy(description, (*it)->description.c_str(), sizeof(description));
+                    init = false;
+                }
+//                ImGui::PushID(id);
+                ImGui::InputText("Description", description, sizeof(description));
+                if (ImGui::Button("Close"))
+                {
+                    (*it)->description.assign(description);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+//                ImGui::PopID();
+            }
+            ImGui::SameLine();
             ImGui::Text("%s", (*it)->description.c_str());
+
+
 
             ImGui::TableNextColumn();
             ImGui::Text("%s", (*it)->type.c_str());
+
+            ImGui::TableNextColumn();
+            if (ImGui::SmallButton("Delete"))
+            {
+            }
+            ImGui::PopID();
+            id++;
         }
 
         ImGui::EndTable();

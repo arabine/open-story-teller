@@ -483,9 +483,28 @@ void LoadingIndicatorCircle(const char* label, const float indicator_radius,
 }
 } // namespace ImGui
 
+void Gui::Image::Clear()
+{
+    if (texture != nullptr)
+    {
+        SDL_DestroyTexture(static_cast<SDL_Texture*>(texture));
+    }
+}
+
+void Gui::Image::Load(const std::string &filename)
+{
+    Clear();
+    Gui::LoadRawImage(filename, *this);
+}
+
 Gui::Image::Image()
 {
     texture = nullptr;
     w = 0;
     h = 0;
+}
+
+Gui::Image::~Image()
+{
+    Clear();
 }

@@ -191,6 +191,7 @@ public:
             if (i.ID == pinId)
             {
                 found = true;
+                break;
             }
             atIndex++;
         }
@@ -206,6 +207,7 @@ public:
             if (i.ID == pinId)
             {
                 found = true;
+                break;
             }
             atIndex++;
         }
