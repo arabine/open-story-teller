@@ -256,7 +256,7 @@ bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
         // Detected string
         if ((a[0] == '"') && (a[a.size() - 1] == '"'))
         {
-            for (int i = 1; i < (a.size() - 1); i++)
+            for (unsigned int i = 1; i < (a.size() - 1); i++)
             {
                 instr.compiledArgs.push_back(a[i]);
             }
@@ -335,11 +335,13 @@ bool Assembler::Parse(const std::string &data)
         lineNum++;
         Instr instr;
         instr.line = lineNum;
-        int pos = line.find_first_of(";");
+        size_t pos = line.find_first_of(";");
         if (pos != std::string::npos) {
             line.erase(pos);
         }
-        line.erase(std::remove(line.begin(), line.end(), '\t'), line.end()); // remove tabulations
+        line.erase(0, line.find_first_not_of("\t\n\v\f\r ")); // left trim
+        line.erase(line.find_last_not_of("\t\n\v\f\r ") + 1); // right trim
+
         if (std::all_of(line.begin(), line.end(), ::isspace)) continue;
 
         // Split the line
@@ -424,7 +426,7 @@ bool Assembler::Parse(const std::string &data)
                 // if ROM data, we generate one instruction per argument
                 // reason: arguments may be labels, easier to replace later
 
-                for (int i = 2; i < lineParts.size(); i++)
+                for (unsigned int i = 2; i < lineParts.size(); i++)
                 {
                     CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), "Compile argument error, stopping.");
                     m_instructions.push_back(instr);
