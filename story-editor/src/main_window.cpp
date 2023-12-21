@@ -19,8 +19,10 @@
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
-    : m_resourcesWindow(*this)
+    : m_emulatorWindow(*this)
+    , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
+
 {
     m_project.Clear();
 }
@@ -168,109 +170,15 @@ void MainWindow::Initialize()
     gui.Initialize();
   //  gui.ApplyTheme();
 
-    editor.Initialize();
+    m_editor.Initialize();
     m_emulatorWindow.Initialize();
     m_nodeEditorWindow.Initialize();
-    m_nodePropertiesWindow.Initialize();
+    m_PropertiesWindow.Initialize();
 
     LoadParams();
 }
 
 
-void MainWindow::ShowOptionsWindow()
-{
-    static int pingState = 0;
-
-    // Always center this window when appearing
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 0.0f));
-    if (ImGui::BeginPopupModal("Options", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::PushItemWidth(-1.0f);
-
-        ImGui::Text("Adresse du serveur");
-        ImGui::SameLine();
-        ImGui::InputText("##addr",  mBufAddress, sizeof(mBufAddress));
-
-        ImGui::Text("Chemin de récupération");
-        ImGui::SameLine();
-        ImGui::InputText("##rec_path",  mBufReceivePath, sizeof(mBufReceivePath));
-
-        ImGui::Text("Chemin d'envoi des données");
-        ImGui::SameLine();
-        ImGui::InputText("##send_path",  mBufSendPath, sizeof(mBufSendPath));
-
-        ImGui::PushItemWidth(100);
-        ImGui::Text("Port");
-        ImGui::SameLine();
-        ImGui::InputText("##port",  mBufPort, sizeof(mBufPort), ImGuiInputTextFlags_CharsDecimal);
-
-        float width = 50;
-        ImGui::BeginGroup();
-        ImGui::PushID("Zebra7500");
-        ImGui::TextUnformatted("Adresse IP Zebra7500");
-        ImGui::SameLine();
-        for (int i = 0; i < 4; i++) {
-            ImGui::PushItemWidth(width);
-            ImGui::PushID(i);
-            bool invalid_octet = false;
-            if (octets[i] > 255) {
-                // Make values over 255 red, and when focus is lost reset it to 255.
-                octets[i] = 255;
-                invalid_octet = true;
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-            }
-            if (octets[i] < 0) {
-                // Make values below 0 yellow, and when focus is lost reset it to 0.
-                octets[i] = 0;
-                invalid_octet = true;
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
-            }
-            ImGui::InputInt("##v", &octets[i], 0, 0, ImGuiInputTextFlags_CharsDecimal);
-            if (invalid_octet) {
-                ImGui::PopStyleColor();
-            }
-            ImGui::SameLine();
-            ImGui::PopID();
-            ImGui::PopItemWidth();
-        }
-        ImGui::PopID();
-        ImGui::EndGroup();
-
-        // Example action button and way to build the IP string
-        ImGui::SameLine();
-
-        ImGui::SameLine();
-        if (pingState == 1)
-        {
-            ImGui::TextUnformatted("Ping en cours...");
-        }
-        else if (pingState == 2)
-        {
-            ImGui::TextUnformatted("Ping succès!");
-        }
-        else if (pingState == 3)
-        {
-            ImGui::TextUnformatted("Ping erreur :(");
-        }
-        else
-        {
-            ImGui::TextUnformatted("");
-        }
-
-        ImGui::Separator();
-
-
-        ImGui::SetItemDefaultFocus();
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-}
 
 bool MainWindow::ShowQuitConfirm()
 {
@@ -319,13 +227,13 @@ void MainWindow::OpenProjectDialog()
 
             if (m_project.Load(filePathName, model, m_resources))
             {
-                m_consoleWindow.AddMessage("Open project success");
+                Log("Open project success");
                 m_nodeEditorWindow.Load(model);
                 EnableProject();
             }
             else
             {
-                m_consoleWindow.AddMessage("Open project error");
+                Log("Open project error");
             }
 
 
@@ -600,14 +508,12 @@ void MainWindow::Loop()
         // ------------  Draw all windows
         m_consoleWindow.Draw();
         m_emulatorWindow.Draw();
-        editor.Draw();
+        m_editor.Draw();
         m_resourcesWindow.Draw();
         m_nodeEditorWindow.Draw();
 
-        m_nodePropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
-        m_nodePropertiesWindow.Draw();
-
-        ShowOptionsWindow();
+        m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
+        m_PropertiesWindow.Draw();
 
         NewProjectPopup();
         OpenProjectDialog();
@@ -629,9 +535,14 @@ void MainWindow::Loop()
     gui.Destroy();
 }
 
+void MainWindow::Log(const std::string &txt, bool critical)
+{
+    m_consoleWindow.AddLog(txt, critical ? 1 : 0);
+}
+
 void MainWindow::PlaySoundFile(const std::string &fileName)
 {
-    m_consoleWindow.AddMessage("Play sound file: " + fileName);
+    Log("Play sound file: " + fileName);
     m_project.PlaySoundFile(fileName);
 }
 
@@ -663,6 +574,112 @@ void MainWindow::ClearResources()
 std::pair<FilterIterator, FilterIterator> MainWindow::Resources()
 {
     return m_resources.Items();
+}
+
+void MainWindow::DeleteResource(FilterIterator &it)
+{
+    return m_resources.Delete(it);
+}
+
+void MainWindow::Build()
+{
+    // 1. First compile nodes to assembly
+    CompileToAssembler();
+
+    // 2. Compile the assembly to machine binary
+    GenerateBinary();
+
+    // 3. Convert all media to desired type format
+    ConvertResources();
+}
+
+std::string MainWindow::GetNodeEntryLabel(unsigned long nodeId)
+{
+    return m_nodeEditorWindow.GetNodeEntryLabel(nodeId);
+}
+
+std::list<std::shared_ptr<Connection>> MainWindow::GetNodeConnections(unsigned long nodeId)
+{
+    return m_nodeEditorWindow.GetNodeConnections(nodeId);
+}
+
+bool MainWindow::CompileToAssembler()
+{
+    // 1. Check if the model can be compiled, check for errors and report
+    // FIXME
+
+    // 2. Generate the assembly code from the model
+    m_currentCode = m_nodeEditorWindow.Build();
+
+    // Add global functions
+    {
+        std::string buffer;
+
+        std::ifstream f("scripts/media.asm");
+        f.seekg(0, std::ios::end);
+        buffer.resize(f.tellg());
+        f.seekg(0);
+        f.read(buffer.data(), buffer.size());
+        m_currentCode += buffer;
+    }
+
+    m_editor.SetScript(m_currentCode);
+
+    return true;
+}
+
+void MainWindow::GenerateBinary()
+{
+    m_dbg.run_result = VM_FINISHED;
+    m_dbg.free_run = false;
+
+    if (m_assembler.Parse(m_currentCode) == true )
+    {
+        if (m_assembler.BuildBinary(m_program, m_result) == true)
+        {
+            m_result.Print();
+
+            Log("Binary successfully generated.");
+
+            // Update ROM memory
+            std::copy(m_program.begin(), m_program.end(), m_rom_data);
+
+            // FIXME
+//            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
+//            m_romView->SetMemory(m_rom_data, m_program.size());
+            m_project.SaveStory(m_program);
+            chip32_initialize(&m_chip32_ctx);
+            m_dbg.run_result = VM_OK;
+            UpdateVmView();
+            //            DebugContext::DumpCodeAssembler(m_assembler);
+        }
+        else
+        {
+            Chip32::Assembler::Error err = m_assembler.GetLastError();
+            Log(err.ToString(), true);
+            m_editor.AddError(err.line, err.message); // show also the error in the code editor
+        }
+    }
+    else
+    {
+        Chip32::Assembler::Error err = m_assembler.GetLastError();
+        Log(err.ToString(), true);
+        m_editor.AddError(err.line, err.message); // show also the error in the code editor
+    }
+}
+
+void MainWindow::UpdateVmView()
+{
+    // FIXME
+//    m_vmDock->updateRegistersView(m_chip32_ctx);
+//    highlightNextLine();
+    // Refresh RAM content
+//    m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
+}
+
+void MainWindow::ConvertResources()
+{
+
 }
 
 void MainWindow::SaveParams()

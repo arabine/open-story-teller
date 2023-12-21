@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <list>
 
 struct Resource
 {
@@ -20,11 +21,8 @@ struct Resource
 
 // Itérateur pour parcourir les éléments filtrés
 class FilterIterator {
-private:
-    using Iterator = std::vector<std::shared_ptr<Resource>>::const_iterator;
-    Iterator current;
-    Iterator end;
-    std::string filterType;
+public:
+    using Iterator = std::list<std::shared_ptr<Resource>>::const_iterator;
 
 public:
     FilterIterator(Iterator start, Iterator end, const std::string &type)
@@ -35,6 +33,10 @@ public:
     // Surcharge de l'opérateur de déréférencement
     const std::shared_ptr<Resource>& operator*() const {
         return *current;
+    }
+
+    const Iterator Current() const {
+        return current;
     }
 
     // Surcharge de l'opérateur d'incrémentation
@@ -55,6 +57,10 @@ public:
     }
 
 private:
+    Iterator current;
+    Iterator end;
+    std::string filterType;
+
     // Fonction pour trouver le prochain élément qui correspond au filtre
     void searchNext() {
 

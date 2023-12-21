@@ -2,7 +2,7 @@
 
 namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
-
+#include "story_project.h"
 
 MediaNode::MediaNode(const std::string &title, IStoryProject &proj)
     : BaseNode(title, proj)
@@ -128,6 +128,11 @@ void MediaNode::DrawProperties()
         ImGui::OpenPopup("popup_button");
         isImage = true;
     }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delimage")) {
+        SetImage("");
+    }
+
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Sound");
@@ -147,6 +152,11 @@ void MediaNode::DrawProperties()
     if (ImGui::Button("Select...##sound")) {
         ImGui::OpenPopup("popup_button");
         isImage = false;
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delsound")) {
+        SetSound("");
     }
 
     // This is the actual popup Gui drawing section.
@@ -189,38 +199,36 @@ void MediaNode::SetSound(const std::string &f)
 
 
 
-/*
-std::string NodeEditorWindow::ChoiceLabel() const
+
+std::string MediaNode::ChoiceLabel() const
 {
     std::stringstream ss;
     ss << "mediaChoice" << std::setw(4) << std::setfill('0') << GetId();
     return ss.str();
 }
 
-std::string NodeEditorWindow::EntryLabel() const
+std::string MediaNode::GetEntryLabel()
 {
     std::stringstream ss;
-    ss << ".mediaEntry" << std::setw(4) << std::setfill('0') << getNodeId();
+    ss << ".mediaEntry" << std::setw(4) << std::setfill('0') << GetId();
     return ss.str();
 }
 
 
-std::string NodeEditorWindow::GenerateConstants()
+std::string MediaNode::GenerateConstants()
 {
     std::string s;
 
-    std::string image = m_mediaData["image"].get<std::string>();
-    std::string sound = m_mediaData["sound"].get<std::string>();
-    if (image.size() > 0)
+    if (m_image.name.size() > 0)
     {
-        s = StoryProject::FileToConstant(image, ".qoi");  // FIXME: Generate the extension setup in user option of output format
+        s = StoryProject::FileToConstant(m_image.name, ".qoi");  // FIXME: Generate the extension setup in user option of output format
     }
-    if (sound.size() > 0)
+    if (m_soundName.size() > 0)
     {
-        s += StoryProject::FileToConstant(sound, ".wav");  // FIXME: Generate the extension setup in user option of output format
+        s += StoryProject::FileToConstant(m_soundName, ".wav");  // FIXME: Generate the extension setup in user option of output format
     }
 
-    int nb_out_conns = ComputeOutputConnections();
+    int nb_out_conns = Outputs();
     if (nb_out_conns > 1)
     {
         // Generate choice table if needed (out ports > 1)
@@ -230,14 +238,14 @@ std::string NodeEditorWindow::GenerateConstants()
            << " DC32, "
            << nb_out_conns << ", ";
 
-        std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+        std::list<std::shared_ptr<Connection>> conns = m_project.GetNodeConnections(GetId());
         int i = 0;
         for (auto & c : conns)
         {
             std::stringstream ssChoice;
 
             // On va chercher le label d'entrée du noeud connecté à l'autre bout
-            ss << m_model.GetNodeEntryLabel(c.inNodeId);
+            ss << m_project.GetNodeEntryLabel(c->inNodeId);
             if (i < (nb_out_conns - 1))
             {
                 ss << ", ";
@@ -255,22 +263,22 @@ std::string NodeEditorWindow::GenerateConstants()
     return s;
 }
 
-std::string NodeEditorWindow::Build()
+std::string MediaNode::Build()
 {
     std::stringstream ss;
-    int nb_out_conns = ComputeOutputConnections();
+    int nb_out_conns = Outputs();
 
     ss << R"(; ---------------------------- )"
-       << GetNodeTitle()
+       << GetTitle()
        << " Type: "
        << (nb_out_conns == 0 ? "End" : nb_out_conns == 1 ? "Transition" : "Choice")
        << "\n";
-    std::string image = StoryProject::RemoveFileExtension(m_mediaData["image"].get<std::string>());
-    std::string sound = StoryProject::RemoveFileExtension(m_mediaData["sound"].get<std::string>());
+    std::string image = StoryProject::RemoveFileExtension(m_image.name);
+    std::string sound = StoryProject::RemoveFileExtension(m_soundName);
 
     // Le label de ce noeud est généré de la façon suivante :
     // "media" + Node ID + id du noeud parent. Si pas de noeud parent, alors rien
-    ss << EntryLabel() << ":\n";
+    ss << GetEntryLabel() << ":\n";
 
     if (image.size() > 0)
     {
@@ -301,18 +309,18 @@ std::string NodeEditorWindow::Build()
     {
         ss << "halt\n";
     }
-    else if (nb_out_conns == 1) // Transition node
+    else if (nb_out_conns == 1) // it is a transition node
     {
-        std::unordered_set<ConnectionId> conns = m_model.allConnectionIds(getNodeId());
+        std::list<std::shared_ptr<Connection>> conns = m_project.GetNodeConnections(GetId());
 
 
         for (auto c : conns)
         {
-            if (c.outNodeId == getNodeId())
+            if (c->outNodeId == GetId())
             {
                 // On place dans R0 le prochain noeud à exécuter en cas de OK
                 ss << "lcons r0, "
-                   << m_model.GetNodeEntryLabel(c.inNodeId) << "\n"
+                   << m_project.GetNodeEntryLabel(c->inNodeId) << "\n"
                    << "ret\n";
             }
         }
@@ -325,4 +333,4 @@ std::string NodeEditorWindow::Build()
     }
     return ss.str();
 }
-*/
+

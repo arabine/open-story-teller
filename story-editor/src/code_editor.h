@@ -11,7 +11,12 @@ public:
     virtual void Draw() override;
 
     void Initialize();
+
+    void SetScript(const std::string &txt);
+    void ClearErrors();
+    void AddError(int line, const std::string &text);
 private:
     TextEditor mEditor;
-    std::string mFileToEdit;
+    TextEditor::Breakpoints m_breakPoints;
+    TextEditor::ErrorMarkers m_markers;
 };

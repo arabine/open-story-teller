@@ -30,6 +30,11 @@ public:
         UpdateIterators();
     }
 
+    void Delete(FilterIterator &it)
+    {
+        m_items.erase(it.Current());
+    }
+
     void Clear()
     {
         m_items.clear();
@@ -61,7 +66,7 @@ public:
 
 
 private:
-    std::vector<std::shared_ptr<Resource>> m_items;
+    std::list<std::shared_ptr<Resource>> m_items;
     std::pair<FilterIterator, FilterIterator> m_images;
     std::pair<FilterIterator, FilterIterator> m_sounds;
 

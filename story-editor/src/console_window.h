@@ -25,42 +25,34 @@ public:
 
     void    ClearLog();
 
-    void AddMessage(const std::string &message) { AddLog("%s", message.c_str()); }
-
-    virtual void Draw() override;
-
-    void    ExecCommand(const char* command_line);
-
-    // In C++11 you'd be better off using lambdas for this sort of forwarding callbacks
-    static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
-
-    int     TextEditCallback(ImGuiInputTextCallbackData* data);
-
-private:
-
-    void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
+    void AddLog(const std::string &text, uint32_t type)
     {
+
+
         // FIXME-OPT
-        char buf[1024];
-        va_list args;
-        va_start(args, fmt);
-        vsnprintf(buf, IM_ARRAYSIZE(buf), fmt, args);
-        buf[IM_ARRAYSIZE(buf)-1] = 0;
-        va_end(args);
+        Entry e{text, type};
         std::scoped_lock<std::mutex> mutex(mLogMutex);
-        Items.push_back(Strdup(buf));
-        if (Items.size() > 100) 
+        Items.push_back(e);
+        if (Items.size() > 100)
         {
             Items.erase(Items.begin());
         }
     }
 
+    virtual void Draw() override;
+
+
+private:
+
+    struct Entry {
+        std::string text;
+        uint32_t type;
+    };
+
     std::mutex              mLogMutex;
     char                  InputBuf[256];
-    std::vector<std::string>       Items;
-    ImVector<const char*> Commands;
-    ImVector<char*>       History;
-    int                   HistoryPos;    // -1: new line, 0..History.Size-1 browsing history.
+    std::vector<Entry>       Items;
+
     ImGuiTextFilter       Filter;
     bool                  AutoScroll;
     bool                  ScrollToBottom;

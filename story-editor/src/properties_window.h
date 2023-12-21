@@ -5,10 +5,10 @@
 
 #include "base_node.h"
 
-class NodePropertiesWindow : public WindowBase
+class PropertiesWindow : public WindowBase
 {
 public:
-    NodePropertiesWindow();
+    PropertiesWindow();
 
     void Initialize();
     virtual void Draw() override;

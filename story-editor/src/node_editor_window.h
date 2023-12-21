@@ -28,15 +28,24 @@ namespace ed = ax::NodeEditor;
 class NodeEditorWindow  : public WindowBase
 {
 public:
-    struct LinkInfo
-    {
-        // Stuff from ImGuiNodeEditor
+    struct EditorLink {
         ed::LinkId Id;
         ed::PinId  InputId;
         ed::PinId  OutputId;
+    };
 
-        // Stuff from the project.json file, our model
-        Connection model;
+    // Stuff from ImGuiNodeEditor, each element has a unique ID within one editor
+    struct LinkInfo
+    {
+
+        LinkInfo()
+        {
+            ed_link = std::make_shared<EditorLink>();
+            model = std::make_shared<Connection>();
+        }
+
+        std::shared_ptr<EditorLink> ed_link;
+        std::shared_ptr<Connection> model;
     };
 
     NodeEditorWindow(IStoryProject &proj);
@@ -47,17 +56,20 @@ public:
     void Clear();
     void Load(const nlohmann::json &model);
     void Save(nlohmann::json &model);
+    std::string Build();
+    std::list<std::shared_ptr<Connection> > GetNodeConnections(unsigned long nodeId);
+    std::string GetNodeEntryLabel(unsigned long nodeId);
 
     std::shared_ptr<BaseNode> GetSelectedNode();
-    std::string GenerateConstants();
+
 private:
     IStoryProject &m_project;
 
     ed::EditorContext* m_context = nullptr;
 
     // key: Id
-    std::map<unsigned long, std::shared_ptr<BaseNode>>    m_nodes;
-    std::vector<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
+    std::list<std::shared_ptr<BaseNode>>   m_nodes;
+    std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
 
 
@@ -104,7 +116,6 @@ private:
     void LoadNode(const nlohmann::json &nodeJson);
     ed::PinId GetInputPin(unsigned long modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
-    std::string ChoiceLabel() const;
-    std::string EntryLabel() const;
+    uint32_t FindFirstNode() const;
 };
 

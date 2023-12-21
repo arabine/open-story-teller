@@ -105,8 +105,10 @@ public:
 
 
     virtual void Draw() = 0;
-
     virtual void DrawProperties() = 0;
+    virtual std::string GenerateConstants() = 0;
+    virtual std::string Build() = 0;
+    virtual std::string GetEntryLabel() = 0;
 
     void SetPosition(float x, float y);
 
@@ -135,8 +137,8 @@ public:
     unsigned long GetId() const { return m_id; }
     unsigned long GetInternalId() const { return m_node->ID.Get(); }
 
-    void seTitle(const std::string &title) { m_title = title; }
-    std::string getTitle() const { return m_title; }
+    void SeTitle(const std::string &title) { m_title = title; }
+    std::string GetTitle() const { return m_title; }
 
     virtual void FromJson(const nlohmann::json &) = 0;
     virtual void ToJson(nlohmann::json &) = 0;

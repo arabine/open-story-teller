@@ -57,7 +57,7 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
             n->SetPosition(posJson["x"].get<float>(), posJson["y"].get<float>());
             n->FromJson(internalDataJson);
 
-            m_nodes[n->GetInternalId()] = n;
+            m_nodes.push_back(n);
         }
         else
         {
@@ -78,9 +78,9 @@ ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
 
     for (auto & n : m_nodes)
     {
-        if (n.second->GetId() == modelNodeId)
+        if (n->GetId() == modelNodeId)
         {
-            id = n.second->GetInputPinAt(pinIndex);
+            id = n->GetInputPinAt(pinIndex);
         }
     }
 
@@ -98,9 +98,9 @@ ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex
 
     for (auto & n : m_nodes)
     {
-        if (n.second->GetId() == modelNodeId)
+        if (n->GetId() == modelNodeId)
         {
-            id = n.second->GetOutputPinAt(pinIndex);
+            id = n->GetOutputPinAt(pinIndex);
         }
     }
 
@@ -133,13 +133,13 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
         auto conn = std::make_shared<LinkInfo>();
 
         // our model
-        conn->model = connection.get<Connection>();
+        *conn->model = connection.get<Connection>();
 
 
         // ImGui stuff for links
-        conn->Id = BaseNode::GetNextId();
-        conn->InputId = GetInputPin(conn->model.inNodeId, conn->model.inPortIndex);
-        conn->OutputId = GetOutputPin(conn->model.outNodeId, conn->model.outPortIndex);
+        conn->ed_link->Id = BaseNode::GetNextId();
+        conn->ed_link->InputId = GetInputPin(conn->model->inNodeId, conn->model->inPortIndex);
+        conn->ed_link->OutputId = GetOutputPin(conn->model->outNodeId, conn->model->outPortIndex);
 
         // Since we accepted new link, lets add one to our list of links.
         m_links.push_back(conn);
@@ -155,18 +155,18 @@ void NodeEditorWindow::Save(nlohmann::json &model)
     for (const auto & n : m_nodes)
     {
         nlohmann::json node;
-        node["id"] = n.second->GetId();
-        node["type"] = n.second->GetType();
-        node["outPortCount"] = n.second->Outputs();
-        node["inPortCount"] = n.second->Inputs();
+        node["id"] = n->GetId();
+        node["type"] = n->GetType();
+        node["outPortCount"] = n->Outputs();
+        node["inPortCount"] = n->Inputs();
 
         nlohmann::json position;
-        position["x"] = n.second->GetX();
-        position["y"] = n.second->GetY();
+        position["x"] = n->GetX();
+        position["y"] = n->GetY();
 
         nlohmann::json internalData;
 
-        n.second->ToJson(internalData);
+        n->ToJson(internalData);
 
         node["position"] = position;
         node["internal-data"] = internalData;
@@ -185,25 +185,114 @@ void NodeEditorWindow::Save(nlohmann::json &model)
         int index;
         for (const auto & n : m_nodes)
         {
-            if (n.second->HasOnputPinId(linkInfo->OutputId, index))
+            if (n->HasOnputPinId(linkInfo->ed_link->OutputId, index))
             {
-                c["outNodeId"] = n.second->GetId();
+                c["outNodeId"] = n->GetId();
                 c["outPortIndex"] = index;
             }
 
-            if (n.second->HasInputPinId(linkInfo->InputId, index))
+            if (n->HasInputPinId(linkInfo->ed_link->InputId, index))
             {
-                c["inNodeId"] = n.second->GetId();
+                c["inNodeId"] = n->GetId();
                 c["inPortIndex"] = index;
             }
         }
 
         connections.push_back(c);
-        ed::Link(linkInfo->Id, linkInfo->OutputId, linkInfo->InputId);
     }
 
     model["connections"] = connections;
     ed::SetCurrentEditor(nullptr);
+}
+
+uint32_t NodeEditorWindow::FindFirstNode() const
+{
+    uint32_t id = 0;
+
+    // First node is the one without connection on its input port
+
+    for (const auto & n : m_nodes)
+    {
+        bool foundConnection = false;
+        for (const auto& l : m_links)
+        {
+            if (l->model->inNodeId == n->GetId())
+            {
+                foundConnection = true;
+            }
+        }
+
+        if (!foundConnection)
+        {
+            id = n->GetId();
+            m_project.Log("First node is: " + std::to_string(id));
+            break;
+        }
+    }
+
+    return id;
+}
+
+std::string NodeEditorWindow::Build()
+{
+    std::stringstream code;
+    ed::SetCurrentEditor(m_context);
+
+
+    std::stringstream chip32;
+
+    uint32_t firstNode = FindFirstNode();
+
+    code << "\tjump    " << GetNodeEntryLabel(firstNode) << "\r\n";
+
+    // First generate all constants
+    for (const auto & n : m_nodes)
+    {
+        code << n->GenerateConstants() << "\n";
+    }
+
+    for (const auto & n : m_nodes)
+    {
+        code << n->Build() << "\n";
+    }
+
+    ed::SetCurrentEditor(nullptr);
+    return code.str();
+}
+
+std::list<std::shared_ptr<Connection>> NodeEditorWindow::GetNodeConnections(unsigned long nodeId)
+{
+    std::list<std::shared_ptr<Connection>> c;
+    ed::SetCurrentEditor(m_context);
+
+    for (const auto & l : m_links)
+    {
+        if (l->model->outNodeId == nodeId)
+        {
+            c.push_back(l->model);
+        }
+    }
+
+    ed::SetCurrentEditor(nullptr);
+    return c;
+}
+
+std::string NodeEditorWindow::GetNodeEntryLabel(unsigned long nodeId)
+{
+    std::string label;
+    ed::SetCurrentEditor(m_context);
+
+    for (const auto & n : m_nodes)
+    {
+        if (n->GetId() == nodeId)
+        {
+            label = n->GetEntryLabel();
+            break;
+        }
+    }
+
+    ed::SetCurrentEditor(nullptr);
+    return label;
 }
 
 
@@ -219,9 +308,12 @@ std::shared_ptr<BaseNode> NodeEditorWindow::GetSelectedNode()
 
         if (nodeCount > 0)
         {
-            if (m_nodes.contains(nId.Get()))
+            for (auto & n : m_nodes)
             {
-                selected = m_nodes[nId.Get()];
+                if (n->GetInternalId() == nId.Get())
+                {
+                    selected = n;
+                }
             }
         }
     }
@@ -242,14 +334,14 @@ void NodeEditorWindow::Draw()
 
         for (const auto & n : m_nodes)
         {
-            ImGui::PushID(n.first);
-            n.second->Draw();
+            ImGui::PushID(n->GetInternalId());
+            n->Draw();
             ImGui::PopID();
         }
 
         for (const auto& linkInfo : m_links)
         {
-            ed::Link(linkInfo->Id, linkInfo->OutputId, linkInfo->InputId);
+            ed::Link(linkInfo->ed_link->Id, linkInfo->ed_link->OutputId, linkInfo->ed_link->InputId);
         }
 
         // Handle creation action, returns true if editor want to create new object (node or link)
@@ -304,7 +396,10 @@ void NodeEditorWindow::Draw()
 
                    m_links.erase(std::remove_if(m_links.begin(),
                                   m_links.end(),
-                                                [deletedLinkId](std::shared_ptr<LinkInfo> inf) { return inf->Id == deletedLinkId; }));
+                                [deletedLinkId](std::shared_ptr<LinkInfo> inf)
+                                {
+                                    return inf->ed_link->Id == deletedLinkId;
+                                }));
                }
 
                // You may reject link deletion by calling:

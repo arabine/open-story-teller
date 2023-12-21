@@ -94,15 +94,13 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
 }
 
 #define GET_REG(name, ra) if (!GetRegister(name, ra)) {\
-    std::stringstream ss; \
-    ss << "ERROR! Bad register name: " << name << std::endl;\
-    m_lastError = ss.str(); \
+    m_lastError.line -1; \
+    m_lastError.message = "ERROR! Bad register name: " + name; \
     return false; }
 
 #define CHIP32_CHECK(instr, cond, error) if (!(cond)) { \
-    std::stringstream ss; \
-    ss << "error line: " << instr.line << ": " << error << std::endl; \
-    m_lastError = ss.str(); \
+    m_lastError.line = instr.line; \
+    m_lastError.message = error; \
     return false; } \
 
 std::vector<std::string> Split(std::string line)
@@ -242,7 +240,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
         break;
     default:
-        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " << instr.mnemonic);
+        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " + instr.mnemonic);
         break;
     }
     return true;
@@ -286,7 +284,7 @@ bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
         ((intVal <= UINT32_MAX) && (instr.dataTypeSize == 32))) {
         sizeOk = true;
     }
-    CHIP32_CHECK(instr, sizeOk, "integer too high: " << intVal);
+    CHIP32_CHECK(instr, sizeOk, "integer too high: " + std::to_string(intVal));
     if (instr.dataTypeSize == 8) {
         instr.compiledArgs.push_back(intVal);
     } else if (instr.dataTypeSize == 16) {
@@ -362,7 +360,7 @@ bool Assembler::Parse(const std::string &data)
             instr.mnemonic = opcode;
             instr.isLabel = true;
             instr.addr = code_addr;
-            CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " << opcode);
+            CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " + opcode);
             m_labels[opcode] = instr;
             m_instructions.push_back(instr);
         }
@@ -383,7 +381,7 @@ bool Assembler::Parse(const std::string &data)
             {
                 instr.args.insert(instr.args.begin(), lineParts.begin() + 1, lineParts.end());
                 CHIP32_CHECK(instr, instr.args.size() == instr.code.nbAargs,
-                             "Bad number of parameters. Required: " << static_cast<int>(instr.code.nbAargs) << ", got: " << instr.args.size());
+                             "Bad number of parameters. Required: " + std::to_string(static_cast<int>(instr.code.nbAargs)) + ", got: " + std::to_string(instr.args.size()));
                 nbArgsSuccess = true;
             }
             else
@@ -412,7 +410,7 @@ bool Assembler::Parse(const std::string &data)
 
             CHIP32_CHECK(instr, (type.size() >= 3), "bad data type size");
             CHIP32_CHECK(instr, (type[0] == 'D') && ((type[1] == 'C') || (type[1] == 'V')), "bad data type (must be DCxx or DVxx");
-            CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " << opcode);
+            CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " + opcode);
 
             instr.isRomData = type[1] == 'C' ? true : false;
             instr.isRamData = type[1] == 'V' ? true : false;
@@ -445,7 +443,8 @@ bool Assembler::Parse(const std::string &data)
         }
         else
         {
-            m_lastError = "Unknown mnemonic or bad formatted line: " + std::to_string(lineNum);
+            m_lastError.message = "Unknown mnemonic or badly formatted line";
+            m_lastError.line = lineNum;
             return false;
         }
     }
@@ -458,7 +457,7 @@ bool Assembler::Parse(const std::string &data)
             // label is the first argument for jump, second position for LCONS
             uint16_t argsIndex = instr.code.opcode == OP_LCONS ? 1 : 0;
             std::string label = instr.args[argsIndex];
-            CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " << label);
+            CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " + label);
             uint16_t addr = m_labels[label].addr;
             std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
             instr.compiledArgs[argsIndex] = addr & 0xFF;

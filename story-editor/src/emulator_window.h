@@ -1,20 +1,17 @@
 #pragma once
 
 #include "window_base.h"
-#include "gui.h"
+#include "i_story_project.h"
 
 class EmulatorWindow : public WindowBase
 {
 public:
-    EmulatorWindow();
+    EmulatorWindow(IStoryProject &proj);
 
     void Initialize();
     virtual void Draw() override;
 
 private:
-    Gui::Image m_playImage;
-    Gui::Image m_pauseImage;
-    Gui::Image m_homeImage;
-
+    IStoryProject &m_project;
 };
 

@@ -83,10 +83,16 @@ struct Result
     }
 };
 
-
 class Assembler
 {
 public:
+
+    struct Error {
+        std::string message;
+        int line;
+        std::string ToString() const { return "Error line " + std::to_string(line) + ", " + message; }
+    };
+
     // Separated parser to allow only code check
     bool Parse(const std::string &data);
     // Generate the executable binary after the parse pass
@@ -104,7 +110,7 @@ public:
     bool GetRegister(const std::string &regName, uint8_t &reg);
     bool GetRegisterName(uint8_t reg, std::string &regName);
 
-    std::string GetLastError() { return m_lastError; }
+    Error GetLastError() { return m_lastError; }
 
 private:
     bool CompileMnemonicArguments(Instr &instr);
@@ -112,7 +118,7 @@ private:
     // label, address
     std::map<std::string, Instr> m_labels;
 
-    std::string m_lastError;
+    Error m_lastError;
 
     std::vector<Instr> m_instructions;
     bool CompileConstantArgument(Instr &instr, const std::string &a);

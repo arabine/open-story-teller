@@ -1,17 +1,18 @@
 #include "emulator_window.h"
 #include "gui.h"
+#include "IconsMaterialDesignIcons.h"
 
-EmulatorWindow::EmulatorWindow()
+EmulatorWindow::EmulatorWindow(IStoryProject &proj)
     : WindowBase("Emulator")
+    , m_project(proj)
 {
 
-    Gui::LoadRawImage("assets/play.png", m_playImage);
 }
 
-void EmulatorWindow::Initialize() {
+void EmulatorWindow::Initialize()
+{
 
-    int my_image_width = 0;
-    int my_image_height = 0;
+
 
 }
 
@@ -33,8 +34,32 @@ void EmulatorWindow::Draw()
     ImVec2 p = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + 320, p.y + 240), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
 
-    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + 240));
-    ImGui::ImageButton("play", m_playImage.texture, ImVec2(45, 45));
+    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + 244));
+
+    float old_size = ImGui::GetFont()->Scale;
+    ImGui::GetFont()->Scale *= 2;
+
+    ImGui::PushFont(ImGui::GetFont());
+
+
+    ImGui::Button(ICON_MDI_PLAY_CIRCLE_OUTLINE, ImVec2(50, 50));
+    ImGui::SameLine();
+    ImGui::Button(ICON_MDI_STOP_CIRCLE_OUTLINE, ImVec2(50, 50));
+    ImGui::SameLine();
+    ImGui::Button(ICON_MDI_ARROW_LEFT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50));
+    ImGui::SameLine();
+    ImGui::Button(ICON_MDI_ARROW_RIGHT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50));
+
+    ImGui::GetFont()->Scale = old_size;
+    ImGui::PopFont();
+
+    ImGui::SeparatorText("Script control and debug");
+
+    if (ImGui::Button("Build"))
+    {
+        m_project.Build();
+    }
+    ImGui::SameLine();
 
     WindowBase::EndDraw();
 }

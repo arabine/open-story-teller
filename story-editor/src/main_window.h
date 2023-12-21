@@ -8,7 +8,7 @@
 #include "emulator_window.h"
 #include "resources_window.h"
 #include "node_editor_window.h"
-#include "node_properties_window.h"
+#include "properties_window.h"
 
 #include "chip32_assembler.h"
 #include "chip32_vm.h"
@@ -92,7 +92,8 @@ private:
     std::vector<uint8_t> m_program;
     Chip32::Assembler m_assembler;
     Chip32::Result m_result;
-   // DebugContext m_dbg;
+    DebugContext m_dbg;
+    std::string m_currentCode;
 
     std::vector<std::string> m_recentProjects;
 
@@ -101,29 +102,17 @@ private:
     Gui gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
-    CodeEditor editor;
+    CodeEditor m_editor;
 
     ResourcesWindow m_resourcesWindow;
 
     NodeEditorWindow m_nodeEditorWindow;
 
-    NodePropertiesWindow m_nodePropertiesWindow;
-
-
-    char mBufAddress[200];
-    char mBufReceivePath[200];
-    char mBufSendPath[200];
-    char mBufPort[10];
-
-    int octets[4];
-
-    std::string mServerAddr;
-    std::string mServerRecUrl;
-    std::string mServerSndUrl;
-    int mServerPort;
+    PropertiesWindow m_PropertiesWindow;
 
 
     // From IStoryProject (proxy to StoryProject class)
+    virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
     virtual std::pair<FilterIterator, FilterIterator> Images() override;
@@ -132,13 +121,15 @@ private:
     virtual void AddResource(std::shared_ptr<Resource> res) override;
     virtual void ClearResources() override;
     virtual std::pair<FilterIterator, FilterIterator> Resources() override;
-
+    virtual void DeleteResource(FilterIterator &it) override;
+    virtual void Build() override;
+    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(unsigned long nodeId) override;
+    virtual std::string GetNodeEntryLabel(unsigned long nodeId) override;
 
     void SaveParams();
     void LoadParams();
 
     void DrawMainMenuBar();
-    void ShowOptionsWindow();
     bool ShowQuitConfirm();
 
     void NewProjectPopup();
@@ -147,6 +138,11 @@ private:
     void CloseProject();
     void OpenProjectDialog();
     void DrawStatusBar();
+
+    bool CompileToAssembler();
+    void ConvertResources();
+    void GenerateBinary();
+    void UpdateVmView();
 };
 
 #endif // MAINWINDOW_H

@@ -119,14 +119,17 @@ set(SRCS
     src/resources_window.cpp
     src/resources_window.h
 
-    src/node_properties_window.cpp
-    src/node_properties_window.h
+    src/properties_window.cpp
+    src/properties_window.h
 
     src/gui.h
     src/gui.cpp
 
     src/code_editor.cpp
     src/code_editor.h
+
+    src/connection.cpp
+    src/connection.h
 
     src/uuid.h
     src/resource_manager.h

@@ -1,6 +1,7 @@
 #include "code_editor.h"
 
 #include <fstream>
+#include <memory>
 
 CodeEditor::CodeEditor()
     : WindowBase("Code editor")
@@ -11,27 +12,32 @@ CodeEditor::CodeEditor()
 void CodeEditor::Initialize()
 {
     // error markers
-    TextEditor::ErrorMarkers markers;
-    markers.insert(std::make_pair<int, std::string>(6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
-    markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
-    mEditor.SetErrorMarkers(markers);
+
+//
+//    markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
+
 
     // "breakpoint" markers
-        //TextEditor::Breakpoints bpts;
-        //bpts.insert(24);
-        //bpts.insert(47);
-        //editor.SetBreakpoints(bpts);
+    m_breakPoints.insert(42);
+    mEditor.SetBreakpoints(m_breakPoints);
 
-    mFileToEdit = "test/test_zebra7500.js";
+}
 
-    {
-        std::ifstream t(mFileToEdit);
-        if (t.good())
-        {
-            std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-            mEditor.SetText(str);
-        }
-    }
+void CodeEditor::ClearErrors()
+{
+    m_markers.clear();
+}
+
+void CodeEditor::AddError(int line, const std::string &text)
+{
+    m_markers.insert(std::make_pair(line, text));
+    mEditor.SetErrorMarkers(m_markers);
+}
+
+
+void CodeEditor::SetScript(const std::string &txt)
+{
+    mEditor.SetText(txt);
 }
 
 void CodeEditor::Draw()
@@ -99,10 +105,9 @@ void CodeEditor::Draw()
         ImGui::EndMenuBar();
     }
 
-    ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, mEditor.GetTotalLines(),
+    ImGui::Text("%6d/%-6d %6d lines  | %s | %s ", cpos.mLine + 1, cpos.mColumn + 1, mEditor.GetTotalLines(),
         mEditor.IsOverwrite() ? "Ovr" : "Ins",
-        mEditor.CanUndo() ? "*" : " ",
-        mEditor.GetLanguageDefinition().mName.c_str(), mFileToEdit.c_str());
+        mEditor.CanUndo() ? "*" : " ");
 
     mEditor.Render("TextEditor");
     WindowBase::EndDraw();

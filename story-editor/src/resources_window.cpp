@@ -109,6 +109,7 @@ void ResourcesWindow::Draw()
         int id = 1000;
         for (auto it = b; it != e; ++it)
         {
+            bool quitLoop = false;
             ImGui::PushID(id);
             ImGui::TableNextColumn();
             ImGui::Text("%s", (*it)->file.c_str());
@@ -132,7 +133,6 @@ void ResourcesWindow::Draw()
                     strncpy(description, (*it)->description.c_str(), sizeof(description));
                     init = false;
                 }
-//                ImGui::PushID(id);
                 ImGui::InputText("Description", description, sizeof(description));
                 if (ImGui::Button("Close"))
                 {
@@ -140,7 +140,6 @@ void ResourcesWindow::Draw()
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::EndPopup();
-//                ImGui::PopID();
             }
             ImGui::SameLine();
             ImGui::Text("%s", (*it)->description.c_str());
@@ -153,9 +152,16 @@ void ResourcesWindow::Draw()
             ImGui::TableNextColumn();
             if (ImGui::SmallButton("Delete"))
             {
+                m_project.DeleteResource(it);
+                quitLoop = true;
             }
             ImGui::PopID();
             id++;
+
+            if (quitLoop)
+            {
+                break;
+            }
         }
 
         ImGui::EndTable();

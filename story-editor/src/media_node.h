@@ -20,9 +20,10 @@ public:
 
     virtual void FromJson(const nlohmann::json &j) override;
     virtual void ToJson(nlohmann::json &j) override;
-
     virtual void DrawProperties() override;
-
+    virtual std::string Build() override;
+    virtual std::string GetEntryLabel() override;
+    virtual std::string GenerateConstants() override;
 private:
     IStoryProject &m_project;
     Gui::Image  m_image;
@@ -34,4 +35,5 @@ private:
     std::string m_buttonUniqueName;
     void SetImage(const std::string &f);
     void SetSound(const std::string &f);
+    std::string ChoiceLabel() const;
 };

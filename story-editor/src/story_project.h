@@ -48,35 +48,6 @@ struct AudioCommand {
 };
 
 
-struct Connection
-{
-    int outNodeId;
-    int outPortIndex;
-    int inNodeId;
-    int inPortIndex;
-};
-
-inline bool operator==(Connection const &a, Connection const &b)
-{
-    return a.outNodeId == b.outNodeId && a.outPortIndex == b.outPortIndex
-           && a.inNodeId == b.inNodeId && a.inPortIndex == b.inPortIndex;
-}
-
-inline bool operator!=(Connection const &a, Connection const &b)
-{
-    return !(a == b);
-}
-
-inline void invertConnection(Connection &id)
-{
-    std::swap(id.outNodeId, id.inNodeId);
-    std::swap(id.outPortIndex, id.inPortIndex);
-}
-
-void to_json(nlohmann::json& j, const Connection& p);
-
-void from_json(const nlohmann::json& j, Connection& p);
-
 
 // FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
 struct StoryNode
