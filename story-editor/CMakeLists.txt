@@ -131,10 +131,10 @@ set(SRCS
     src/connection.cpp
     src/connection.h
 
-    src/uuid.h
-    src/resource_manager.h
-    src/i_story_project.h
-    src/resource.h
+    src/media_converter.cpp
+    src/media_converter.h
+
+    src/i_story_manager.h
 
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
@@ -155,13 +155,15 @@ set(SRCS
 
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
-    ../software/library/miniaudio.c
+    ../software/library/audio_player.cpp
+    ../software/library/audio_player.h
     ../software/library/miniaudio.h
-
-    src/story_project.cpp
-    src/story_project.h
-    src/media_converter.cpp
-    src/media_converter.h
+    ../software/library/uuid.h
+    ../software/library/resource.h
+    ../software/library/resource_manager.h
+    ../software/library/story_project.cpp
+    ../software/library/story_project.h
+    ../software/library/thread_safe_queue.h
 )
 
 if(WIN32)

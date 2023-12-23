@@ -1,6 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+
+#include <functional>
+
 #include "gui.h"
 #include "console_window.h"
 #include "code_editor.h"
@@ -13,7 +16,8 @@
 #include "chip32_assembler.h"
 #include "chip32_vm.h"
 #include "story_project.h"
-#include "i_story_project.h"
+#include "i_story_manager.h"
+#include "thread_safe_queue.h"
 
 struct DebugContext
 {
@@ -24,6 +28,10 @@ struct DebugContext
     chip32_result_t run_result{VM_FINISHED};
 
     std::set<int> m_breakpoints;
+
+    void Stop() {
+        run_result = VM_FINISHED;
+    }
 
     static void DumpCodeAssembler(Chip32::Assembler & assembler) {
 
@@ -51,7 +59,7 @@ struct DebugContext
     }
 };
 
-#include <functional>
+
 
 template <typename T>
 struct Callback;
@@ -70,7 +78,7 @@ std::function<Ret(Params...)> Callback<Ret(Params...)>::func;
 
 
 
-class MainWindow : public IStoryProject
+class MainWindow : public IStoryManager, public IAudioEvent
 {
 public:
     MainWindow();
@@ -80,8 +88,9 @@ public:
     void Loop();
 
 private:
+    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvLeftButton, EvRightButton, EvAudioFinished};
 
-    StoryProject m_project;
+    StoryProject m_story;
 
     // VM
     uint8_t m_rom_data[16*1024];
@@ -94,6 +103,7 @@ private:
     Chip32::Result m_result;
     DebugContext m_dbg;
     std::string m_currentCode;
+
 
     std::vector<std::string> m_recentProjects;
 
@@ -110,8 +120,17 @@ private:
 
     PropertiesWindow m_PropertiesWindow;
 
+    AudioPlayer m_player;
 
-    // From IStoryProject (proxy to StoryProject class)
+    struct VmEvent
+    {
+        VmEventType type;
+    };
+
+    ThreadSafeQueue<VmEvent> m_eventQueue;
+
+
+    // From IStoryManager (proxy to StoryProject class)
     virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
@@ -125,6 +144,13 @@ private:
     virtual void Build() override;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(unsigned long nodeId) override;
     virtual std::string GetNodeEntryLabel(unsigned long nodeId) override;
+    virtual void Play() override;
+    virtual void Pause() override;
+    virtual void Next() override;
+    virtual void Previous() override;
+
+    // From IAudioEvent
+    virtual void EndOfAudio() override;
 
     void SaveParams();
     void LoadParams();
@@ -143,6 +169,10 @@ private:
     void ConvertResources();
     void GenerateBinary();
     void UpdateVmView();
+    uint8_t Syscall(chip32_ctx_t *ctx, uint8_t code);
+    std::string GetFileNameFromMemory(uint32_t addr);
+    void ProcessStory();
+    void StepInstruction();
 };
 
 #endif // MAINWINDOW_H

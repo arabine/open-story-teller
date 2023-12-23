@@ -5,8 +5,8 @@
 
 unsigned long BaseNode::s_nextId = 1;
 
-BaseNode::BaseNode(const std::string &title, IStoryProject &proj)
-    : m_project(proj)
+BaseNode::BaseNode(const std::string &title, IStoryManager &proj)
+    : m_story(proj)
 {
   //  m_id = UUID().String();
 

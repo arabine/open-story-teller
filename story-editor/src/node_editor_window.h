@@ -9,7 +9,7 @@
 #include <imgui_node_editor.h>
 #include "base_node.h"
 #include "window_base.h"
-#include "i_story_project.h"
+#include "i_story_manager.h"
 #include "story_project.h"
 #include "json.hpp"
 
@@ -48,7 +48,7 @@ public:
         std::shared_ptr<Connection> model;
     };
 
-    NodeEditorWindow(IStoryProject &proj);
+    NodeEditorWindow(IStoryManager &proj);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
@@ -63,7 +63,7 @@ public:
     std::shared_ptr<BaseNode> GetSelectedNode();
 
 private:
-    IStoryProject &m_project;
+    IStoryManager &m_story;
 
     ed::EditorContext* m_context = nullptr;
 
@@ -90,12 +90,12 @@ private:
 
     template<class NodeType>
     struct Factory {
-        static std::shared_ptr<BaseNode> create_func(const std::string &title, IStoryProject &proj) {
+        static std::shared_ptr<BaseNode> create_func(const std::string &title, IStoryManager &proj) {
             return std::make_shared<NodeType>(title, proj);
         }
     };
 
-    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &title, IStoryProject &proj);
+    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &title, IStoryManager &proj);
     typedef std::map<std::string, GenericCreator> Registry;
     Registry m_registry;
 
@@ -104,7 +104,7 @@ private:
         m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
     }
 
-    std::shared_ptr<BaseNode> createNode(const std::string& key, const std::string &title, IStoryProject &proj) {
+    std::shared_ptr<BaseNode> createNode(const std::string& key, const std::string &title, IStoryManager &proj) {
         typename Registry::const_iterator i = m_registry.find(key);
         if (i == m_registry.end()) {
             throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +

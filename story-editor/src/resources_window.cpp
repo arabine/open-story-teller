@@ -8,9 +8,9 @@
 
 //static thread_pool pool;
 
-ResourcesWindow::ResourcesWindow(IStoryProject &project)
+ResourcesWindow::ResourcesWindow(IStoryManager &project)
     : WindowBase("Resources")
-    , m_project(project)
+    , m_story(project)
 {
 
 }
@@ -44,7 +44,7 @@ void ResourcesWindow::ChooseFile()
 
 
             std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_project.BuildFullAssetsPath( p.filename());
+            std::filesystem::path p2 = m_story.BuildFullAssetsPath( p.filename());
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             auto res = std::make_shared<Resource>();
@@ -56,7 +56,7 @@ void ResourcesWindow::ChooseFile()
             res->format = ext;
             res->type = m_soundFile ? "sound" : "image";
             res->file = p.filename().generic_string();
-            m_project.AddResource(res);
+            m_story.AddResource(res);
         }
 
         // close
@@ -104,7 +104,7 @@ void ResourcesWindow::Draw()
 
         ImGui::TableHeadersRow();
 
-        auto [b, e] = m_project.Resources();
+        auto [b, e] = m_story.Resources();
 
         int id = 1000;
         for (auto it = b; it != e; ++it)
@@ -152,7 +152,7 @@ void ResourcesWindow::Draw()
             ImGui::TableNextColumn();
             if (ImGui::SmallButton("Delete"))
             {
-                m_project.DeleteResource(it);
+                m_story.DeleteResource(it);
                 quitLoop = true;
             }
             ImGui::PopID();

@@ -4,21 +4,16 @@
 #include <iostream>
 #include <queue>
 #include <filesystem>
+
 #include "json.hpp"
 
 StoryProject::StoryProject()
 {
-    m_audioThread = std::thread( std::bind(&StoryProject::AudioThread, this) );
+
 }
 
 StoryProject::~StoryProject()
 {
-    // Quit audio thread
-    m_audioQueue.push({"quit", ""});
-    if (m_audioThread.joinable())
-    {
-        m_audioThread.join();
-    }
 }
 
 
@@ -100,7 +95,7 @@ void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
 
 void StoryProject::Initialize(const std::string &file_path)
 {
-    m_project_file_path = file_path;
+    m_story_file_path = file_path;
     std::filesystem::path p(file_path);
     m_working_dir= p.parent_path().generic_string();
 
@@ -243,7 +238,7 @@ void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
     {
         nlohmann::json resourcesData;
 
-        auto [b, e] = manager.filter("");
+        auto [b, e] = manager.Items();
         for (auto it = b; it != e; ++it)
         {
             nlohmann::json obj = {{"type", (*it)->type},
@@ -258,7 +253,7 @@ void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
 
     j["nodegraph"] = model;
 
-    std::ofstream o(m_project_file_path);
+    std::ofstream o(m_story_file_path);
     o << std::setw(4) << j << std::endl;
 }
 
@@ -364,32 +359,6 @@ std::string StoryProject::GetFileExtension(const std::string &fileName)
     return "";
 }
 
-extern "C" int miniaudio_play(const char* filename);
-
-void StoryProject::AudioThread()
-{
-    for (;;)
-    {
-        auto cmd = m_audioQueue.front();
-
-        if (cmd.order == "play") {
-            miniaudio_play(cmd.filename.c_str());
-           // QMetaObject::invokeMethod(this, "sigAudioStopped", Qt::QueuedConnection);
-            m_audioQueue.pop();
-        } else {
-            return;
-        }
-    }
-}
-
-void StoryProject::PlaySoundFile(const std::string &fileName)
-{
-    m_audioQueue.push({"play", fileName});
-}
-
-
-
-
 void StoryProject::SetImageFormat(ImageFormat format)
 {
     m_imageFormat = format;
@@ -408,7 +377,7 @@ void StoryProject::SetDisplayFormat(int w, int h)
 
 std::string StoryProject::GetProjectFilePath() const
 {
-    return m_project_file_path;
+    return m_story_file_path;
 }
 
 std::string StoryProject::GetWorkingDir() const

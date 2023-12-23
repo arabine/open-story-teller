@@ -15,6 +15,11 @@ public:
     void SetScript(const std::string &txt);
     void ClearErrors();
     void AddError(int line, const std::string &text);
+
+    void HighlightLine(int line)
+    {
+        mEditor.SetExecutionMarker(line);
+    }
 private:
     TextEditor mEditor;
     TextEditor::Breakpoints m_breakPoints;

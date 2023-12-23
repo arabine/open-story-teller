@@ -2,9 +2,9 @@
 #include "gui.h"
 #include "IconsMaterialDesignIcons.h"
 
-EmulatorWindow::EmulatorWindow(IStoryProject &proj)
+EmulatorWindow::EmulatorWindow(IStoryManager &proj)
     : WindowBase("Emulator")
-    , m_project(proj)
+    , m_story(proj)
 {
 
 }
@@ -31,8 +31,17 @@ void EmulatorWindow::Draw()
 //    ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(313, 367));
 
 //    float sz = ImGui::GetTextLineHeight();
+
     ImVec2 p = ImGui::GetCursorScreenPos();
-    ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + 320, p.y + 240), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
+
+    if (m_image.Valid())
+    {
+        ImGui::Image(m_image.texture, ImVec2(320, 240));
+    }
+    else
+    {
+        ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + 320, p.y + 240), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
+    }
 
     ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + 244));
 
@@ -42,13 +51,25 @@ void EmulatorWindow::Draw()
     ImGui::PushFont(ImGui::GetFont());
 
 
-    ImGui::Button(ICON_MDI_PLAY_CIRCLE_OUTLINE, ImVec2(50, 50));
+    if (ImGui::Button(ICON_MDI_PLAY_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    {
+        m_story.Play();
+    }
     ImGui::SameLine();
-    ImGui::Button(ICON_MDI_STOP_CIRCLE_OUTLINE, ImVec2(50, 50));
+    if (ImGui::Button(ICON_MDI_STOP_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    {
+        m_story.Pause();
+    }
     ImGui::SameLine();
-    ImGui::Button(ICON_MDI_ARROW_LEFT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50));
+    if (ImGui::Button(ICON_MDI_ARROW_LEFT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    {
+        m_story.Previous();
+    }
     ImGui::SameLine();
-    ImGui::Button(ICON_MDI_ARROW_RIGHT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50));
+    if (ImGui::Button(ICON_MDI_ARROW_RIGHT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    {
+        m_story.Next();
+    }
 
     ImGui::GetFont()->Scale = old_size;
     ImGui::PopFont();
@@ -57,9 +78,20 @@ void EmulatorWindow::Draw()
 
     if (ImGui::Button("Build"))
     {
-        m_project.Build();
+        m_story.Build();
     }
     ImGui::SameLine();
 
     WindowBase::EndDraw();
+}
+
+void EmulatorWindow::ClearImage()
+{
+    m_image.Clear();
+}
+
+void EmulatorWindow::SetImage(const std::string &image)
+{
+    m_image.name = image;
+    m_image.Load(m_story.BuildFullAssetsPath(image));
 }

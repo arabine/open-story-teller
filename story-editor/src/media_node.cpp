@@ -4,9 +4,9 @@ namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 
-MediaNode::MediaNode(const std::string &title, IStoryProject &proj)
+MediaNode::MediaNode(const std::string &title, IStoryManager &proj)
     : BaseNode(title, proj)
-    , m_project(proj)
+    , m_story(proj)
 {
     Gui::LoadRawImage("fairy.png", m_image);
 
@@ -87,8 +87,6 @@ void MediaNode::Draw()
 
     DrawPins();
 
-
-
     BaseNode::FrameEnd();
 
 }
@@ -144,7 +142,7 @@ void MediaNode::DrawProperties()
 
     if (ImGui::Button(m_buttonUniqueName.c_str()))
     {
-        m_project.PlaySoundFile(m_soundPath);
+        m_story.PlaySoundFile(m_soundPath);
     }
 
     ImGui::SameLine();
@@ -163,7 +161,7 @@ void MediaNode::DrawProperties()
     if (ImGui::BeginPopup("popup_button")) {
         ImGui::SeparatorText(isImage ? "Images" : "Sounds");
 
-        auto [filtreDebut, filtreFin] = isImage ? m_project.Images() : m_project.Sounds();
+        auto [filtreDebut, filtreFin] = isImage ? m_story.Images() : m_story.Sounds();
         int n = 0;
         for (auto it = filtreDebut; it != filtreFin; ++it, n++)
         {
@@ -188,13 +186,13 @@ void MediaNode::DrawProperties()
 void MediaNode::SetImage(const std::string &f)
 {
     m_image.name = f;
-    m_image.Load(m_project.BuildFullAssetsPath(f));
+    m_image.Load(m_story.BuildFullAssetsPath(f));
 }
 
 void MediaNode::SetSound(const std::string &f)
 {
     m_soundName = f;
-    m_soundPath = m_project.BuildFullAssetsPath(m_soundName);
+    m_soundPath = m_story.BuildFullAssetsPath(m_soundName);
 }
 
 
@@ -238,14 +236,14 @@ std::string MediaNode::GenerateConstants()
            << " DC32, "
            << nb_out_conns << ", ";
 
-        std::list<std::shared_ptr<Connection>> conns = m_project.GetNodeConnections(GetId());
+        std::list<std::shared_ptr<Connection>> conns = m_story.GetNodeConnections(GetId());
         int i = 0;
         for (auto & c : conns)
         {
             std::stringstream ssChoice;
 
             // On va chercher le label d'entrée du noeud connecté à l'autre bout
-            ss << m_project.GetNodeEntryLabel(c->inNodeId);
+            ss << m_story.GetNodeEntryLabel(c->inNodeId);
             if (i < (nb_out_conns - 1))
             {
                 ss << ", ";
@@ -311,7 +309,7 @@ std::string MediaNode::Build()
     }
     else if (nb_out_conns == 1) // it is a transition node
     {
-        std::list<std::shared_ptr<Connection>> conns = m_project.GetNodeConnections(GetId());
+        std::list<std::shared_ptr<Connection>> conns = m_story.GetNodeConnections(GetId());
 
 
         for (auto c : conns)
@@ -320,7 +318,7 @@ std::string MediaNode::Build()
             {
                 // On place dans R0 le prochain noeud à exécuter en cas de OK
                 ss << "lcons r0, "
-                   << m_project.GetNodeEntryLabel(c->inNodeId) << "\n"
+                   << m_story.GetNodeEntryLabel(c->inNodeId) << "\n"
                    << "ret\n";
             }
         }
