@@ -426,7 +426,8 @@ void MainWindow::NewProjectPopup()
 
             if (valid)
             {
-                m_project.Initialize(std::filesystem::path(projdir) / "project.json");
+                auto p = std::filesystem::path(projdir) / std::filesystem::path("project.json");
+                m_project.Initialize(p.generic_string());
 
                 if (display_item_current_idx == 0)
                 {

@@ -5,9 +5,6 @@ on:
   push:
     branches:
       - main
-env:
-  QT_VERSION: 6.5.1
-
 jobs:
   build_win:
       runs-on: windows-latest
@@ -15,36 +12,21 @@ jobs:
         - uses: actions/checkout@v2
           with:
             submodules: recursive
-        - uses: ilammy/msvc-dev-cmd@v1
-        - uses: actions/setup-python@v2
-          with:
-            python-version: '3.8'
         - name: install_deps
           run : |
                choco install wget -y
                choco install nsis -y
                choco install ninja -y
-               choco install cmake -y
-               pip install aqtinstall
-        - name: install_qt
-          run : |
-               python3 -m aqt install-qt -m qtmultimedia -O ${{ github.workspace }}/Qt/ windows desktop ${{ env.QT_VERSION }} win64_msvc2019_64
-               echo "${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         - name: build
           working-directory: ./story-editor
           run : |
               mkdir build
               cd build
-              cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}\Qt\${{ env.QT_VERSION }}\msvc2019_64 -DQT_DIR=${{ github.workspace }}\Qt\6.5.1\msvc2019_64\lib\cmake\Qt6 -G Ninja ..
+              cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
               ninja
               ls
               mkdir story-editor
               cp story-editor.exe story-editor
-              windeployqt story-editor/story-editor.exe --release
-              copy C:\Windows\System32\vccorlib140.dll story-editor\
-              copy C:\Windows\System32\msvcp140.dll story-editor\
-              copy C:\Windows\System32\vcruntime140.dll story-editor\
-              ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/msvc2019_64/bin/windeployqt.exe --release  --no-compiler-runtime  --no-opengl-sw --no-system-d3d-compiler story-editor\story-editor.exe
         - name: package_setup
           working-directory: ./story-editor
           run : |

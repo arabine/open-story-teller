@@ -12,11 +12,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # set(CMAKE_VERBOSE_MAKEFILE on)
 
 
-if (MSVC)
-     add_compile_options("/FS")
-endif (MSVC)
-
-
 if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif()
@@ -167,7 +162,7 @@ set(SRCS
 if(WIN32)
     list(APPEND
         SRCS
-        manolab/icon.rc
+        icon.rc
     )
 endif()
 
@@ -207,13 +202,17 @@ target_link_libraries(${STORY_EDITOR_PROJECT}
     SDL2
 )
 elseif(WIN32)
+
+target_compile_features("-Wl,-subsystem,windows")
+
 target_link_libraries(${STORY_EDITOR_PROJECT}
-    icl
     OpenGL::GL
+#    SDL2::SDL2main
+    SDL2::SDL2-static
     ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib Dbghelp.lib
 )
-set_target_properties(${STORY_EDITOR_PROJECT} PROPERTIES
-LINK_FLAGS /SUBSYSTEM:CONSOLE
-)   
+#set_target_properties(${STORY_EDITOR_PROJECT} PROPERTIES
+#LINK_FLAGS /SUBSYSTEM:CONSOLE
+#)
 endif()
 
