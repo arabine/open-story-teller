@@ -5,47 +5,13 @@
 #include <string>
 #include <filesystem>
 #include "json.hpp"
-#include <condition_variable>
-#include <queue>
+
 #include <memory>
 #include <random>
-#include <thread>
-#include <mutex>
+
 #include "json.hpp"
 #include "resource_manager.h"
-
-template <typename T>
-class ThreadSafeQueue {
-    std::mutex mutex;
-    std::condition_variable cond_var;
-    std::queue<T> queue;
-
-public:
-    void push(T&& item) {
-        {
-            std::lock_guard lock(mutex);
-            queue.push(item);
-        }
-
-        cond_var.notify_one();
-    }
-
-    T& front() {
-        std::unique_lock lock(mutex);
-        cond_var.wait(lock, [&]{ return !queue.empty(); });
-        return queue.front();
-    }
-
-    void pop() {
-        std::lock_guard lock(mutex);
-        queue.pop();
-    }
-};
-
-struct AudioCommand {
-    std::string order;
-    std::string filename;
-};
+#include "audio_player.h"
 
 
 
@@ -141,9 +107,8 @@ public:
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 
-
     void SaveStory(const std::vector<uint8_t> &m_program);
-    void PlaySoundFile(const std::string &fileName);
+
 private:
     // Project properties and location
     std::string m_name; /// human readable name
@@ -156,17 +121,13 @@ private:
     std::string m_titleSound;
 
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
-    std::string m_project_file_path; /// JSON project file
+    std::string m_story_file_path; /// JSON project file
 
     int m_display_w{320};
     int m_display_h{240};
 
-    std::thread m_audioThread;
-    ThreadSafeQueue<AudioCommand> m_audioQueue;
-
     ImageFormat m_imageFormat{IMG_FORMAT_BMP_4BITS};
     SoundFormat m_soundFormat{SND_FORMAT_WAV};
-    void AudioThread();
 };
 
 #endif // STORY_PROJECT_H

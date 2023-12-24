@@ -22,6 +22,7 @@ your use of the corresponding standard functions.
 
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
+#include "qoi.h"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -34,24 +35,59 @@ static SDL_Renderer* renderer{nullptr};
 
 #include "stb_image.h"
 
+static std::string GetFileExtension(const std::string &fileName)
+{
+    if(fileName.find_last_of(".") != std::string::npos)
+        return fileName.substr(fileName.find_last_of(".")+1);
+    return "";
+}
+
 
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 {
-    int channels;
-    unsigned char* data = stbi_load(filename, &img.w, &img.h, &channels, 0);
 
-    if (data == nullptr) {
-        fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
-        return false;
+
+    std::string ext = GetFileExtension(filename);
+
+    SDL_Surface* surface = nullptr;
+
+    if (ext == "qoi")
+    {
+        qoi_desc desc;
+        void *pixels = qoi_read(filename, &desc, 0);
+        unsigned int channels = desc.channels;
+        img.w = desc.width;
+        img.h = desc.height;
+
+        surface = SDL_CreateRGBSurfaceFrom((void*)pixels, img.w, img.h, channels * 8, channels * img.w,
+                                           0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+
+        if (pixels != NULL)
+        {
+            free(pixels);
+        }
     }
+    else
+    {
+        unsigned char* data = nullptr;
+        int channels;
+        data = stbi_load(filename, &img.w, &img.h, &channels, 0);
 
-    // SDL3
-//    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+        if (data == nullptr) {
+            fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
+            return false;
+        }
 
-    // SDL2
-    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
-                                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+
+        // SDL3
+        //    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+
+        // SDL2
+        surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
+                                           0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+        stbi_image_free(data);
+    }
 
 
     if (surface == nullptr) {
@@ -67,7 +103,7 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 
 //    SDL_DestroySurface(surface); // SDL3
     SDL_FreeSurface(surface); // SDL2
-    stbi_image_free(data);
+
 
     return true;
 }

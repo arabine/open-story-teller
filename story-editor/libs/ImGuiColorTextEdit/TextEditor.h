@@ -247,6 +247,10 @@ public:
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
 
+    void SetExecutionMarker(int line) {
+        mExecutionMarker = line;
+    }
+
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
 	std::string GetText() const;
@@ -386,10 +390,10 @@ private:
 	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
-	bool mHandleKeyboardInputs;
-	bool mHandleMouseInputs;
-	bool mIgnoreImGuiChild;
-	bool mShowWhitespaces;
+    bool mHandleKeyboardInputs{true};
+    bool mHandleMouseInputs{true};
+    bool mIgnoreImGuiChild{false};
+    bool mShowWhitespaces{true};
 	bool mShowShortTabGlyphs;
 
 	Palette mPaletteBase;
@@ -404,6 +408,6 @@ private:
 	Coordinates mInteractiveStart, mInteractiveEnd;
 	std::string mLineBuffer;
 	uint64_t mStartTime;
-
 	float mLastClick;
+    int mExecutionMarker{-1};
 };

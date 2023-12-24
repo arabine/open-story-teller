@@ -18,8 +18,8 @@ void CodeEditor::Initialize()
 
 
     // "breakpoint" markers
-    m_breakPoints.insert(42);
-    mEditor.SetBreakpoints(m_breakPoints);
+   // m_breakPoints.insert(42);
+  //  mEditor.SetBreakpoints(m_breakPoints);
 
 }
 

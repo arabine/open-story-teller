@@ -4,6 +4,7 @@
 
 #include "platform_folders.h"
 #include "uuid.h"
+#include "media_converter.h"
 
 #ifdef USE_WINDOWS_OS
 #include <winsock2.h>
@@ -22,14 +23,217 @@ MainWindow::MainWindow()
     : m_emulatorWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
-
+    , m_player(*this)
 {
-    m_project.Clear();
+
+    // VM Initialize
+    m_chip32_ctx.stack_size = 512;
+
+    m_chip32_ctx.rom.mem = m_rom_data;
+    m_chip32_ctx.rom.addr = 0;
+    m_chip32_ctx.rom.size = sizeof(m_rom_data);
+
+    m_chip32_ctx.ram.mem = m_ram_data;
+    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
+    m_chip32_ctx.ram.size = sizeof(m_ram_data);
+
+    Callback<uint8_t(chip32_ctx_t *, uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1, std::placeholders::_2);
+    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
+
+    m_story.Clear();
 }
 
 MainWindow::~MainWindow()
 {
 
+}
+
+
+std::string MainWindow::GetFileNameFromMemory(uint32_t addr)
+{
+    char strBuf[100];
+    bool isRam = addr & 0x80000000;
+    addr &= 0xFFFF; // mask the RAM/ROM bit, ensure 16-bit addressing
+    if (isRam) {
+        strcpy(&strBuf[0], (const char *)&m_chip32_ctx.ram.mem[addr]);
+    } else {
+        strcpy(&strBuf[0], (const char *)&m_chip32_ctx.rom.mem[addr]);
+    }
+    return strBuf;
+}
+
+/*
+void MainWindow::EventFinished(uint32_t replyEvent)
+{
+    if (m_dbg.run_result == VM_WAIT_EVENT)
+    {
+        // Result event is in R0
+        m_chip32_ctx.registers[R0] = replyEvent;
+        m_dbg.run_result = VM_OK;
+
+        if (m_dbg.free_run)
+        {
+            m_runTimer->start(100);
+        }
+        else
+        {
+            stepInstruction();
+        }
+    }
+}*/
+
+
+void MainWindow::Play()
+{
+    if (m_dbg.run_result == VM_FINISHED)
+    {
+        Build();
+
+        if (m_dbg.run_result == VM_READY)
+        {
+            m_dbg.free_run = true;
+            m_dbg.run_result = VM_OK; // actually starts the execution
+        }
+    }
+}
+
+void MainWindow::Pause()
+{
+
+}
+
+void MainWindow::Next()
+{
+
+}
+
+void MainWindow::Previous()
+{
+
+}
+
+void MainWindow::EndOfAudio()
+{
+    Log("End of audio track");
+    m_eventQueue.push({VmEventType::EvAudioFinished});
+}
+
+void MainWindow::StepInstruction()
+{
+    m_dbg.run_result = chip32_step(&m_chip32_ctx);
+    UpdateVmView();
+}
+
+void MainWindow::ProcessStory()
+{
+    if (m_dbg.run_result == VM_FINISHED)
+        return;
+
+    if (m_dbg.run_result == VM_READY)
+        return;
+
+    // 1. First, check events
+    if (m_dbg.run_result == VM_WAIT_EVENT)
+    {
+        VmEvent event;
+        if (m_eventQueue.try_pop(event))
+        {
+            if (event.type == VmEventType::EvStep)
+            {
+                m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvOkButton)
+            {
+                m_chip32_ctx.registers[R0] = 0x01;
+                m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvLeftButton)
+            {
+                m_chip32_ctx.registers[R0] = 0x02;
+                m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvRightButton)
+            {
+                m_chip32_ctx.registers[R0] = 0x04;
+                m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvAudioFinished)
+            {
+                m_chip32_ctx.registers[R0] = 0x08;
+                m_dbg.run_result = VM_OK;
+            }
+        }
+    }
+
+    if (m_dbg.run_result == VM_OK)
+    {
+        if (m_dbg.m_breakpoints.contains(m_dbg.line + 1))
+        {
+            Log("Breakpoint on line: " + std::to_string(m_dbg.line + 1));
+            m_dbg.free_run = false;
+            return;
+        }
+        StepInstruction();
+    }
+
+    if (m_dbg.run_result == VM_FINISHED)
+    {
+        m_dbg.free_run = false;
+    }
+
+    // In this case, we wait for single step debugger
+    if ((m_dbg.run_result == VM_OK) && !m_dbg.free_run)
+    {
+        m_dbg.run_result = VM_WAIT_EVENT;
+    }
+}
+
+uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
+{
+    uint8_t retCode = SYSCALL_RET_OK;
+    Log("SYSCALL: " + std::to_string(code));
+
+    // Media
+    if (code == 1) // Execute media
+    {
+        if (m_chip32_ctx.registers[R0] != 0)
+        {
+            // image file name address is in R0
+            std::string imageFile = m_story.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            Log("Image: " + imageFile);
+            m_emulatorWindow.SetImage(imageFile);
+        }
+        else
+        {
+            m_emulatorWindow.ClearImage();
+        }
+
+        if (m_chip32_ctx.registers[R1] != 0)
+        {
+            // sound file name address is in R1
+            std::string soundFile = m_story.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            Log(", Sound: " + soundFile);
+            m_player.Play(soundFile);
+        }
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+    }
+    // WAIT EVENT bits:
+    // 0: block
+    // 1: OK button
+    // 2: home button
+    // 3: pause button
+    // 4: rotary left
+    // 5: rotary right
+    else if (code == 2) // Wait for event
+    {
+        // Event mask is located in R0
+        // optional timeout is located in R1
+        // if timeout is set to zero, wait for infinite and beyond
+        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+    }
+
+
+    return retCode;
 }
 
 void MainWindow::DrawStatusBar()
@@ -221,11 +425,11 @@ void MainWindow::OpenProjectDialog()
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 
 
-            m_project.Initialize(filePathName);
+            m_story.Initialize(filePathName);
 
             nlohmann::json model;
 
-            if (m_project.Load(filePathName, model, m_resources))
+            if (m_story.Load(filePathName, model, m_resources))
             {
                 Log("Open project success");
                 m_nodeEditorWindow.Load(model);
@@ -247,7 +451,7 @@ void MainWindow::OpenProjectDialog()
 
 void MainWindow::EnableProject()
 {
-    auto proj = m_project.GetProjectFilePath();
+    auto proj = m_story.GetProjectFilePath();
     // Add to recent if not exists
     if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) != m_recentProjects.end())
     {
@@ -431,17 +635,17 @@ void MainWindow::NewProjectPopup()
 
                 if (display_item_current_idx == 0)
                 {
-                    m_project.SetDisplayFormat(320, 240);
+                    m_story.SetDisplayFormat(320, 240);
                 }
                 else
                 {
-                    m_project.SetDisplayFormat(640, 480);
+                    m_story.SetDisplayFormat(640, 480);
                 }
 
-                m_project.SetImageFormat(GetImageFormat(image_item_current_idx));
-                m_project.SetSoundFormat(GetSoundFormat(sound_item_current_idx));
-                m_project.SetName(project_name);
-                m_project.SetUuid(UUID().String());
+                m_story.SetImageFormat(GetImageFormat(image_item_current_idx));
+                m_story.SetSoundFormat(GetSoundFormat(sound_item_current_idx));
+                m_story.SetName(project_name);
+                m_story.SetUuid(UUID().String());
 
                 SaveProject();
                 EnableProject();
@@ -467,12 +671,12 @@ void MainWindow::SaveProject()
 {
     nlohmann::json model;
     m_nodeEditorWindow.Save(model);
-    m_project.Save(model, m_resources);
+    m_story.Save(model, m_resources);
 }
 
 void MainWindow::CloseProject()
 {
-    m_project.Clear();
+    m_story.Clear();
     m_nodeEditorWindow.Clear();
 
 //    m_model.Clear();
@@ -505,6 +709,10 @@ void MainWindow::Loop()
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
         DrawMainMenuBar();
        // DrawStatusBar();
+
+
+        ProcessStory();
+
 
         // ------------  Draw all windows
         m_consoleWindow.Draw();
@@ -544,12 +752,12 @@ void MainWindow::Log(const std::string &txt, bool critical)
 void MainWindow::PlaySoundFile(const std::string &fileName)
 {
     Log("Play sound file: " + fileName);
-    m_project.PlaySoundFile(fileName);
+    m_player.Play(fileName);
 }
 
 std::string MainWindow::BuildFullAssetsPath(const std::string &fileName) const
 {
-    return m_project.BuildFullAssetsPath(fileName);
+    return m_story.BuildFullAssetsPath(fileName);
 }
 
 std::pair<FilterIterator, FilterIterator> MainWindow::Images()
@@ -648,9 +856,9 @@ void MainWindow::GenerateBinary()
             // FIXME
 //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
 //            m_romView->SetMemory(m_rom_data, m_program.size());
-            m_project.SaveStory(m_program);
+            m_story.SaveStory(m_program);
             chip32_initialize(&m_chip32_ctx);
-            m_dbg.run_result = VM_OK;
+            m_dbg.run_result = VM_READY;
             UpdateVmView();
             //            DebugContext::DumpCodeAssembler(m_assembler);
         }
@@ -673,14 +881,70 @@ void MainWindow::UpdateVmView()
 {
     // FIXME
 //    m_vmDock->updateRegistersView(m_chip32_ctx);
-//    highlightNextLine();
+
+
+    // Highlight next line in the test editor
+    uint32_t pcVal = m_chip32_ctx.registers[PC];
+
+    // On recherche quelle est la ligne qui possède une instruction à cette adresse
+    std::vector<Chip32::Instr>::const_iterator ptr = m_assembler.Begin();
+    for (; ptr != m_assembler.End(); ++ptr)
+    {
+        if ((ptr->addr == pcVal) && ptr->isRomCode())
+        {
+            break;
+        }
+    }
+
+    if (ptr != m_assembler.End())
+    {
+        m_dbg.line = (ptr->line - 1);
+        m_editor.HighlightLine(m_dbg.line);
+    }
+    else
+    {
+        // Not found
+        Log("Reached end or instruction not found line: " + std::to_string(m_dbg.line));
+    }
+
+
     // Refresh RAM content
 //    m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
 }
 
 void MainWindow::ConvertResources()
 {
+    auto [b, e] = m_resources.Items();
+    for (auto it = b; it != e; ++it)
+    {
+        std::string inputfile = m_story.BuildFullAssetsPath((*it)->file.c_str());
+        std::string outputfile = std::filesystem::path(m_story.AssetsPath() / StoryProject::RemoveFileExtension((*it)->file)).string();
 
+        int retCode = 0;
+        if ((*it)->format == "PNG")
+        {
+            outputfile += ".qoi"; // FIXME: prendre la congif en cours désirée
+            retCode = MediaConverter::ImageToQoi(inputfile, outputfile);
+        }
+        else if ((*it)->format == "MP3")
+        {
+            outputfile += ".wav"; // FIXME: prendre la congif en cours désirée
+            retCode = MediaConverter::Mp3ToWav(inputfile, outputfile);
+        }
+        else
+        {
+            Log("Skipped: " + inputfile + ", unknown format" + outputfile, true);
+        }
+
+        if (retCode < 0)
+        {
+            Log("Failed to convert media file " + inputfile + ", error code: " + std::to_string(retCode) + " to: " + outputfile, true);
+        }
+        else if (retCode == 0)
+        {
+            Log("Convertered file: " + inputfile);
+        }
+    }
 }
 
 void MainWindow::SaveParams()

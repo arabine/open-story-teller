@@ -130,6 +130,7 @@ typedef enum
 
 typedef enum
 {
+    VM_READY,                   // VM Ready to be started
     VM_FINISHED,                // execution completed (i.e. got halt instruction)
     VM_SKIPED,                  // skipped instruction
     VM_WAIT_EVENT,              // execution paused since we hit the maximum instructions

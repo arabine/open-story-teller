@@ -7,7 +7,7 @@
 #include <string>
 
 #include "json.hpp"
-#include "i_story_project.h"
+#include "i_story_manager.h"
 
 #include <imgui_node_editor.h>
 namespace ed = ax::NodeEditor;
@@ -101,7 +101,7 @@ public:
         float y;
     };
 
-    BaseNode(const std::string &title, IStoryProject &proj);
+    BaseNode(const std::string &title, IStoryManager &proj);
 
 
     virtual void Draw() = 0;
@@ -223,7 +223,7 @@ public:
     void DeleteOutput();
 
 private:
-    IStoryProject &m_project;
+    IStoryManager &m_story;
 
     std::unique_ptr<Node> m_node;
 

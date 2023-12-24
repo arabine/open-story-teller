@@ -26,7 +26,8 @@ bool equals(InputIt1 first1, InputIt1 last1,
 
 TextEditor::TextEditor()
 	: mLineSpacing(1.0f)
-	, mUndoIndex(0)
+    , mUndoIndex(0)
+    , mExternalUndoBuffer(nullptr)
 	, mTabSize(4)
 	, mOverwrite(false)
 	, mReadOnly(false)
@@ -41,15 +42,10 @@ TextEditor::TextEditor()
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
-	, mCheckComments(true)
-	, mLastClick(-1.0f)
-	, mHandleKeyboardInputs(true)
-	, mHandleMouseInputs(true)
-	, mIgnoreImGuiChild(false)
-	, mShowWhitespaces(true)
-	, mShowShortTabGlyphs(false)
-	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
-	, mExternalUndoBuffer(nullptr)
+    , mShowShortTabGlyphs(false)
+    , mCheckComments(true)
+    , mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+    , mLastClick(-1.0f)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -980,6 +976,15 @@ void TextEditor::Render()
 					ImGui::EndTooltip();
 				}
 			}
+
+
+            // Draw execution marker
+            if (mExecutionMarker == (lineNo + 1))
+            {
+                auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+                drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Selection]);
+            }
+
 
 			// Draw line number (right aligned)
 			snprintf(buf, 16, "%d  ", lineNo + 1);

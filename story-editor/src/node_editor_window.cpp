@@ -10,9 +10,9 @@
 #include "gui.h"
 
 
-NodeEditorWindow::NodeEditorWindow(IStoryProject &proj)
+NodeEditorWindow::NodeEditorWindow(IStoryManager &proj)
     : WindowBase("Node editor")
-    , m_project(proj)
+    , m_story(proj)
 {
 
     registerNode<MediaNode>("media-node");
@@ -47,7 +47,7 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
         nlohmann::json internalDataJson = nodeJson["internal-data"];
         std::string type = nodeJson["type"].get<std::string>();
 
-        auto n = createNode(type, "", m_project);
+        auto n = createNode(type, "", m_story);
         if (n)
         {
             n->SetType(type); // FIXME: set type in createNode factory?
@@ -225,7 +225,7 @@ uint32_t NodeEditorWindow::FindFirstNode() const
         if (!foundConnection)
         {
             id = n->GetId();
-            m_project.Log("First node is: " + std::to_string(id));
+            m_story.Log("First node is: " + std::to_string(id));
             break;
         }
     }

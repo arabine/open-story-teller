@@ -6,7 +6,7 @@
 #include <set>
 
 #include "base_node.h"
-#include "i_story_project.h"
+#include "i_story_manager.h"
 #include "gui.h"
 #include <imgui_node_editor.h>
 
@@ -14,7 +14,7 @@
 class MediaNode : public BaseNode
 {
 public:
-    MediaNode(const std::string &title, IStoryProject &proj);
+    MediaNode(const std::string &title, IStoryManager &proj);
 
     void Draw() override;
 
@@ -25,7 +25,7 @@ public:
     virtual std::string GetEntryLabel() override;
     virtual std::string GenerateConstants() override;
 private:
-    IStoryProject &m_project;
+    IStoryManager &m_story;
     Gui::Image  m_image;
     std::string m_soundName;
     std::string m_soundPath;
