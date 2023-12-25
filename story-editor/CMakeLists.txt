@@ -168,9 +168,16 @@ if(WIN32)
     )
 endif()
 
+if(WIN32)
 add_executable(${STORY_EDITOR_PROJECT}
+    WIN32
     ${SRCS}
 )
+else()
+    add_executable(${STORY_EDITOR_PROJECT}
+        ${SRCS}
+    )
+endif()
 
 target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${imgui_SOURCE_DIR}
@@ -205,7 +212,7 @@ target_link_libraries(${STORY_EDITOR_PROJECT}
 )
 elseif(WIN32)
 
-target_compile_features("-Wl,-subsystem,windows")
+#target_compile_features("-Wl,-subsystem,windows")
 
 target_link_libraries(${STORY_EDITOR_PROJECT}
     OpenGL::GL

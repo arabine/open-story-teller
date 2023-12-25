@@ -44,7 +44,7 @@ void ResourcesWindow::ChooseFile()
 
 
             std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_project.BuildFullAssetsPath( p.filename().generic_string());
+            std::filesystem::path p2 = m_story.BuildFullAssetsPath( p.filename().generic_string());
             std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
 
             auto res = std::make_shared<Resource>();
