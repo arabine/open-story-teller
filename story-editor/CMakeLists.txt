@@ -217,7 +217,7 @@ elseif(WIN32)
 target_link_libraries(${STORY_EDITOR_PROJECT}
     OpenGL::GL
 #    SDL2::SDL2main
-    SDL2::SDL2-static
+    SDL2
     ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib Dbghelp.lib
 )
 #set_target_properties(${STORY_EDITOR_PROJECT} PROPERTIES
