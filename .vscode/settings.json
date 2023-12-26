@@ -1,0 +1,9 @@
+{
+
+    "cmake.sourceDirectory": [
+        "${workspaceFolder}/story-editor",
+        "${workspaceFolder}/story-player",
+        "${workspaceFolder}/software"
+    ]
+
+}

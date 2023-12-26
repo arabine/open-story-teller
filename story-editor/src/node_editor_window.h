@@ -1,17 +1,15 @@
 #pragma once
 
-#include <vector>
 #include <map>
-#include <mutex>
 #include <set>
-
+#include <set>
 
 #include <imgui_node_editor.h>
 #include "base_node.h"
 #include "window_base.h"
 #include "i_story_manager.h"
-#include "story_project.h"
 #include "json.hpp"
+
 
 namespace ed = ax::NodeEditor;
 
@@ -72,6 +70,7 @@ private:
     std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
 
+    std::set<int> m_ids;
 
     void BuildNode(Node* node)
     {
@@ -117,5 +116,6 @@ private:
     ed::PinId GetInputPin(unsigned long modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
     uint32_t FindFirstNode() const;
+    int GenerateNodeId();
 };
 

@@ -5,33 +5,36 @@ set(STORY_EDITOR_PROJECT story-editor)
 project(${STORY_EDITOR_PROJECT} LANGUAGES C CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set (CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Version du projet
+set(PROJECT_VERSION_MAJOR 1)
+set(PROJECT_VERSION_MINOR 0)
+set(PROJECT_VERSION_PATCH 0)
+
 # set(CMAKE_VERBOSE_MAKEFILE on)
-
-
 if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif()
+
 find_package(OpenGL REQUIRED)
 
 set(IMGUI_VERSION 1.90)
 
 include(FetchContent)
 
-
-#=========================================================================================================================
+# =========================================================================================================================
 # IMGUI and plugins
-#=========================================================================================================================
+# =========================================================================================================================
 FetchContent_Declare(imgui
-  URL https://github.com/ocornut/imgui/archive/refs/tags/v${IMGUI_VERSION}-docking.zip
+    URL https://github.com/ocornut/imgui/archive/refs/tags/v${IMGUI_VERSION}-docking.zip
 )
 
-
 FetchContent_GetProperties(imgui)
-if (NOT imgui_POPULATED)
+
+if(NOT imgui_POPULATED)
     set(FETCHCONTENT_QUIET NO)
     FetchContent_Populate(imgui)
 endif()
@@ -42,17 +45,15 @@ add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/C
 add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
-
-#=========================================================================================================================
+# =========================================================================================================================
 # SDL
-#=========================================================================================================================
-
+# =========================================================================================================================
 Set(FETCHCONTENT_QUIET FALSE)
 
 FetchContent_Declare(
     sdl2
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        origin/SDL2
+    GIT_TAG origin/SDL2
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
 )
@@ -60,29 +61,27 @@ FetchContent_Declare(
 set(BUILD_SHARED_LIBS TRUE)
 set(SDL_STATIC TRUE)
 FetchContent_MakeAvailable(sdl2)
-#add_subdirectory(libs/SDL)
-#include_directories(libs/SDL/include)
 
+# add_subdirectory(libs/SDL)
+# include_directories(libs/SDL/include)
 
-#=========================================================================================================================
+# =========================================================================================================================
 # SDL3-Image
-#=========================================================================================================================
-#FetchContent_Declare(
-#        SDL2_image
-#        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-#        GIT_TAG origin/main
-#        GIT_SHALLOW TRUE
-#        GIT_PROGRESS TRUE
-#)
+# =========================================================================================================================
+# FetchContent_Declare(
+# SDL2_image
+# GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+# GIT_TAG origin/main
+# GIT_SHALLOW TRUE
+# GIT_PROGRESS TRUE
+# )
 
-## START ADDITION
-#set(SDL2IMAGE_INSTALL OFF)
-#set(BUILD_SHARED_LIBS FALSE)
-## END ADDITION
+# # START ADDITION
+# set(SDL2IMAGE_INSTALL OFF)
+# set(BUILD_SHARED_LIBS FALSE)
+# # END ADDITION
 
-#FetchContent_MakeAvailable(SDL2_image)
-
-
+# FetchContent_MakeAvailable(SDL2_image)
 set(SRCS
 
     src/main.cpp
@@ -147,7 +146,6 @@ set(SRCS
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
 
-
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
     ../software/library/audio_player.cpp
@@ -169,10 +167,10 @@ if(WIN32)
 endif()
 
 if(WIN32)
-add_executable(${STORY_EDITOR_PROJECT}
-    WIN32
-    ${SRCS}
-)
+    add_executable(${STORY_EDITOR_PROJECT}
+        WIN32
+        ${SRCS}
+    )
 else()
     add_executable(${STORY_EDITOR_PROJECT}
         ${SRCS}
@@ -191,8 +189,6 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../software/chip32/
 )
 
-
-
 add_definitions(-DIMGUI_USE_WCHAR32)
 add_link_options(-static-libgcc -static-libstdc++)
 
@@ -202,26 +198,48 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEB
 
 target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl2_BINARY_DIR})
 message(${sdl2_BINARY_DIR})
-if (UNIX)
-target_link_libraries(${STORY_EDITOR_PROJECT}
-    pthread
-    udev
-    OpenGL::GL
-    dl
-    SDL2
-)
+set(SDL2_BIN_DIR ${sdl2_BINARY_DIR})
+
+if(UNIX)
+    target_link_libraries(${STORY_EDITOR_PROJECT}
+        pthread
+        udev
+        OpenGL::GL
+        dl
+        SDL2
+    )
 elseif(WIN32)
-
-#target_compile_features("-Wl,-subsystem,windows")
-
-target_link_libraries(${STORY_EDITOR_PROJECT}
-    OpenGL::GL
-#    SDL2::SDL2main
-    SDL2
-    ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib Dbghelp.lib
-)
-#set_target_properties(${STORY_EDITOR_PROJECT} PROPERTIES
-#LINK_FLAGS /SUBSYSTEM:CONSOLE
-#)
+    target_link_libraries(${STORY_EDITOR_PROJECT}
+        OpenGL::GL
+        SDL2
+        ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
+    )
 endif()
 
+# =========================================================================================================================
+# CPACK INSTALLER
+# =========================================================================================================================
+install(TARGETS ${STORY_EDITOR_PROJECT} RUNTIME DESTINATION ".")
+
+# Personnaliser les options d'installation
+set(CPACK_PACKAGE_NAME "Open-Story-Editor")
+set(CPACK_PACKAGE_DESCRIPTION "Open Story Teller - Node based editor")
+set(CPACK_PACKAGE_VENDOR "D8S")
+set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+
+# install(DIRECTORY "${PROJECT_SOURCE_DIR}/assets/" DESTINATION "assets")
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/fonts/" DESTINATION "fonts")
+
+if(WIN32)
+    install_files("." FILES "${SDL2_BIN_DIR}/SDL2.dll")
+endif()
+
+# Personnaliser l'icône pour les installateurs Windows
+if(WIN32)
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/story-editor-logo.ico")
+endif()
+
+include(CPack)

@@ -334,7 +334,7 @@ void MainWindow::DrawMainMenuBar()
         std::string home = pf::getUserHome() + "/";
 
 #ifdef DEBUG
-        home = "/home/anthony/ostproj/ba869e4b-03d6-4249-9202-85b4cec767a7/";
+        home = "/mnt/work/git/open-stories/ba869e4b-03d6-4249-9202-85b4cec767a7/";
 #endif
 
         ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", ".json", home, 1, nullptr, ImGuiFileDialogFlags_Modal);

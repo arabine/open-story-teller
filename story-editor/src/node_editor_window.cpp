@@ -9,6 +9,13 @@
 #include "media_node.h"
 #include "gui.h"
 
+#include <stdexcept> // for std::runtime_error
+#define JSON_ASSERT(x) \
+if (!(x)) { \
+        throw std::runtime_error("Assertion failed: " #x); \
+}
+#include "json.hpp"
+
 
 NodeEditorWindow::NodeEditorWindow(IStoryManager &proj)
     : WindowBase("Node editor")
@@ -35,6 +42,7 @@ void NodeEditorWindow::Initialize()
 void NodeEditorWindow::Clear()
 {
     m_nodes.clear();
+    m_ids.clear();
 }
 
 
@@ -57,6 +65,8 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
             n->SetPosition(posJson["x"].get<float>(), posJson["y"].get<float>());
             n->FromJson(internalDataJson);
 
+            m_ids.insert(restoredNodeId);
+
             m_nodes.push_back(n);
         }
         else
@@ -69,6 +79,18 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
         std::cout << "ERROR: " << e.what() << std::endl;
     }
 
+}
+
+int NodeEditorWindow::GenerateNodeId()
+{
+    int max = 1;
+    if (m_ids.size() > 0)
+    {
+        auto max = *m_ids.rbegin();
+        max++;
+        m_ids.insert(max);
+    }
+    return max;
 }
 
 
@@ -407,6 +429,41 @@ void NodeEditorWindow::Draw()
             }
         }
         ed::EndDelete(); // Wrap up deletion action
+
+
+        auto openPopupPosition = ImGui::GetMousePos();
+        ed::Suspend();
+
+        if (ed::ShowBackgroundContextMenu())
+        {
+            ImGui::OpenPopup("Create New Node");
+        }
+
+        if (ImGui::BeginPopup("Create New Node"))
+        {
+            auto newNodePostion = openPopupPosition;
+            Node* node = nullptr;
+            if (ImGui::MenuItem("Media Node"))
+            {
+                auto n = createNode("media-node", "", m_story);
+                if (n)
+                {
+                    n->SetType("media-node"); // FIXME: set type in createNode factory?
+                    n->SetId(GenerateNodeId());
+                    n->SetPosition(newNodePostion.x, newNodePostion.y);
+                    m_nodes.push_back(n);
+                }
+            }
+
+            // if (node)
+            // {
+            //     ed::SetNodePosition(node->ID, newNodePostion);
+            // }
+
+            ImGui::EndPopup();
+        }
+
+        ed::Resume();
 
 
         ed::End();
