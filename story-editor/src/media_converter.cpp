@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 
@@ -73,14 +72,14 @@ void fwrite_u32_le(unsigned int v, FILE *fh) {
     buf[1] = 0xff & (v >>  8);
     buf[2] = 0xff & (v >> 16);
     buf[3] = 0xff & (v >> 24);
-    int wrote = fwrite(buf, sizeof(unsigned int), 1, fh);
+    (void) fwrite(buf, sizeof(unsigned int), 1, fh);
 }
 
 void fwrite_u16_le(unsigned short v, FILE *fh) {
     unsigned char buf[sizeof(unsigned short)];
     buf[0] = 0xff & (v      );
     buf[1] = 0xff & (v >>  8);
-    int wrote = fwrite(buf, sizeof(unsigned short), 1, fh);
+    (void) fwrite(buf, sizeof(unsigned short), 1, fh);
 }
 
 int MediaConverter::WavWrite(const std::string &path, short *sample_data, MediaInfo &desc)

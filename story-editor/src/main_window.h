@@ -88,7 +88,7 @@ public:
     void Loop();
 
 private:
-    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvLeftButton, EvRightButton, EvAudioFinished};
+    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished};
 
     StoryProject m_story;
 
@@ -112,7 +112,7 @@ private:
     Gui gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
-    CodeEditor m_editor;
+    CodeEditor m_editorWindow;
 
     ResourcesWindow m_resourcesWindow;
 
@@ -160,7 +160,7 @@ private:
 
     void NewProjectPopup();
     void SaveProject();
-    void EnableProject();
+    void OpenProject(const std::string &filename);
     void CloseProject();
     void OpenProjectDialog();
     void DrawStatusBar();

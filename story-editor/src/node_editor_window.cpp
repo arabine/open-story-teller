@@ -152,20 +152,27 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
 
     for (auto& connection : connectionJsonArray)
     {
-        auto conn = std::make_shared<LinkInfo>();
-
-        // our model
-        *conn->model = connection.get<Connection>();
-
-
-        // ImGui stuff for links
-        conn->ed_link->Id = BaseNode::GetNextId();
-        conn->ed_link->InputId = GetInputPin(conn->model->inNodeId, conn->model->inPortIndex);
-        conn->ed_link->OutputId = GetOutputPin(conn->model->outNodeId, conn->model->outPortIndex);
-
-        // Since we accepted new link, lets add one to our list of links.
-        m_links.push_back(conn);
+        Connection model = connection.get<Connection>();
+        CreateLink(model,
+                   GetInputPin(model.inNodeId, model.inPortIndex),
+                   GetOutputPin(model.outNodeId, model.outPortIndex));
     }
+}
+
+
+void NodeEditorWindow::CreateLink(const Connection &model, ed::PinId inId, ed::PinId outId)
+{
+    auto conn = std::make_shared<LinkInfo>();
+
+    *conn->model = model;
+
+    // ImGui stuff for links
+    conn->ed_link->Id = BaseNode::GetNextId();
+    conn->ed_link->InputId = inId;
+    conn->ed_link->OutputId = outId;
+
+    // Since we accepted new link, lets add one to our list of links.
+    m_links.push_back(conn);
 }
 
 void NodeEditorWindow::Save(nlohmann::json &model)
@@ -204,27 +211,40 @@ void NodeEditorWindow::Save(nlohmann::json &model)
 
         nlohmann::json c;
 
-        int index;
-        for (const auto & n : m_nodes)
-        {
-            if (n->HasOnputPinId(linkInfo->ed_link->OutputId, index))
-            {
-                c["outNodeId"] = n->GetId();
-                c["outPortIndex"] = index;
-            }
+        Connection cnx = LinkToModel(linkInfo->ed_link->InputId, linkInfo->ed_link->OutputId);
 
-            if (n->HasInputPinId(linkInfo->ed_link->InputId, index))
-            {
-                c["inNodeId"] = n->GetId();
-                c["inPortIndex"] = index;
-            }
-        }
+        c["outNodeId"] = cnx.outNodeId;
+        c["outPortIndex"] = cnx.outPortIndex;
+        c["inNodeId"] = cnx.inNodeId;
+        c["inPortIndex"] = cnx.inPortIndex;
 
         connections.push_back(c);
     }
 
     model["connections"] = connections;
     ed::SetCurrentEditor(nullptr);
+}
+
+Connection NodeEditorWindow::LinkToModel(ed::PinId InputId, ed::PinId OutputId)
+{
+    Connection c;
+    int index;
+    for (const auto & n : m_nodes)
+    {
+        if (n->HasOnputPinId(OutputId, index))
+        {
+            c.outNodeId = n->GetId();
+            c.outPortIndex = index;
+        }
+
+        if (n->HasInputPinId(InputId, index))
+        {
+            c.inNodeId = n->GetId();
+            c.inPortIndex = index;
+        }
+    }
+
+    return c;
 }
 
 uint32_t NodeEditorWindow::FindFirstNode() const
@@ -389,11 +409,12 @@ void NodeEditorWindow::Draw()
                    // ed::AcceptNewItem() return true when user release mouse button.
                    if (ed::AcceptNewItem())
                    {
-                       // Since we accepted new link, lets add one to our list of links.
-//                       m_Links.push_back({ ed::LinkId(BaseNode::GetNextId()), inputPinId, outputPinId });
+                       Connection model = LinkToModel(inputPinId, outputPinId);
+
+                       CreateLink(model, inputPinId, outputPinId);
 
                        // Draw new link.
-//                       ed::Link(m_Links.back().Id, m_Links.back().InputId, m_Links.back().OutputId);
+                       ed::Link(m_links.back()->ed_link->Id, inputPinId, outputPinId);
                    }
 
                    // You may choose to reject connection between these nodes

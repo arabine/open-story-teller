@@ -41,6 +41,8 @@ MainWindow::MainWindow()
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
 
     m_story.Clear();
+
+    CloseProject();
 }
 
 MainWindow::~MainWindow()
@@ -61,27 +63,6 @@ std::string MainWindow::GetFileNameFromMemory(uint32_t addr)
     }
     return strBuf;
 }
-
-/*
-void MainWindow::EventFinished(uint32_t replyEvent)
-{
-    if (m_dbg.run_result == VM_WAIT_EVENT)
-    {
-        // Result event is in R0
-        m_chip32_ctx.registers[R0] = replyEvent;
-        m_dbg.run_result = VM_OK;
-
-        if (m_dbg.free_run)
-        {
-            m_runTimer->start(100);
-        }
-        else
-        {
-            stepInstruction();
-        }
-    }
-}*/
-
 
 void MainWindow::Play()
 {
@@ -104,12 +85,14 @@ void MainWindow::Pause()
 
 void MainWindow::Next()
 {
-
+    Log("End of audio track");
+    m_eventQueue.push({VmEventType::EvNextButton});
 }
 
 void MainWindow::Previous()
 {
-
+    Log("End of audio track");
+    m_eventQueue.push({VmEventType::EvPreviousButton});
 }
 
 void MainWindow::EndOfAudio()
@@ -147,12 +130,12 @@ void MainWindow::ProcessStory()
                 m_chip32_ctx.registers[R0] = 0x01;
                 m_dbg.run_result = VM_OK;
             }
-            else if (event.type == VmEventType::EvLeftButton)
+            else if (event.type == VmEventType::EvPreviousButton)
             {
                 m_chip32_ctx.registers[R0] = 0x02;
                 m_dbg.run_result = VM_OK;
             }
-            else if (event.type == VmEventType::EvRightButton)
+            else if (event.type == VmEventType::EvNextButton)
             {
                 m_chip32_ctx.registers[R0] = 0x04;
                 m_dbg.run_result = VM_OK;
@@ -284,6 +267,20 @@ void MainWindow::DrawMainMenuBar()
                 showOpenProject = true;
             }
 
+            if (ImGui::BeginMenu("Open Recent"))
+            {
+                for (auto &e : m_recentProjects)
+                {
+                    if (ImGui::MenuItem(e.c_str()))
+                    {
+                        OpenProject(e);
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::Separator();
             if (ImGui::MenuItem("Save project"))
             {
                 SaveProject();
@@ -294,7 +291,7 @@ void MainWindow::DrawMainMenuBar()
                 CloseProject();
             }
 
-            if (ImGui::MenuItem("Paramètres"))
+            if (ImGui::MenuItem("Project settings"))
             {
                 showParameters = true;
             }
@@ -332,11 +329,6 @@ void MainWindow::DrawMainMenuBar()
     if (showOpenProject)
     {
         std::string home = pf::getUserHome() + "/";
-
-#ifdef DEBUG
-        home = "/mnt/work/git/open-stories/ba869e4b-03d6-4249-9202-85b4cec767a7/";
-#endif
-
         ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", ".json", home, 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
 
@@ -374,7 +366,7 @@ void MainWindow::Initialize()
     gui.Initialize();
   //  gui.ApplyTheme();
 
-    m_editor.Initialize();
+    m_editorWindow.Initialize();
     m_emulatorWindow.Initialize();
     m_nodeEditorWindow.Initialize();
     m_PropertiesWindow.Initialize();
@@ -416,31 +408,18 @@ bool MainWindow::ShowQuitConfirm()
 
 void MainWindow::OpenProjectDialog()
 {
+    ImGui::SetNextWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
     if (ImGuiFileDialog::Instance()->Display("OpenProjectDlgKey"))
     {
+      //  ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
+
         // action if OK
         if (ImGuiFileDialog::Instance()->IsOk())
         {
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 
-
-            m_story.Initialize(filePathName);
-
-            nlohmann::json model;
-
-            if (m_story.Load(filePathName, model, m_resources))
-            {
-                Log("Open project success");
-                m_nodeEditorWindow.Load(model);
-                EnableProject();
-            }
-            else
-            {
-                Log("Open project error");
-            }
-
-
+            OpenProject(filePathName);
      //       RefreshProjectInformation();  // FIXME
         }
 
@@ -448,33 +427,6 @@ void MainWindow::OpenProjectDialog()
         ImGuiFileDialog::Instance()->Close();
     }
 }
-
-void MainWindow::EnableProject()
-{
-    auto proj = m_story.GetProjectFilePath();
-    // Add to recent if not exists
-    if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) != m_recentProjects.end())
-    {
-        m_recentProjects.push_back(proj);
-        // Limit to 10 recent projects
-        if (m_recentProjects.size() > 10) {
-            m_recentProjects.pop_back();
-        }
-    }
-/*  // FIXME
-    m_ostHmiDock->Open();
-    m_resourcesDock->Open();
-    m_scriptEditorDock->Open();
-    m_vmDock->Open();
-    m_ramView->Open();
-    m_romView->Open();
-    m_logDock->Open();
-
-    m_toolbar->SetActionsActive(true);
-    m_view->setEnabled(true);
-*/
-}
-
 
 void MainWindow::NewProjectPopup()
 {
@@ -618,7 +570,6 @@ void MainWindow::NewProjectPopup()
         };
 
 
-
         if (ImGui::Button("OK", ImVec2(120, 0)))
         {
             bool valid{true};
@@ -648,7 +599,7 @@ void MainWindow::NewProjectPopup()
                 m_story.SetUuid(UUID().String());
 
                 SaveProject();
-                EnableProject();
+                OpenProject(p.generic_string());
 
                 ImGui::CloseCurrentPopup();
             }
@@ -674,23 +625,61 @@ void MainWindow::SaveProject()
     m_story.Save(model, m_resources);
 }
 
+void MainWindow::OpenProject(const std::string &filename)
+{
+
+    m_story.Initialize(filename);
+
+    nlohmann::json model;
+
+    if (m_story.Load(filename, model, m_resources))
+    {
+        Log("Open project success");
+        m_nodeEditorWindow.Load(model);
+        auto proj = m_story.GetProjectFilePath();
+        // Add to recent if not exists
+        if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
+        {
+            m_recentProjects.push_back(proj);
+            // Limit to 10 recent projects
+            if (m_recentProjects.size() > 10) {
+                m_recentProjects.pop_back();
+            }
+
+            // Save recent projects on disk
+            SaveParams();
+        }
+
+        m_nodeEditorWindow.Enable();
+        m_emulatorWindow.Enable();
+        m_consoleWindow.Enable();
+        m_editorWindow.Enable();
+        m_resourcesWindow.Enable();
+        m_PropertiesWindow.Enable();
+    }
+    else
+    {
+        Log("Open project error");
+    }
+
+}
 void MainWindow::CloseProject()
 {
     m_story.Clear();
+    m_resources.Clear();
+
     m_nodeEditorWindow.Clear();
+    m_emulatorWindow.ClearImage();
+    m_consoleWindow.ClearLog();
+    m_editorWindow.ClearErrors();
+    m_editorWindow.SetScript("");
 
-//    m_model.Clear();
-
-//    m_ostHmiDock->Close();
-//    m_resourcesDock->Close();
-//    m_scriptEditorDock->Close();
-//    m_vmDock->Close();
-//    m_ramView->Close();
-//    m_romView->Close();
-//    m_logDock->Close();
-
-//    m_toolbar->SetActionsActive(false);
-//    m_view->setEnabled(false);
+    m_nodeEditorWindow.Disable();
+    m_emulatorWindow.Disable();
+    m_consoleWindow.Disable();
+    m_editorWindow.Disable();
+    m_resourcesWindow.Disable();
+    m_PropertiesWindow.Disable();
 }
 
 
@@ -717,7 +706,7 @@ void MainWindow::Loop()
         // ------------  Draw all windows
         m_consoleWindow.Draw();
         m_emulatorWindow.Draw();
-        m_editor.Draw();
+        m_editorWindow.Draw();
         m_resourcesWindow.Draw();
         m_nodeEditorWindow.Draw();
 
@@ -832,7 +821,7 @@ bool MainWindow::CompileToAssembler()
         m_currentCode += buffer;
     }
 
-    m_editor.SetScript(m_currentCode);
+    m_editorWindow.SetScript(m_currentCode);
 
     return true;
 }
@@ -866,14 +855,14 @@ void MainWindow::GenerateBinary()
         {
             Chip32::Assembler::Error err = m_assembler.GetLastError();
             Log(err.ToString(), true);
-            m_editor.AddError(err.line, err.message); // show also the error in the code editor
+            m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
         }
     }
     else
     {
         Chip32::Assembler::Error err = m_assembler.GetLastError();
         Log(err.ToString(), true);
-        m_editor.AddError(err.line, err.message); // show also the error in the code editor
+        m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
     }
 }
 
@@ -899,7 +888,7 @@ void MainWindow::UpdateVmView()
     if (ptr != m_assembler.End())
     {
         m_dbg.line = (ptr->line - 1);
-        m_editor.HighlightLine(m_dbg.line);
+        m_editorWindow.HighlightLine(m_dbg.line);
     }
     else
     {
@@ -949,10 +938,38 @@ void MainWindow::ConvertResources()
 
 void MainWindow::SaveParams()
 {
+    nlohmann::json j;
+    nlohmann::json recents(m_recentProjects);
 
+    j["recents"] = recents;
+
+    std::string loc = pf::getConfigHome() + "/ost_settings.json";
+    std::ofstream o(loc);
+    o << std::setw(4) << j << std::endl;
+
+    Log("Saved settings to: " + loc);
 }
 
 void MainWindow::LoadParams()
 {
+    try {
+        std::string loc = pf::getConfigHome() + "/ost_settings.json";
+        // read a JSON file
+        std::ifstream i(loc);
+        nlohmann::json j;
+        i >> j;
 
+        nlohmann::json recents = j["recents"];
+        for (auto& element : recents) {
+
+            if (std::filesystem::exists(element))
+            {
+                m_recentProjects.push_back(element);
+            }
+        }
+    }
+    catch(std::exception &e)
+    {
+
+    }
 }

@@ -6,7 +6,7 @@
 CodeEditor::CodeEditor()
     : WindowBase("Code editor")
 {
-
+    mEditor.SetReadOnly(true);
 }
 
 void CodeEditor::Initialize()

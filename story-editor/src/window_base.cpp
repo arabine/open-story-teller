@@ -20,12 +20,11 @@ bool WindowBase::BeginDraw()
 
 void WindowBase::EndDraw()
 {
-    ImGui::End();
-
-
     if (m_disabled)
     {
         ImGui::EndDisabled();
     }
+    ImGui::End();
+
 }
 

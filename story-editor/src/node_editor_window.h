@@ -117,5 +117,7 @@ private:
     ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
     uint32_t FindFirstNode() const;
     int GenerateNodeId();
+    void CreateLink(const Connection &model, ed::PinId inId, ed::PinId outId);
+    Connection LinkToModel(ed::PinId InputId, ed::PinId OutputId);
 };
 

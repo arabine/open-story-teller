@@ -17,6 +17,14 @@ public:
     bool BeginDraw();
     void EndDraw();
 
+    void Disable() {
+        m_disabled = true;
+    }
+
+    void Enable() {
+        m_disabled = false;
+    }
+
 private:
 
     bool m_disabled{false};

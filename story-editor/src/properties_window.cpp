@@ -25,9 +25,6 @@ void PropertiesWindow::Draw()
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
-
-    ImGui::SeparatorText("Project");
-
     ImGui::SeparatorText("Selected node");
 
 
