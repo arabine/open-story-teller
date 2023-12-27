@@ -299,6 +299,11 @@ void Gui::Destroy()
     SDL_Quit();
 }
 
+void Gui::SetWindowTitle(const std::string &title)
+{
+    SDL_SetWindowTitle(window, title.c_str());
+}
+
 bool Gui::LoadRawImage(const std::string &filename, Image &image)
 {
     bool success = true;

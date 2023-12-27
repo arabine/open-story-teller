@@ -44,6 +44,7 @@ public:
     void StartFrame();
     void EndFrame();
     void Destroy();
+    void SetWindowTitle(const std::string &title);
 
     static bool LoadRawImage(const std::string &filename, Image &image);
     static Size GetWindowSize();

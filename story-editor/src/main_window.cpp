@@ -323,7 +323,7 @@ void MainWindow::DrawMainMenuBar()
 
     if (showNewProject)
     {
-        ImGui::OpenPopup("NewProjectPopup");
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose a parent directory for your project", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
 
     if (showOpenProject)
@@ -363,7 +363,7 @@ void MainWindow::DrawMainMenuBar()
 void MainWindow::Initialize()
 {
     // GUI Init
-    gui.Initialize();
+    m_gui.Initialize();
   //  gui.ApplyTheme();
 
     m_editorWindow.Initialize();
@@ -420,7 +420,6 @@ void MainWindow::OpenProjectDialog()
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 
             OpenProject(filePathName);
-     //       RefreshProjectInformation();  // FIXME
         }
 
         // close
@@ -430,6 +429,39 @@ void MainWindow::OpenProjectDialog()
 
 void MainWindow::NewProjectPopup()
 {
+    // Always center this window when appearing
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
+    {
+        // action if OK
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string projdir = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+            std::string uuid = UUID().String();
+            auto p = std::filesystem::path(projdir) / uuid / std::filesystem::path("project.json");
+            m_story.Initialize(p.generic_string());
+
+            m_story.SetDisplayFormat(320, 240);
+            m_story.SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
+            m_story.SetSoundFormat(StoryProject::SND_FORMAT_WAV);
+            m_story.SetName("New project");
+            m_story.SetUuid(uuid);
+
+            SaveProject();
+            OpenProject(p.generic_string());
+        }
+
+        // close
+        ImGuiFileDialog::Instance()->Close();
+    }
+
+    /*
+
+
     static std::string projdir;
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -443,10 +475,12 @@ void MainWindow::NewProjectPopup()
         ImGui::Text("Directory: "); ImGui::SameLine();
         static char project_dir[256] = "";
         ImGui::InputTextWithHint("##project_path", "Project path", project_dir, IM_ARRAYSIZE(project_dir));
+        ImGui::SameLine();
         if (ImGui::Button( ICON_MDI_FOLDER " ..."))
         {
             ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose File", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
         }
+
 
         // display
         if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
@@ -616,6 +650,7 @@ void MainWindow::NewProjectPopup()
     {
         projdir = "";
     }
+*/
 }
 
 void MainWindow::SaveProject()
@@ -627,7 +662,6 @@ void MainWindow::SaveProject()
 
 void MainWindow::OpenProject(const std::string &filename)
 {
-
     m_story.Initialize(filename);
 
     nlohmann::json model;
@@ -662,7 +696,15 @@ void MainWindow::OpenProject(const std::string &filename)
         Log("Open project error");
     }
 
+    RefreshProjectInformation();
 }
+
+void MainWindow::RefreshProjectInformation()
+{
+    m_gui.SetWindowTitle("Story Editor - " + m_story.GetProjectFilePath());
+}
+
+
 void MainWindow::CloseProject()
 {
     m_story.Clear();
@@ -680,6 +722,8 @@ void MainWindow::CloseProject()
     m_editorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
+
+    RefreshProjectInformation();
 }
 
 
@@ -691,9 +735,9 @@ void MainWindow::Loop()
 
     while (!done)
     {
-        bool aboutToClose = gui.PollEvent();
+        bool aboutToClose = m_gui.PollEvent();
 
-        gui.StartFrame();
+        m_gui.StartFrame();
 
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
         DrawMainMenuBar();
@@ -725,12 +769,12 @@ void MainWindow::Loop()
             done = true;
         }
 
-        gui.EndFrame();
+        m_gui.EndFrame();
 
 
     }
 
-    gui.Destroy();
+    m_gui.Destroy();
 }
 
 void MainWindow::Log(const std::string &txt, bool critical)

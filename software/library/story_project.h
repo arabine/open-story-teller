@@ -69,6 +69,7 @@ struct StoryProject
     {
         m_uuid = "";
         m_working_dir = "";
+        m_story_file_path = "";
         m_initialized = false;
     }
     

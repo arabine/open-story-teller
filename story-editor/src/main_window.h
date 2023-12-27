@@ -109,7 +109,7 @@ private:
 
     ResourceManager m_resources;
 
-    Gui gui;
+    Gui m_gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
     CodeEditor m_editorWindow;
@@ -173,6 +173,7 @@ private:
     std::string GetFileNameFromMemory(uint32_t addr);
     void ProcessStory();
     void StepInstruction();
+    void RefreshProjectInformation();
 };
 
 #endif // MAINWINDOW_H
