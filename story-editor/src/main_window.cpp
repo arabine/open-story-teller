@@ -1,7 +1,7 @@
 #include "main_window.h"
 #include <filesystem>
 #include <random>
-
+#include <SDL.h>
 #include "platform_folders.h"
 #include "uuid.h"
 #include "media_converter.h"
@@ -19,12 +19,16 @@
 #include "IconsMaterialDesignIcons.h"
 #include "ImGuiFileDialog.h"
 
+static std::string gVersion;
+
 MainWindow::MainWindow()
     : m_emulatorWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
     , m_player(*this)
 {
+
+    gVersion = std::to_string(VERSION_MAJOR) + '.' + std::to_string(VERSION_MINOR) + '.' + std::to_string(VERSION_PATCH);
 
     // VM Initialize
     m_chip32_ctx.stack_size = 512;
@@ -76,6 +80,11 @@ void MainWindow::Play()
             m_dbg.run_result = VM_OK; // actually starts the execution
         }
     }
+}
+
+void MainWindow::Ok()
+{
+    m_eventQueue.push({VmEventType::EvOkButton});
 }
 
 void MainWindow::Pause()
@@ -280,6 +289,9 @@ void MainWindow::DrawMainMenuBar()
                 ImGui::EndMenu();
             }
 
+            if (!m_story.IsInitialized())
+                ImGui::BeginDisabled();
+
             ImGui::Separator();
             if (ImGui::MenuItem("Save project"))
             {
@@ -295,6 +307,9 @@ void MainWindow::DrawMainMenuBar()
             {
                 showParameters = true;
             }
+
+            if (!m_story.IsInitialized())
+                ImGui::EndDisabled();
 
             ImGui::EndMenu();
         }
@@ -318,7 +333,10 @@ void MainWindow::DrawMainMenuBar()
 
     if (showParameters)
     {
-        ImGui::OpenPopup("Options");
+        if (m_story.IsInitialized())
+        {
+            ImGui::OpenPopup("ProjectPropertiesPopup");
+        }
     }
 
     if (showNewProject)
@@ -341,18 +359,19 @@ void MainWindow::DrawMainMenuBar()
 
     if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Story Editor V2");
+        ImGui::Text("Story Editor - v%s", gVersion.c_str());
+        ImGui::Text("http://www.openstoryteller.org");
         ImGui::Separator();
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
-        ImGui::Text("http://www.openstoryteller.org");
-//        ImGui::Text("%s", SDL_GetPlatform());
-//        ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
-//        ImGui::Text("RAM: %.2f GB", SDL_GetSystemRAM() / 1024.0f);
+
+        ImGui::Text("%s", SDL_GetPlatform());
+        ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
+        ImGui::Text("RAM: %.2f GB", SDL_GetSystemRAM() / 1024.0f);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::Separator();
 
         ImGui::SameLine(300);
-        if (ImGui::Button("Close", ImVec2(120, 40)))
+        if (ImGui::Button("Close", ImVec2(100, 35)))
         {
            ImGui::CloseCurrentPopup();
         }
@@ -441,33 +460,38 @@ void MainWindow::NewProjectPopup()
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string projdir = ImGuiFileDialog::Instance()->GetCurrentPath();
 
-            std::string uuid = UUID().String();
-            auto p = std::filesystem::path(projdir) / uuid / std::filesystem::path("project.json");
-            m_story.Initialize(p.generic_string());
+            if (!std::filesystem::is_directory(projdir))
+            {
 
-            m_story.SetDisplayFormat(320, 240);
-            m_story.SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
-            m_story.SetSoundFormat(StoryProject::SND_FORMAT_WAV);
-            m_story.SetName("New project");
-            m_story.SetUuid(uuid);
+                std::string uuid = UUID().String();
+                auto p = std::filesystem::path(projdir) / uuid / std::filesystem::path("project.json");
+                m_story.Initialize(p.generic_string());
 
-            SaveProject();
-            OpenProject(p.generic_string());
+                m_story.SetDisplayFormat(320, 240);
+                m_story.SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
+                m_story.SetSoundFormat(StoryProject::SND_FORMAT_WAV);
+                m_story.SetName("New project");
+                m_story.SetUuid(uuid);
+
+                SaveProject();
+                OpenProject(p.generic_string());
+            }
         }
 
         // close
         ImGuiFileDialog::Instance()->Close();
     }
+}
 
-    /*
-
+void MainWindow::ProjectPropertiesPopup()
+{
 
     static std::string projdir;
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("NewProjectPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal("ProjectPropertiesPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("New project parameters (directory must be empty)");
         ImGui::Separator();
@@ -615,8 +639,6 @@ void MainWindow::NewProjectPopup()
 
             if (valid)
             {
-                auto p = std::filesystem::path(projdir) / std::filesystem::path("project.json");
-                m_story.Initialize(p.generic_string());
 
                 if (display_item_current_idx == 0)
                 {
@@ -630,10 +652,8 @@ void MainWindow::NewProjectPopup()
                 m_story.SetImageFormat(GetImageFormat(image_item_current_idx));
                 m_story.SetSoundFormat(GetSoundFormat(sound_item_current_idx));
                 m_story.SetName(project_name);
-                m_story.SetUuid(UUID().String());
 
                 SaveProject();
-                OpenProject(p.generic_string());
 
                 ImGui::CloseCurrentPopup();
             }
@@ -650,7 +670,6 @@ void MainWindow::NewProjectPopup()
     {
         projdir = "";
     }
-*/
 }
 
 void MainWindow::SaveProject()
@@ -701,7 +720,8 @@ void MainWindow::OpenProject(const std::string &filename)
 
 void MainWindow::RefreshProjectInformation()
 {
-    m_gui.SetWindowTitle("Story Editor - " + m_story.GetProjectFilePath());
+    std::string fullText = "Story Editor " + gVersion + " - " + m_story.GetProjectFilePath();
+    m_gui.SetWindowTitle(fullText);
 }
 
 
@@ -759,6 +779,7 @@ void MainWindow::Loop()
 
         NewProjectPopup();
         OpenProjectDialog();
+        ProjectPropertiesPopup();
 
         if (aboutToClose)
         {

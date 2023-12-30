@@ -6,9 +6,6 @@ hero:
   name: "Open Story Teller"
   text: "Hardware and software that tell stories"
   tagline: Make your own, its free sofware
-  image:
-    src: /logo.png
-    alt: logo
   actions:
     - theme: brand
       text: Getting started
@@ -16,6 +13,9 @@ hero:
     - theme: alt
       text: Assembly guidelines
       link: /guide-intro
+  image:
+    src: /logo.png
+    alt: logo
 
 features:
   - title: Easy to repair

@@ -32,6 +32,7 @@ public:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(unsigned long nodeId) = 0;
     virtual std::string GetNodeEntryLabel(unsigned long nodeId) = 0;
     virtual void Play() = 0;
+    virtual void Ok() = 0;
     virtual void Pause() = 0;
     virtual void Next() = 0;
     virtual void Previous() = 0;

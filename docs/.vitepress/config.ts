@@ -4,7 +4,14 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Open Story Teller",
   description: "Make your own device that tells stories",
+  lastUpdated: true,
+  cleanUrls: true,
+
+
   themeConfig: {
+
+    logo: { src: '/logo_hat_only.png', width: 29, height: 24 },
+
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
@@ -54,6 +61,11 @@ export default defineConfig({
         ]
       }
     ],
+
+    footer: {
+      message: 'Source code under the MIT License, art under the CC0 License.',
+      copyright: 'Copyright © 2020-present Anthony Rabine'
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/arabine/open-story-teller' }

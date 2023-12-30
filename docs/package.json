@@ -1,6 +1,7 @@
 {
+  "type": "module",
   "devDependencies": {
-    "vitepress": "^1.0.0-alpha.73"
+    "vitepress": "^1.0.0-rc.33"
   },
   "scripts": {
     "docs:dev": "vitepress dev",
@@ -8,6 +9,6 @@
     "docs:preview": "vitepress preview"
   },
   "dependencies": {
-    "vue": "^3.2.47"
+    "vue": "^3.3.13"
   }
 }

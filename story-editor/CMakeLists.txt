@@ -189,7 +189,7 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../software/chip32/
 )
 
-add_definitions(-DIMGUI_USE_WCHAR32)
+add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})
 add_link_options(-static-libgcc -static-libstdc++)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)

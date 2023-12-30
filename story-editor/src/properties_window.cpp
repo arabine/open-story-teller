@@ -1,5 +1,4 @@
 #include "properties_window.h"
-#include "gui.h"
 
 PropertiesWindow::PropertiesWindow()
     : WindowBase("Properties")
@@ -16,14 +15,9 @@ void PropertiesWindow::Initialize() {
 
 void PropertiesWindow::Draw()
 {
-//    if (!IsVisible())
-//    {
-//        return;
-//    }
-
-
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
+
 
     ImGui::SeparatorText("Selected node");
 

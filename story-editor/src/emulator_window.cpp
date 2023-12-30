@@ -50,10 +50,9 @@ void EmulatorWindow::Draw()
 
     ImGui::PushFont(ImGui::GetFont());
 
-
-    if (ImGui::Button(ICON_MDI_PLAY_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    if (ImGui::Button(ICON_MDI_CHECK_CIRCLE_OUTLINE, ImVec2(50, 50)))
     {
-        m_story.Play();
+        m_story.Ok();
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_MDI_STOP_CIRCLE_OUTLINE, ImVec2(50, 50)))
@@ -80,6 +79,12 @@ void EmulatorWindow::Draw()
     {
         m_story.Build();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Build & Play"))
+    {
+        m_story.Play();
+    }
+
     ImGui::SameLine();
 
     WindowBase::EndDraw();

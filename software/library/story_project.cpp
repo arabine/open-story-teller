@@ -126,7 +126,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, Res
 
         nlohmann::json j = nlohmann::json::parse(f);
 
-        m_nodes.clear();
+   //     m_nodes.clear();
         manager.Clear();
 
         if (j.contains("project"))
@@ -256,7 +256,7 @@ void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
     std::ofstream o(m_story_file_path);
     o << std::setw(4) << j << std::endl;
 }
-
+/*
 void StoryProject::CreateTree()
 {
     // Algorithm: level order traversal of N-ary tree
@@ -288,6 +288,15 @@ void StoryProject::CreateTree()
 
         nlist.pop();
     }
+}
+*/
+
+void StoryProject::Clear()
+{
+    m_uuid = "";
+    m_working_dir = "";
+    m_story_file_path = "";
+    m_initialized = false;
 }
 
 void StoryProject::EraseString(std::string &theString, const std::string &toErase)

@@ -6,13 +6,8 @@
 #include <filesystem>
 #include "json.hpp"
 
-#include <memory>
-#include <random>
-
 #include "json.hpp"
 #include "resource_manager.h"
-#include "audio_player.h"
-
 
 
 // FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
@@ -48,30 +43,26 @@ struct StoryNode
 
 struct StoryProject
 {
+
+public:
     enum ImageFormat { IMG_FORMAT_BMP_4BITS, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
     enum SoundFormat { SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
 
     StoryProject();
     ~StoryProject();
-
+/*
     std::vector<StoryNode> m_nodes;
 
     std::string m_type;
     std::string m_code;
 
     StoryNode *m_tree;
-
+*/
     bool Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager);
     void Save(const nlohmann::json &model, ResourceManager &manager);
 
     void CreateTree();
-    void Clear()
-    {
-        m_uuid = "";
-        m_working_dir = "";
-        m_story_file_path = "";
-        m_initialized = false;
-    }
+    void Clear();
     
     void SetImageFormat(ImageFormat format);
     void SetSoundFormat(SoundFormat format);
@@ -100,9 +91,9 @@ struct StoryProject
     std::string GetTitleImage() const { return m_titleImage; }
     std::string GetTitleSound() const { return m_titleSound; }
 
-public:
     // Initialize with an existing project
     void Initialize(const std::string &file_path);
+    const bool IsInitialized() const { return m_initialized; }
     void New(const std::string &uuid, const std::string &file_path);
 
     static void EraseString(std::string &theString, const std::string &toErase);

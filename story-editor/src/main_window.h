@@ -18,6 +18,7 @@
 #include "story_project.h"
 #include "i_story_manager.h"
 #include "thread_safe_queue.h"
+#include "audio_player.h"
 
 struct DebugContext
 {
@@ -145,6 +146,7 @@ private:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(unsigned long nodeId) override;
     virtual std::string GetNodeEntryLabel(unsigned long nodeId) override;
     virtual void Play() override;
+    virtual void Ok() override;
     virtual void Pause() override;
     virtual void Next() override;
     virtual void Previous() override;
@@ -174,6 +176,7 @@ private:
     void ProcessStory();
     void StepInstruction();
     void RefreshProjectInformation();
+    void ProjectPropertiesPopup();
 };
 
 #endif // MAINWINDOW_H
