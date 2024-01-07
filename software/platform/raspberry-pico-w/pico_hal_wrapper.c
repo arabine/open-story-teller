@@ -50,7 +50,7 @@ const uint8_t SD_CARD_PRESENCE = 24;
 #define UART_ID uart0
 #define BAUD_RATE 115200
 
-#define UART_RX_PIN 1
+#define UART_TX_PIN 1
 
 // PICO alarm (RTOS uses Alarm 0 and IRQ 0)
 #define ALARM_NUM 1
@@ -188,12 +188,12 @@ void ost_system_initialize()
   set_sys_clock_khz(125000, true);
 
   ////------------------- Init DEBUG LED
-  gpio_init(LED_PIN);
-  gpio_set_dir(LED_PIN, GPIO_OUT);
+  // gpio_init(LED_PIN);
+  // gpio_set_dir(LED_PIN, GPIO_OUT);
 
   //------------------- Init DEBUG PIN
-  gpio_init(DEBUG_PIN);
-  gpio_set_dir(DEBUG_PIN, GPIO_OUT);
+  // gpio_init(DEBUG_PIN);
+  // gpio_set_dir(DEBUG_PIN, GPIO_OUT);
 
   //------------------- Init UART
 
@@ -203,7 +203,7 @@ void ost_system_initialize()
   // Set the TX and RX pins by using the function select on the GPIO
   // Set datasheet for more information on function select
   gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-  gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+
 
   //------------------- Init LCD
 
@@ -316,10 +316,10 @@ void ost_hal_gpio_set(ost_hal_gpio_t gpio, int value)
   switch (gpio)
   {
   case OST_GPIO_DEBUG_LED:
-    gpio_put(LED_PIN, value);
+
     break;
   case OST_GPIO_DEBUG_PIN:
-    gpio_put(DEBUG_PIN, value);
+
     break;
   default:
     break;

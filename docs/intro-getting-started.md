@@ -16,10 +16,8 @@ You can help in various ways:
 - Report bugs on Github (open an new issue)
 - Propose patches, ideas, mechanical drawings, ports (open an issue)
 - Translate stuff
-- Donate through the Itch.io page
 
-<iframe frameborder="0" src="https://itch.io/embed/2082659" width="552" height="167"><a href="https://d8s-apps.itch.io/open-story-teller">Open Story Teller by D8S Apps</a></iframe>
-
+Reach me on Discord: [Discord](https://monurl.ca/DiscordLuniiYT)
 
 ## Where to start
 
@@ -67,6 +65,6 @@ Not yet, waiting for the availability of the first complete kit to determine the
 
 MIT License
 
-Copyright (c) 2023 Anthony Rabine
+Copyright (c) 2023-present Anthony Rabine
 
 

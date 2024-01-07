@@ -13,9 +13,14 @@ The goal of official bundles is to test the firmware on very different kind of h
 
 The price indicated is purely informative.
 
-## Hardware architecture overview
+# Hardware architecture overview
 
-Basically, it is a portable sound device that plays sound files and sometimes displays an image. Here is the diagram :
+Basically, it is a portable sound device that plays sound files and sometimes displays an image. Here is the diagram valid of a lot of different implementations:
 
 ![proto](./images/architecture.png)
+
+# Official bundles
+
+The official bundles are supported by the OpenStoryTeller firmware. It is possible to build a binary image from the source or flash redeay to use images. If your hardware is not supported, it is possible to create your own bundle by starting with an official bundle very close to your hardware.
+
 

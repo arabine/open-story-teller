@@ -4,6 +4,13 @@
         "${workspaceFolder}/story-editor",
         "${workspaceFolder}/story-player",
         "${workspaceFolder}/software"
-    ]
+    ],
+    "files.associations": {
+        "**/frontmatter.json": "jsonc",
+        "**/.frontmatter/config/*.json": "jsonc",
+        "*.css": "tailwindcss",
+        "pico_i2s.pio.h": "c",
+        "pico_i2s.h": "c"
+    }
 
 }

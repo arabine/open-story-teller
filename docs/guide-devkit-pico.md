@@ -11,7 +11,7 @@ Current status: ON DEVELOPMENT
 ![pico](./images/devkit-pico.jpg)
 
 
-## Bill of materials
+# Bill of materials
 
 Here is an example of components.
 - Links are examples of what to buy, price is not optimized
@@ -51,7 +51,23 @@ We may propose in the future a PCB to help the connection without soldering.
 ![pico](./images/prototype-board.png)
 
 
-# Developers: how to build from the source code
+# Pinout
+
+The pins usage for this bundle is indicated by the folling wirering. OST pins are indicated in dark orange on the far left and far right (other indications come from the Pico offical pin mapping).
+
+![pico](./images/picow-pinout_ost.png)
+
+# Bundle build guide
+
+
+# Firmware flashing
+
+
+![pico](./images/pico-uf2-ubuntu.png)
+
+
+
+# How to build from the source code
 
 ## Clone the repository
 

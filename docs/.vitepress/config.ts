@@ -34,7 +34,7 @@ export default defineConfig({
         text: 'Bundles assembly guides',
         collapsed: false,
         items: [
-          { text: 'Bundles introduction', link: '/guide-intro' },
+          { text: 'Introduction', link: '/guide-intro' },
           { text: 'Dev kit (Raspberry Pico)', link: '/guide-devkit-pico' }
         ]
       },
@@ -58,6 +58,8 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Source code architecture', link: '/dev-intro' },
+          { text: 'Micro VM documentation', link: '/dev-firmware-micro-vm' },
+          { text: 'Stories file format', link: '/dev-stories' },
         ]
       }
     ],

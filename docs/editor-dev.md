@@ -14,12 +14,12 @@ The source code is found in the *story-editor* sub-directory.
 
 You'll need:
 
-- Qt6.x development files
-- Inno-setup (to generate the Windows installer)
+- A C++ compiler
+- CMake build utility
 
 ## How to build
 
-Open the CMakeLists.txt with your favorite IDE (ie, QtCreator) or build from the command line.
+Open the CMakeLists.txt with your favorite IDE (ie, QtCreator, Visual Studio Code) or build from the command line.
 
 # Architecture
 
