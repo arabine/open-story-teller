@@ -6,7 +6,7 @@ This is the official development kit. It offers the following advantages:
 3. Low wiring/soldering: usage of a motherboard 
 4. SWD debug port
 
-Current status: ON DEVELOPMENT
+Current status: Firmware and software are completed. Build instructions under writing.
 
 ![pico](./images/devkit-pico.jpg)
 
@@ -57,17 +57,41 @@ The pins usage for this bundle is indicated by the folling wirering. OST pins ar
 
 ![pico](./images/picow-pinout_ost.png)
 
-# Bundle build guide
-
-
 # Firmware flashing
 
+## Get the firmware binary
+
+Download the right file for your bundle on the Github project page : [Github project page](https://github.com/arabine/open-story-teller) 
+
+For the Raspberry Pi Pico bundle, the executable is a ELF file extension.
+
+## Procedure
+
+You can program the Pico without any software thanks to the UF2 file system driver embedded in the Pico bootloader.
+
+- Press the Boot button located on the Marbe Pico
+- Without releasing the button, connect the Marbe Pico to your computer using a USB-C cable
+- Release the button
+- A new disk drive should popup on your file system
+
+Button position:
+
+![pico](./images/marble-pico.png)
+
+
+UF2 disk on your file explorer:
 
 ![pico](./images/pico-uf2-ubuntu.png)
 
 
+Just drag and drop the firmware image in this directory, wait for the programming and firmware reboot.
 
-# How to build from the source code
+# Bundle build guide
+
+TODO
+
+
+# How to build the firmare image from the source code
 
 ## Clone the repository
 

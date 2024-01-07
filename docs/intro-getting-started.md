@@ -7,17 +7,16 @@ This documentation will guide you to make your own story teller. You can choose 
 Before starting, here is a complete list of links where you'll find project information:
 
 - :octopus: [Github](https://github.com/arabine/open-story-teller): source code for the firmware, the player and the story editor, issue tracking
-- [Itch.io](https://d8s-apps.itch.io/open-story-teller): Download page for the Story Editor and various player versions.
+- Free stories community (in French) [Discord](https://monurl.ca/DiscordLuniiYT)
+- My Discord channel for this project: https://discord.gg/4TW4B3R4Ye
 
 ## Helping
 
 You can help in various ways:
 
 - Report bugs on Github (open an new issue)
-- Propose patches, ideas, mechanical drawings, ports (open an issue)
+- Propose patches, ideas, mechanical drawings for enclosures, ports (open an issue)
 - Translate stuff
-
-Reach me on Discord: [Discord](https://monurl.ca/DiscordLuniiYT)
 
 ## Where to start
 

@@ -27,7 +27,8 @@ void StoryProject::New(const std::string &uuid, const std::string &file_path)
 #define TLV_ARRAY_TYPE  0xAB
 #define TLV_OBJECT_TYPE  0xE7
 #define TLV_STRING_TYPE  0x3D
-
+#define TLV_INTEGER     0x77
+#define TLV_REAL        0xB8
 
 class Tlv
 {
