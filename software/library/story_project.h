@@ -41,6 +41,7 @@ struct StoryNode
 //            "sound": 0
 };
 
+
 struct StoryProject
 {
 
@@ -74,6 +75,8 @@ public:
     std::string GetWorkingDir() const;
     std::string GetName() const { return m_name; }
     std::string GetUuid() const { return m_uuid; }
+    std::string GetDescription() const { return m_description; }
+    int GetVersion() const { return m_version; }
 
     std::string BuildFullAssetsPath(const std::string &fileName) const;
 
@@ -101,16 +104,19 @@ public:
 
     void SaveStory(const std::vector<uint8_t> &m_program);
 
+    bool ParseStoryInformation(nlohmann::json &j);
 private:
     // Project properties and location
     std::string m_name; /// human readable name
     std::string m_uuid;
+    std::string m_titleImage;
+    std::string m_titleSound;
+    std::string m_description;
+    int m_version;
+
     std::filesystem::path m_assetsPath;
 
     bool m_initialized{false};
-
-    std::string m_titleImage;
-    std::string m_titleSound;
 
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
     std::string m_story_file_path; /// JSON project file

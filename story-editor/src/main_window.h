@@ -19,6 +19,8 @@
 #include "i_story_manager.h"
 #include "thread_safe_queue.h"
 #include "audio_player.h"
+#include "library_manager.h"
+#include "library_window.h"
 
 struct DebugContext
 {
@@ -110,6 +112,8 @@ private:
 
     ResourceManager m_resources;
 
+    LibraryManager m_libraryManager;
+
     Gui m_gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
@@ -120,6 +124,8 @@ private:
     NodeEditorWindow m_nodeEditorWindow;
 
     PropertiesWindow m_PropertiesWindow;
+
+    LibraryWindow m_libraryWindow;
 
     AudioPlayer m_player;
 
@@ -132,6 +138,7 @@ private:
 
 
     // From IStoryManager (proxy to StoryProject class)
+    virtual void OpenProject(const std::string &filename) override;
     virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
@@ -162,7 +169,6 @@ private:
 
     void NewProjectPopup();
     void SaveProject();
-    void OpenProject(const std::string &filename);
     void CloseProject();
     void OpenProjectDialog();
     void DrawStatusBar();

@@ -24,74 +24,12 @@ void StoryProject::New(const std::string &uuid, const std::string &file_path)
     Initialize(file_path);
 }
 
-#define TLV_ARRAY_TYPE  0xAB
-#define TLV_OBJECT_TYPE  0xE7
-#define TLV_STRING_TYPE  0x3D
-#define TLV_INTEGER     0x77
-#define TLV_REAL        0xB8
-
-class Tlv
-{
-public:
-    explicit Tlv(const std::string &filename)
-    {
-        m_file = std::ofstream(filename, std::ios::out | std::ios::binary);
-    }
-
-    ~Tlv() {
-        m_file.close();
-    }
-
-    void add_array(uint16_t size)
-    {
-        m_file.write(reinterpret_cast<const char*>(&m_objectType), sizeof(m_objectType));
-        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
-    }
-
-    void add_string(const char *s, uint16_t size)
-    {
-        m_file.write(reinterpret_cast<const char*>(&m_stringType), sizeof(m_stringType));
-        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
-        m_file.write(s, size);
-    }
-
-    void add_object(uint16_t entries)
-    {
-        m_file.write(reinterpret_cast<const char*>(&m_arrayType), sizeof(m_arrayType));
-        m_file.write(reinterpret_cast<const char*>(&entries), sizeof(entries));
-    }
-
-private:
-    std::ofstream m_file;
-
-    uint8_t m_arrayType = TLV_ARRAY_TYPE;
-    uint8_t m_objectType = TLV_OBJECT_TYPE;
-    uint8_t m_stringType = TLV_STRING_TYPE;
-
-};
-
-
 
 void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
 {
     std::ofstream o(m_working_dir / "story.c32", std::ios::out | std::ios::binary);
     o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
     o.close();
-
-    auto p = m_working_dir / "index.ost";
-    Tlv tlv(p.string());
-
-    tlv.add_array(1);
-
-    tlv.add_object(3);
-    tlv.add_string(m_uuid.c_str(), m_uuid.size()); // uuid
-
-    // Title image
-    std::string image =  RemoveFileExtension(m_titleImage) + ".qoi";
-    tlv.add_string(image.c_str(), image.size());
-
-    std::string sound =  RemoveFileExtension(m_titleSound) + ".wav";
-    tlv.add_string(sound.c_str(), sound.size()); // title sound
 }
 
 void StoryProject::Initialize(const std::string &file_path)
@@ -100,7 +38,7 @@ void StoryProject::Initialize(const std::string &file_path)
     std::filesystem::path p(file_path);
     m_working_dir= p.parent_path().generic_string();
 
-    // Frist try to create the working directory
+    // First try to create the working directory
     if (!std::filesystem::is_directory(m_working_dir))
     {
         std::filesystem::create_directories(m_working_dir);
@@ -111,6 +49,27 @@ void StoryProject::Initialize(const std::string &file_path)
 
     m_initialized = true;
 }
+
+
+bool StoryProject::ParseStoryInformation(nlohmann::json &j)
+{
+    bool success = false;
+
+    if (j.contains("project"))
+    {
+        nlohmann::json projectData = j["project"];
+
+        m_name = projectData["name"].get<std::string>();
+        m_uuid = projectData["uuid"].get<std::string>();
+        m_titleImage = projectData.value("title_image", "");
+        m_titleSound = projectData.value("title_sound", "");
+
+        success = true;
+    }
+
+    return success;
+}
+
 
 bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager)
 {
@@ -130,15 +89,8 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, Res
    //     m_nodes.clear();
         manager.Clear();
 
-        if (j.contains("project"))
+        if (ParseStoryInformation(j))
         {
-            nlohmann::json projectData = j["project"];
-
-            m_name = projectData["name"].get<std::string>();
-            m_uuid = projectData["uuid"].get<std::string>();
-            m_titleImage = projectData.value("title_image", "");
-            m_titleSound = projectData.value("title_sound", "");
-
             if (j.contains("resources"))
             {
                 nlohmann::json resourcesData = j["resources"];

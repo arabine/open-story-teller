@@ -67,3 +67,5 @@ build-story-editor-Desktop-Debug/
 docs/.vitepress/cache/
 
 docs/.vitepress/dist/
+
+software/.cache/

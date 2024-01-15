@@ -1,6 +1,5 @@
 #include "main_window.h"
 #include <filesystem>
-#include <random>
 #include <SDL.h>
 #include "platform_folders.h"
 #include "uuid.h"
@@ -19,17 +18,14 @@
 #include "IconsMaterialDesignIcons.h"
 #include "ImGuiFileDialog.h"
 
-static std::string gVersion;
-
 MainWindow::MainWindow()
     : m_emulatorWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
+    , m_libraryWindow(*this, m_libraryManager)
     , m_player(*this)
+
 {
-
-    gVersion = std::to_string(VERSION_MAJOR) + '.' + std::to_string(VERSION_MINOR) + '.' + std::to_string(VERSION_PATCH);
-
     // VM Initialize
     m_chip32_ctx.stack_size = 512;
 
@@ -51,7 +47,7 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-
+    SaveParams();
 }
 
 
@@ -270,7 +266,7 @@ void MainWindow::DrawMainMenuBar()
             {
                 showNewProject = true;
             }
-
+/*
             if (ImGui::MenuItem("Open project"))
             {
                 showOpenProject = true;
@@ -280,16 +276,21 @@ void MainWindow::DrawMainMenuBar()
             {
                 for (auto &e : m_recentProjects)
                 {
-                    if (ImGui::MenuItem(e.c_str()))
+                    if (e.size() > 0)
                     {
-                        OpenProject(e);
+                        if (ImGui::MenuItem(e.c_str()))
+                        {
+                            OpenProject(e);
+                        }
                     }
                 }
 
                 ImGui::EndMenu();
             }
+*/
 
-            if (!m_story.IsInitialized())
+            bool init = m_story.IsInitialized(); // local copy because CloseProject() changes the status between BeginDisabled/EndDisabled
+            if (!init)
                 ImGui::BeginDisabled();
 
             ImGui::Separator();
@@ -308,7 +309,7 @@ void MainWindow::DrawMainMenuBar()
                 showParameters = true;
             }
 
-            if (!m_story.IsInitialized())
+            if (!init)
                 ImGui::EndDisabled();
 
             ImGui::EndMenu();
@@ -359,7 +360,7 @@ void MainWindow::DrawMainMenuBar()
 
     if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Story Editor - v%s", gVersion.c_str());
+        ImGui::Text("Story Editor - v%s", LibraryManager::GetVersion().c_str());
         ImGui::Text("http://www.openstoryteller.org");
         ImGui::Separator();
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
@@ -504,7 +505,6 @@ void MainWindow::ProjectPropertiesPopup()
         {
             ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose File", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
         }
-
 
         // display
         if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
@@ -681,8 +681,7 @@ void MainWindow::SaveProject()
 
 void MainWindow::OpenProject(const std::string &filename)
 {
-    m_story.Initialize(filename);
-
+    CloseProject();
     nlohmann::json model;
 
     if (m_story.Load(filename, model, m_resources))
@@ -720,7 +719,7 @@ void MainWindow::OpenProject(const std::string &filename)
 
 void MainWindow::RefreshProjectInformation()
 {
-    std::string fullText = "Story Editor " + gVersion + " - " + m_story.GetProjectFilePath();
+    std::string fullText = "Story Editor " + LibraryManager::GetVersion() + " - " + m_story.GetProjectFilePath();
     m_gui.SetWindowTitle(fullText);
 }
 
@@ -738,7 +737,6 @@ void MainWindow::CloseProject()
 
     m_nodeEditorWindow.Disable();
     m_emulatorWindow.Disable();
-    m_consoleWindow.Disable();
     m_editorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
@@ -768,14 +766,20 @@ void MainWindow::Loop()
 
 
         // ------------  Draw all windows
-        m_consoleWindow.Draw();
-        m_emulatorWindow.Draw();
-        m_editorWindow.Draw();
-        m_resourcesWindow.Draw();
-        m_nodeEditorWindow.Draw();
+        m_libraryWindow.Draw();
 
-        m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
-        m_PropertiesWindow.Draw();
+        if (m_libraryManager.IsInitialized())
+        {
+            m_consoleWindow.Draw();
+            m_emulatorWindow.Draw();
+            m_editorWindow.Draw();
+            m_resourcesWindow.Draw();
+            m_nodeEditorWindow.Draw();
+
+
+            m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
+            m_PropertiesWindow.Draw();
+        }
 
         NewProjectPopup();
         OpenProjectDialog();
@@ -797,6 +801,7 @@ void MainWindow::Loop()
 
     m_gui.Destroy();
 }
+
 
 void MainWindow::Log(const std::string &txt, bool critical)
 {
@@ -1007,6 +1012,7 @@ void MainWindow::SaveParams()
     nlohmann::json recents(m_recentProjects);
 
     j["recents"] = recents;
+    j["library_path"] = m_libraryManager.LibraryPath();
 
     std::string loc = pf::getConfigHome() + "/ost_settings.json";
     std::ofstream o(loc);
@@ -1032,6 +1038,14 @@ void MainWindow::LoadParams()
                 m_recentProjects.push_back(element);
             }
         }
+
+        nlohmann::json library_path = j["library_path"];
+
+        if (std::filesystem::exists(library_path))
+        {
+            m_libraryManager.Initialize(library_path);
+        }
+
     }
     catch(std::exception &e)
     {

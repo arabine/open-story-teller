@@ -23,6 +23,32 @@
                 }
             ]
             
+        },
+        {
+            "name": "Black Magic Probe",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/software/build/RaspberryPico/open-story-teller.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "showDevDebugOutput": "raw",
+            "BMPGDBSerialPort": "/dev/ttyACM0",
+            "servertype": "bmp",
+            "interface": "swd",
+            "gdbPath": "gdb-multiarch",
+            "svdFile": "${workspaceRoot}/software/platform/raspberry-pico-w/rp2040.svd",
+            // "device": "STM32L431VC",
+            "runToMain": true,
+            "preRestartCommands": [
+                "cd ${workspaceRoot}/software/build/RaspberryPico",
+                "file open-story-teller.elf",
+                // "target extended-remote /dev/ttyACM0",
+                "set mem inaccessible-by-default off",
+                "enable breakpoint",
+                "monitor reset",
+                "monitor swdp_scan",
+                "attach 1",
+                "load"
+            ]
         }
     ]
 }

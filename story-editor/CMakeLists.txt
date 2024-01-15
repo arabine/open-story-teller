@@ -101,6 +101,9 @@ set(SRCS
     src/node_editor_window.cpp
     src/node_editor_window.h
 
+    src/library_window.cpp
+    src/library_window.h
+
     src/media_node.h
     src/media_node.cpp
 
@@ -148,8 +151,11 @@ set(SRCS
 
     ../software/chip32/chip32_assembler.cpp
     ../software/chip32/chip32_vm.c
-    ../software/library/audio_player.cpp
-    ../software/library/audio_player.h
+
+    ../software/common/audio_player.cpp
+    ../software/common/audio_player.h
+    ../software/common/tlv.h
+
     ../software/library/miniaudio.h
     ../software/library/uuid.h
     ../software/library/resource.h
@@ -157,6 +163,8 @@ set(SRCS
     ../software/library/story_project.cpp
     ../software/library/story_project.h
     ../software/library/thread_safe_queue.h
+    ../software/library/library_manager.h
+    ../software/library/library_manager.cpp
 )
 
 if(WIN32)
@@ -174,6 +182,8 @@ if(WIN32)
 else()
     add_executable(${STORY_EDITOR_PROJECT}
         ${SRCS}
+
+
     )
 endif()
 
@@ -187,6 +197,7 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
 
     ../software/library/
     ../software/chip32/
+    ../software/common
 )
 
 add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})
