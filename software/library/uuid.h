@@ -3,6 +3,7 @@
 
 #include <string>
 #include <random>
+#include <regex>
 
 // Encaasulate the genaeration of a Version 4 UUID object
 // A Version 4 UUID is a universally unique identifier that is generated using random numbers.
@@ -46,6 +47,13 @@ public:
         return uuid;
     }
 
+    static bool IsValid(const std::string& input) {
+        // Le motif regex pour un UUID V4
+        std::regex uuidRegex("^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$",std::regex_constants::icase);
+
+        // Vérifier si la chaîne correspond au motif UUID V4
+        return std::regex_match(input, uuidRegex);
+    }
 
     unsigned char _data[16] = {0};
 };

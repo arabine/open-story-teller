@@ -2,6 +2,8 @@
 #include "gui.h"
 #include "ImGuiFileDialog.h"
 #include <filesystem>
+#include "IconsMaterialDesignIcons.h"
+
 
 LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library)
     : WindowBase("Library Manager")
@@ -40,7 +42,7 @@ void LibraryWindow::Draw()
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
-    if (ImGui::Button("Select directory"))
+    if (ImGui::Button( ICON_MDI_FOLDER " Select directory"))
     {
         ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
@@ -96,8 +98,7 @@ void LibraryWindow::Draw()
 
                 if (ImGui::SmallButton("Load"))
                 {
-                    auto filename = std::filesystem::path(m_libraryManager.LibraryPath()) / p->GetUuid() / std::filesystem::path("project.json");
-                    m_storyManager.OpenProject(filename);
+                    m_storyManager.OpenProject(p->GetUuid());
                 }
 
                 ImGui::SameLine();

@@ -1,9 +1,11 @@
 #include "library_manager.h"
 #include "tlv.h"
 #include <filesystem>
-#include <regex>
+
 #include "json.hpp"
 #include "story_project.h"
+#include "uuid.h"
+
 
 LibraryManager::LibraryManager() {}
 
@@ -11,14 +13,6 @@ void LibraryManager::Initialize(const std::string &library_path)
 {
     m_library_path = library_path;
     Scan();
-}
-
-bool IsUUIDV4(const std::string& input) {
-    // Le motif regex pour un UUID V4
-    std::regex uuidRegex("^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$",std::regex_constants::icase);
-
-    // Vérifier si la chaîne correspond au motif UUID V4
-    return std::regex_match(input, uuidRegex);
 }
 
 void LibraryManager::Scan()
@@ -33,7 +27,7 @@ void LibraryManager::Scan()
             {
                 // Si c'est un sous-répertoire, récursivement scanner le contenu
                 std::string uuid = entry.path().filename();
-                if (IsUUIDV4(uuid))
+                if (UUID::IsValid(uuid))
                 {
                     std::cout << "Found story directory" << std::endl;
                     // Look for a story.json file in this directory
@@ -49,6 +43,7 @@ void LibraryManager::Scan()
                             if (proj->ParseStoryInformation(j))
                             {
                                 // Valid project file, add it to the list
+                                proj->SetPaths(uuid, m_library_path);
                                 m_projectsList.push_back(proj);
                             }
                         }
@@ -61,6 +56,32 @@ void LibraryManager::Scan()
             }
         }
     }
+}
+
+std::shared_ptr<StoryProject> LibraryManager::NewProject()
+{
+    auto story = std::make_shared<StoryProject>();
+    std::string uuid = UUID().String();
+
+    story->New(uuid, m_library_path);
+    story->SetDisplayFormat(320, 240);
+    story->SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
+    story->SetSoundFormat(StoryProject::SND_FORMAT_WAV);
+    story->SetName("New project");
+    return story;
+}
+
+std::shared_ptr<StoryProject> LibraryManager::GetStory(const std::string &uuid)
+{
+    std::shared_ptr<StoryProject> current;
+    for (const auto &s : m_projectsList)
+    {
+        if (s->GetUuid() == uuid)
+        {
+            current = s;
+        }
+    }
+    return current;
 }
 
 void LibraryManager::Save()

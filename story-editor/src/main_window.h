@@ -93,7 +93,7 @@ public:
 private:
     enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished};
 
-    StoryProject m_story;
+    std::shared_ptr<StoryProject> m_story;
 
     // VM
     uint8_t m_rom_data[16*1024];
@@ -119,6 +119,8 @@ private:
     ConsoleWindow m_consoleWindow;
     CodeEditor m_editorWindow;
 
+    char m_project_name[256] = "";
+
     ResourcesWindow m_resourcesWindow;
 
     NodeEditorWindow m_nodeEditorWindow;
@@ -138,7 +140,7 @@ private:
 
 
     // From IStoryManager (proxy to StoryProject class)
-    virtual void OpenProject(const std::string &filename) override;
+    virtual void OpenProject(const std::string &uuid) override;
     virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
@@ -170,7 +172,6 @@ private:
     void NewProjectPopup();
     void SaveProject();
     void CloseProject();
-    void OpenProjectDialog();
     void DrawStatusBar();
 
     bool CompileToAssembler();

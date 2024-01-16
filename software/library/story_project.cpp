@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <queue>
 #include <filesystem>
 
 #include "json.hpp"
@@ -16,40 +15,40 @@ StoryProject::~StoryProject()
 {
 }
 
-
-
-void StoryProject::New(const std::string &uuid, const std::string &file_path)
+void StoryProject::SetPaths(const std::string &uuid, const std::string &library_path)
 {
     m_uuid = uuid;
-    Initialize(file_path);
+    m_project_file_path = std::filesystem::path(library_path) / uuid / std::filesystem::path("project.json");
+
+    m_working_dir = m_project_file_path.parent_path().generic_string();
+    m_assetsPath = m_working_dir /  std::filesystem::path("assets");
+
+    std::cout << "Working dir is: " << m_working_dir << std::endl;
 }
 
 
-void StoryProject::SaveStory(const std::vector<uint8_t> &m_program)
+void StoryProject::New(const std::string &uuid, const std::string &library_path)
 {
-    std::ofstream o(m_working_dir / "story.c32", std::ios::out | std::ios::binary);
-    o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
-    o.close();
-}
-
-void StoryProject::Initialize(const std::string &file_path)
-{
-    m_story_file_path = file_path;
-    std::filesystem::path p(file_path);
-    m_working_dir= p.parent_path().generic_string();
+    SetPaths(uuid, library_path);
 
     // First try to create the working directory
     if (!std::filesystem::is_directory(m_working_dir))
     {
         std::filesystem::create_directories(m_working_dir);
     }
-    m_assetsPath = std::filesystem::path(m_working_dir) /  "assets";
 
     std::filesystem::create_directories(m_assetsPath);
 
     m_initialized = true;
 }
 
+
+void StoryProject::SaveBinary(const std::vector<uint8_t> &m_program)
+{
+    std::ofstream o(m_working_dir / "story.c32", std::ios::out | std::ios::binary);
+    o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
+    o.close();
+}
 
 bool StoryProject::ParseStoryInformation(nlohmann::json &j)
 {
@@ -71,22 +70,12 @@ bool StoryProject::ParseStoryInformation(nlohmann::json &j)
 }
 
 
-bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager)
+bool StoryProject::Load(nlohmann::json &model, ResourceManager &manager)
 {
-
-    std::ifstream f(file_path);
-    bool success = false;
-
-    std::filesystem::path p(file_path);
-    m_working_dir= p.parent_path().generic_string();
-
-    std::cout << "Working dir is: " << m_working_dir << std::endl;
-
     try {
-
+        std::ifstream f(m_project_file_path);
         nlohmann::json j = nlohmann::json::parse(f);
 
-   //     m_nodes.clear();
         manager.Clear();
 
         if (ParseStoryInformation(j))
@@ -109,7 +98,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, Res
                 if (j.contains("nodegraph"))
                 {
                     model = j["nodegraph"];
-                    success = true;
+                    m_initialized = true;
                 }
             }
         }
@@ -180,7 +169,7 @@ bool StoryProject::Load(const std::string &file_path, nlohmann::json &model, Res
         std::cout << e.what() << std::endl;
     }
 
-    return success;
+    return m_initialized;
 }
 
 void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
@@ -206,7 +195,7 @@ void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
 
     j["nodegraph"] = model;
 
-    std::ofstream o(m_story_file_path);
+    std::ofstream o(m_project_file_path);
     o << std::setw(4) << j << std::endl;
 }
 /*
@@ -248,7 +237,7 @@ void StoryProject::Clear()
 {
     m_uuid = "";
     m_working_dir = "";
-    m_story_file_path = "";
+    m_project_file_path = "";
     m_initialized = false;
 }
 
@@ -339,7 +328,7 @@ void StoryProject::SetDisplayFormat(int w, int h)
 
 std::string StoryProject::GetProjectFilePath() const
 {
-    return m_story_file_path;
+    return m_project_file_path;
 }
 
 std::string StoryProject::GetWorkingDir() const

@@ -14,7 +14,7 @@ class IStoryManager
 public:
     virtual ~IStoryManager() {}
 
-    virtual void OpenProject(const std::string &filename) = 0;
+    virtual void OpenProject(const std::string &uuid) = 0;
     virtual void Log(const std::string &txt, bool critical = false) = 0;
     virtual void PlaySoundFile(const std::string &fileName) = 0;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const = 0;

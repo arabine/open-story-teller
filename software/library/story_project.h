@@ -59,8 +59,11 @@ public:
 
     StoryNode *m_tree;
 */
-    bool Load(const std::string &file_path, nlohmann::json &model, ResourceManager &manager);
+    void New(const std::string &uuid, const std::string &library_path);
+    bool Load(nlohmann::json &model, ResourceManager &manager);
     void Save(const nlohmann::json &model, ResourceManager &manager);
+    void SaveBinary(const std::vector<uint8_t> &m_program);
+    void SetPaths(const std::string &uuid, const std::string &library_path);
 
     void CreateTree();
     void Clear();
@@ -95,14 +98,13 @@ public:
     std::string GetTitleSound() const { return m_titleSound; }
 
     // Initialize with an existing project
-    void Initialize(const std::string &file_path);
     const bool IsInitialized() const { return m_initialized; }
-    void New(const std::string &uuid, const std::string &file_path);
+
 
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 
-    void SaveStory(const std::vector<uint8_t> &m_program);
+
 
     bool ParseStoryInformation(nlohmann::json &j);
 private:
@@ -119,7 +121,7 @@ private:
     bool m_initialized{false};
 
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
-    std::string m_story_file_path; /// JSON project file
+    std::filesystem::path m_project_file_path; /// JSON project file
 
     int m_display_w{320};
     int m_display_h{240};

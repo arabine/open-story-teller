@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <map>
-#include <mutex>
 #include "i_story_manager.h"
 #include "window_base.h"
 

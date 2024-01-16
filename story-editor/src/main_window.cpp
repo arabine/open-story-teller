@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <SDL.h>
 #include "platform_folders.h"
-#include "uuid.h"
+
 #include "media_converter.h"
 
 #ifdef USE_WINDOWS_OS
@@ -15,7 +15,6 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-#include "IconsMaterialDesignIcons.h"
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
@@ -39,8 +38,6 @@ MainWindow::MainWindow()
 
     Callback<uint8_t(chip32_ctx_t *, uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1, std::placeholders::_2);
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
-
-    m_story.Clear();
 
     CloseProject();
 }
@@ -187,7 +184,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R0] != 0)
         {
             // image file name address is in R0
-            std::string imageFile = m_story.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            std::string imageFile = m_story->BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
             Log("Image: " + imageFile);
             m_emulatorWindow.SetImage(imageFile);
         }
@@ -199,7 +196,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R1] != 0)
         {
             // sound file name address is in R1
-            std::string soundFile = m_story.BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            std::string soundFile = m_story->BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
             Log(", Sound: " + soundFile);
             m_player.Play(soundFile);
         }
@@ -267,11 +264,6 @@ void MainWindow::DrawMainMenuBar()
                 showNewProject = true;
             }
 /*
-            if (ImGui::MenuItem("Open project"))
-            {
-                showOpenProject = true;
-            }
-
             if (ImGui::BeginMenu("Open Recent"))
             {
                 for (auto &e : m_recentProjects)
@@ -289,7 +281,7 @@ void MainWindow::DrawMainMenuBar()
             }
 */
 
-            bool init = m_story.IsInitialized(); // local copy because CloseProject() changes the status between BeginDisabled/EndDisabled
+            bool init = m_story ? true : false; // local copy because CloseProject() changes the status between BeginDisabled/EndDisabled
             if (!init)
                 ImGui::BeginDisabled();
 
@@ -334,21 +326,19 @@ void MainWindow::DrawMainMenuBar()
 
     if (showParameters)
     {
-        if (m_story.IsInitialized())
+        if (m_story)
         {
             ImGui::OpenPopup("ProjectPropertiesPopup");
+
+            // Init some variables
+            std::size_t length = m_story->GetName().copy(m_project_name, sizeof(m_project_name));
+            m_project_name[length] = '\0';
         }
     }
 
     if (showNewProject)
     {
         ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose a parent directory for your project", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
-    }
-
-    if (showOpenProject)
-    {
-        std::string home = pf::getUserHome() + "/";
-        ImGuiFileDialog::Instance()->OpenDialog("OpenProjectDlgKey", "Choose File", ".json", home, 1, nullptr, ImGuiFileDialogFlags_Modal);
     }
 
     // Always center this window when appearing
@@ -426,27 +416,6 @@ bool MainWindow::ShowQuitConfirm()
 }
 
 
-void MainWindow::OpenProjectDialog()
-{
-    ImGui::SetNextWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
-    if (ImGuiFileDialog::Instance()->Display("OpenProjectDlgKey"))
-    {
-      //  ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
-
-        // action if OK
-        if (ImGuiFileDialog::Instance()->IsOk())
-        {
-            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-
-            OpenProject(filePathName);
-        }
-
-        // close
-        ImGuiFileDialog::Instance()->Close();
-    }
-}
-
 void MainWindow::NewProjectPopup()
 {
     // Always center this window when appearing
@@ -463,19 +432,13 @@ void MainWindow::NewProjectPopup()
 
             if (!std::filesystem::is_directory(projdir))
             {
+                m_story = m_libraryManager.NewProject();
 
-                std::string uuid = UUID().String();
-                auto p = std::filesystem::path(projdir) / uuid / std::filesystem::path("project.json");
-                m_story.Initialize(p.generic_string());
-
-                m_story.SetDisplayFormat(320, 240);
-                m_story.SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
-                m_story.SetSoundFormat(StoryProject::SND_FORMAT_WAV);
-                m_story.SetName("New project");
-                m_story.SetUuid(uuid);
-
-                SaveProject();
-                OpenProject(p.generic_string());
+                if (m_story)
+                {
+                    SaveProject();
+                    OpenProject(m_story->GetUuid());
+                }
             }
         }
 
@@ -486,45 +449,15 @@ void MainWindow::NewProjectPopup()
 
 void MainWindow::ProjectPropertiesPopup()
 {
-
-    static std::string projdir;
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     if (ImGui::BeginPopupModal("ProjectPropertiesPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("New project parameters (directory must be empty)");
-        ImGui::Separator();
-
-        ImGui::Text("Directory: "); ImGui::SameLine();
-        static char project_dir[256] = "";
-        ImGui::InputTextWithHint("##project_path", "Project path", project_dir, IM_ARRAYSIZE(project_dir));
-        ImGui::SameLine();
-        if (ImGui::Button( ICON_MDI_FOLDER " ..."))
-        {
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose File", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
-        }
-
-        // display
-        if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
-        {
-            // action if OK
-            if (ImGuiFileDialog::Instance()->IsOk())
-            {
-                std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-                projdir = ImGuiFileDialog::Instance()->GetCurrentPath();
-
-            }
-
-            // close
-            ImGuiFileDialog::Instance()->Close();
-        }
-
 
         ImGui::Text("Project name: "); ImGui::SameLine();
-        static char project_name[256] = "";
-        ImGui::InputTextWithHint("##project_name", "Project name", project_name, IM_ARRAYSIZE(project_name));
+        ImGui::InputTextWithHint("##project_name", "Project name", m_project_name, IM_ARRAYSIZE(m_project_name));
 
         ImGui::Text("Size of display screen: ");
         ImGui::SameLine();
@@ -630,33 +563,23 @@ void MainWindow::ProjectPropertiesPopup()
 
         if (ImGui::Button("OK", ImVec2(120, 0)))
         {
-            bool valid{true};
-
-            if (!std::filesystem::is_directory(projdir))
+            if (display_item_current_idx == 0)
             {
-                valid = false;
+                m_story->SetDisplayFormat(320, 240);
+            }
+            else
+            {
+                m_story->SetDisplayFormat(640, 480);
             }
 
-            if (valid)
-            {
+            m_story->SetImageFormat(GetImageFormat(image_item_current_idx));
+            m_story->SetSoundFormat(GetSoundFormat(sound_item_current_idx));
+            m_story->SetName(m_project_name);
 
-                if (display_item_current_idx == 0)
-                {
-                    m_story.SetDisplayFormat(320, 240);
-                }
-                else
-                {
-                    m_story.SetDisplayFormat(640, 480);
-                }
+            SaveProject();
 
-                m_story.SetImageFormat(GetImageFormat(image_item_current_idx));
-                m_story.SetSoundFormat(GetSoundFormat(sound_item_current_idx));
-                m_story.SetName(project_name);
+            ImGui::CloseCurrentPopup();
 
-                SaveProject();
-
-                ImGui::CloseCurrentPopup();
-            }
         }
         ImGui::SetItemDefaultFocus();
         ImGui::SameLine();
@@ -666,29 +589,31 @@ void MainWindow::ProjectPropertiesPopup()
         }
         ImGui::EndPopup();
     }
-    else
-    {
-        projdir = "";
-    }
 }
 
 void MainWindow::SaveProject()
 {
     nlohmann::json model;
     m_nodeEditorWindow.Save(model);
-    m_story.Save(model, m_resources);
+    m_story->Save(model, m_resources);
 }
 
-void MainWindow::OpenProject(const std::string &filename)
+void MainWindow::OpenProject(const std::string &uuid)
 {
     CloseProject();
     nlohmann::json model;
 
-    if (m_story.Load(filename, model, m_resources))
+    m_story = m_libraryManager.GetStory(uuid);
+
+    if (!m_story)
+    {
+        Log("Cannot find story: " + uuid);
+    }
+    else if (m_story->Load(model, m_resources))
     {
         Log("Open project success");
         m_nodeEditorWindow.Load(model);
-        auto proj = m_story.GetProjectFilePath();
+        auto proj = m_story->GetProjectFilePath();
         // Add to recent if not exists
         if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
         {
@@ -719,14 +644,23 @@ void MainWindow::OpenProject(const std::string &filename)
 
 void MainWindow::RefreshProjectInformation()
 {
-    std::string fullText = "Story Editor " + LibraryManager::GetVersion() + " - " + m_story.GetProjectFilePath();
+    std::string fullText = "Story Editor " + LibraryManager::GetVersion();
+
+    if (m_story)
+    {
+        fullText += " - " + m_story->GetProjectFilePath();
+    }
     m_gui.SetWindowTitle(fullText);
 }
 
 
 void MainWindow::CloseProject()
 {
-    m_story.Clear();
+    if (m_story)
+    {
+        m_story->Clear();
+    }
+
     m_resources.Clear();
 
     m_nodeEditorWindow.Clear();
@@ -782,7 +716,6 @@ void MainWindow::Loop()
         }
 
         NewProjectPopup();
-        OpenProjectDialog();
         ProjectPropertiesPopup();
 
         if (aboutToClose)
@@ -816,7 +749,7 @@ void MainWindow::PlaySoundFile(const std::string &fileName)
 
 std::string MainWindow::BuildFullAssetsPath(const std::string &fileName) const
 {
-    return m_story.BuildFullAssetsPath(fileName);
+    return m_story->BuildFullAssetsPath(fileName);
 }
 
 std::pair<FilterIterator, FilterIterator> MainWindow::Images()
@@ -915,7 +848,7 @@ void MainWindow::GenerateBinary()
             // FIXME
 //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
 //            m_romView->SetMemory(m_rom_data, m_program.size());
-            m_story.SaveStory(m_program);
+            m_story->SaveBinary(m_program);
             chip32_initialize(&m_chip32_ctx);
             m_dbg.run_result = VM_READY;
             UpdateVmView();
@@ -976,8 +909,8 @@ void MainWindow::ConvertResources()
     auto [b, e] = m_resources.Items();
     for (auto it = b; it != e; ++it)
     {
-        std::string inputfile = m_story.BuildFullAssetsPath((*it)->file.c_str());
-        std::string outputfile = std::filesystem::path(m_story.AssetsPath() / StoryProject::RemoveFileExtension((*it)->file)).string();
+        std::string inputfile = m_story->BuildFullAssetsPath((*it)->file.c_str());
+        std::string outputfile = std::filesystem::path(m_story->AssetsPath() / StoryProject::RemoveFileExtension((*it)->file)).string();
 
         int retCode = 0;
         if ((*it)->format == "PNG")

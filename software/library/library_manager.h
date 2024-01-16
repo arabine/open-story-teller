@@ -22,6 +22,11 @@ public:
 
     void Save();
     void Scan();
+
+    std::shared_ptr<StoryProject> NewProject();
+
+    std::shared_ptr<StoryProject> GetStory(const std::string &uuid);
+
 private:
     std::string m_library_path;
     std::vector<std::shared_ptr<StoryProject>> m_projectsList;
