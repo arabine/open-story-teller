@@ -243,6 +243,9 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 
 # install(DIRECTORY "${PROJECT_SOURCE_DIR}/assets/" DESTINATION "assets")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/fonts/" DESTINATION "fonts")
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/scripts/" DESTINATION "scripts")
+install_files("." FILES "${CMAKE_SOURCE_DIR}/LICENSE")
+install_files("." FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini")
 
 if(WIN32)
     install_files("." FILES "${SDL2_BIN_DIR}/SDL2.dll")

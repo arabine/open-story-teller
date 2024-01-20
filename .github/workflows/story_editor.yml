@@ -1,0 +1,31 @@
+name: BuildStoryEditor-Linux
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+jobs:
+  build_win:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            submodules: recursive
+        - name: Install packages
+          run : |
+               sudo apt-get update -qq
+        - name: build
+          working-directory: ./story-editor
+          run : |
+              mkdir build
+              cd build
+              cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+              ninja
+              ls
+        - name: package_setup
+          working-directory: ./story-editor
+          run : |
+              make package
+              ls
+
