@@ -15,7 +15,7 @@ jobs:
         - name: Install packages
           run : |
                sudo apt-get update -qq
-               sudo apt-get install ninja
+               sudo apt-get install ninja-build
                sudo apt-get install build-essential
                sudo apt-get install cmake
         - name: build
