@@ -26,7 +26,7 @@ jobs:
               cmake -DCMAKE_BUILD_TYPE=Release ..
               ls
         - name: package_setup
-          working-directory: ./story-editor
+          working-directory: ./story-editor/build
           run : |
               make package
               ls
