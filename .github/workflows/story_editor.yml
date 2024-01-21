@@ -15,7 +15,6 @@ jobs:
         - name: Install packages
           run : |
                sudo apt-get update -qq
-               sudo apt-get install ninja-build
                sudo apt-get install build-essential
                sudo apt-get install cmake
                sudo apt install mesa-common-dev libgl1-mesa-dev libgles2-mesa-dev
@@ -24,8 +23,7 @@ jobs:
           run : |
               mkdir build
               cd build
-              cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
-              ninja
+              cmake -DCMAKE_BUILD_TYPE=Release ..
               ls
         - name: package_setup
           working-directory: ./story-editor
