@@ -214,7 +214,6 @@ set(SDL2_BIN_DIR ${sdl2_BINARY_DIR})
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
         pthread
-        udev
         OpenGL::GL
         dl
         SDL2
