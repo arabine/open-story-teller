@@ -164,6 +164,24 @@ static std::string GetAppDataLocal()
 	return GetKnownWindowsFolder(FOLDERID_LocalAppData, "LocalAppData could not be found");
 }
 #elif defined(__APPLE__)
+
+
+#include <mach-o/dyld.h>
+#include <limits.h>
+
+namespace pf {
+std::string getExecutablePath()
+{
+	std::string path;
+	char buf [PATH_MAX];
+  	uint32_t bufsize = PATH_MAX;
+  	if(!_NSGetExecutablePath(buf, &bufsize))
+		path.assign(buf);
+
+	return path;
+}
+}
+
 #else
 #include <map>
 #include <fstream>

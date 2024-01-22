@@ -69,3 +69,11 @@ docs/.vitepress/cache/
 docs/.vitepress/dist/
 
 software/.cache/
+
+.DS_Store
+
+story-editor/.idea/
+
+story-editor/buildxcode/
+
+story-editor/cmake-build-debug/

@@ -8,7 +8,7 @@ your use of the corresponding standard functions.
 #include "gui.h"
 
 #include <stdio.h>
-
+#include <iostream>
 
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -23,6 +23,9 @@ your use of the corresponding standard functions.
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
 #include "qoi.h"
+
+
+#include "platform_folders.h"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -110,9 +113,16 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 
 #define MANOLAB_VERSION "1.0"
 
+std::string GetDirectory (const std::string& path)
+{
+    size_t found = path.find_last_of("/\\");
+    return(path.substr(0, found));
+}
+
 Gui::Gui()
 {
-
+    m_executablePath = GetDirectory(pf::getExecutablePath());
+    std::cout << "PATH: " << m_executablePath << std::endl;
 }
 
 
@@ -161,7 +171,7 @@ bool Gui::Initialize()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 
-    io.Fonts->AddFontFromFileTTF( "fonts/roboto.ttf", 20);
+    io.Fonts->AddFontFromFileTTF( std::string(m_executablePath + "/fonts/roboto.ttf").c_str(), 20);
 
     {
         ImFontConfig config;
@@ -169,7 +179,7 @@ bool Gui::Initialize()
         //    config.GlyphMinAdvanceX = 20.0f; // Use if you want to make the icon monospaced
         //    config.GlyphOffset.y += 1.0;
         static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-        io.Fonts->AddFontFromFileTTF("fonts/fa-solid-900.ttf", 16.0f, &config, icon_ranges);
+        io.Fonts->AddFontFromFileTTF(std::string(m_executablePath + "/fonts/fa-solid-900.ttf").c_str(), 16.0f, &config, icon_ranges);
 
         io.Fonts->Build();
     }
@@ -179,7 +189,7 @@ bool Gui::Initialize()
         config.MergeMode = true; // ATTENTION, MERGE AVEC LA FONT PRECEDENTE !!
 
         static const ImWchar icon_ranges_mdi[] = { ICON_MIN_MDI, ICON_MAX_MDI, 0 };
-        io.Fonts->AddFontFromFileTTF("fonts/materialdesignicons-webfont.ttf", 16.0f, &config, icon_ranges_mdi);
+        io.Fonts->AddFontFromFileTTF(std::string(m_executablePath + "/fonts/materialdesignicons-webfont.ttf").c_str(), 16.0f, &config, icon_ranges_mdi);
 
         io.Fonts->Build();
     }

@@ -14,7 +14,15 @@
             "cwd": "${workspaceFolder}/story-editor",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "gdb",
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb"
+              },
+              "osx": {
+                "MIMode": "lldb",
+                "miDebuggerPath": "/Users/user936511/.vscode/extensions/ms-vscode.cpptools-1.18.5-darwin-arm64/debugAdapters/lldb-mi/bin/lldb-mi"
+              },
+            
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

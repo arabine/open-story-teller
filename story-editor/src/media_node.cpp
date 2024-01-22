@@ -1,3 +1,5 @@
+
+#include <sstream>
 #include "media_node.h"
 
 namespace ed = ax::NodeEditor;

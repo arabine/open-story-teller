@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdint>
 #include <algorithm>
+#include <sstream>
 #include "IconsFontAwesome5_c.h"
 
 #include "media_node.h"

@@ -203,6 +203,27 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
 add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})
 add_link_options(-static-libgcc -static-libstdc++)
 
+if (APPLE)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        LINKER_LANGUAGE CXX
+        LINK_FLAGS "-Wl,-rpath,@executable_path"
+        MACOSX_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    BUNDLE True
+    MACOSX_BUNDLE_GUI_IDENTIFIER eu.d8s.OpenStoryTeller.StoryEditor.${CUR_TARGET}
+    MACOSX_BUNDLE_BUNDLE_NAME ${CUR_TARGET}
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/bundle.plist.in
+)
+
+endif()
+
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
@@ -253,6 +274,10 @@ endif()
 # Personnaliser l'icône pour les installateurs Windows
 if(WIN32)
     set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/story-editor-logo.ico")
+endif()
+
+if (APPLE)
+    install_files("." FILES "${SDL2_BIN_DIR}/libSDL2-2.0.0.dylib")
 endif()
 
 include(CPack)

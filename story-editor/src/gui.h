@@ -50,7 +50,7 @@ public:
     static Size GetWindowSize();
 
 private:
-
+    std::string m_executablePath;
 };
 
 namespace ImGui {
