@@ -277,6 +277,8 @@ if(WIN32)
 endif()
 
 if (APPLE)
+    set(CPACK_GENERATOR "DragNDrop")
+    set(MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/bundle.plist.in)
     install_files("." FILES "${SDL2_BIN_DIR}/libSDL2-2.0.0.dylib")
 endif()
 
