@@ -202,6 +202,12 @@ std::string getExecutablePath()
 #include <sstream>
 // Typically Linux. For easy reading the comments will just say Linux but should work with most *nixes
 
+#include <libgen.h>         // dirname
+#include <unistd.h>         // readlink
+#include <linux/limits.h>   // PATH_MAX
+
+
+
 static void throwOnRelative(const char *envName, const char *envValue)
 {
 	if (envValue[0] != '/')
@@ -264,6 +270,18 @@ namespace pf
 		}
 	}
 #endif
+
+
+	std::string getExecutablePath()
+	{
+		char result[PATH_MAX];
+		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+		const char *path;
+		if (count != -1) {
+			path = dirname(result);
+		}
+		return path;
+	}
 
 	std::string getDataHome()
 	{
