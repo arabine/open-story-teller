@@ -207,6 +207,19 @@ std::string getExecutablePath()
 #include <linux/limits.h>   // PATH_MAX
 
 
+namespace pf
+{
+	std::string getExecutablePath()
+	{
+		char result[PATH_MAX];
+		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+		const char *path;
+		if (count != -1) {
+			path = dirname(result);
+		}
+		return path;
+	}
+}
 
 static void throwOnRelative(const char *envName, const char *envValue)
 {
@@ -270,18 +283,6 @@ namespace pf
 		}
 	}
 #endif
-
-
-	std::string getExecutablePath()
-	{
-		char result[PATH_MAX];
-		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-		const char *path;
-		if (count != -1) {
-			path = dirname(result);
-		}
-		return path;
-	}
 
 	std::string getDataHome()
 	{
