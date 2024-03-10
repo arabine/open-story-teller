@@ -121,6 +121,17 @@ namespace pf
 		}
 
 	} // namesapce internal
+
+
+
+std::string getExecutablePath()
+{
+	char path[MAX_PATH];
+    DWORD length = GetModuleFileName(NULL, path, MAX_PATH);
+    return std::string(path);
+}
+
+
 } // namespace pf
 
 class FreeCoTaskMemory

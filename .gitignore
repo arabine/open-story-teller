@@ -77,3 +77,5 @@ story-editor/.idea/
 story-editor/buildxcode/
 
 story-editor/cmake-build-debug/
+
+story-editor/build-win32/

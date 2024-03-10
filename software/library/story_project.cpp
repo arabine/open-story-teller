@@ -328,7 +328,7 @@ void StoryProject::SetDisplayFormat(int w, int h)
 
 std::string StoryProject::GetProjectFilePath() const
 {
-    return m_project_file_path;
+    return m_project_file_path.generic_string();
 }
 
 std::string StoryProject::GetWorkingDir() const

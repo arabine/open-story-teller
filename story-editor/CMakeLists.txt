@@ -269,6 +269,9 @@ install_files("." FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini")
 
 if(WIN32)
     install_files("." FILES "${SDL2_BIN_DIR}/SDL2.dll")
+    install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libstdc++-6.dll")
+    install_files("." FILES "/usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll")
+    install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libgcc_s_seh-1.dll")
 endif()
 
 # Personnaliser l'icône pour les installateurs Windows

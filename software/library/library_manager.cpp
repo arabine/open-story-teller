@@ -26,7 +26,7 @@ void LibraryManager::Scan()
             if (std::filesystem::is_directory(entry.path()))
             {
                 // Si c'est un sous-répertoire, récursivement scanner le contenu
-                std::string uuid = entry.path().filename();
+                std::string uuid = entry.path().filename().generic_string();
                 if (UUID::IsValid(uuid))
                 {
                     std::cout << "Found story directory" << std::endl;
