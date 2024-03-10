@@ -1,5 +1,5 @@
 docker build -t cpp-dev .
-docker run -it \
+docker run \
     -v $(pwd)/..:/workspace \
     cpp-dev \
     bash \
