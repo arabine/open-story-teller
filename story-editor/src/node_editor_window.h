@@ -65,6 +65,8 @@ private:
 
     ed::EditorContext* m_context = nullptr;
 
+    bool m_loaded{false};
+
     // key: Id
     std::list<std::shared_ptr<BaseNode>>   m_nodes;
     std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.

@@ -21,9 +21,23 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
+find_package(OpenSSL REQUIRED)
+
 set(IMGUI_VERSION 1.90)
 
 include(FetchContent)
+
+# =========================================================================================================================
+# CURL
+# =========================================================================================================================
+FetchContent_Declare(curl
+    URL https://github.com/curl/curl/archive/refs/tags/curl-8_6_0.zip
+)
+
+
+set(BUILD_CURL_EXE FALSE)
+set(BUILD_STATIC_LIBS TRUE)
+FetchContent_MakeAvailable(curl)
 
 # =========================================================================================================================
 # IMGUI and plugins
@@ -183,7 +197,6 @@ else()
     add_executable(${STORY_EDITOR_PROJECT}
         ${SRCS}
 
-
     )
 endif()
 
@@ -194,6 +207,8 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${imgui_SOURCE_DIR}/backends
     libs/ImGuiFileDialog
     libs/imgui-node-editor
+
+    ${curl_INCLUDE_DIR}
 
     ../software/library/
     ../software/chip32/
@@ -228,7 +243,7 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl2_BINARY_DIR})
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl2_BINARY_DIR} ${curl_BINARY_DIR})
 message(${sdl2_BINARY_DIR})
 set(SDL2_BIN_DIR ${sdl2_BINARY_DIR})
 
@@ -238,6 +253,8 @@ if(UNIX)
         OpenGL::GL
         dl
         SDL2
+        libcurl_static
+        OpenSSL::SSL OpenSSL::Crypto
     )
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}

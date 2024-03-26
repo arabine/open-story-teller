@@ -9,6 +9,7 @@ your use of the corresponding standard functions.
 
 #include <stdio.h>
 #include <iostream>
+#include <filesystem>
 
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -121,7 +122,7 @@ std::string GetDirectory (const std::string& path)
 
 Gui::Gui()
 {
-    m_executablePath = GetDirectory(pf::getExecutablePath());
+    m_executablePath = std::filesystem::current_path();
     std::cout << "PATH: " << m_executablePath << std::endl;
 }
 

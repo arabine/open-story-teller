@@ -13,10 +13,19 @@ struct Connection
     {
 
     }
+
+    ~Connection() {
+
+    }
+
     unsigned int outNodeId{0};
     unsigned int outPortIndex{0};
     unsigned int inNodeId{0};
     unsigned int inPortIndex{0};
+
+    Connection(const Connection &other){
+        *this = other;
+    }
 
     Connection& operator=(const Connection& other) {
         this->outNodeId = other.outNodeId;

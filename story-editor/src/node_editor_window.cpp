@@ -158,6 +158,8 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
                    GetInputPin(model.inNodeId, model.inPortIndex),
                    GetOutputPin(model.outNodeId, model.outPortIndex));
     }
+
+    m_loaded = true;
 }
 
 
@@ -483,6 +485,12 @@ void NodeEditorWindow::Draw()
             // }
 
             ImGui::EndPopup();
+        }
+
+        if (m_loaded)
+        {
+            ed::NavigateToContent();
+            m_loaded = false;
         }
 
         ed::Resume();

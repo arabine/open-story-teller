@@ -1,4 +1,4 @@
-name: BuildStoryEditor-Linux
+name: build-story-editor
 
 on:
   workflow_dispatch: {}
