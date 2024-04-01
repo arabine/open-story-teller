@@ -107,6 +107,9 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 # set(BUILD_SHARED_LIBS FALSE)
 # # END ADDITION
 
+add_subdirectory(libs/SDL_image) 
+include_directories(libs/SDL_image/include)
+
 # FetchContent_MakeAvailable(SDL2_image)
 set(SRCS
 
@@ -255,7 +258,7 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR})
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR} ${CMAKE_BINARY_DIR}/libs/SDL_image)
 
 
 set(SDL2_BIN_DIR ${sdl3_BINARY_DIR})
@@ -266,6 +269,7 @@ if(UNIX)
         OpenGL::GL
         dl
         SDL3
+        SDL3_image
         libcurl_static
         OpenSSL::SSL OpenSSL::Crypto
     )

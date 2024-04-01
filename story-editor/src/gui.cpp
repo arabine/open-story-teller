@@ -32,7 +32,7 @@ your use of the corresponding standard functions.
 #else
 #include <SDL3/SDL_opengl.h>
 #endif
-
+#include <SDL3_image/SDL_image.h>
 
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
@@ -61,6 +61,36 @@ static std::string GetFileExtension(const std::string &fileName)
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 {
+
+    SDL_Surface *surface, *temp;
+
+    surface = IMG_Load(filename);
+    if (!surface) {
+        SDL_Log("Couldn't load %s: %s\n", filename, SDL_GetError());
+        return false;
+    }
+
+    /* Use the tonemap operator to convert to SDR output */
+    const char *tonemap = NULL;
+    SDL_SetStringProperty(SDL_GetSurfaceProperties(surface), SDL_PROP_SURFACE_TONEMAP_OPERATOR_STRING, tonemap);
+    temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32);
+    SDL_DestroySurface(surface);
+    if (!temp) {
+        SDL_Log("Couldn't convert surface: %s\n", SDL_GetError());
+        return false;
+    }
+
+    img.texture = SDL_CreateTextureFromSurface(renderer, temp);
+    SDL_DestroySurface(temp);
+    if (!img.texture) {
+        SDL_Log("Couldn't create texture: %s\n", SDL_GetError());
+       return false;
+    }
+
+    SDL_QueryTexture(static_cast<SDL_Texture*>(img.texture), NULL, NULL, &img.w, &img.h);
+
+/*
+
     std::string ext = GetFileExtension(filename);
 
     SDL_Surface* surface = nullptr;
@@ -120,7 +150,7 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 
    SDL_DestroySurface(surface); // SDL3
     // SDL_FreeSurface(surface); // SDL2
-
+*/
 
     return true;
 }
@@ -334,7 +364,10 @@ bool Gui::LoadRawImage(const std::string &filename, Image &image)
 {
     bool success = true;
 
-    LoadTextureFromFile(filename.c_str(), image);
+    if (std::filesystem::is_regular_file(filename))
+    {
+        LoadTextureFromFile(filename.c_str(), image);
+    }
 
     return success;
 }

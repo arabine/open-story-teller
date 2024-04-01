@@ -1,0 +1,3 @@
+[submodule "story-editor/libs/SDL_image"]
+	path = story-editor/libs/SDL_image
+	url = git@github.com:libsdl-org/SDL_image.git
