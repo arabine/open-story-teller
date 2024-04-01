@@ -12,7 +12,14 @@ LibraryManager::LibraryManager() {}
 void LibraryManager::Initialize(const std::string &library_path)
 {
     m_library_path = library_path;
+    CheckDirectories();
     Scan();
+}
+
+void LibraryManager::CheckDirectories()
+{
+    std::filesystem::path dlDir = std::filesystem::path(m_library_path) / "store";
+    std::filesystem::create_directories(dlDir);
 }
 
 void LibraryManager::Scan()

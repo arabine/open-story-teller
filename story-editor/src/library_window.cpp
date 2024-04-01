@@ -3,61 +3,44 @@
 #include "ImGuiFileDialog.h"
 #include <filesystem>
 #include "IconsMaterialDesignIcons.h"
+#include "i_story_manager.h"
+#include <functional>
 
-#define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "httplib.h"
-#define CA_CERT_FILE "./ca-bundle.crt"
+typedef int (*xfer_callback_t)(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+                               curl_off_t ultotal, curl_off_t ulnow);
 
-#include <curl/curl.h>
 
-int xfer_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
-                  curl_off_t ultotal, curl_off_t ulnow)
+void download_file(CURL *curl,
+                   const std::string &url,
+                   const std::string &output_file,
+                   std::function<void(bool)> finished_callback)
 {
-    return 0;
-}
-
-void download_file(const std::string &output_file = "pi.txt")
-{
-
-    CURL *curl_download;
     FILE *fp;
     CURLcode res;
-    std::string url = "http://www.gecif.net/articles/mathematiques/pi/pi_1_million.txt";
 
-    curl_download = curl_easy_init();
-
-    if (curl_download)
+    if (curl)
     {
         //SetConsoleTextAttribute(hConsole, 11);
         fp = fopen(output_file.c_str(),"wb");
 
-        curl_easy_setopt(curl_download, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl_download, CURLOPT_WRITEFUNCTION, NULL);
-        curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
-        curl_easy_setopt(curl_download, CURLOPT_NOPROGRESS, 0);
-        //progress_bar : the fonction for the progress bar
-        curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, xfer_callback);
-
-
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         std::cout<<" Start download"<<std::endl<<std::endl;
 
-        res = curl_easy_perform(curl_download);
+        res = curl_easy_perform(curl);
 
         fclose(fp);
         if(res == CURLE_OK)
         {
-
             std::cout<< std::endl<< std::endl<<" The file was download with succes"<< std::endl;
         }
         else
         {
-
             std::cout<< std::endl << std::endl<<" Error"<< std::endl;
         }
-        curl_easy_cleanup(curl_download);
+
+        finished_callback(res == CURLE_OK);
     }
-
-
 }
 
 
@@ -66,36 +49,78 @@ LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library)
     , m_storyManager(project)
     , m_libraryManager(library)
 {
+    m_downloadThread = std::thread( std::bind(&LibraryWindow::DownloadThread, this) );
 
-    download_file();
+    m_store_url[0] = 0;
+}
 
-    httplib::SSLClient cli("gist.githubusercontent.com", 443);
-    cli.set_ca_cert_path(CA_CERT_FILE);
-    cli.enable_server_certificate_verification(false);
+LibraryWindow::~LibraryWindow()
+{
+    // Cancel any pending download
 
-    if (auto res = cli.Get("/UnofficialStories/32702fb104aebfe650d4ef8d440092c1/raw/luniicreations.json")) {
-        std::cout << res->status << std::endl;
-        std::cout << res->get_header_value("Content-Type") << std::endl;
-        m_storeRawJson = res->body;
-        ParseStoreData();
-        //std::cout << res->body << std::endl;
-    } else {
-        std::cout << "error code: " << res.error() << std::endl;
-
-        auto result = cli.get_openssl_verify_result();
-        if (result) {
-            std::cout << "verify error: " << X509_verify_cert_error_string(result) <<std:: endl;
-        }
+    if (m_curl)
+    {
+        m_downloadMutex.lock();
+        m_cancel = true;
+        m_downloadMutex.unlock();
 
     }
+
+    // Quit download thread
+    m_downloadQueue.push({"quit", ""});
+    if (m_downloadThread.joinable())
+    {
+        m_downloadThread.join();
+    }
+
+    curl_global_cleanup();
 }
 
 
-void LibraryWindow::ParseStoreData()
+void LibraryWindow::DownloadThread()
+{
+    for (;;)
+    {
+        auto cmd = m_downloadQueue.front();
+        m_downloadQueue.pop();
+
+        if (cmd.order == "quit")
+        {
+            curl_easy_cleanup(m_curl);
+
+            return;
+        }
+        else if (cmd.order == "dl")
+        {
+            download_file(m_curl, cmd.url, cmd.filename, cmd.finished_callback);
+        }
+    }
+}
+
+int LibraryWindow::TransferCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+                  curl_off_t ultotal, curl_off_t ulnow)
+{
+    std::cout << "DL total: " << dltotal << ", now: " << dlnow << std::endl;   
+    m_downloadMutex.lock();
+    bool cancel = m_cancel;
+    m_downloadMutex.unlock();
+
+    if (cancel)
+    {
+        return 1; // Annuler la requête curl
+    }
+
+    m_transferProgress.push(TransferProgress(dltotal, dlnow));
+
+    return 0;
+}
+
+
+void LibraryWindow::ParseStoreData(bool success)
 {
     try {
-
-        nlohmann::json j = nlohmann::json::parse(m_storeRawJson);
+        std::ifstream f(m_storeIndexFilename);
+        nlohmann::json j = nlohmann::json::parse(f);
 
         m_store.clear();
         for (const auto &obj : j)
@@ -116,10 +141,27 @@ void LibraryWindow::ParseStoreData()
 
 void LibraryWindow::Initialize()
 {
+    // Try to download the store index file
+    m_curl = curl_easy_init();
 
+    if (m_curl)
+    {
+        curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, NULL);
+        curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0);
 
-
+        //progress_bar : the fonction for the progress bar
+        Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::func = std::bind(
+            &LibraryWindow::TransferCallback,
+            this,
+            std::placeholders::_1,
+            std::placeholders::_2,
+            std::placeholders::_3,
+            std::placeholders::_4,
+            std::placeholders::_5);
+        curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, static_cast<xfer_callback_t>(Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::callback));
+    }
 }
+
 
 static bool canValidateDialog = false;
 inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCantContinue) // if vCantContinue is false, the user cant validate the dialog
@@ -131,6 +173,14 @@ inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCant
         *vCantContinue = canValidateDialog;
 }
 
+std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
+{
+    auto filename = StoryProject::GetFileName(m_store_url);
+
+    filename = m_libraryManager.LibraryPath() + "/store/" + filename;
+    std::cout << "Store file: " << filename << std::endl;
+    return filename;
+}
 
 void LibraryWindow::Draw()
 {
@@ -178,8 +228,6 @@ void LibraryWindow::Draw()
             // ============================================================================
             if (ImGui::BeginTabItem("Local library ##LocalTabBar", nullptr, ImGuiTabItemFlags_None))
             {
-
-
                 if (ImGui::Button("Scan library"))
                 {
                     m_libraryManager.Scan();
@@ -226,12 +274,47 @@ void LibraryWindow::Draw()
 
                 ImGui::EndTabItem();
             }
-
+ 
             // ============================================================================
-            // LOCAL TABLE
+            // STORE STORY LIST
             // ============================================================================
             if (ImGui::BeginTabItem("Remote Store##StoreTabBar", nullptr, ImGuiTabItemFlags_None))
             {
+                ImGui::InputTextWithHint("##store_url", "Store URL", m_store_url, IM_ARRAYSIZE(m_store_url));
+                ImGui::SameLine();
+                if (ImGui::Button("Load"))
+                {
+                    m_storeIndexFilename = ToLocalStoreFile(m_store_url);
+                    m_downloadQueue.push({
+                        "dl",
+                        m_store_url,
+                        m_storeIndexFilename,
+                        std::bind(&LibraryWindow::ParseStoreData, this, std::placeholders::_1)
+                    });
+                }
+
+                static TransferProgress progressItem;
+                static std::string currentDownload;
+                static float progress = 0.0f;
+                if (m_transferProgress.try_pop(progressItem))
+                {
+                    if (progressItem.total > 0)
+                    {
+                        // currentDownload = ""
+                        progress += (progressItem.current / progressItem.total);
+                    }
+                    else
+                    {
+                        progress = 0.0;
+                    }
+                }
+                // Typically we would use ImVec2(-1.0f,0.0f) or ImVec2(-FLT_MIN,0.0f) to use all available width,
+                // or ImVec2(width,0.0f) for a specified width. ImVec2(0.0f,0.0f) uses ItemWidth.
+                ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+                // ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+
+                // ImGui::Text("Current download: ");
+
                 if (ImGui::BeginTable("store_table", 3, tableFlags))
                 {
                     ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthFixed);

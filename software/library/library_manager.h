@@ -24,12 +24,17 @@ public:
     void Scan();
 
     std::shared_ptr<StoryProject> NewProject();
+    void CheckDirectories();
 
     std::shared_ptr<StoryProject> GetStory(const std::string &uuid);
+
+    void SetStoreUrl(const std::string &store_url) { m_storeUrl = store_url; }
+    std::string GetStoreUrl() const { return m_storeUrl; }
 
 private:
     std::string m_library_path;
     std::vector<std::shared_ptr<StoryProject>> m_projectsList;
+    std::string m_storeUrl;
 };
 
 #endif // LIBRARYMANAGER_H

@@ -11,22 +11,33 @@ your use of the corresponding standard functions.
 #include <iostream>
 #include <filesystem>
 
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_sdlrenderer2.h"
-#include <stdio.h>
-#include <SDL2/SDL.h>
+
+#include "imgui_internal.h"
+// SDL2 ---------------------------------
+// #include "imgui_impl_sdl2.h"
+// #include "imgui_impl_sdlrenderer2.h"
+// #include <SDL2/SDL.h>
+// #if defined(IMGUI_IMPL_OPENGL_ES2)
+// #include <SDL2/SDL_opengles2.h>
+// #else
+// #include <SDL2/SDL_opengl.h>
+//#endif
+
+// SDL3 ---------------------------------
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
+#include <SDL3/SDL.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <SDL2/SDL_opengles2.h>
+#include <SDL3/SDL_opengles2.h>
 #else
-#include <SDL2/SDL_opengl.h>
+#include <SDL3/SDL_opengl.h>
 #endif
+
 
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
 #include "qoi.h"
 
-
-#include "platform_folders.h"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -50,8 +61,6 @@ static std::string GetFileExtension(const std::string &fileName)
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 {
-
-
     std::string ext = GetFileExtension(filename);
 
     SDL_Surface* surface = nullptr;
@@ -64,8 +73,12 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
         img.w = desc.width;
         img.h = desc.height;
 
-        surface = SDL_CreateRGBSurfaceFrom((void*)pixels, img.w, img.h, channels * 8, channels * img.w,
-                                           0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+        // SDL3
+        surface = SDL_CreateSurfaceFrom((void*)pixels, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+
+        // SDL2
+        // surface = SDL_CreateRGBSurfaceFrom((void*)pixels, img.w, img.h, channels * 8, channels * img.w,
+        //                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
 
         if (pixels != NULL)
         {
@@ -84,12 +97,12 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
         }
 
 
-        // SDL3
-        //    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
+        //SDL3
+        surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA32);
 
         // SDL2
-        surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
-                                           0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+        // surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
+        //                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
         stbi_image_free(data);
     }
 
@@ -105,8 +118,8 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
         fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
     }
 
-//    SDL_DestroySurface(surface); // SDL3
-    SDL_FreeSurface(surface); // SDL2
+   SDL_DestroySurface(surface); // SDL3
+    // SDL_FreeSurface(surface); // SDL2
 
 
     return true;
@@ -129,8 +142,11 @@ Gui::Gui()
 
 bool Gui::Initialize()
 {
-    // Setup SDL
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+    // Setup SDL2
+    // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+
+    // Setup SDL3
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
     {
         printf("Error: SDL_Init(): %s\n", SDL_GetError());
         return -1;
@@ -143,17 +159,17 @@ bool Gui::Initialize()
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 
     // SDL3
-    //window = SDL_CreateWindow("Dear ImGui SDL3+SDL_Renderer example", 1280, 720, window_flags);
+    window = SDL_CreateWindow("Story Editor", 1280, 720, window_flags);
 
     // SDL2
-    window = SDL_CreateWindow("Story Editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    // window = SDL_CreateWindow("Story Editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
 
     if (window == nullptr)
     {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
         return -1;
     }
-    renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, nullptr, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr)
     {
         SDL_Log("Error: SDL_CreateRenderer(): %s\n", SDL_GetError());
@@ -170,6 +186,7 @@ bool Gui::Initialize()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 
     io.Fonts->AddFontFromFileTTF( std::string(m_executablePath + "/fonts/roboto.ttf").c_str(), 20);
@@ -201,13 +218,12 @@ bool Gui::Initialize()
     // Setup Platform/Renderer backends
 
     // SDL3
-//    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
-//    ImGui_ImplSDLRenderer3_Init(renderer);
-
+   ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+   ImGui_ImplSDLRenderer3_Init(renderer);
 
     // SDL2
-    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-    ImGui_ImplSDLRenderer2_Init(renderer);
+    // ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    // ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -237,20 +253,19 @@ bool Gui::PollEvent()
     while (SDL_PollEvent(&event))
     {
         // SDL3
-        /*
+
         ImGui_ImplSDL3_ProcessEvent(&event);
         if (event.type == SDL_EVENT_QUIT)
             done = true;
         if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
             done = true;
-*/
 
         // SLD2
-        ImGui_ImplSDL2_ProcessEvent(&event);
-        if (event.type == SDL_QUIT)
-            done = true;
-        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-            done = true;
+        // ImGui_ImplSDL2_ProcessEvent(&event);
+        // if (event.type == SDL_QUIT)
+        //     done = true;
+        // if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+        //     done = true;
 
     }
     return done;
@@ -262,12 +277,12 @@ void Gui::StartFrame()
     // Start the Dear ImGui frame
 
     // SDL3
-//    ImGui_ImplSDLRenderer3_NewFrame();
-//    ImGui_ImplSDL3_NewFrame();
+   ImGui_ImplSDLRenderer3_NewFrame();
+   ImGui_ImplSDL3_NewFrame();
 
     // SDL2
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    // ImGui_ImplSDLRenderer2_NewFrame();
+    // ImGui_ImplSDL2_NewFrame();
 
     ImGui::NewFrame();
 }
@@ -284,8 +299,8 @@ void Gui::EndFrame()
 
     ImGui::Render();
 
-    //ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData()); // SDL3
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData()); // SDL2
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData()); // SDL3
+    // ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData()); // SDL2
 
     SDL_RenderPresent(renderer);
 }
@@ -295,12 +310,12 @@ void Gui::Destroy()
     // Cleanup
 
     // SDL3
-//    ImGui_ImplSDLRenderer3_Shutdown();
-//    ImGui_ImplSDL3_Shutdown();
+   ImGui_ImplSDLRenderer3_Shutdown();
+   ImGui_ImplSDL3_Shutdown();
 
     // SDL2
-    ImGui_ImplSDLRenderer2_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    // ImGui_ImplSDLRenderer2_Shutdown();
+    // ImGui_ImplSDL2_Shutdown();
 
 
     ImGui::DestroyContext();
@@ -495,7 +510,7 @@ void Gui::ApplyTheme()
 
 
 
-#include "imgui_internal.h"
+
 namespace ImGui {
 void LoadingIndicatorCircle(const char* label, const float indicator_radius,
                                    const ImVec4& main_color, const ImVec4& backdrop_color,

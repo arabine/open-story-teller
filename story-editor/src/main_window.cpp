@@ -1,6 +1,6 @@
 #include "main_window.h"
 #include <filesystem>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "platform_folders.h"
 
 #include "media_converter.h"
@@ -372,6 +372,8 @@ void MainWindow::DrawMainMenuBar()
 
 void MainWindow::Initialize()
 {
+    LoadParams();
+
     // GUI Init
     m_gui.Initialize();
   //  gui.ApplyTheme();
@@ -380,8 +382,9 @@ void MainWindow::Initialize()
     m_emulatorWindow.Initialize();
     m_nodeEditorWindow.Initialize();
     m_PropertiesWindow.Initialize();
+    m_libraryWindow.Initialize();
 
-    LoadParams();
+
 }
 
 
@@ -691,7 +694,7 @@ void MainWindow::Loop()
 
         m_gui.StartFrame();
 
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+       ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
         DrawMainMenuBar();
        // DrawStatusBar();
 
@@ -978,6 +981,9 @@ void MainWindow::LoadParams()
         {
             m_libraryManager.Initialize(library_path);
         }
+
+        nlohmann::json store_url = j["store_url"];
+        m_libraryManager.SetStoreUrl(store_url);
 
     }
     catch(std::exception &e)

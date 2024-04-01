@@ -5,9 +5,25 @@
 #include <string>
 #include <memory>
 #include <list>
+#include <functional>
 
 #include "resource.h"
 #include "connection.h"
+
+template <typename T>
+struct Callback;
+
+template <typename Ret, typename... Params>
+struct Callback<Ret(Params...)> {
+    template <typename... Args>
+    static Ret callback(Args... args) {
+        return func(args...);
+    }
+    static std::function<Ret(Params...)> func;
+};
+
+template <typename Ret, typename... Params>
+std::function<Ret(Params...)> Callback<Ret(Params...)>::func;
 
 class IStoryManager
 {
@@ -36,8 +52,6 @@ public:
     virtual void Pause() = 0;
     virtual void Next() = 0;
     virtual void Previous() = 0;
-
-
 };
 
 #endif // I_STORY_MANAGER_H

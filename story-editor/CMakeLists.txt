@@ -60,24 +60,36 @@ add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
 # =========================================================================================================================
-# SDL
+# SDL2
 # =========================================================================================================================
-Set(FETCHCONTENT_QUIET FALSE)
 
+# FetchContent_Declare(
+#     sdl2
+#     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+#     GIT_TAG origin/SDL2
+#     GIT_SHALLOW TRUE
+#     GIT_PROGRESS TRUE
+# )
+
+# set(BUILD_SHARED_LIBS TRUE)
+# set(SDL_STATIC TRUE)
+# FetchContent_MakeAvailable(sdl2)
+
+# =========================================================================================================================
+# SDL3
+# =========================================================================================================================
 FetchContent_Declare(
-    sdl2
+    sdl3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG origin/SDL2
+    GIT_TAG prerelease-3.1.0
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
 )
 
 set(BUILD_SHARED_LIBS TRUE)
 set(SDL_STATIC TRUE)
-FetchContent_MakeAvailable(sdl2)
-
-# add_subdirectory(libs/SDL)
-# include_directories(libs/SDL/include)
+FetchContent_MakeAvailable(sdl3)
+include_directories(${sdl3_SOURCE_DIR}/include)
 
 # =========================================================================================================================
 # SDL3-Image
@@ -155,8 +167,8 @@ set(SRCS
     libs/imgui-node-editor/crude_json.cpp
     libs/ImGuiFileDialog/ImGuiFileDialog.cpp
 
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
@@ -243,16 +255,17 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl2_BINARY_DIR} ${curl_BINARY_DIR})
-message(${sdl2_BINARY_DIR})
-set(SDL2_BIN_DIR ${sdl2_BINARY_DIR})
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR})
+
+
+set(SDL2_BIN_DIR ${sdl3_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
         pthread
         OpenGL::GL
         dl
-        SDL2
+        SDL3
         libcurl_static
         OpenSSL::SSL OpenSSL::Crypto
     )
