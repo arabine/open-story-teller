@@ -90,6 +90,7 @@ public:
     static std::string RemoveFileExtension(const std::string &FileName);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
     static std::string FileToConstant(const std::string &FileName, const std::string &extension);
+    static std::string Normalize(const std::string &input);
 
     void SetTitleImage(const std::string &titleImage);
     void SetTitleSound(const std::string &titleSound);

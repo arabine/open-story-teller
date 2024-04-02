@@ -11,13 +11,15 @@
 struct StoryInf {
     int age;
     std::string title;
+    std::string description;
+    std::string download;
 };
 
 struct DownloadCommand {
     std::string order;
     std::string url;
     std::string filename;
-    std::function<void(bool)> finished_callback;
+    std::function<void(bool, const std::string &filename)> finished_callback;
 };
 
 
@@ -30,9 +32,38 @@ struct TransferProgress {
         current = 0;
     }
 
+    void Reset() {
+        total = 0;
+        current = 0;
+    }
+
+    TransferProgress(const TransferProgress &other) {
+       *this = other;
+    }
+
+    ~TransferProgress() {
+    }
+
+    TransferProgress& operator=(const TransferProgress &other)
+    {
+        this->current = other.current;
+        this->total = other.total;
+        return *this;
+    }
+
     TransferProgress(int t, int c) {
         total = t;
         current = c;
+    }
+
+    void Set(int t, int c)
+    {
+        total = t;
+        current = c;
+    }
+
+    float Precent() const {
+        return total == 0 ? 0.0 : static_cast<float>(current) / static_cast<float>(total);
     }
 };
 
@@ -50,21 +81,28 @@ private:
     LibraryManager &m_libraryManager;
 
     CURL *m_curl;
-    char m_store_url[1024];
+    char m_storeUrl[1024];
     std::thread m_downloadThread;
     ThreadSafeQueue<DownloadCommand> m_downloadQueue;
     ThreadSafeQueue<TransferProgress> m_transferProgress;
     std::mutex m_downloadMutex;
     bool m_cancel{false};
 
+    std::mutex m_downloadBusyMutex;
+    bool m_downloadBusy{false};
+
     std::vector<StoryInf> m_store;
     std::string m_storeIndexFilename;
 
     std::string m_storeRawJson;
-    void ParseStoreData(bool success);
+    void ParseStoreDataCallback(bool success, const std::string &filename);
+    void StoryFileDownloadedCallback(bool success, const std::string &filename);
     void DownloadThread();
     int TransferCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 
     std::string ToLocalStoreFile(const std::string &url);
+
+    bool CheckIfSharepoint(const std::string &url, std::string &decoded_url);
+    void SharePointJsonDownloadedCallback(bool success, const std::string &filename);
 };
 

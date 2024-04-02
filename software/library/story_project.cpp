@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <regex>
 
 #include "json.hpp"
 
@@ -291,6 +292,22 @@ std::string StoryProject::FileToConstant(const std::string &FileName, const std:
 {
     std::string f = RemoveFileExtension(FileName);
     return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
+}
+
+std::string StoryProject::Normalize(const std::string &input)
+{
+    std::string valid_file = input;
+
+    std::replace(valid_file.begin(), valid_file.end(), '\\', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '/', '_');
+    std::replace(valid_file.begin(), valid_file.end(), ':', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '?', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '\"', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '<', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '>', '_');
+    std::replace(valid_file.begin(), valid_file.end(), '|', '_');
+
+    return valid_file;
 }
 
 void StoryProject::SetTitleImage(const std::string &titleImage)

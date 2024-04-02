@@ -10,8 +10,6 @@ MediaNode::MediaNode(const std::string &title, IStoryManager &proj)
     : BaseNode(title, proj)
     , m_story(proj)
 {
-    // Gui::LoadRawImage("fairy.png", m_image);
-
     // Create defaut one input and one output
     AddInput();
     AddOutputs(1);
@@ -20,7 +18,6 @@ MediaNode::MediaNode(const std::string &title, IStoryManager &proj)
     std::string widgetId =  std::to_string(GetInternalId()); // Make widget unique by using the node ID
 
     m_buttonUniqueName = "Play " ICON_MDI_PLAY "##id" + widgetId;
-
 }
 
 void MediaNode::Draw()

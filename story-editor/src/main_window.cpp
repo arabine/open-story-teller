@@ -949,6 +949,7 @@ void MainWindow::SaveParams()
 
     j["recents"] = recents;
     j["library_path"] = m_libraryManager.LibraryPath();
+    j["store_url"] = m_libraryManager.GetStoreUrl();
 
     std::string loc = pf::getConfigHome() + "/ost_settings.json";
     std::ofstream o(loc);
@@ -982,7 +983,7 @@ void MainWindow::LoadParams()
             m_libraryManager.Initialize(library_path);
         }
 
-        nlohmann::json store_url = j["store_url"];
+        nlohmann::json store_url = j.value("store_url", "https://gist.githubusercontent.com/DantSu/8920929530b58f2acbfcf1ed0e7746f9/raw/stories-contrib.json");
         m_libraryManager.SetStoreUrl(store_url);
 
     }

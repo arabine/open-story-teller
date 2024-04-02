@@ -88,70 +88,7 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
     }
 
     SDL_QueryTexture(static_cast<SDL_Texture*>(img.texture), NULL, NULL, &img.w, &img.h);
-
-/*
-
-    std::string ext = GetFileExtension(filename);
-
-    SDL_Surface* surface = nullptr;
-
-    if (ext == "qoi")
-    {
-        qoi_desc desc;
-        void *pixels = qoi_read(filename, &desc, 0);
-        unsigned int channels = desc.channels;
-        img.w = desc.width;
-        img.h = desc.height;
-
-        // SDL3
-        surface = SDL_CreateSurfaceFrom((void*)pixels, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA8888);
-
-        // SDL2
-        // surface = SDL_CreateRGBSurfaceFrom((void*)pixels, img.w, img.h, channels * 8, channels * img.w,
-        //                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
-
-        if (pixels != NULL)
-        {
-            free(pixels);
-        }
-    }
-    else
-    {
-        unsigned char* data = nullptr;
-        int channels;
-        data = stbi_load(filename, &img.w, &img.h, &channels, 0);
-
-        if (data == nullptr) {
-            fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
-            return false;
-        }
-
-
-        //SDL3
-        surface = SDL_CreateSurfaceFrom((void*)data, img.w, img.h, 4 * img.w, SDL_PIXELFORMAT_RGBA32);
-
-        // SDL2
-        // surface = SDL_CreateRGBSurfaceFrom((void*)data, img.w, img.h, channels * 8, channels * img.w,
-        //                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
-        stbi_image_free(data);
-    }
-
-
-    if (surface == nullptr) {
-        fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
-        return false;
-    }
-
-    img.texture = SDL_CreateTextureFromSurface(renderer, surface);
-
-    if (img.texture == nullptr) {
-        fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
-    }
-
-   SDL_DestroySurface(surface); // SDL3
-    // SDL_FreeSurface(surface); // SDL2
-*/
-
+    
     return true;
 }
 

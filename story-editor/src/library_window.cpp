@@ -5,6 +5,7 @@
 #include "IconsMaterialDesignIcons.h"
 #include "i_story_manager.h"
 #include <functional>
+#include "base64.hpp"
 
 typedef int (*xfer_callback_t)(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
                                curl_off_t ultotal, curl_off_t ulnow);
@@ -13,7 +14,7 @@ typedef int (*xfer_callback_t)(void *clientp, curl_off_t dltotal, curl_off_t dln
 void download_file(CURL *curl,
                    const std::string &url,
                    const std::string &output_file,
-                   std::function<void(bool)> finished_callback)
+                   std::function<void(bool, const std::string &filename)> finished_callback)
 {
     FILE *fp;
     CURLcode res;
@@ -32,14 +33,14 @@ void download_file(CURL *curl,
         fclose(fp);
         if(res == CURLE_OK)
         {
-            std::cout<< std::endl<< std::endl<<" The file was download with succes"<< std::endl;
+            std::cout<< "\r\n The file was download with success\r\n"<< std::endl;
         }
         else
         {
-            std::cout<< std::endl << std::endl<<" Error"<< std::endl;
+            std::cout<< "\r\n Error \r\n"<< std::endl;
         }
 
-        finished_callback(res == CURLE_OK);
+        finished_callback(res == CURLE_OK, output_file);
     }
 }
 
@@ -51,7 +52,9 @@ LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library)
 {
     m_downloadThread = std::thread( std::bind(&LibraryWindow::DownloadThread, this) );
 
-    m_store_url[0] = 0;
+    m_storeUrl[0] = 0;
+
+   // std::strcpy(m_storeUrl, "https://gist.githubusercontent.com/DantSu/8920929530b58f2acbfcf1ed0e7746f9/raw/stories-contrib.json");
 }
 
 LibraryWindow::~LibraryWindow()
@@ -63,7 +66,6 @@ LibraryWindow::~LibraryWindow()
         m_downloadMutex.lock();
         m_cancel = true;
         m_downloadMutex.unlock();
-
     }
 
     // Quit download thread
@@ -74,6 +76,50 @@ LibraryWindow::~LibraryWindow()
     }
 
     curl_global_cleanup();
+}
+
+void LibraryWindow::Initialize()
+{
+    // Try to download the store index file
+    m_curl = curl_easy_init();
+
+    if (m_curl)
+    {
+        curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, NULL);
+        curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0);
+
+        //progress_bar : the fonction for the progress bar
+        Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::func = std::bind(
+            &LibraryWindow::TransferCallback,
+            this,
+            std::placeholders::_1,
+            std::placeholders::_2,
+            std::placeholders::_3,
+            std::placeholders::_4,
+            std::placeholders::_5);
+        curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, static_cast<xfer_callback_t>(Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::callback));
+    }
+
+
+    std::strcpy(&m_storeUrl[0], m_libraryManager.GetStoreUrl().c_str());
+    m_storeIndexFilename = ToLocalStoreFile(m_storeUrl);
+
+    if (std::filesystem::is_regular_file(m_storeIndexFilename))
+    {
+        // seems legit
+        ParseStoreDataCallback(true, m_storeIndexFilename);
+    }
+    else
+    {
+        // Not exists, download it
+        m_downloadQueue.push({
+            "dl",
+            m_storeUrl,
+            m_storeIndexFilename,
+            std::bind(&LibraryWindow::ParseStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
+        });
+
+    }
 }
 
 
@@ -100,23 +146,167 @@ void LibraryWindow::DownloadThread()
 int LibraryWindow::TransferCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
                   curl_off_t ultotal, curl_off_t ulnow)
 {
-    std::cout << "DL total: " << dltotal << ", now: " << dlnow << std::endl;   
+  //  std::cout << "DL total: " << dltotal << ", now: " << dlnow << std::endl;   
     m_downloadMutex.lock();
     bool cancel = m_cancel;
     m_downloadMutex.unlock();
+
+    static TransferProgress progressItem;
+    static TransferProgress progressItemPrev;
 
     if (cancel)
     {
         return 1; // Annuler la requête curl
     }
 
-    m_transferProgress.push(TransferProgress(dltotal, dlnow));
+    if ((dlnow > 0) && (dltotal > 0))
+    {
+        progressItem.Set(dltotal, dlnow);
+        if ((progressItem.Precent() - progressItemPrev.Precent()) > 0.01)
+        {
+            progressItemPrev = progressItem;
+            m_transferProgress.push(TransferProgress(progressItem));
+        }
+    }
+    else
+    {
+        progressItem.Reset();
+        progressItemPrev.Reset();
+    }
 
     return 0;
 }
 
 
-void LibraryWindow::ParseStoreData(bool success)
+bool LibraryWindow::CheckIfSharepoint(const std::string &url, std::string &decoded_url)
+{
+    bool success = false;
+    std::size_t pos = url.find("/shares/u!");
+        
+    if (pos != std::string::npos)
+    {
+        std::size_t start = pos + 10; // Début de l'URL
+        std::size_t end = url.find("/", start); // Fin de l'URL
+            
+        if (end != std::string::npos)
+        {
+            std::string base64 = url.substr(start, end - start);
+
+            // Calculer le reste de la division par
+            int remainder = url.length() % 4;
+            int signsToAdd = 0;
+            // Déterminer le nombre de signes '=' à ajouter en fonction du reste
+            if (remainder == 1) {
+                signsToAdd = 2; // Ajouter 2 signes '=' pour obtenir un multiple de 4
+                base64 += "==";
+            } else if (remainder == 2) {
+                signsToAdd = 1; // Ajouter 1 signe '=' pour compléter la séquence
+                base64 += "=";
+            } else {
+                signsToAdd = 0; // Aucun signe '=' à ajouter
+            }
+
+            std::replace( base64.begin(), base64.end(), '_', '/');
+            std::replace( base64.begin(), base64.end(), '-', '+');
+            
+            try
+            {
+                decoded_url = base64::from_base64(base64);
+                std::cout << "Base64: " << decoded_url << std::endl;
+                success = true;
+            }
+            catch(std::exception &e)
+            {
+                std::cout << e.what() << std::endl;
+            }
+            
+        }
+
+    }
+
+    return success;
+}
+
+
+void LibraryWindow::SharePointJsonDownloadedCallback(bool success, const std::string &filename)
+{
+    try {
+        std::ifstream f(filename);
+        nlohmann::json j = nlohmann::json::parse(f);
+
+
+        std::string archive = j["@content.downloadUrl"].get<std::string>();
+        std::string name = j["name"].get<std::string>();
+
+
+        m_downloadQueue.push({
+            "dl",
+            archive,
+            ToLocalStoreFile(StoryProject::Normalize(name)),
+            std::bind(&LibraryWindow::StoryFileDownloadedCallback, this, std::placeholders::_1, std::placeholders::_2)
+        });
+
+    }
+    catch(std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+}
+
+void LibraryWindow::StoryFileDownloadedCallback(bool success, const std::string &filename)
+{
+    std::cout << "Finished to download: " << filename << std::endl;
+
+
+    std::string ext = StoryProject::GetFileExtension(filename);
+
+    if (ext == "zip") 
+    {
+        std::cout << "Extracting zip..." << std::endl;
+    }
+    else if (ext == "")
+    {
+        std::ifstream t(filename);
+        std::string htmlCode((std::istreambuf_iterator<char>(t)),
+                 std::istreambuf_iterator<char>());
+
+        t.close();
+
+        // Trouver la position de "url="
+        std::size_t pos = htmlCode.find("url=");
+        
+       if (pos != std::string::npos) {
+            // Trouver la position du premier guillemet après "url="
+            std::size_t start = pos + 4; // Début de l'URL
+            std::size_t end = htmlCode.find("/root/", start); // Fin de l'URL
+            
+            if (end != std::string::npos)
+            {
+                // Extraire l'URL
+                std::string url = htmlCode.substr(start, end - start);
+                std::cout << "URL extraite : " << url << std::endl;
+
+                m_downloadQueue.push({
+                    "dl",
+                    url + "/driveItem",
+                    ToLocalStoreFile(filename + ".json"),
+                    std::bind(&LibraryWindow::SharePointJsonDownloadedCallback, this, std::placeholders::_1, std::placeholders::_2)
+                });
+
+            } else {
+                std::cout << "Le guillemet de fin n'a pas été trouvé." << std::endl;
+            }
+        } else {
+            std::cout << "La chaîne 'url=' n'a pas été trouvée." << std::endl;
+        }
+    }
+    else {
+        std::cout << "Unsupported extension: " << ext << std::endl;
+    }
+
+}
+
+void LibraryWindow::ParseStoreDataCallback(bool success, const std::string &filename)
 {
     try {
         std::ifstream f(m_storeIndexFilename);
@@ -128,6 +318,8 @@ void LibraryWindow::ParseStoreData(bool success)
             StoryInf s;
 
             s.title = obj["title"].get<std::string>();
+            s.description = obj["description"].get<std::string>();
+            s.download = obj["download"].get<std::string>();
             s.age = obj["age"].get<int>();
 
             m_store.push_back(s);
@@ -138,30 +330,6 @@ void LibraryWindow::ParseStoreData(bool success)
         std::cout << e.what() << std::endl;
     }
 }
-
-void LibraryWindow::Initialize()
-{
-    // Try to download the store index file
-    m_curl = curl_easy_init();
-
-    if (m_curl)
-    {
-        curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, NULL);
-        curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0);
-
-        //progress_bar : the fonction for the progress bar
-        Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::func = std::bind(
-            &LibraryWindow::TransferCallback,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            std::placeholders::_4,
-            std::placeholders::_5);
-        curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, static_cast<xfer_callback_t>(Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::callback));
-    }
-}
-
 
 static bool canValidateDialog = false;
 inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCantContinue) // if vCantContinue is false, the user cant validate the dialog
@@ -175,7 +343,7 @@ inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCant
 
 std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
 {
-    auto filename = StoryProject::GetFileName(m_store_url);
+    auto filename = StoryProject::GetFileName(url);
 
     filename = m_libraryManager.LibraryPath() + "/store/" + filename;
     std::cout << "Store file: " << filename << std::endl;
@@ -184,16 +352,8 @@ std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
 
 void LibraryWindow::Draw()
 {
-//    if (!IsVisible())
-//    {
-//        return;
-//    }
-
-
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
-
-
 
     if (ImGui::Button( ICON_MDI_FOLDER " Select directory"))
     {
@@ -244,9 +404,7 @@ void LibraryWindow::Draw()
                 if (ImGui::BeginTable("library_table", 2, tableFlags))
                 {
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
-
                     ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
-
                     ImGui::TableHeadersRow();
 
                     for (auto &p : m_libraryManager)
@@ -255,23 +413,19 @@ void LibraryWindow::Draw()
                         ImGui::Text("%s", p->GetName().c_str());
 
                         ImGui::TableNextColumn();
-
                         if (ImGui::SmallButton("Load"))
                         {
                             m_storyManager.OpenProject(p->GetUuid());
                         }
 
                         ImGui::SameLine();
-
                         if (ImGui::SmallButton("Remove"))
                         {
 
                         }
                     }
-
                     ImGui::EndTable();
                 }
-
                 ImGui::EndTabItem();
             }
  
@@ -280,32 +434,31 @@ void LibraryWindow::Draw()
             // ============================================================================
             if (ImGui::BeginTabItem("Remote Store##StoreTabBar", nullptr, ImGuiTabItemFlags_None))
             {
-                ImGui::InputTextWithHint("##store_url", "Store URL", m_store_url, IM_ARRAYSIZE(m_store_url));
+                ImGui::InputTextWithHint("##store_url", "Store URL", m_storeUrl, IM_ARRAYSIZE(m_storeUrl));
                 ImGui::SameLine();
                 if (ImGui::Button("Load"))
                 {
-                    m_storeIndexFilename = ToLocalStoreFile(m_store_url);
+                    m_storeIndexFilename = ToLocalStoreFile(m_storeUrl);
                     m_downloadQueue.push({
                         "dl",
-                        m_store_url,
+                        m_storeUrl,
                         m_storeIndexFilename,
-                        std::bind(&LibraryWindow::ParseStoreData, this, std::placeholders::_1)
+                        std::bind(&LibraryWindow::ParseStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
                     });
                 }
 
                 static TransferProgress progressItem;
                 static std::string currentDownload;
                 static float progress = 0.0f;
+             
                 if (m_transferProgress.try_pop(progressItem))
                 {
-                    if (progressItem.total > 0)
+                    progress = progressItem.Precent();
+
+                    if (progress >= .98)
                     {
-                        // currentDownload = ""
-                        progress += (progressItem.current / progressItem.total);
-                    }
-                    else
-                    {
-                        progress = 0.0;
+                        m_downloadBusy = false;
+                        progress = 1.0;
                     }
                 }
                 // Typically we would use ImVec2(-1.0f,0.0f) or ImVec2(-FLT_MIN,0.0f) to use all available width,
@@ -315,27 +468,44 @@ void LibraryWindow::Draw()
 
                 // ImGui::Text("Current download: ");
 
-                if (ImGui::BeginTable("store_table", 3, tableFlags))
+                if (ImGui::BeginTable("store_table", 4, tableFlags))
                 {
                     ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableSetupColumn("Age", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableSetupColumn("Download", ImGuiTableColumnFlags_WidthFixed);
 
                     ImGui::TableHeadersRow();
 
+                    int id = 1;
                     for (const auto &obj : m_store)
                     {
                         ImGui::TableNextColumn();
                         ImGui::Text("%s", obj.title.c_str());
 
                         ImGui::TableNextColumn();
+                        ImGui::Text("%s", obj.description.c_str());
+
+                        ImGui::TableNextColumn();
                         ImGui::Text("%d", obj.age);
 
                         ImGui::TableNextColumn();
+                        ImGui::PushID(id++);
                         if (ImGui::SmallButton("Download"))
                         {
+                            if (!m_downloadBusy)
+                            {
+                                m_downloadBusy = true;
 
+                                m_downloadQueue.push({
+                                    "dl",
+                                    obj.download,
+                                    ToLocalStoreFile(StoryProject::Normalize(obj.title)),
+                                    std::bind(&LibraryWindow::StoryFileDownloadedCallback, this, std::placeholders::_1, std::placeholders::_2)
+                                });
+                            }
                         }
+                        ImGui::PopID();
                     }
 
                     ImGui::EndTable();
