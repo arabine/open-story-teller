@@ -123,6 +123,7 @@ private:
 
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;
+    virtual void ImportProject(const std::string &fileName, int format);
     virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;

@@ -28,7 +28,13 @@ void ResourcesWindow::ChooseFile()
     {
         m_showImportDialog = false;
         // open Dialog Simple
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", m_soundFile ? soundFormats : imagesFormats, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.sidePaneWidth = 350.0f;
+        config.flags = ImGuiFileDialogFlags_Modal;
+
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", m_soundFile ? soundFormats : imagesFormats, config);
     }
 
     // display

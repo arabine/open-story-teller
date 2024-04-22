@@ -65,7 +65,7 @@ void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
             n->SetId(restoredNodeId);
             nlohmann::json posJson = nodeJson["position"];
             n->SetOutputs(nodeJson["outPortCount"].get<int>());
-            n->SetPosition(posJson["x"].get<float>(), posJson["y"].get<float>());
+            n->SetPosition(posJson["x"].get<double>(), posJson["y"].get<double>());
             n->FromJson(internalDataJson);
 
             m_ids.insert(restoredNodeId);
@@ -139,29 +139,43 @@ ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex
 
 void NodeEditorWindow::Load(const nlohmann::json &model)
 {
-    nlohmann::json nodesJsonArray = model["nodes"];
+    try {
 
-    BaseNode::InitId();
-    m_nodes.clear();
-    m_links.clear();
+    
+        nlohmann::json nodesJsonArray = model["nodes"];
 
-    for (auto& element : nodesJsonArray) {
-        LoadNode(element);
+        BaseNode::InitId();
+        m_nodes.clear();
+        m_links.clear();
+
+        for (auto& element : nodesJsonArray) {
+            LoadNode(element);
+        }
+
+        std::cout << model.dump(4) << std::endl;
+
+        // Ici on reste flexible sur les connexions, cela permet de créer éventuellement des 
+        // projets sans fils (bon, l'élément devrait quand même exister dans le JSON)
+        if (model.contains("connections"))
+        {
+            nlohmann::json connectionJsonArray = model["connections"];
+
+            for (auto& connection : connectionJsonArray)
+            {
+                Connection model = connection.get<Connection>();
+                CreateLink(model,
+                        GetInputPin(model.inNodeId, model.inPortIndex),
+                        GetOutputPin(model.outNodeId, model.outPortIndex));
+            }
+        }
+
+        m_loaded = true;
     }
-
-    std::cout << model.dump(4) << std::endl;
-
-    nlohmann::json connectionJsonArray = model["connections"];
-
-    for (auto& connection : connectionJsonArray)
+    catch(std::exception &e)
     {
-        Connection model = connection.get<Connection>();
-        CreateLink(model,
-                   GetInputPin(model.inNodeId, model.inPortIndex),
-                   GetOutputPin(model.outNodeId, model.outPortIndex));
+        std::cout << e.what() << std::endl;
     }
-
-    m_loaded = true;
+  
 }
 
 

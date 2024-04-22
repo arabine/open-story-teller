@@ -162,6 +162,14 @@ set(SRCS
 
     src/i_story_manager.h
 
+    src/miniz.c
+    src/zip.cpp
+
+    src/importers/pack_archive.cpp
+    src/importers/ni_parser.c
+
+
+
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
     libs/imgui-node-editor/imgui_node_editor.cpp
@@ -188,7 +196,10 @@ set(SRCS
     ../software/library/miniaudio.h
     ../software/library/uuid.h
     ../software/library/resource.h
+    
     ../software/library/resource_manager.h
+    ../software/library/resource_manager.cpp
+
     ../software/library/story_project.cpp
     ../software/library/story_project.h
     ../software/library/thread_safe_queue.h
@@ -224,6 +235,9 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     libs/imgui-node-editor
 
     ${curl_INCLUDE_DIR}
+
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/importers
 
     ../software/library/
     ../software/chip32/

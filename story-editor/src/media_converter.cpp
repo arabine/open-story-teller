@@ -14,7 +14,7 @@
 #undef QOI_NO_STDIO
 #include "qoi.h"
 
-//#define DR_MP3_IMPLEMENTATION
+#define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
 
 MediaConverter::MediaConverter()

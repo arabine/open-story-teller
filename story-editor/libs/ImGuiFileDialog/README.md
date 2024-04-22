@@ -1,7 +1,7 @@
 [![Win](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Win.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Win.yml)
 [![Linux](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Linux.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Linux.yml)
 [![Osx](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Osx.yml/badge.svg?branch=DemoApp)](https://github.com/aiekick/ImGuiFileDialog/actions/workflows/Osx.yml)
-[![Wrapped Dear ImGui Version](https://img.shields.io/badge/Dear%20ImGui%20Version-1.90.1-blue.svg)](https://github.com/ocornut/imgui)
+[![Wrapped Dear ImGui Version](https://img.shields.io/badge/Dear%20ImGui%20Version-1.90.4-blue.svg)](https://github.com/ocornut/imgui)
 
 # ImGuiFileDialog
 
@@ -12,9 +12,13 @@ ImGuiFileDialog is a file selection dialog built for (and using only) [Dear ImGu
 My primary goal was to have a custom pane with widgets according to file extension. This was not possible using other
 solutions.
 
+## Possible Dialog Customization
+
+![alt text](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/demo_dialog.png)
+
 ## ImGui Supported Version
 
-ImGuiFileDialog follow the master and docking branch of ImGui. Currently ImGui 1.90.1
+ImGuiFileDialog follow the master and docking branch of ImGui. Currently ImGui 1.90.4
 
 ## Structure
 
@@ -67,15 +71,14 @@ Android Requirements : Api 21 mini
 	- 0 => Infinite
 	- 1 => One file (default)
 	- n => n files
-- Compatible with MacOs, Linux, Windows, Emscripten
-	- Windows version can list drives
+- Compatible with MacOs, Linux, Windows, Emscripten, Android
 - Supports modal or standard dialog types
 - Select files or directories
 - Filter groups and custom filter names
 - can ignore filter Case for file searching
 - Keyboard navigation (arrows, backspace, enter)
 - Exploring by entering characters (case insensitive)
-- Directory bookmarks
+- Custom places (bookmarks, system devices, whatever you want)
 - Directory manual entry (right click on any path element)
 - Optional 'Confirm to Overwrite" dialog if file exists
 - Thumbnails Display (agnostic way for compatibility with any backend, sucessfully tested with OpenGl and Vulkan)
@@ -101,8 +104,8 @@ A filter is recognized only if it respects theses rules :
 1) a regex must be in (( and ))
 2) a , will separate filters except if between a ( and )
 3) name{filter1, filter2} is a special form for collection filters
-3.1) the name can be composed of what you want except { and }
-3.2) a filter can be a regex
+   - the name can be composed of what you want except { and }
+   - a filter can be a regex 
 4) the filters cannot integrate these chars '(' ')' '{' '}' ' ' except for a regex with respect to rule 1)
 5) the filters cannot integrate a ','
 
@@ -133,18 +136,15 @@ instance_b.method_of_your_choice();
 <details open><summary><h2>Simple Dialog :</h2></summary><blockquote>
 
 ```cpp
-void drawGui()
-{ 
+void drawGui() { 
   // open Dialog Simple
-  if (ImGui::Button("Open File Dialog"))
-    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", ".");
-
+  if (ImGui::Button("Open File Dialog")) {
+    IGFD::FileDialogConfig config;config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", config);
+  }
   // display
-  if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) 
-  {
-    // action if OK
-    if (ImGuiFileDialog::Instance()->IsOk())
-    {
+  if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) { // action if OK
       std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
       std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
       // action
@@ -156,7 +156,7 @@ void drawGui()
 }
 ```
 
-![alt text](https://github.com/aiekick/ImGuiFileDialog/blob/demoApp/doc/dlg_simple.gif)
+![alt text](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/dlg_simple.gif)
 
 </blockquote></details>
 
@@ -172,8 +172,11 @@ ImGuiFileDialogFlags_Modal
 you can use it like that :
 
 ```cpp
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", 
-	".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+IGFD::FileDialogConfig config;
+config.path = ".";
+config.countSelectionMax = 1;
+config.flags = ImGuiFileDialogFlags_Modal;
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", config);
 ```
 
 </blockquote></details>
@@ -183,7 +186,9 @@ ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp
 To have a directory chooser, set the file extension filter to nullptr:
 
 ```cpp
-ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDlgKey", "Choose a Directory", nullptr, ".");
+IGFD::FileDialogConfig config;
+config.path = ".";
+ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDlgKey", "Choose a Directory", nullptr, config);
 ```
 
 In this mode you can select any directory with one click and open a directory with a double-click.
@@ -226,9 +231,16 @@ inline void InfosPane(cosnt char *vFilter, IGFDUserDatas vUserDatas, bool *vCant
 void drawGui()
 {
   // open Dialog with Pane
-  if (ImGui::Button("Open File Dialog with a custom pane"))
-    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp",
-            ".", "", std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 350, 1, UserDatas("InfosPane"));
+  if (ImGui::Button("Open File Dialog with a custom pane")) {
+	IGFD::FileDialogConfig config;
+	config.path = ".";
+	config.countSelectionMax = 1;
+	config.sidePane = std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	config.sidePaneWidth = 350.0f;
+	config.useDatas = UserDatas("InfosPane");
+	config.flags = ImGuiFileDialogFlags_Modal;
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", config); 
+  }
 
   // display and action if ok
   if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) 
@@ -401,7 +413,9 @@ this code :
 
 ```cpp
 const char *filters = "Source files (*.cpp *.h *.hpp){.cpp,.h,.hpp},Image files (*.png *.gif *.jpg *.jpeg){.png,.gif,.jpg,.jpeg},.md";
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", ICON_IMFDLG_FOLDER_OPEN " Choose a File", filters, ".");
+IGFD::FileDialogConfig config;
+config.path = ".";
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", ICON_IMFDLG_FOLDER_OPEN " Choose a File", filters, config);
 ```
 
 will produce :
@@ -420,12 +434,24 @@ You can define in OpenDialog call the count file you want to select :
 See the define at the end of these funcs after path.
 
 ```cpp
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".*,.cpp,.h,.hpp", ".");
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose 1 File", ".*,.cpp,.h,.hpp", ".", 1);
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose 5 File", ".*,.cpp,.h,.hpp", ".", 5);
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose many File", ".*,.cpp,.h,.hpp", ".", 0);
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png,.jpg",
-   ".", "", std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 350, 1, "SaveFile"); // 1 file
+IGFD::FileDialogConfig config; config.path = ".";
+
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".*,.cpp,.h,.hpp", config);
+
+config.countSelectionMax = 1;
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose 1 File", ".*,.cpp,.h,.hpp", config);
+
+config.countSelectionMax = 5;
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose 5 File", ".*,.cpp,.h,.hpp", config);
+
+config.countSelectionMax = 0;
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose many File", ".*,.cpp,.h,.hpp", config);
+
+config.countSelectionMax = 1;
+config.sidePane = std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+config.sidePaneWidth = 350.0f;
+config.useDatas = UserDatas("SaveFile");
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png,.jpg", config); // 1 file
 ```
 
 ![alt text](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/multiSelection.gif)
@@ -470,47 +496,62 @@ ImGuiFileDialog::Instance()->SetFlashingAttenuationInSeconds(1.0f);
 
 </blockquote></details>
 
-<details open><summary><h2>Bookmarks :</h2></summary><blockquote>
+<details open><summary><h2>Places :</h2></summary><blockquote>
 
-You can create/edit/call path bookmarks and load/save them.
+the Places system is a generic way for add custom links in the left side pane
 
-Activate this feature by uncommenting: `#define USE_BOOKMARK` in your custom config file (CustomImGuiFileDialogConfig.h)
+you can organize them by groups
 
-More customization options:
+The bookmarks and devices are now groups in the left side pane.
 
+for using it you need to 
 ```cpp
-#define bookmarkPaneWith 150.0f => width of the bookmark pane
-#define IMGUI_TOGGLE_BUTTON ToggleButton => customize the Toggled button (button stamp must be : (const char* label, bool *toggle)
-#define bookmarksButtonString "Bookmark" => the text in the toggle button
-#define bookmarksButtonHelpString "Bookmark" => the helper text when mouse over the button
-#define addBookmarkButtonString "+" => the button for add a bookmark
-#define removeBookmarkButtonString "-" => the button for remove the selected bookmark
+#define USE_PLACES_FEATURE 
+
+// for have default bookmark editable groups
+#define USE_PLACES_BOOKMARKS
+
+// for have default groups for system devices (returned by the IFileSystem interface)
+#define USE_PLACES_DEVICES
 ```
 
-* You can select each bookmark to edit the displayed name corresponding to a path
-* Double-click on the label to apply the bookmark
+see the config file for more customization
 
-![bookmarks.gif](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/bookmarks.gif)
+you can also add your custom groups editable or not like what is done 
+the DemoApp branch with the "quick access" paths of win10
 
-You can also serialize/deserialize bookmarks (for example to load/save from/to a file):
-```cpp
-Load => ImGuiFileDialog::Instance()->DeserializeBookmarks(bookmarString);
-Save => std::string bookmarkString = ImGuiFileDialog::Instance()->SerializeBookmarks();
-```
-
-you can also add/remove bookmark by code :
-
-and in this case, you can also avoid serialization of code based bookmark
+You must add a group first, then add a place to it :
 
 ```cpp
-Add => ImGuiFileDialog::Instance()->AddBookmark(bookmark_name, bookmark_path);
-Remove => ImGuiFileDialog::Instance()->RemoveBookmark(bookmark_name);
-
-// true for prevent serialization of code based bookmarks
-Save => std::string bookmarkString = ImGuiFileDialog::Instance()->SerializeBookmarks(true);
+// you must add a group first, specifu display order, and say : 
+// if the user can add or remove palce like (bookmarks)
+// if the group is opened by default
+ImGuiFileDialog::Instance()->AddPlacesGroup(group_name, display_order, can_be_user_edited, opened_by_default);
+// then you must get the group
+auto places_ptr = ImGuiFileDialog::Instance()->GetPlacesGroupPtr(group_name);
+if (places_ptr != nullptr) {
+	// then add a place to the group
+	// you msut specify the place name, the palce path, say if the palce can be serialized, and sepcify the style
+	// for the moment the style support only the icon, can be extended if user needed in futur
+	places_ptr->AddPlace(place_name, place_path, can_be_saved, style);
+	// you can also add a separator
+	places_ptr->AddPlaceSeparator(separator_thickness); 
+}
 ```
 
-(please see example code for details)
+for editable group :
+* You can select each place to edit the displayed name corresponding to a path
+* Double-click on the label to apply the place
+
+![places.gif](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/places.gif)
+
+You can also serialize/deserialize groups and places (for example to load/save from/to a file):
+```cpp
+Load => ImGuiFileDialog::Instance()->DeserializePlaces(placesString);
+Save => std::string placesString = ImGuiFileDialog::Instance()->SerializePlaces();
+```
+
+(please see DemoApp branch for details)
 
 </blockquote></details>
 
@@ -538,17 +579,20 @@ behavior. (by design! :) )
 Example code For Standard Dialog :
 
 ```cpp
+IGFD::FileDialogConfig config; 
+config.path = ".";
+config.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
 ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey",
-    ICON_IGFD_SAVE " Choose a File", filters,
-    ".", "", 1, nullptr, ImGuiFileDialogFlags_ConfirmOverwrite);
+    ICON_IGFD_SAVE " Choose a File", filters, config);
 ```
 
 Example code For Modal Dialog :
 
 ```cpp
-ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey",
-    ICON_IGFD_SAVE " Choose a File", filters,
-    ".", "", 1, nullptr, ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_ConfirmOverwrite);
+IGFD::FileDialogConfig config; 
+config.path = ".";
+config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_ConfirmOverwrite;
+ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", ICON_IGFD_SAVE " Choose a File", filters, config);
 ```
 
 This dialog will only verify the file in the file field, not with `GetSelection()`.
@@ -700,11 +744,14 @@ ImGuiFileDialog fileDialog;
 
 // open dialog; in this case, Bookmark, directory creation are disabled with, and also the file input field is readonly.
 // btw you can od what you want
-fileDialog.OpenDialog("embedded", "Select File", ".*", "", -1, nullptr, 
-	ImGuiFileDialogFlags_NoDialog | 
+IGFD::FileDialogConfig config; 
+config.path = ".";
+config.countSelectionMax = -1;
+config.flags = ImGuiFileDialogFlags_NoDialog | 
 	ImGuiFileDialogFlags_DisableBookmarkMode | 
 	ImGuiFileDialogFlags_DisableCreateDirectoryButton | 
 	ImGuiFileDialogFlags_ReadOnlyFileNameField);
+fileDialog.OpenDialog("embedded", "Select File", ".*", config);
 // then display, here 
 // to note, when embedded the ImVec2(0,0) (MinSize) do nothing, only the ImVec2(0,350) (MaxSize) can size the dialog frame 
 fileDialog.Display("embedded", ImGuiWindowFlags_NoCollapse, ImVec2(0,0), ImVec2(0,350)))
@@ -962,6 +1009,76 @@ you can check the DemoApp who is using an override for the Boost::filesystem
 
 </blockquote></details>
 
+<details open><summary><h2>Modify file infos during scan by a callback</h2></summary><blockquote>
+
+In some case, it can be unsefull to modify file infos during scan
+so you can define your callback and attached it in the FileDialogConfig struct in the field userFileAttributes
+
+the callback stamp is :
+```cpp
+bool (IGFD::FileInfos* vFileInfosPtr, IGFD::UserDatas vUserDatas)
+```
+if the callback is returning false, the file is ignored, so not displayed by the dialog
+
+example : with the gltf separated files : (see the branch DemoApp for example use)
+
+A gltf file can have data description and datas files separated.
+in this case only the file with description will be shown in the dialog, so with not the full size of all attached datas
+
+with this function, you can compose the path of the bin file, get his size, sum it to the desciption file size and use it
+
+syntax :
+```cpp
+config.userFileAttributes = [](IGFD::FileInfos* vFileInfosPtr, IGFD::UserDatas vUserDatas) -> bool {
+    if (vFileInfosPtr != nullptr) {
+        // this demo not take into account .gltf who have data insise. besauce keepd easy just for demo
+        if (vFileInfosPtr->SearchForExt(".gltf", true)) {
+            auto bin_file_path_name = vFileInfosPtr->filePath + IGFD::Utils::GetPathSeparator() + vFileInfosPtr->fileNameLevels[0] + ".bin";
+            struct stat statInfos   = {};
+            char timebuf[100];
+            int result = stat(bin_file_path_name.c_str(), &statInfos);
+            if (!result) {
+                vFileInfosPtr->fileSize += (size_t)statInfos.st_size; // add the size of bin file to the size of the gltf file
+            } else {
+                // no bin, so escaped.
+                // normally we must parse the file and check the uri for get the buffer file
+                // but here we keep the example as easy for demo.
+                return false;
+            }
+        }
+    }
+    return true;
+};
+```
+
+Before the User of the userAttribute callback :
+
+![user_files_attributes_before.png](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/user_files_attributes_before.png)
+
+After :
+
+![user_files_attributes_after.png](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/user_files_attributes_after.png)
+
+You can also display a tootlip for a file displayed when the mouse is over a dedicated column
+
+you juste need to set your message for the FileDialogConfig.tooltipMessage
+and specify the column in FileDialogConfig.tooltipColumn
+
+ex code from the DemoApp branch for display the decomposition of gltf total size
+
+syntax :
+```cpp
+vFileInfosPtr->tooltipMessage = toStr("%s : %s\n%s : %s",             //
+    (vFileInfosPtr->fileNameLevels[0] + ".gltf").c_str(),             //
+    IGFD::Utils::FormatFileSize(vFileInfosPtr->fileSize).c_str(),     //
+    (vFileInfosPtr->fileNameLevels[0] + ".bin").c_str(),              //
+    IGFD::Utils::FormatFileSize((size_t)statInfos.st_size).c_str());  //
+vFileInfosPtr->tooltipColumn  = 1; // column of file size
+```
+![file_tooltip_message.png](https://github.com/aiekick/ImGuiFileDialog/blob/DemoApp/doc/file_tooltip_message.png)
+
+</blockquote></details>
+
 <details open><summary><h2>C Api :</h2></summary><blockquote>
 
 this api was sucessfully tested with CImGui
@@ -976,19 +1093,15 @@ Sample code with cimgui :
 ImGuiFileDialog *cfileDialog = IGFD_Create();
 
 // open dialog
-if (igButton("Open File", buttonSize))
-{
+if (igButton("Open File", buttonSize)) {
+	IGFD_FileDialog_Config config = IGFD_FileDialog_Config_Get();
+	config.path = ".";
+	config.flags = ImGuiFileDialogFlags_ConfirmOverwrite; // ImGuiFileDialogFlags
 	IGFD_OpenDialog(cfiledialog,
 		"filedlg",                              // dialog key (make it possible to have different treatment reagrding the dialog key
 		"Open a File",                          // dialog title
 		"c files(*.c *.h){.c,.h}",              // dialog filter syntax : simple => .h,.c,.pp, etc and collections : text1{filter0,filter1,filter2}, text2{filter0,filter1,filter2}, etc..
-		".",                                    // base directory for files scan
-		"",                                     // base filename
-		0,                                      // a fucntion for display a right pane if you want
-		0.0f,                                   // base width of the pane
-		0,                                      // count selection : 0 infinite, 1 one file (default), n (n files)
-		"User data !",                          // some user datas
-		ImGuiFileDialogFlags_ConfirmOverwrite); // ImGuiFileDialogFlags
+		config); 								// the file dialog config
 }
 
 ImGuiIO* ioptr = igGetIO();

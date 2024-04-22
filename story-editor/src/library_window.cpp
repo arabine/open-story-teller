@@ -331,12 +331,20 @@ void LibraryWindow::ParseStoreDataCallback(bool success, const std::string &file
     }
 }
 
-static bool canValidateDialog = false;
+static bool canValidateDialog = true;
+static int formatFilter = 0;
+
 inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCantContinue) // if vCantContinue is false, the user cant validate the dialog
 {
     ImGui::TextColored(ImVec4(0, 1, 1, 1), "Infos Pane");
     ImGui::Text("Selected Filter : %s", vFilter);
-    ImGui::Checkbox("if not checked you cant validate the dialog", &canValidateDialog);
+
+    
+    ImGui::Text("Select file format: ");
+    ImGui::RadioButton("Commercial stories", &formatFilter, 0); ImGui::SameLine();
+    ImGui::RadioButton("Studio format", &formatFilter, 1); ImGui::SameLine();
+
+  //  ImGui::Checkbox("if not checked you cant validate the dialog", &canValidateDialog);
     if (vCantContinue)
         *vCantContinue = canValidateDialog;
 }
@@ -352,12 +360,19 @@ std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
 
 void LibraryWindow::Draw()
 {
+    static int importFormat = 0;
+
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
     if (ImGui::Button( ICON_MDI_FOLDER " Select directory"))
     {
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.flags = ImGuiFileDialogFlags_Modal;
+
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, config);
     }
 
     if (!m_libraryManager.IsInitialized())
@@ -397,7 +412,17 @@ void LibraryWindow::Draw()
 
                 if (ImGui::Button("Import story"))
                 {
-                    ImGuiFileDialog::Instance()->OpenDialogWithPane("ImportStoryDlgKey", "Import story", "", "", InfosPane);
+                    IGFD::FileDialogConfig config;
+                    config.path = m_libraryManager.LibraryPath();
+                    config.countSelectionMax = 1;
+                    config.sidePane = std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+                    config.sidePaneWidth = 350.0f;
+                    config.flags = ImGuiFileDialogFlags_Modal;
+                    ImGuiFileDialog::Instance()->OpenDialog("ImportStoryDlgKey", 
+                        "Import story", 
+                        ".zip, .json",
+                        config
+                    );
                 }
 
 
@@ -407,22 +432,26 @@ void LibraryWindow::Draw()
                     ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableHeadersRow();
 
+                    int internal_id = 1;
                     for (auto &p : m_libraryManager)
                     {
                         ImGui::TableNextColumn();
                         ImGui::Text("%s", p->GetName().c_str());
 
                         ImGui::TableNextColumn();
+                        ImGui::PushID(internal_id++);
                         if (ImGui::SmallButton("Load"))
                         {
                             m_storyManager.OpenProject(p->GetUuid());
                         }
+                        
 
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Remove"))
                         {
 
                         }
+                        ImGui::PopID();
                     }
                     ImGui::EndTable();
                 }
@@ -529,11 +558,8 @@ void LibraryWindow::Draw()
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
             std::string filter = ImGuiFileDialog::Instance()->GetCurrentFilter();
-            // here convert from string because a string was passed as a userDatas, but it can be what you want
-            // std::string userDatas;
-            // if (ImGuiFileDialog::Instance()->GetUserDatas())
-            //     userDatas = std::string((const char*)ImGuiFileDialog::Instance()->GetUserDatas());
-            // auto selection = ImGuiFileDialog::Instance()->GetSelection(); // multiselection
+            
+            m_storyManager.ImportProject(filePathName, importFormat);
 
             // action
         }

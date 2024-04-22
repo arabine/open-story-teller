@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 #include <ranges>
 
 #include "resource.h"
@@ -13,12 +14,15 @@ class ResourceManager
 {
 public:
 
+    
     ResourceManager()
         : m_images(filter("image"))
         , m_sounds(filter("sound"))
     {
 
     }
+
+    static std::string ExtentionInfo(std::string extension, int info_type);
 
     ~ResourceManager() {
 

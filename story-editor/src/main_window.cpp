@@ -5,6 +5,9 @@
 
 #include "media_converter.h"
 
+#include "pack_archive.h"
+#include "uuid.h"
+
 #ifdef USE_WINDOWS_OS
 #include <winsock2.h>
 #include <iphlpapi.h>
@@ -338,7 +341,11 @@ void MainWindow::DrawMainMenuBar()
 
     if (showNewProject)
     {
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose a parent directory for your project", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.flags = ImGuiFileDialogFlags_Modal;
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose a parent directory for your project", nullptr, config);
     }
 
     // Always center this window when appearing
@@ -643,6 +650,125 @@ void MainWindow::OpenProject(const std::string &uuid)
     }
 
     RefreshProjectInformation();
+}
+
+
+void MainWindow::ImportProject(const std::string &fileName, int format)
+{
+    PackArchive archive;
+
+    Log("Decompressing " + fileName);
+    auto uuid =  UUID().String();
+
+    std::string basePath = m_libraryManager.LibraryPath() + "/" + uuid;
+
+    archive.Unzip(fileName, basePath);
+
+    // Ok try to convert the archive into our format
+
+    try
+    {
+
+        // STUDIO format
+        std::ifstream f(basePath + "/story.json");
+        nlohmann::json j = nlohmann::json::parse(f);
+        StoryProject proj;
+        ResourceManager res;
+        nlohmann::json model;
+
+        if (j.contains("title"))
+        {
+            proj.New(uuid, m_libraryManager.LibraryPath());
+            proj.SetName(j["title"].get<std::string>());
+
+            // Create resources, scan asset files
+            std::filesystem::path directoryPath(basePath + "/assets");
+            if (std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath))
+            {
+                for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
+                {
+                    if (std::filesystem::is_regular_file(entry.path()))
+                    {
+                        // Si c'est un sous-répertoire, récursivement scanner le contenu
+                        std::string asset = entry.path().filename();
+                        auto rData = std::make_shared<Resource>();
+
+                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension(), 1);
+                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension(), 0);
+                        res.Add(rData);
+                    }
+                }
+            }
+
+            // Create model
+
+            int ids = 1;
+            nlohmann::json nodes = nlohmann::json::array();
+            for (const auto & n : j["stageNodes"])
+            {
+                nlohmann::json node;
+                node["id"] = ids++;
+                node["uuid"] = n["uuid"].get<std::string>();
+                node["type"] = "media-node";
+
+                auto type = n["type"].get<std::string>();
+
+                int outPortCount = 1;
+                int inPortCount = 1;
+
+                if (type == "stage") {
+                    outPortCount = 1;
+                    inPortCount = 1;
+                }
+
+                node["outPortCount"] = outPortCount;
+                node["inPortCount"] = inPortCount;
+                node["position"] = n["position"];
+
+                nlohmann::json internalData;
+                auto img = n["image"];
+                internalData["image"] = img.is_string() ? img.get<std::string>() : "";
+                auto audio = n["audio"];
+                internalData["sound"] = audio.is_string() ? audio.get<std::string>() : "";
+
+                node["internal-data"] = internalData;
+                nodes.push_back(node);
+            }
+
+            model["nodes"] = nodes;
+
+            // Save links
+            nlohmann::json connections = nlohmann::json::array();
+
+                /*
+            for (const auto& linkInfo : m_links)
+            {
+
+                nlohmann::json c;
+
+                Connection cnx = LinkToModel(linkInfo->ed_link->InputId, linkInfo->ed_link->OutputId);
+
+                c["outNodeId"] = cnx.outNodeId;
+                c["outPortIndex"] = cnx.outPortIndex;
+                c["inNodeId"] = cnx.inNodeId;
+                c["inPortIndex"] = cnx.inPortIndex;
+
+                connections.push_back(c);
+            }*/
+
+            model["connections"] = connections;
+            
+
+        }
+
+         // Save on disk
+        proj.Save(model, res);
+    }
+    catch(std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+
 }
 
 void MainWindow::RefreshProjectInformation()

@@ -306,6 +306,7 @@ std::string StoryProject::Normalize(const std::string &input)
     std::replace(valid_file.begin(), valid_file.end(), '<', '_');
     std::replace(valid_file.begin(), valid_file.end(), '>', '_');
     std::replace(valid_file.begin(), valid_file.end(), '|', '_');
+    std::replace(valid_file.begin(), valid_file.end(), ' ', '_');
 
     return valid_file;
 }
