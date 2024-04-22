@@ -81,3 +81,5 @@ story-editor/cmake-build-debug/
 story-editor/build-win32/
 
 build-story-editor-Desktop_Qt_GCC_64bit-Debug/
+
+firmware/build/

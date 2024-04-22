@@ -169,7 +169,6 @@ set(SRCS
     src/importers/ni_parser.c
 
 
-
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
     libs/imgui-node-editor/imgui_node_editor.cpp
@@ -186,25 +185,22 @@ set(SRCS
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
 
-    ../software/chip32/chip32_assembler.cpp
-    ../software/chip32/chip32_vm.c
+    ../firmware/chip32/chip32_assembler.cpp
+    ../firmware/chip32/chip32_vm.c
 
-    ../software/common/audio_player.cpp
-    ../software/common/audio_player.h
-    ../software/common/tlv.h
-
-    ../software/library/miniaudio.h
-    ../software/library/uuid.h
-    ../software/library/resource.h
-    
-    ../software/library/resource_manager.h
-    ../software/library/resource_manager.cpp
-
-    ../software/library/story_project.cpp
-    ../software/library/story_project.h
-    ../software/library/thread_safe_queue.h
-    ../software/library/library_manager.h
-    ../software/library/library_manager.cpp
+    ../shared/audio_player.cpp
+    ../shared/audio_player.h
+    ../shared/tlv.h
+    ../shared/miniaudio.h
+    ../shared/stb_vorbis.c
+    ../shared/uuid.h
+    ../shared/resource_manager.h
+    ../shared/resource_manager.cpp
+    ../shared/story_project.cpp
+    ../shared/story_project.h
+    ../shared/thread_safe_queue.h
+    ../shared/library_manager.h
+    ../shared/library_manager.cpp
 )
 
 if(WIN32)
@@ -239,9 +235,10 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/importers
 
-    ../software/library/
-    ../software/chip32/
-    ../software/common
+    ../firmware/library
+    ../firmware/chip32
+    ../shared
+
 )
 
 add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})
