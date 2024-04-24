@@ -5,35 +5,36 @@
 #include <mutex>
 #include <set>
 
-#include "base_node.h"
+#include "base_node_widget.h"
 #include "i_story_manager.h"
 #include "gui.h"
 #include <imgui_node_editor.h>
 
 
-class MediaNode : public BaseNode
+class MediaNode : public BaseNodeWidget
 {
 public:
     MediaNode(const std::string &title, IStoryManager &proj);
 
     void Draw() override;
 
-    virtual void FromJson(const nlohmann::json &j) override;
-    virtual void ToJson(nlohmann::json &j) override;
     virtual void DrawProperties() override;
     virtual std::string Build() override;
     virtual std::string GetEntryLabel() override;
     virtual std::string GenerateConstants() override;
+
+    virtual void Initialize() override;
+    
+
 private:
     IStoryManager &m_story;
     Gui::Image  m_image;
     std::string m_soundName;
     std::string m_soundPath;
-
-    std::string m_id;
-
     std::string m_buttonUniqueName;
+
     void SetImage(const std::string &f);
     void SetSound(const std::string &f);
     std::string ChoiceLabel() const;
+    void StoreInternalData();
 };

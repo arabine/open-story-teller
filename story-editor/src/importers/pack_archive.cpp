@@ -1,14 +1,18 @@
-#include "pack_archive.h"
-#include "ni_parser.h"
-#include "json.hpp"
-#include "serializers.h"
-
 #include <iostream>
 #include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <filesystem>
+
+
+#include "pack_archive.h"
+#include "ni_parser.h"
+#include "json.hpp"
+#include "serializers.h"
+#include "story_project.h"
+#include "resource_manager.h"
+#include "uuid.h"
 
 PackArchive::PackArchive()
 {
@@ -409,6 +413,123 @@ std::string PackArchive::OpenImage(const std::string &fileName)
     std::string f;
     mZip.GetFile(fileName, f);
     return f;
+}
+
+bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::string &outputDir)
+{   
+    auto uuid =  UUID().String();
+    std::string basePath = outputDir + "/" + uuid;
+    Unzip(fileName, basePath);
+
+    try
+    {
+
+        // STUDIO format
+        std::ifstream f(basePath + "/story.json");
+        nlohmann::json j = nlohmann::json::parse(f);
+        StoryProject proj;
+        ResourceManager res;
+        nlohmann::json model;
+
+        if (j.contains("title"))
+        {
+            proj.New(uuid, outputDir);
+            proj.SetName(j["title"].get<std::string>());
+
+            // Create resources, scan asset files
+            std::filesystem::path directoryPath(basePath + "/assets");
+            if (std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath))
+            {
+                for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
+                {
+                    if (std::filesystem::is_regular_file(entry.path()))
+                    {
+                        // Si c'est un sous-répertoire, récursivement scanner le contenu
+                        auto rData = std::make_shared<Resource>();
+
+                        rData->file =  entry.path().filename();
+                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension(), 1);
+                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension(), 0);
+                        res.Add(rData);
+                    }
+                }
+            }
+
+            // Key: actionNode, value: Stage UUID
+            std::map<std::string, std::string> stageActionLink;
+
+            nlohmann::json jnodes = nlohmann::json::array();
+            for (const auto & n : j["stageNodes"])
+            {
+                nlohmann::json node;
+
+                auto node_uuid = n["uuid"].get<std::string>();
+                node["uuid"] = node_uuid;
+                node["type"] = "media-node";  
+                node["position"] = n["position"];
+
+                nlohmann::json internalData;
+                auto img = n["image"];
+                internalData["image"] = img.is_string() ? img.get<std::string>() : "";
+                auto audio = n["audio"];
+                internalData["sound"] = audio.is_string() ? audio.get<std::string>() : "";
+
+                node["internal-data"] = internalData;
+
+                stageActionLink[n["okTransition"]["actionNode"]] = node_uuid;
+/*
+                "okTransition":{
+            "actionNode":"19d7328f-d0d2-4443-a7a2-25270dafe52c",
+            "optionIndex":0
+         },
+         */
+
+                jnodes.push_back(node);
+            }
+
+            model["nodes"] = jnodes;
+
+            nlohmann::json connections = nlohmann::json::array();
+
+            for (const auto & n : j["actionNodes"])
+            {
+                std::string action_node_uuid = n["id"].get<std::string>(); // le champs est "id" et non pas "uuid", pénible
+
+                if (stageActionLink.count(action_node_uuid) > 0)
+                {
+
+                    int i = 0;
+                    for (const auto & m : n["options"])
+                    {
+                        nlohmann::json c;
+
+                        c["outNodeId"] = stageActionLink[action_node_uuid];
+                        c["outPortIndex"] = i;
+                        c["inNodeId"] = m; // On prend le stage node; 
+                        c["inPortIndex"] = 0;
+
+                        i++;
+                        connections.push_back(c);
+                    }
+                }
+                else
+                {
+                    std::cout << "ActionNode UUID not found" << std::endl;
+                }
+            }
+
+            model["connections"] = connections;
+
+             // Save on disk
+            proj.Save(model, res);
+        }
+    }
+    catch(std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+
+    return false;
 }
 
 std::string PackArchive::GetImage(const std::string &fileName)

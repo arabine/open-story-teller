@@ -5,7 +5,7 @@
 #include <set>
 
 #include <imgui_node_editor.h>
-#include "base_node.h"
+#include "base_node_widget.h"
 #include "window_base.h"
 #include "i_story_manager.h"
 #include "json.hpp"
@@ -55,10 +55,10 @@ public:
     void Load(const nlohmann::json &model);
     void Save(nlohmann::json &model);
     std::string Build();
-    std::list<std::shared_ptr<Connection> > GetNodeConnections(unsigned long nodeId);
-    std::string GetNodeEntryLabel(unsigned long nodeId);
+    std::list<std::shared_ptr<Connection> > GetNodeConnections(const std::string &nodeId);
+    std::string GetNodeEntryLabel(const std::string &nodeId);
 
-    std::shared_ptr<BaseNode> GetSelectedNode();
+    std::shared_ptr<BaseNodeWidget> GetSelectedNode();
 
 private:
     IStoryManager &m_story;
@@ -68,11 +68,9 @@ private:
     bool m_loaded{false};
 
     // key: Id
-    std::list<std::shared_ptr<BaseNode>>   m_nodes;
+    std::list<std::shared_ptr<BaseNodeWidget>>   m_nodes;
     std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
-
-    std::set<int> m_ids;
 
     void BuildNode(Node* node)
     {
@@ -91,12 +89,12 @@ private:
 
     template<class NodeType>
     struct Factory {
-        static std::shared_ptr<BaseNode> create_func(const std::string &title, IStoryManager &proj) {
-            return std::make_shared<NodeType>(title, proj);
+        static std::shared_ptr<BaseNodeWidget> create_func(const std::string &type, IStoryManager &proj) {
+            return std::make_shared<NodeType>(type, proj);
         }
     };
 
-    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &title, IStoryManager &proj);
+    typedef std::shared_ptr<BaseNodeWidget> (*GenericCreator)(const std::string &type, IStoryManager &proj);
     typedef std::map<std::string, GenericCreator> Registry;
     Registry m_registry;
 
@@ -105,20 +103,23 @@ private:
         m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
     }
 
-    std::shared_ptr<BaseNode> createNode(const std::string& key, const std::string &title, IStoryManager &proj) {
+    std::shared_ptr<BaseNodeWidget> createNode(const std::string& key, IStoryManager &proj) {
         typename Registry::const_iterator i = m_registry.find(key);
         if (i == m_registry.end()) {
             throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +
                                         ": key not registered");
         }
-        else return i->second(title, proj);
+        else
+        {
+            return i->second(key, proj);
+        }
     }
 
-    void LoadNode(const nlohmann::json &nodeJson);
-    ed::PinId GetInputPin(unsigned long modelNodeId, int pinIndex);
-    ed::PinId GetOutputPin(unsigned long modelNodeId, int pinIndex);
-    uint32_t FindFirstNode() const;
-    int GenerateNodeId();
+
+    ed::PinId GetInputPin(const std::string &modelNodeId, int pinIndex);
+    ed::PinId GetOutputPin(const std::string &modelNodeId, int pinIndex);
+    std::string FindFirstNode() const;
+    std::string  GenerateNodeId();
     void CreateLink(const Connection &model, ed::PinId inId, ed::PinId outId);
     Connection LinkToModel(ed::PinId InputId, ed::PinId OutputId);
 };

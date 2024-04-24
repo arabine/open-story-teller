@@ -3,7 +3,7 @@
 #include "window_base.h"
 #include "gui.h"
 
-#include "base_node.h"
+#include "base_node_widget.h"
 
 class PropertiesWindow : public WindowBase
 {
@@ -13,10 +13,10 @@ public:
     void Initialize();
     virtual void Draw() override;
 
-    void SetSelectedNode(std::shared_ptr<BaseNode> node);
+    void SetSelectedNode(std::shared_ptr<BaseNodeWidget> node);
 
 private:
-    std::shared_ptr<BaseNode> m_selectedNode;
+    std::shared_ptr<BaseNodeWidget> m_selectedNode;
 
 };
 

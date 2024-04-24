@@ -135,8 +135,8 @@ private:
     virtual std::pair<FilterIterator, FilterIterator> Resources() override;
     virtual void DeleteResource(FilterIterator &it) override;
     virtual void Build() override;
-    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(unsigned long nodeId) override;
-    virtual std::string GetNodeEntryLabel(unsigned long nodeId) override;
+    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
+    virtual std::string GetNodeEntryLabel(const std::string &nodeId) override;
     virtual void Play() override;
     virtual void Ok() override;
     virtual void Pause() override;

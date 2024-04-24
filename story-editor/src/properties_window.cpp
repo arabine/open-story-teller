@@ -25,14 +25,14 @@ void PropertiesWindow::Draw()
     if (m_selectedNode)
     {
         static char buf1[32] = ""; ImGui::InputText("Title",     buf1, 32);
-        ImGui::Text("Node ID: %lu", m_selectedNode->GetId());
+        ImGui::Text("Node ID: %s", m_selectedNode->GetId().data());
         m_selectedNode->DrawProperties();
     }
 
     WindowBase::EndDraw();
 }
 
-void PropertiesWindow::SetSelectedNode(std::shared_ptr<BaseNode> node)
+void PropertiesWindow::SetSelectedNode(std::shared_ptr<BaseNodeWidget> node)
 {
     m_selectedNode = node;
 }

@@ -90,6 +90,7 @@ set(BUILD_SHARED_LIBS TRUE)
 set(SDL_STATIC TRUE)
 FetchContent_MakeAvailable(sdl3)
 include_directories(${sdl3_SOURCE_DIR}/include)
+# add_subdirectory(${sdl3_SOURCE_DIR}) 
 
 # =========================================================================================================================
 # SDL3-Image
@@ -127,20 +128,25 @@ set(SRCS
     src/main_window.cpp
     src/main_window.h
 
-    src/node_editor_window.cpp
-    src/node_editor_window.h
-
     src/library_window.cpp
     src/library_window.h
 
-    src/media_node.h
-    src/media_node.cpp
 
     src/platform_folders.cpp
     src/platform_folders.h
 
-    src/base_node.h
-    src/base_node.cpp
+    src/node_engine/base_node.h
+    src/node_engine/base_node.cpp
+    src/node_engine/connection.cpp
+    src/node_engine/connection.h
+
+
+    src/node_editor/media_node.h
+    src/node_editor/media_node.cpp
+    src/node_editor/base_node_widget.h
+    src/node_editor/base_node_widget.cpp
+    src/node_editor/node_editor_window.h
+    src/node_editor/node_editor_window.cpp
 
     src/resources_window.cpp
     src/resources_window.h
@@ -153,9 +159,6 @@ set(SRCS
 
     src/code_editor.cpp
     src/code_editor.h
-
-    src/connection.cpp
-    src/connection.h
 
     src/media_converter.cpp
     src/media_converter.h
@@ -234,6 +237,8 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
 
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/importers
+    ${CMAKE_SOURCE_DIR}/src/node_editor
+    ${CMAKE_SOURCE_DIR}/src/node_engine
 
     ../firmware/library
     ../firmware/chip32
@@ -271,15 +276,16 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEB
 
 target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR} ${CMAKE_BINARY_DIR}/libs/SDL_image)
 
-
-set(SDL2_BIN_DIR ${sdl3_BINARY_DIR})
+# On est obligé de passer par une variable pour injecter 
+# certaines informations à CPACK
+set(SDL_BIN_DIR ${sdl3_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
         pthread
         OpenGL::GL
         dl
-        SDL3
+        SDL3::SDL3
         SDL3_image
         libcurl_static
         OpenSSL::SSL OpenSSL::Crypto
@@ -313,21 +319,19 @@ install_files("." FILES "${CMAKE_SOURCE_DIR}/LICENSE")
 install_files("." FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini")
 
 if(WIN32)
-    install_files("." FILES "${SDL2_BIN_DIR}/SDL2.dll")
+    install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libstdc++-6.dll")
     install_files("." FILES "/usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libgcc_s_seh-1.dll")
-endif()
 
-# Personnaliser l'icône pour les installateurs Windows
-if(WIN32)
-    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/story-editor-logo.ico")
+    # Personnaliser l'icône pour les installateurs Windows
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/story-editor-logo.ico") 
 endif()
 
 if (APPLE)
     set(CPACK_GENERATOR "DragNDrop")
     set(MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/bundle.plist.in)
-    install_files("." FILES "${SDL2_BIN_DIR}/libSDL2-2.0.0.dylib")
+    install_files("." FILES "${SDL_BIN_DIR}/libSDL2-2.0.0.dylib")
 endif()
 
 include(CPack)

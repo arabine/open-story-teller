@@ -7,7 +7,7 @@ namespace ed = ax::NodeEditor;
 #include "story_project.h"
 
 MediaNode::MediaNode(const std::string &title, IStoryManager &proj)
-    : BaseNode(title, proj)
+    : BaseNodeWidget(title, proj)
     , m_story(proj)
 {
     // Create defaut one input and one output
@@ -22,7 +22,7 @@ MediaNode::MediaNode(const std::string &title, IStoryManager &proj)
 
 void MediaNode::Draw()
 {
-    BaseNode::FrameStart();
+    BaseNodeWidget::FrameStart();
 
 
     static ImGuiTableFlags flags = ImGuiTableFlags_Borders |
@@ -69,11 +69,11 @@ void MediaNode::Draw()
     uint32_t counter = Outputs();
     float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
     ImGui::PushButtonRepeat(true);
-    std::string leftSingle = "##left" + std::to_string(GetId());
+    std::string leftSingle = "##left" + GetId();
     if (ImGui::ArrowButton(leftSingle.c_str(), ImGuiDir_Left)) { if (counter > 1) counter--; }
     ImGui::SameLine(0.0f, spacing);
 
-    std::string rightSingle = "##right" + std::to_string(GetId());
+    std::string rightSingle = "##right" + GetId();
     if (ImGui::ArrowButton(rightSingle.c_str(), ImGuiDir_Right))
     {
         counter++;
@@ -86,7 +86,7 @@ void MediaNode::Draw()
 
     DrawPins();
 
-    BaseNode::FrameEnd();
+    BaseNodeWidget::FrameEnd();
 
 }
 
@@ -96,18 +96,22 @@ void MediaNode::Draw()
                     "image": "fairy.png",
                     "sound": "la_fee_luminelle.mp3"
                 },
-
 */
-void MediaNode::FromJson(const nlohmann::json &j)
+void MediaNode::Initialize()
 {
+    BaseNodeWidget::Initialize();
+    nlohmann::json j = GetInternalData();
     SetImage(j["image"].get<std::string>());
     SetSound(j["sound"].get<std::string>());
 }
 
-void MediaNode::ToJson(nlohmann::json &j)
+void MediaNode::StoreInternalData()
 {
+    nlohmann::json j;
     j["image"] = m_image.name;
     j["sound"] = m_soundName;
+
+    SetInternalData(j);
 }
 
 void MediaNode::DrawProperties()
@@ -186,12 +190,14 @@ void MediaNode::SetImage(const std::string &f)
 {
     m_image.name = f;
     m_image.Load(m_story.BuildFullAssetsPath(f));
+    StoreInternalData();
 }
 
 void MediaNode::SetSound(const std::string &f)
 {
     m_soundName = f;
     m_soundPath = m_story.BuildFullAssetsPath(m_soundName);
+    StoreInternalData();
 }
 
 

@@ -2,12 +2,12 @@
 
 #include <string>
 #include <memory>
-#include "json.hpp"
 #include <random>
 #include <string>
 
 #include "json.hpp"
 #include "i_story_manager.h"
+#include "base_node.h"
 
 #include <imgui_node_editor.h>
 namespace ed = ax::NodeEditor;
@@ -91,8 +91,11 @@ struct Link
     }
 };
 
-
-class BaseNode
+/**
+ * @brief Basically a wrapper class around ImGuiNodeEditor Node structure
+ * 
+ */
+class BaseNodeWidget : public BaseNode
 {
 public:
     struct NodePosition
@@ -101,8 +104,9 @@ public:
         float y;
     };
 
-    BaseNode(const std::string &title, IStoryManager &proj);
+    BaseNodeWidget(const std::string &type, IStoryManager &proj);
 
+    virtual void Initialize();
 
     virtual void Draw() = 0;
     virtual void DrawProperties() = 0;
@@ -110,45 +114,20 @@ public:
     virtual std::string Build() = 0;
     virtual std::string GetEntryLabel() = 0;
 
-    void SetPosition(float x, float y);
 
     void FrameStart();
     void FrameEnd();
-
     void DrawPins();
 
-    float GetX() const;
-    float GetY() const;
+    virtual float GetX() const;
+    virtual float GetY() const;
+
 
     uint32_t Inputs() const { return m_node->Inputs.size(); }
     uint32_t Outputs() const { return m_node->Outputs.size(); }
 
-    void SetType(const std::string &type)
-    {
-        m_type = type;
-    }
-
-    std::string GetType() const
-    {
-        return m_type;
-    }
-
-    void SetId(unsigned long id) { m_id = id; }
-    unsigned long GetId() const { return m_id; }
     unsigned long GetInternalId() const { return m_node->ID.Get(); }
 
-    void SeTitle(const std::string &title) { m_title = title; }
-    std::string GetTitle() const { return m_title; }
-
-    virtual void FromJson(const nlohmann::json &) = 0;
-    virtual void ToJson(nlohmann::json &) = 0;
-
-    virtual nlohmann::json ToJson() const {
-        nlohmann::json j;
-
-        j["type"] = m_type;
-        return j;
-    }
 
     static unsigned long GetNextId()
     {
@@ -227,16 +206,9 @@ private:
 
     std::unique_ptr<Node> m_node;
 
-    std::string m_title{"Base node"};
-    std::string m_type;
-    unsigned long m_id;
-    NodePosition m_pos;
     bool m_firstFrame{true};
 
     static unsigned long s_nextId;
-
-
-
 
 };
 

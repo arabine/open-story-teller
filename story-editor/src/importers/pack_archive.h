@@ -14,6 +14,9 @@ public:
 
     bool Load(const std::string &filePath);
     std::string OpenImage(const std::string &fileName);
+
+    bool ImportStudioFormat(const std::string &fileName, const std::string &outputDir);
+
     std::string CurrentImage();
     std::string CurrentSound();
     std::string CurrentSoundName();

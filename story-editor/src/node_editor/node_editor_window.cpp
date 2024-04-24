@@ -11,6 +11,7 @@
 
 #include "media_node.h"
 #include "gui.h"
+#include "uuid.h"
 
 #include <stdexcept> // for std::runtime_error
 #define JSON_ASSERT(x) \
@@ -45,59 +46,15 @@ void NodeEditorWindow::Initialize()
 void NodeEditorWindow::Clear()
 {
     m_nodes.clear();
-    m_ids.clear();
 }
 
-
-
-void NodeEditorWindow::LoadNode(const nlohmann::json &nodeJson)
+std::string NodeEditorWindow::GenerateNodeId()
 {
-    try
-    {
-        int restoredNodeId = nodeJson["id"].get<int>();
-        nlohmann::json internalDataJson = nodeJson["internal-data"];
-        std::string type = nodeJson["type"].get<std::string>();
-
-        auto n = createNode(type, "", m_story);
-        if (n)
-        {
-            n->SetType(type); // FIXME: set type in createNode factory?
-            n->SetId(restoredNodeId);
-            nlohmann::json posJson = nodeJson["position"];
-            n->SetOutputs(nodeJson["outPortCount"].get<int>());
-            n->SetPosition(posJson["x"].get<double>(), posJson["y"].get<double>());
-            n->FromJson(internalDataJson);
-
-            m_ids.insert(restoredNodeId);
-
-            m_nodes.push_back(n);
-        }
-        else
-        {
-            throw std::logic_error(std::string("No registered model with name ") + type);
-        }
-    }
-    catch (std::exception&  e)
-    {
-        std::cout << "ERROR: " << e.what() << std::endl;
-    }
-
-}
-
-int NodeEditorWindow::GenerateNodeId()
-{
-    int max = 1;
-    if (m_ids.size() > 0)
-    {
-        auto max = *m_ids.rbegin();
-        max++;
-        m_ids.insert(max);
-    }
-    return max;
+    return UUID().String();
 }
 
 
-ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
+ed::PinId NodeEditorWindow::GetInputPin(const std::string &modelNodeId, int pinIndex)
 {
     ed::PinId id = 0;
 
@@ -106,18 +63,19 @@ ed::PinId NodeEditorWindow::GetInputPin(unsigned long modelNodeId, int pinIndex)
         if (n->GetId() == modelNodeId)
         {
             id = n->GetInputPinAt(pinIndex);
+            break;
         }
     }
 
     if (id.Get() == 0)
     {
-        std::cout << "Invalid Id, input pin not found" << std::endl;
+        std::cout << "Invalid Id: " << modelNodeId << " input pin: " << pinIndex <<" not found" << std::endl;
     }
 
     return id;
 }
 
-ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex)
+ed::PinId NodeEditorWindow::GetOutputPin(const std::string &modelNodeId, int pinIndex)
 {
     ed::PinId id = 0;
 
@@ -126,12 +84,13 @@ ed::PinId NodeEditorWindow::GetOutputPin(unsigned long modelNodeId, int pinIndex
         if (n->GetId() == modelNodeId)
         {
             id = n->GetOutputPinAt(pinIndex);
+            break;
         }
     }
 
     if (id.Get() == 0)
     {
-        std::cout << "Invalid Id, output pin not found" << std::endl;
+        std::cout << "Invalid Id: " << modelNodeId << " output pin: " << pinIndex <<" not found" << std::endl;
     }
 
     return id;
@@ -141,15 +100,27 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
 {
     try {
 
-    
         nlohmann::json nodesJsonArray = model["nodes"];
 
-        BaseNode::InitId();
+        BaseNodeWidget::InitId();
         m_nodes.clear();
         m_links.clear();
 
         for (auto& element : nodesJsonArray) {
-            LoadNode(element);
+           
+            std::string type = element["type"].get<std::string>();
+
+            auto n = createNode(type, m_story);
+            if (n)
+            {
+                n->FromJson(element);
+                n->Initialize();
+                m_nodes.push_back(n);
+            }
+            else
+            {
+                throw std::logic_error(std::string("No registered model with name ") + type);
+            }
         }
 
         std::cout << model.dump(4) << std::endl;
@@ -160,20 +131,47 @@ void NodeEditorWindow::Load(const nlohmann::json &model)
         {
             nlohmann::json connectionJsonArray = model["connections"];
 
+            // key: node UUID, value: output counts
+            std::map<std::string, int> outputCounts;
+
             for (auto& connection : connectionJsonArray)
             {
                 Connection model = connection.get<Connection>();
+
+
+                if (outputCounts.count(model.outNodeId) > 0)
+                {
+                    outputCounts[model.outNodeId]++;
+                }
+                else
+                {
+                    outputCounts[model.outNodeId] = 1;
+                }
+
+                // Adjust the number of outputs for all nodes
+                for (auto n : m_nodes)
+                {
+                    if (outputCounts.count(n->GetId()) > 0)
+                    {
+                        n->SetOutputs(outputCounts[n->GetId()]);
+                    }
+                }
+
                 CreateLink(model,
                         GetInputPin(model.inNodeId, model.inPortIndex),
                         GetOutputPin(model.outNodeId, model.outPortIndex));
+
+                
             }
+
+            
         }
 
         m_loaded = true;
     }
     catch(std::exception &e)
     {
-        std::cout << e.what() << std::endl;
+        std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
     }
   
 }
@@ -186,7 +184,7 @@ void NodeEditorWindow::CreateLink(const Connection &model, ed::PinId inId, ed::P
     *conn->model = model;
 
     // ImGui stuff for links
-    conn->ed_link->Id = BaseNode::GetNextId();
+    conn->ed_link->Id = BaseNodeWidget::GetNextId();
     conn->ed_link->InputId = inId;
     conn->ed_link->OutputId = outId;
 
@@ -202,23 +200,7 @@ void NodeEditorWindow::Save(nlohmann::json &model)
     nlohmann::json nodes = nlohmann::json::array();
     for (const auto & n : m_nodes)
     {
-        nlohmann::json node;
-        node["id"] = n->GetId();
-        node["type"] = n->GetType();
-        node["outPortCount"] = n->Outputs();
-        node["inPortCount"] = n->Inputs();
-
-        nlohmann::json position;
-        position["x"] = n->GetX();
-        position["y"] = n->GetY();
-
-        nlohmann::json internalData;
-
-        n->ToJson(internalData);
-
-        node["position"] = position;
-        node["internal-data"] = internalData;
-        nodes.push_back(node);
+        nodes.push_back(n->ToJson());
     }
 
     model["nodes"] = nodes;
@@ -227,7 +209,6 @@ void NodeEditorWindow::Save(nlohmann::json &model)
     nlohmann::json connections = nlohmann::json::array();
     for (const auto& linkInfo : m_links)
     {
-
         nlohmann::json c;
 
         Connection cnx = LinkToModel(linkInfo->ed_link->InputId, linkInfo->ed_link->OutputId);
@@ -266,9 +247,9 @@ Connection NodeEditorWindow::LinkToModel(ed::PinId InputId, ed::PinId OutputId)
     return c;
 }
 
-uint32_t NodeEditorWindow::FindFirstNode() const
+std::string NodeEditorWindow::FindFirstNode() const
 {
-    uint32_t id = 0;
+    std::string id;
 
     // First node is the one without connection on its input port
 
@@ -286,7 +267,7 @@ uint32_t NodeEditorWindow::FindFirstNode() const
         if (!foundConnection)
         {
             id = n->GetId();
-            m_story.Log("First node is: " + std::to_string(id));
+            m_story.Log("First node is: " + id);
             break;
         }
     }
@@ -302,7 +283,7 @@ std::string NodeEditorWindow::Build()
 
     std::stringstream chip32;
 
-    uint32_t firstNode = FindFirstNode();
+    std::string firstNode = FindFirstNode();
 
     code << "\tjump    " << GetNodeEntryLabel(firstNode) << "\r\n";
 
@@ -321,13 +302,13 @@ std::string NodeEditorWindow::Build()
     return code.str();
 }
 
-std::list<std::shared_ptr<Connection>> NodeEditorWindow::GetNodeConnections(unsigned long nodeId)
+std::list<std::shared_ptr<Connection>> NodeEditorWindow::GetNodeConnections(const std::string &nodeId)
 {
     std::list<std::shared_ptr<Connection>> c;
     ed::SetCurrentEditor(m_context);
 
     for (const auto & l : m_links)
-    {
+    { 
         if (l->model->outNodeId == nodeId)
         {
             c.push_back(l->model);
@@ -338,7 +319,7 @@ std::list<std::shared_ptr<Connection>> NodeEditorWindow::GetNodeConnections(unsi
     return c;
 }
 
-std::string NodeEditorWindow::GetNodeEntryLabel(unsigned long nodeId)
+std::string NodeEditorWindow::GetNodeEntryLabel(const std::string &nodeId)
 {
     std::string label;
     ed::SetCurrentEditor(m_context);
@@ -357,9 +338,9 @@ std::string NodeEditorWindow::GetNodeEntryLabel(unsigned long nodeId)
 }
 
 
-std::shared_ptr<BaseNode> NodeEditorWindow::GetSelectedNode()
+std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 {
-    std::shared_ptr<BaseNode> selected;
+    std::shared_ptr<BaseNodeWidget> selected;
 
     ed::SetCurrentEditor(m_context);
     if (ed::GetSelectedObjectCount() > 0)
@@ -485,20 +466,15 @@ void NodeEditorWindow::Draw()
             Node* node = nullptr;
             if (ImGui::MenuItem("Media Node"))
             {
-                auto n = createNode("media-node", "", m_story);
+                auto n = createNode("media-node", m_story);
                 if (n)
                 {
-                    n->SetType("media-node"); // FIXME: set type in createNode factory?
                     n->SetId(GenerateNodeId());
                     n->SetPosition(newNodePostion.x, newNodePostion.y);
+                    n->Initialize();
                     m_nodes.push_back(n);
                 }
             }
-
-            // if (node)
-            // {
-            //     ed::SetNodePosition(node->ID, newNodePostion);
-            // }
 
             ImGui::EndPopup();
         }

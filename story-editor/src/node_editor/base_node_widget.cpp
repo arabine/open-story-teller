@@ -1,25 +1,24 @@
-#include "base_node.h"
+#include "base_node_widget.h"
 #include "uuid.h"
 
 #include "IconsMaterialDesignIcons.h"
 
-unsigned long BaseNode::s_nextId = 1;
+unsigned long BaseNodeWidget::s_nextId = 1;
 
-BaseNode::BaseNode(const std::string &title, IStoryManager &proj)
-    : m_story(proj)
+BaseNodeWidget::BaseNodeWidget(const std::string &type, IStoryManager &proj)
+    : BaseNode(type)
+    , m_story(proj)
 {
   //  m_id = UUID().String();
-
-    m_id = -1; // Story Project Node ID
-    m_node = std::make_unique<Node>(GetNextId(), title.c_str()); // ImGui internal ID
+    m_node = std::make_unique<Node>(GetNextId(), ""); // ImGui internal ID
 }
 
-void BaseNode::AddInput()
+void BaseNodeWidget::AddInput()
 {
    m_node->Inputs.emplace_back(GetNextId(), "", PinType::Flow);
 }
 
-void BaseNode::AddOutputs(int num)
+void BaseNodeWidget::AddOutputs(int num)
 {
    for (int i = 0; i < num; i++)
    {
@@ -27,7 +26,7 @@ void BaseNode::AddOutputs(int num)
    }
 }
 
-void BaseNode::SetOutputs(uint32_t num)
+void BaseNodeWidget::SetOutputs(uint32_t num)
 {
    if (num > Outputs())
    {
@@ -42,35 +41,38 @@ void BaseNode::SetOutputs(uint32_t num)
    }
 }
 
-void BaseNode::DeleteOutput()
+void BaseNodeWidget::DeleteOutput()
 {
    m_node->Outputs.pop_back();
 }
 
-void BaseNode::SetPosition(float x, float y)
+
+void BaseNodeWidget::Initialize()
 {
-   m_pos.x = x;
-   m_pos.y = y;
-   m_firstFrame = true;
+    m_firstFrame = true;
+    
 }
 
-void BaseNode::FrameStart()
+
+void BaseNodeWidget::FrameStart()
 {
     ed::BeginNode(m_node->ID);
 
     if (m_firstFrame)
     {
-        ed::SetNodePosition(m_node->ID, ImVec2(m_pos.x, m_pos.y));
+        // Use the parent node position, the one saved in the JSON project
+        // FIXME: find a better way to do that?
+        ed::SetNodePosition(m_node->ID, ImVec2(BaseNode::GetX(), BaseNode::GetY()));
     }
     m_firstFrame = false;
 }
 
-void BaseNode::FrameEnd()
+void BaseNodeWidget::FrameEnd()
 {
     ed::EndNode();
 }
 
-void BaseNode::DrawPins()
+void BaseNodeWidget::DrawPins()
 {
     static const char *str = "#1 >";
     static float textWidth = ImGui::CalcTextSize(str).x;
@@ -94,13 +96,13 @@ void BaseNode::DrawPins()
     }
 }
 
-float BaseNode::GetX() const
+float BaseNodeWidget::GetX() const
 {
     auto pos = GetNodePosition(m_node->ID);
     return pos.x;
 }
 
-float BaseNode::GetY() const
+float BaseNodeWidget::GetY() const
 {
     auto pos = GetNodePosition(m_node->ID);
     return pos.y;

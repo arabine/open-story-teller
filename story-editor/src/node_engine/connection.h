@@ -6,9 +6,7 @@
 struct Connection
 {
     Connection()
-        : outNodeId(0)
-        , outPortIndex(0)
-        , inNodeId(0)
+        : outPortIndex(0)
         , inPortIndex(0)
     {
 
@@ -18,9 +16,9 @@ struct Connection
 
     }
 
-    unsigned int outNodeId{0};
+    std::string outNodeId;
     unsigned int outPortIndex{0};
-    unsigned int inNodeId{0};
+    std::string inNodeId;
     unsigned int inPortIndex{0};
 
     Connection(const Connection &other){
