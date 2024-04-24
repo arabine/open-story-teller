@@ -286,7 +286,7 @@ if(UNIX)
         OpenGL::GL
         dl
         SDL3::SDL3
-        SDL3_image
+        SDL3_image::SDL3_image
         libcurl_static
         OpenSSL::SSL OpenSSL::Crypto
     )
