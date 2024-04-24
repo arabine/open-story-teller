@@ -426,11 +426,35 @@ void LibraryWindow::Draw()
                 }
 
 
-                if (ImGui::BeginTable("library_table", 2, tableFlags))
+                if (ImGui::BeginTable("library_table", 3, tableFlags))
                 {
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
-                    ImGui::TableHeadersRow();
+
+
+                    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+
+                     ImGui::TableSetColumnIndex(0);
+                     ImGui::TableHeader(ImGui::TableGetColumnName(0));
+
+
+                    static bool column_selected = false;
+
+                    ImGui::TableSetColumnIndex(1);
+                    const char* column_name = ImGui::TableGetColumnName(1); // Retrieve name passed to TableSetupColumn()
+             
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                    ImGui::Checkbox("##checkall", &column_selected);
+                    ImGui::PopStyleVar();
+                    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+                    ImGui::TableHeader(column_name);
+             
+
+                    ImGui::TableSetColumnIndex(2);
+                     ImGui::TableHeader(ImGui::TableGetColumnName(2));
+
+                    
 
                     int internal_id = 1;
                     for (auto &p : m_libraryManager)
@@ -438,8 +462,14 @@ void LibraryWindow::Draw()
                         ImGui::TableNextColumn();
                         ImGui::Text("%s", p->GetName().c_str());
 
-                        ImGui::TableNextColumn();
                         ImGui::PushID(internal_id++);
+                        
+                        // Select
+                        ImGui::TableNextColumn();
+                        ImGui::Checkbox("", &column_selected);
+
+                        ImGui::TableNextColumn();
+                        
                         if (ImGui::SmallButton("Load"))
                         {
                             m_storyManager.OpenProject(p->GetUuid());
