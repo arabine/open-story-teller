@@ -66,19 +66,21 @@ std::string MainWindow::GetFileNameFromMemory(uint32_t addr)
 
 void MainWindow::Play()
 {
-    if (m_dbg.run_result == VM_FINISHED)
-    {
-        Build();
 
-        if (m_dbg.run_result == VM_READY)
-        {
-            m_dbg.free_run = true;
-            m_dbg.run_result = VM_OK; // actually starts the execution
-        }
+    if ((m_dbg.run_result == VM_READY) || (m_dbg.run_result == VM_FINISHED))
+    {
+        m_dbg.free_run = true;
+        m_dbg.run_result = VM_OK; // actually starts the execution
     }
+
 }
 
 void MainWindow::Ok()
+{
+    m_eventQueue.push({VmEventType::EvOkButton});
+}
+
+void MainWindow::Stop()
 {
     m_eventQueue.push({VmEventType::EvOkButton});
 }
@@ -149,6 +151,10 @@ void MainWindow::ProcessStory()
             {
                 m_chip32_ctx.registers[R0] = 0x08;
                 m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvStop)
+            {
+                m_dbg.run_result = VM_FINISHED;
             }
         }
     }
@@ -704,6 +710,7 @@ void MainWindow::Loop()
 
     while (!done)
     {
+        auto time = SDL_GetTicks();
         bool aboutToClose = m_gui.PollEvent();
 
         m_gui.StartFrame();
@@ -745,6 +752,12 @@ void MainWindow::Loop()
         }
 
         m_gui.EndFrame();
+
+        
+        // Rendering and event handling
+        if ((SDL_GetTicks() - time) < 10) {
+            SDL_Delay(10);
+        }
 
 
     }
@@ -799,17 +812,23 @@ void MainWindow::DeleteResource(FilterIterator &it)
     return m_resources.Delete(it);
 }
 
-void MainWindow::Build()
+void MainWindow::Build(bool compileonly)
 {
     // 1. First compile nodes to assembly
-    CompileToAssembler();
+    if (CompileToAssembler())
+    {
 
-    // 2. Compile the assembly to machine binary
-    GenerateBinary();
+        // 2. Compile the assembly to machine binary
+        GenerateBinary();
 
-    // 3. Convert all media to desired type format
-    ConvertResources();
+        if (!compileonly)
+        {
+            // 3. Convert all media to desired type format
+            ConvertResources();
+        }
+    }
 }
+
 
 std::string MainWindow::GetNodeEntryLabel(const std::string &nodeId)
 {
@@ -827,9 +846,10 @@ bool MainWindow::CompileToAssembler()
     // FIXME
 
     // 2. Generate the assembly code from the model
-    m_currentCode = m_nodeEditorWindow.Build();
+    bool ret = m_nodeEditorWindow.Build(m_currentCode);
 
     // Add global functions
+    if (ret)
     {
         std::string buffer;
 
@@ -839,11 +859,11 @@ bool MainWindow::CompileToAssembler()
         f.seekg(0);
         f.read(buffer.data(), buffer.size());
         m_currentCode += buffer;
+
+        m_editorWindow.SetScript(m_currentCode);
     }
-
-    m_editorWindow.SetScript(m_currentCode);
-
-    return true;
+  
+    return ret;
 }
 
 void MainWindow::GenerateBinary()
@@ -932,13 +952,18 @@ void MainWindow::ConvertResources()
         int retCode = 0;
         if ((*it)->format == "PNG")
         {
-            outputfile += ".qoi"; // FIXME: prendre la congif en cours désirée
+            outputfile += ".qoi"; // FIXME: prendre la config en cours désirée
             retCode = MediaConverter::ImageToQoi(inputfile, outputfile);
         }
         else if ((*it)->format == "MP3")
         {
-            outputfile += ".wav"; // FIXME: prendre la congif en cours désirée
+            outputfile += ".wav"; // FIXME: prendre la config en cours désirée
             retCode = MediaConverter::Mp3ToWav(inputfile, outputfile);
+        }
+        else if ((*it)->format == "OGG")
+        {
+            outputfile += ".wav"; // FIXME: prendre la config en cours désirée
+            retCode = MediaConverter::OggToWav(inputfile, outputfile);
         }
         else
         {

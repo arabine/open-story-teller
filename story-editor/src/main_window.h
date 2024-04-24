@@ -73,7 +73,7 @@ public:
     void Loop();
 
 private:
-    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished};
+    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
 
     std::shared_ptr<StoryProject> m_story;
 
@@ -134,11 +134,12 @@ private:
     virtual void ClearResources() override;
     virtual std::pair<FilterIterator, FilterIterator> Resources() override;
     virtual void DeleteResource(FilterIterator &it) override;
-    virtual void Build() override;
+    virtual void Build(bool compileonly) override;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
     virtual std::string GetNodeEntryLabel(const std::string &nodeId) override;
     virtual void Play() override;
     virtual void Ok() override;
+    virtual void Stop() override;
     virtual void Pause() override;
     virtual void Next() override;
     virtual void Previous() override;

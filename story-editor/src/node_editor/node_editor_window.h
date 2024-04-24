@@ -54,7 +54,7 @@ public:
     void Clear();
     void Load(const nlohmann::json &model);
     void Save(nlohmann::json &model);
-    std::string Build();
+    bool Build(std::string &codeStr);
     std::list<std::shared_ptr<Connection> > GetNodeConnections(const std::string &nodeId);
     std::string GetNodeEntryLabel(const std::string &nodeId);
 

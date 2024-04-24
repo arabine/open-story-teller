@@ -75,14 +75,26 @@ void EmulatorWindow::Draw()
 
     ImGui::SeparatorText("Script control and debug");
 
-    if (ImGui::Button("Build"))
+    if (ImGui::Button("Generate pack"))
     {
-        m_story.Build();
+        m_story.Build(false);
+    }
+    if (ImGui::Button("Build script"))
+    {
+        m_story.Build(true);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Build & Play"))
+    if (ImGui::Button("Play"))
     {
+        m_story.Log("Play story");
         m_story.Play();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Stop"))
+    {
+        m_story.Log("Stop story");
+        m_story.Stop();
     }
 
     ImGui::SameLine();

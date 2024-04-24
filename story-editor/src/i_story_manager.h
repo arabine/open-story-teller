@@ -45,11 +45,12 @@ public:
     virtual void DeleteResource(FilterIterator &it) = 0;
 
     // Node interaction
-    virtual void Build() = 0;
+    virtual void Build(bool compileonly) = 0;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;
     virtual std::string GetNodeEntryLabel(const std::string &nodeId) = 0;
     virtual void Play() = 0;
     virtual void Ok() = 0;
+    virtual void Stop() = 0;
     virtual void Pause() = 0;
     virtual void Next() = 0;
     virtual void Previous() = 0;

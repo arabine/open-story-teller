@@ -256,6 +256,7 @@ std::string NodeEditorWindow::FindFirstNode() const
     for (const auto & n : m_nodes)
     {
         bool foundConnection = false;
+
         for (const auto& l : m_links)
         {
             if (l->model->inNodeId == n->GetId())
@@ -275,7 +276,7 @@ std::string NodeEditorWindow::FindFirstNode() const
     return id;
 }
 
-std::string NodeEditorWindow::Build()
+bool NodeEditorWindow::Build(std::string &codeStr)
 {
     std::stringstream code;
     ed::SetCurrentEditor(m_context);
@@ -284,6 +285,12 @@ std::string NodeEditorWindow::Build()
     std::stringstream chip32;
 
     std::string firstNode = FindFirstNode();
+
+    if (firstNode == "")
+    {
+        m_story.Log("First node not found, there must be only one node with a free input.", true);
+        return false;
+    }
 
     code << "\tjump    " << GetNodeEntryLabel(firstNode) << "\r\n";
 
@@ -299,7 +306,8 @@ std::string NodeEditorWindow::Build()
     }
 
     ed::SetCurrentEditor(nullptr);
-    return code.str();
+    codeStr = code.str();
+    return true;
 }
 
 std::list<std::shared_ptr<Connection>> NodeEditorWindow::GetNodeConnections(const std::string &nodeId)
@@ -429,6 +437,18 @@ void NodeEditorWindow::Draw()
         // Handle deletion action
         if (ed::BeginDelete())
         {
+            ed::NodeId nodeId = 0;
+            while (ed::QueryDeletedNode(&nodeId))
+            {
+                if (ed::AcceptDeletedItem())
+                {
+                    auto id = std::find_if(m_nodes.begin(), m_nodes.end(), [nodeId](std::shared_ptr<BaseNodeWidget> node) { return node->GetInternalId() == nodeId.Get(); });
+                    if (id != m_nodes.end())
+                        m_nodes.erase(id);
+                }
+            }
+
+
             // There may be many links marked for deletion, let's loop over them.
             ed::LinkId deletedLinkId;
             while (ed::QueryDeletedLink(&deletedLinkId))

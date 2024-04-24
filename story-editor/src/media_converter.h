@@ -22,6 +22,7 @@ public:
     MediaConverter();
     static int ImageToQoi(const std::string &inputFileName, const std::string &outputFileName);
     static int Mp3ToWav(const std::string &inputFileName, const std::string &outputFileName);
+    static int OggToWav(const std::string &inputFileName, const std::string &outputFileName);
 private:
     static short *Mp3Read(const std::string &path, MediaInfo &desc);
     static int WavWrite(const std::string &path, short *sample_data, MediaInfo &desc);

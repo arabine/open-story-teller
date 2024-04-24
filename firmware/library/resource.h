@@ -15,7 +15,7 @@ struct Resource
     std::string type;
 
     ~Resource() {
-        std::cout << "Res deleted" << std::endl;
+        // std::cout << "Res deleted" << std::endl;
     }
 };
 

@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+
+#define STB_VORBIS_HEADER_ONLY
+#include "stb_vorbis.c"
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -154,6 +158,86 @@ int MediaConverter::Mp3ToWav(const std::string &inputFileName, const std::string
     {
         return cErrorBadInputFileFormat;
     }
+
+    return cSuccess;
+}
+
+
+// Function to read the entire contents of a file into memory
+static unsigned char* read_entire_file(const char* filename, int* length) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    unsigned char* buffer = (unsigned char*)malloc(size);
+    if (!buffer) {
+        fclose(f);
+        return NULL;
+    }
+    fread(buffer, 1, size, f);
+    fclose(f);
+    if (length) *length = (int)size;
+    return buffer;
+}
+
+int MediaConverter::OggToWav(const std::string &inputFileName, const std::string &outputFileName)
+{
+
+    int ogg_length;
+    unsigned char* ogg_data = read_entire_file(inputFileName.c_str(), &ogg_length);
+    if (!ogg_data) {
+        std::cout << "Failed to read input file " << inputFileName << std::endl;
+        return 1;
+    }
+
+    int channels, sample_rate;
+    short* samples = NULL;
+    // (const uint8 *mem, int len, int *channels, int *sample_rate, short **output
+    int data_len = stb_vorbis_decode_memory(ogg_data, ogg_length, &channels, &sample_rate, &samples);
+    if (!samples) {
+        std::cout <<"Failed to decode OGG file " << inputFileName << std::endl;
+        free(ogg_data);
+        return 1;
+    }
+
+    // Write WAV file header
+    FILE* wav_file = fopen(outputFileName.c_str(), "wb");
+    if (!wav_file) {
+        std::cout << "Failed to create output file " << outputFileName << std::endl;
+        free(ogg_data);
+        free(samples);
+        return 1;
+    }
+    fwrite("RIFF", 1, 4, wav_file);
+    int total_size = 36 + channels * (sample_rate * sizeof(short));
+    fwrite(&total_size, 4, 1, wav_file);
+    fwrite("WAVEfmt ", 1, 8, wav_file);
+    int format_size = 16;
+    fwrite(&format_size, 4, 1, wav_file);
+    short format_type = 1; // PCM
+    fwrite(&format_type, 2, 1, wav_file);
+    fwrite(&channels, 2, 1, wav_file);
+    fwrite(&sample_rate, 4, 1, wav_file);
+    int byte_rate = sample_rate * channels * sizeof(short);
+    fwrite(&byte_rate, 4, 1, wav_file);
+    short block_align = channels * sizeof(short);
+    fwrite(&block_align, 2, 1, wav_file);
+    short bits_per_sample = 16;
+    fwrite(&bits_per_sample, 2, 1, wav_file);
+    fwrite("data", 1, 4, wav_file);
+   // int data_size = channels * (sample_rate * sizeof(short));
+
+    int data_size = data_len * channels * 2; // *2 to make in bytes
+    fwrite(&data_size, 4, 1, wav_file);
+
+    // Write sample data
+    fwrite(samples, sizeof(short), data_len, wav_file);
+
+    fclose(wav_file);
+
+    free(ogg_data);
+    free(samples);
 
     return cSuccess;
 }
