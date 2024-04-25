@@ -7,11 +7,11 @@
 
 // Encaasulate the genaeration of a Version 4 UUID object
 // A Version 4 UUID is a universally unique identifier that is generated using random numbers.
-class UUID
+class Uuid
 {
 public:
 
-    UUID() { New(); }
+    Uuid() { New(); }
 
     // Factory method for creating UUID object.
     void New()

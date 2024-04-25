@@ -6,6 +6,8 @@ docker run \
     -c "mkdir -p /workspace/story-editor/build-win32 && \
     cd /workspace/story-editor/build-win32 && \
     git config --global http.sslverify false && \
-    cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64-x86_64.cmake .. && \
+    cmake -DOPENSSL_ROOT_DIR=/libs/openssl \
+    -DOPENSSL_CRYPTO_LIBRARY=/libs/openssl/lib64 \
+    -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64-x86_64.cmake .. && \
     make && \
     make package"

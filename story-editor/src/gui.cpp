@@ -102,7 +102,7 @@ std::string GetDirectory (const std::string& path)
 
 Gui::Gui()
 {
-    m_executablePath = std::filesystem::current_path();
+    m_executablePath = std::filesystem::current_path().generic_string();
     std::cout << "PATH: " << m_executablePath << std::endl;
 }
 

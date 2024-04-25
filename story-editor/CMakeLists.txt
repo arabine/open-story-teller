@@ -21,7 +21,9 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
-find_package(OpenSSL REQUIRED)
+
+# set(OPENSSL_ROOT_DIR /libs/openssl)
+# find_package(OpenSSL REQUIRED)
 
 set(IMGUI_VERSION 1.90)
 
@@ -30,14 +32,46 @@ include(FetchContent)
 # =========================================================================================================================
 # CURL
 # =========================================================================================================================
-FetchContent_Declare(curl
-    URL https://github.com/curl/curl/archive/refs/tags/curl-8_6_0.zip
+
+# Définit les options de cURL pour utiliser mBedTLS
+set(CMAKE_USE_OPENSSL OFF)
+set(CMAKE_USE_MBEDTLS ON)
+
+# Télécharge et configure cURL
+FetchContent_Declare(
+  curl
+  GIT_REPOSITORY https://github.com/curl/curl.git
+  GIT_TAG        curl-8_7_1
 )
 
+FetchContent_GetProperties(curl)
+if(NOT curl_POPULATED)
+  FetchContent_Populate(curl)
 
 set(BUILD_CURL_EXE FALSE)
 set(BUILD_STATIC_LIBS TRUE)
-FetchContent_MakeAvailable(curl)
+  add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR})
+endif()
+
+# Assurez-vous que votre projet trouve les headers de mBedTLS et cURL
+include_directories(${mbedtls_SOURCE_DIR}/include)
+include_directories(${curl_SOURCE_DIR}/include)
+
+# FetchContent_Declare(curl
+#     URL https://github.com/curl/curl/archive/refs/tags/curl-8_6_0.zip
+# )
+
+# set(CURL_USE_mbedTLS       ON  CACHE BOOL "Use MBED TLS." FORCE)
+# set(BUILD_TESTING          OFF CACHE BOOL "No tests build, plz." FORCE)
+# set(USE_MANUAL             OFF CACHE BOOL "No manuals, plz." FORCE)
+# set(BUILD_CURL_EXE         OFF CACHE BOOL "No executable, plz. Only the lib" FORCE)
+# set(CURL_ENABLE_EXPORT_TARGET OFF CACHE BOOL "No installation build, plz." FORCE)
+# set(CURL_DISABLE_IMAPS     ON  CACHE BOOL "Use MBED TLS." FORCE)
+# set(BUILD_CURL_EXE FALSE)
+# set(BUILD_STATIC_LIBS TRUE)
+
+# FetchContent_MakeAvailable(curl)
+# include_directories( ${CURL_INCLUDE_DIRS} )
 
 # =========================================================================================================================
 # IMGUI and plugins
@@ -293,7 +327,9 @@ if(UNIX)
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}
         OpenGL::GL
-        SDL2
+        SDL3::SDL3
+        SDL3_image::SDL3_image
+        libcurl_static
         ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
     )
 endif()

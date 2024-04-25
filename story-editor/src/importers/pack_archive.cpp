@@ -168,7 +168,7 @@ void PackArchive::DecipherFiles(const std::string &directory, const std::string 
 {
     for (const auto & rf : std::filesystem::directory_iterator(directory))
     {
-        std::string oldFile = rf.path();
+        std::string oldFile = rf.path().generic_string();
 //        std::cout << oldFile << std::endl;
 
         DecipherFileOnDisk(oldFile);
@@ -209,14 +209,14 @@ void PackArchive::DecipherAll(const std::string &packFileName, const std::string
     for (const auto & entry : std::filesystem::directory_iterator(path))
     {
         std::cout << entry.path() << std::endl;
-        DecipherFiles(entry.path(), ".bmp");
+        DecipherFiles(entry.path().generic_string(), ".bmp");
     }
 
     path = mPackName + "/sf";
     for (const auto & entry : std::filesystem::directory_iterator(path))
     {
         std::cout << entry.path() << std::endl;
-        DecipherFiles(entry.path(), ".mp3");
+        DecipherFiles(entry.path().generic_string(), ".mp3");
     }
 
     nlohmann::json j;
@@ -417,7 +417,7 @@ std::string PackArchive::OpenImage(const std::string &fileName)
 
 bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::string &outputDir)
 {   
-    auto uuid =  UUID().String();
+    auto uuid =  Uuid().String();
     std::string basePath = outputDir + "/" + uuid;
     Unzip(fileName, basePath);
 
@@ -447,9 +447,9 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
                         // Si c'est un sous-répertoire, récursivement scanner le contenu
                         auto rData = std::make_shared<Resource>();
 
-                        rData->file =  entry.path().filename();
-                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension(), 1);
-                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension(), 0);
+                        rData->file =  entry.path().filename().generic_string();
+                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), 1);
+                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), 0);
                         res.Add(rData);
                     }
                 }

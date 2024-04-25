@@ -50,7 +50,7 @@ void NodeEditorWindow::Clear()
 
 std::string NodeEditorWindow::GenerateNodeId()
 {
-    return UUID().String();
+    return Uuid().String();
 }
 
 

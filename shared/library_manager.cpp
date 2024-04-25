@@ -34,7 +34,7 @@ void LibraryManager::Scan()
             {
                 // Si c'est un sous-répertoire, récursivement scanner le contenu
                 std::string uuid = entry.path().filename().generic_string();
-                if (UUID::IsValid(uuid))
+                if (Uuid::IsValid(uuid))
                 {
                     std::cout << "Found story directory" << std::endl;
                     // Look for a story.json file in this directory
@@ -68,7 +68,7 @@ void LibraryManager::Scan()
 std::shared_ptr<StoryProject> LibraryManager::NewProject()
 {
     auto story = std::make_shared<StoryProject>();
-    std::string uuid = UUID().String();
+    std::string uuid = Uuid().String();
 
     story->New(uuid, m_library_path);
     story->SetDisplayFormat(320, 240);

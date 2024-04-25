@@ -123,7 +123,7 @@ std::vector<std::string> Zip::Unzip(std::string const &zipFile, const std::strin
         if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) continue;
         if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) continue; // skip directories for now
         std::string fileName = file_stat.m_filename; // make path relative
-        std::string destFile = destination_dir + std::filesystem::path::preferred_separator + fileName; // make full dest path
+        std::string destFile = destination_dir + "/" + fileName; // make full dest path
 
         // creates the directory where the file will be decompressed
         std::filesystem::create_directories(std::filesystem::path(destFile).parent_path());
