@@ -322,7 +322,7 @@ if(UNIX)
         SDL3::SDL3
         SDL3_image::SDL3_image
         libcurl_static
-        OpenSSL::SSL OpenSSL::Crypto
+     #   OpenSSL::SSL OpenSSL::Crypto
     )
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}

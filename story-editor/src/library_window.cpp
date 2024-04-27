@@ -17,27 +17,30 @@ void download_file(CURL *curl,
                    std::function<void(bool, const std::string &filename)> finished_callback)
 {
     FILE *fp;
-    CURLcode res;
+    CURLcode res = CURLE_FAILED_INIT;
 
     if (curl)
     {
         //SetConsoleTextAttribute(hConsole, 11);
         fp = fopen(output_file.c_str(),"wb");
 
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-        std::cout<<" Start download"<<std::endl<<std::endl;
-
-        res = curl_easy_perform(curl);
-
-        fclose(fp);
-        if(res == CURLE_OK)
+        if (fp)
         {
-            std::cout<< "\r\n The file was download with success\r\n"<< std::endl;
-        }
-        else
-        {
-            std::cout<< "\r\n Error \r\n"<< std::endl;
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            std::cout<<" Start download"<<std::endl<<std::endl;
+
+            res = curl_easy_perform(curl);
+
+            fclose(fp);
+            if(res == CURLE_OK)
+            {
+                std::cout<< "\r\n The file was download with success\r\n"<< std::endl;
+            }
+            else
+            {
+                std::cout<< "\r\n Error \r\n"<< std::endl;
+            }
         }
 
         finished_callback(res == CURLE_OK, output_file);
@@ -375,6 +378,16 @@ void LibraryWindow::Draw()
         ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, config);
     }
 
+    if (ImGui::Button(ICON_MDI_FOLDER " Export to device"))
+    {
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.flags = ImGuiFileDialogFlags_Modal;
+
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseOutputDirDialog", "Choose an output directory", nullptr, config);
+    }
+
     if (!m_libraryManager.IsInitialized())
     {
         ImGui::SameLine();
@@ -425,38 +438,40 @@ void LibraryWindow::Draw()
                     );
                 }
 
-
                 if (ImGui::BeginTable("library_table", 3, tableFlags))
                 {
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
 
-
                     ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
 
-                     ImGui::TableSetColumnIndex(0);
-                     ImGui::TableHeader(ImGui::TableGetColumnName(0));
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TableHeader(ImGui::TableGetColumnName(0));
 
-
-                    static bool column_selected = false;
-
+                    static bool select_all = false;
+                    
                     ImGui::TableSetColumnIndex(1);
                     const char* column_name = ImGui::TableGetColumnName(1); // Retrieve name passed to TableSetupColumn()
              
                     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-                    ImGui::Checkbox("##checkall", &column_selected);
+                    if (ImGui::Checkbox("##checkall", &select_all))
+                    {
+                        // Mettre à jour tous les checkboxes des lignes en fonction de l'état du checkbox de l'en-tête
+                        for (auto &p : m_libraryManager)
+                        {
+                            p->Select(select_all);
+                        }
+                    }
                     ImGui::PopStyleVar();
                     ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
                     ImGui::TableHeader(column_name);
-             
 
                     ImGui::TableSetColumnIndex(2);
-                     ImGui::TableHeader(ImGui::TableGetColumnName(2));
+                    ImGui::TableHeader(ImGui::TableGetColumnName(2));
 
-                    
-
-                    int internal_id = 1;
+                    int internal_id = 1;                
+                    uint32_t row = 0; 
                     for (auto &p : m_libraryManager)
                     {
                         ImGui::TableNextColumn();
@@ -465,16 +480,23 @@ void LibraryWindow::Draw()
                         ImGui::PushID(internal_id++);
                         
                         // Select
+                   
                         ImGui::TableNextColumn();
-                        ImGui::Checkbox("", &column_selected);
+                        bool state = p->IsSelected();
+                        ImGui::Checkbox("", &state);
 
+                        if (!state && select_all)
+                        {
+                            select_all = false; // Désélectionner "Select All" si un des items est désélectionné
+                        }
+
+                        row++;
                         ImGui::TableNextColumn();
                         
                         if (ImGui::SmallButton("Load"))
                         {
                             m_storyManager.OpenProject(p->GetUuid());
                         }
-                        
 
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Remove"))
@@ -599,7 +621,8 @@ void LibraryWindow::Draw()
 
 
     // ---------------- CHOOSE LIBRARY DIR
-    if (ImGuiFileDialog::Instance()->Display("ChooseLibraryDirDialog"))
+    static ImGuiWindowFlags window_flags = 0;
+    if (ImGuiFileDialog::Instance()->Display("ChooseLibraryDirDialog", window_flags, ImVec2(300, 200)))
     {
         // action if OK
         if (ImGuiFileDialog::Instance()->IsOk())
@@ -610,6 +633,30 @@ void LibraryWindow::Draw()
             if (std::filesystem::is_directory(projdir))
             {
                 m_libraryManager.Initialize(projdir);
+            }
+        }
+
+        // close
+        ImGuiFileDialog::Instance()->Close();
+    }
+
+    // ---------------- EXPORT SELECTED STORIES TO SPECIFIED DIRECTORY
+    static ImGuiWindowFlags choose_output_window_flags = 0;
+    if (ImGuiFileDialog::Instance()->Display("ChooseOutputDirDialog", choose_output_window_flags, ImVec2(300, 200)))
+    {
+        // action if OK
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string outputDir = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+            if (std::filesystem::is_directory(outputDir))
+            {
+                // Generate TLV file (index of all stories)
+                m_libraryManager.Save();
+
+                // Copy all files to device
+                m_libraryManager.CopyToDevice(outputDir);
             }
         }
 

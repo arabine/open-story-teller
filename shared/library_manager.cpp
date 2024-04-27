@@ -1,6 +1,7 @@
 #include "library_manager.h"
 #include "tlv.h"
 #include <filesystem>
+#include <thread>
 
 #include "json.hpp"
 #include "story_project.h"
@@ -102,13 +103,16 @@ void LibraryManager::Save()
     tlv.add_array(m_projectsList.size());
     for (auto &p : m_projectsList)
     {
-        tlv.add_object(6);
-        tlv.add_string(p->GetUuid());
-        tlv.add_string(p->GetTitleImage());
-        tlv.add_string(p->GetTitleSound());
-        tlv.add_string(p->GetName());
-        tlv.add_string(p->GetDescription());
-        tlv.add_integer(p->GetVersion());
+        if (p->IsSelected())
+        {
+            tlv.add_object(6);
+            tlv.add_string(p->GetUuid());
+            tlv.add_string(p->GetTitleImage());
+            tlv.add_string(p->GetTitleSound());
+            tlv.add_string(p->GetName());
+            tlv.add_string(p->GetDescription());
+            tlv.add_integer(p->GetVersion());
+        }
     }
 
     /*
@@ -121,6 +125,14 @@ void LibraryManager::Save()
     std::string sound =  RemoveFileExtension(m_titleSound) + ".wav";
     tlv.add_string(sound.c_str(), sound.size()); // title sound
 */
+}
+
+
+void LibraryManager::CopyToDevice(const std::string &outputDir)
+{
+    std::thread myThread([&]() {
+        myThread.detach(); 
+    }); 
 }
 
 bool LibraryManager::IsInitialized() const

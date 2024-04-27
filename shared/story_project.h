@@ -67,6 +67,9 @@ public:
 
     void CreateTree();
     void Clear();
+
+    void Select(bool selected) { m_selected = selected; }
+    bool IsSelected() const { return m_selected; }
     
     void SetImageFormat(ImageFormat format);
     void SetSoundFormat(SoundFormat format);
@@ -105,8 +108,6 @@ public:
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 
-
-
     bool ParseStoryInformation(nlohmann::json &j);
 private:
     // Project properties and location
@@ -116,6 +117,7 @@ private:
     std::string m_titleSound;
     std::string m_description;
     int m_version;
+    bool m_selected{false};
 
     std::filesystem::path m_assetsPath;
 

@@ -20,8 +20,14 @@ public:
     std::vector<std::shared_ptr<StoryProject>>::const_iterator begin() const { return m_projectsList.begin(); }
     std::vector<std::shared_ptr<StoryProject>>::const_iterator end() const { return m_projectsList.end(); }
 
+    uint32_t ProjectsCount() const { return m_projectsList.size(); };
+
     void Save();
     void Scan();
+
+    // Copie toutes les histoires sélectionnées vers un répertoire
+    // On va ne copier que les fichiers de sortie au format désiré 
+    void CopyToDevice(const std::string &outputDir);
 
     std::shared_ptr<StoryProject> NewProject();
     void CheckDirectories();
