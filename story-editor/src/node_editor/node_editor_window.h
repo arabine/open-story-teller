@@ -9,6 +9,7 @@
 #include "window_base.h"
 #include "i_story_manager.h"
 #include "json.hpp"
+#include "story_project.h"
 
 
 namespace ed = ax::NodeEditor;
@@ -46,28 +47,24 @@ public:
         std::shared_ptr<Connection> model;
     };
 
-    NodeEditorWindow(IStoryManager &proj);
+    NodeEditorWindow(IStoryManager &manager);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
     void Initialize();
     void Clear();
-    void Load(const nlohmann::json &model);
-    void Save(nlohmann::json &model);
-    bool Build(std::string &codeStr);
-    std::list<std::shared_ptr<Connection> > GetNodeConnections(const std::string &nodeId);
-    std::string GetNodeEntryLabel(const std::string &nodeId);
+    void Load(std::shared_ptr<StoryProject> story);
 
     std::shared_ptr<BaseNodeWidget> GetSelectedNode();
 
 private:
-    IStoryManager &m_story;
-
-    ed::EditorContext* m_context = nullptr;
+    IStoryManager &m_manager;
 
     bool m_loaded{false};
 
-    // key: Id
+    ed::EditorContext* m_context = nullptr;
+
+    std::shared_ptr<StoryProject> m_story;
     std::list<std::shared_ptr<BaseNodeWidget>>   m_nodes;
     std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
     void ToolbarUI();
@@ -89,12 +86,12 @@ private:
 
     template<class NodeType>
     struct Factory {
-        static std::shared_ptr<BaseNodeWidget> create_func(const std::string &type, IStoryManager &proj) {
-            return std::make_shared<NodeType>(type, proj);
+        static std::shared_ptr<BaseNodeWidget> create_func(IStoryManager &manager, std::shared_ptr<BaseNode> base) {
+            return std::make_shared<NodeType>(manager, base);
         }
     };
 
-    typedef std::shared_ptr<BaseNodeWidget> (*GenericCreator)(const std::string &type, IStoryManager &proj);
+    typedef std::shared_ptr<BaseNodeWidget> (*GenericCreator)(IStoryManager &manager, std::shared_ptr<BaseNode> base);
     typedef std::map<std::string, GenericCreator> Registry;
     Registry m_registry;
 
@@ -103,7 +100,7 @@ private:
         m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
     }
 
-    std::shared_ptr<BaseNodeWidget> createNode(const std::string& key, IStoryManager &proj) {
+    std::shared_ptr<BaseNodeWidget> CreateNodeWidget(const std::string& key, IStoryManager &manager, std::shared_ptr<BaseNode> base) {
         typename Registry::const_iterator i = m_registry.find(key);
         if (i == m_registry.end()) {
             throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +
@@ -111,16 +108,13 @@ private:
         }
         else
         {
-            return i->second(key, proj);
+            return i->second(manager, base);
         }
     }
 
-
     ed::PinId GetInputPin(const std::string &modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(const std::string &modelNodeId, int pinIndex);
-    std::string FindFirstNode() const;
-    std::string  GenerateNodeId();
-    void CreateLink(const Connection &model, ed::PinId inId, ed::PinId outId);
-    Connection LinkToModel(ed::PinId InputId, ed::PinId OutputId);
+    void CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId);
+    std::shared_ptr<Connection> LinkToModel(ed::PinId InputId, ed::PinId OutputId);
 };
 

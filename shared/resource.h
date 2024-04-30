@@ -77,7 +77,7 @@ private:
 class IResource
 {
 public:
-    virtual ~IResource();
+    virtual ~IResource() {}
 
 };
 

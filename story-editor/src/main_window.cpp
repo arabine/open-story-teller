@@ -446,6 +446,8 @@ void MainWindow::NewProjectPopup()
 
             if (!std::filesystem::is_directory(projdir))
             {
+                CloseProject();
+
                 m_story = m_libraryManager.NewProject();
 
                 if (m_story)
@@ -608,25 +610,22 @@ void MainWindow::ProjectPropertiesPopup()
 void MainWindow::SaveProject()
 {
     nlohmann::json model;
-    m_nodeEditorWindow.Save(model);
-    m_story->Save(model, m_resources);
+    m_story->Save(m_resources);
 }
 
 void MainWindow::OpenProject(const std::string &uuid)
 {
     CloseProject();
-    nlohmann::json model;
-
     m_story = m_libraryManager.GetStory(uuid);
 
     if (!m_story)
     {
         Log("Cannot find story: " + uuid);
     }
-    else if (m_story->Load(model, m_resources))
+    else if (m_story->Load(m_resources))
     {
         Log("Open project success");
-        m_nodeEditorWindow.Load(model);
+        m_nodeEditorWindow.Load(m_story);
         auto proj = m_story->GetProjectFilePath();
         // Add to recent if not exists
         if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
@@ -682,6 +681,7 @@ void MainWindow::CloseProject()
     if (m_story)
     {
         m_story->Clear();
+        m_story.reset();
     }
 
     m_resources.Clear();
@@ -812,6 +812,11 @@ void MainWindow::DeleteResource(FilterIterator &it)
     return m_resources.Delete(it);
 }
 
+std::shared_ptr<BaseNode> MainWindow::CreateNode(const std::string &type)
+{
+    return m_story->CreateNode(type);
+}
+
 void MainWindow::Build(bool compileonly)
 {
     // 1. First compile nodes to assembly
@@ -829,15 +834,19 @@ void MainWindow::Build(bool compileonly)
     }
 }
 
-
-std::string MainWindow::GetNodeEntryLabel(const std::string &nodeId)
+void MainWindow::DeleteNode(const std::string &id)
 {
-    return m_nodeEditorWindow.GetNodeEntryLabel(nodeId);
+    m_story->DeleteNode(id);
+}
+
+void MainWindow::DeleteLink(std::shared_ptr<Connection> c)
+{
+    m_story->DeleteLink(c);
 }
 
 std::list<std::shared_ptr<Connection>> MainWindow::GetNodeConnections(const std::string &nodeId)
 {
-    return m_nodeEditorWindow.GetNodeConnections(nodeId);
+    return m_story->GetNodeConnections(nodeId);
 }
 
 bool MainWindow::CompileToAssembler()
@@ -846,7 +855,7 @@ bool MainWindow::CompileToAssembler()
     // FIXME
 
     // 2. Generate the assembly code from the model
-    bool ret = m_nodeEditorWindow.Build(m_currentCode);
+    bool ret = m_story->Build(m_currentCode);
 
     // Add global functions
     if (ret)

@@ -429,7 +429,6 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
         nlohmann::json j = nlohmann::json::parse(f);
         StoryProject proj;
         ResourceManager res;
-        nlohmann::json model;
 
         if (j.contains("title"))
         {
@@ -458,38 +457,34 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
             // Key: actionNode, value: Stage UUID
             std::map<std::string, std::string> stageActionLink;
 
-            nlohmann::json jnodes = nlohmann::json::array();
+
             for (const auto & n : j["stageNodes"])
             {
-                nlohmann::json node;
+                auto node = proj.CreateNode("media-node");
 
-                auto node_uuid = n["uuid"].get<std::string>();
-                node["uuid"] = node_uuid;
-                node["type"] = "media-node";  
-                node["position"] = n["position"];
+                if (node)
+                {
+                    auto node_uuid = n["uuid"].get<std::string>();
+                    node->SetId(node_uuid);
+                    node->SetPosition(n["position"]["x"].get<float>(), n["position"]["y"].get<float>());
+                
+                    nlohmann::json internalData;
+                    auto img = n["image"];
+                    internalData["image"] = img.is_string() ? img.get<std::string>() : "";
+                    auto audio = n["audio"];
+                    internalData["sound"] = audio.is_string() ? audio.get<std::string>() : "";
 
-                nlohmann::json internalData;
-                auto img = n["image"];
-                internalData["image"] = img.is_string() ? img.get<std::string>() : "";
-                auto audio = n["audio"];
-                internalData["sound"] = audio.is_string() ? audio.get<std::string>() : "";
+                    node->SetInternalData(internalData);
 
-                node["internal-data"] = internalData;
-
-                stageActionLink[n["okTransition"]["actionNode"]] = node_uuid;
+                    stageActionLink[n["okTransition"]["actionNode"]] = node_uuid;
+                }
 /*
                 "okTransition":{
             "actionNode":"19d7328f-d0d2-4443-a7a2-25270dafe52c",
             "optionIndex":0
          },
          */
-
-                jnodes.push_back(node);
             }
-
-            model["nodes"] = jnodes;
-
-            nlohmann::json connections = nlohmann::json::array();
 
             for (const auto & n : j["actionNodes"])
             {
@@ -497,19 +492,18 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
 
                 if (stageActionLink.count(action_node_uuid) > 0)
                 {
-
                     int i = 0;
                     for (const auto & m : n["options"])
                     {
-                        nlohmann::json c;
+                        auto c = std::make_shared<Connection>();
 
-                        c["outNodeId"] = stageActionLink[action_node_uuid];
-                        c["outPortIndex"] = i;
-                        c["inNodeId"] = m; // On prend le stage node; 
-                        c["inPortIndex"] = 0;
+                        c->outNodeId = stageActionLink[action_node_uuid];
+                        c->outPortIndex = i;
+                        c->inNodeId = m; // On prend le stage node; 
+                        c->inPortIndex = 0;
 
                         i++;
-                        connections.push_back(c);
+                        proj.AddConnection(c);
                     }
                 }
                 else
@@ -517,11 +511,8 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
                     std::cout << "ActionNode UUID not found" << std::endl;
                 }
             }
-
-            model["connections"] = connections;
-
              // Save on disk
-            proj.Save(model, res);
+            proj.Save(res);
         }
     }
     catch(std::exception &e)

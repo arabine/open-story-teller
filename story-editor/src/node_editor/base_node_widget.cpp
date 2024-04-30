@@ -5,12 +5,16 @@
 
 unsigned long BaseNodeWidget::s_nextId = 1;
 
-BaseNodeWidget::BaseNodeWidget(const std::string &type, IStoryManager &proj)
-    : BaseNode(type)
-    , m_story(proj)
+BaseNodeWidget::BaseNodeWidget(IStoryManager &manager,  std::shared_ptr<BaseNode> base)
+    : m_manager(manager)
+    , m_base(base)
 {
-  //  m_id = UUID().String();
     m_node = std::make_unique<Node>(GetNextId(), ""); // ImGui internal ID
+}
+
+BaseNodeWidget::~BaseNodeWidget()
+{
+    std::cout << "Deleted node widget" << std::endl;
 }
 
 void BaseNodeWidget::AddInput()
@@ -60,9 +64,12 @@ void BaseNodeWidget::FrameStart()
 
     if (m_firstFrame)
     {
-        // Use the parent node position, the one saved in the JSON project
-        // FIXME: find a better way to do that?
-        ed::SetNodePosition(m_node->ID, ImVec2(BaseNode::GetX(), BaseNode::GetY()));
+        if (m_base)
+        {
+            // Use the parent node position, the one saved in the JSON project
+            // FIXME: find a better way to do that?
+            ed::SetNodePosition(m_node->ID, ImVec2(m_base->GetX(), m_base->GetY()));
+        }
     }
     m_firstFrame = false;
 }

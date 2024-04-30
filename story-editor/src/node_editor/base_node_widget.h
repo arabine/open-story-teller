@@ -95,24 +95,16 @@ struct Link
  * @brief Basically a wrapper class around ImGuiNodeEditor Node structure
  * 
  */
-class BaseNodeWidget : public BaseNode
+class BaseNodeWidget
 {
 public:
-    struct NodePosition
-    {
-        float x;
-        float y;
-    };
-
-    BaseNodeWidget(const std::string &type, IStoryManager &proj);
+    BaseNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> base);
+    virtual ~BaseNodeWidget();
 
     virtual void Initialize();
 
     virtual void Draw() = 0;
     virtual void DrawProperties() = 0;
-    virtual std::string GenerateConstants() = 0;
-    virtual std::string Build() = 0;
-    virtual std::string GetEntryLabel() = 0;
 
 
     void FrameStart();
@@ -201,14 +193,16 @@ public:
     void SetOutputs(uint32_t num);
     void DeleteOutput();
 
+    std::shared_ptr<BaseNode> Base() { return m_base; }
+
 private:
-    IStoryManager &m_story;
+    IStoryManager &m_manager;
+     std::shared_ptr<BaseNode> m_base;
 
     std::unique_ptr<Node> m_node;
 
     bool m_firstFrame{true};
 
     static unsigned long s_nextId;
-
 };
 

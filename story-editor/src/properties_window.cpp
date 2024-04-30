@@ -25,7 +25,7 @@ void PropertiesWindow::Draw()
     if (m_selectedNode)
     {
         static char buf1[32] = ""; ImGui::InputText("Title",     buf1, 32);
-        ImGui::Text("Node ID: %s", m_selectedNode->GetId().data());
+        ImGui::Text("Node ID: %s", m_selectedNode->Base()->GetId().data());
         m_selectedNode->DrawProperties();
     }
 

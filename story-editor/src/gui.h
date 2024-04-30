@@ -18,8 +18,6 @@ public:
         int w;
         int h;
 
-        std::string name;
-
         bool Valid() const {
             return (w && h);
         }

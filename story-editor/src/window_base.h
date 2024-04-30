@@ -7,6 +7,7 @@ class WindowBase
 {
 public:
     WindowBase(const std::string &title);
+    virtual ~WindowBase() {}
 
     bool IsDisabled() const {
         return m_disabled;

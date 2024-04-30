@@ -131,7 +131,14 @@ void LibraryManager::Save()
 void LibraryManager::CopyToDevice(const std::string &outputDir)
 {
     std::thread myThread([&]() {
-        myThread.detach(); 
+        myThread.detach();
+
+        std::cout << "Starting to copy elements" << std::endl;
+
+        for (auto p : *this)
+        {
+            
+        }
     }); 
 }
 

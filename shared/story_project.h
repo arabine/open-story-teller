@@ -8,7 +8,9 @@
 
 #include "json.hpp"
 #include "resource_manager.h"
-
+#include "connection.h"
+#include "base_node.h"
+#include "i_story_project.h"
 
 // FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
 struct StoryNode
@@ -42,7 +44,7 @@ struct StoryNode
 };
 
 
-struct StoryProject
+struct StoryProject : public IStoryProject
 {
 
 public:
@@ -51,6 +53,10 @@ public:
 
     StoryProject();
     ~StoryProject();
+
+    bool *Selected() {
+        return &m_selected;
+    }
 /*
     std::vector<StoryNode> m_nodes;
 
@@ -60,13 +66,27 @@ public:
     StoryNode *m_tree;
 */
     void New(const std::string &uuid, const std::string &library_path);
-    bool Load(nlohmann::json &model, ResourceManager &manager);
-    void Save(const nlohmann::json &model, ResourceManager &manager);
+    bool Build(std::string &codeStr);
+    bool Load(ResourceManager &manager);
+    void Save(ResourceManager &manager);
     void SaveBinary(const std::vector<uint8_t> &m_program);
     void SetPaths(const std::string &uuid, const std::string &library_path);
+    void CopyToDevice(const std::string &outputDir);
+
+    void ModelToJson(nlohmann::json &model);
+    bool ModelFromJson(const nlohmann::json &model);
 
     void CreateTree();
     void Clear();
+
+
+    std::pair<std::list<std::shared_ptr<BaseNode>>::iterator, std::list<std::shared_ptr<BaseNode>>::iterator> Nodes() {
+        return std::make_pair(m_nodes.begin(), m_nodes.end());
+    }
+
+    std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator> Links() {
+        return std::make_pair(m_links.begin(), m_links.end());
+    }
 
     void Select(bool selected) { m_selected = selected; }
     bool IsSelected() const { return m_selected; }
@@ -104,11 +124,21 @@ public:
     // Initialize with an existing project
     const bool IsInitialized() const { return m_initialized; }
 
-
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
 
     bool ParseStoryInformation(nlohmann::json &j);
+   
+    // From IStoryProject
+    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
+    std::string FindFirstNode() const;
+    virtual int OutputsCount(const std::string &nodeId) override;
+
+    std::shared_ptr<BaseNode> CreateNode(const std::string& type);
+    void AddConnection(std::shared_ptr<Connection> c);
+    void DeleteNode(const std::string &id);
+    void DeleteLink(std::shared_ptr<Connection> c);
+    
 private:
     // Project properties and location
     std::string m_name; /// human readable name
@@ -121,6 +151,10 @@ private:
 
     std::filesystem::path m_assetsPath;
 
+    // Model in memory
+    std::list<std::shared_ptr<Connection>> m_links;
+    std::list<std::shared_ptr<BaseNode>> m_nodes;
+
     bool m_initialized{false};
 
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
@@ -131,6 +165,28 @@ private:
 
     ImageFormat m_imageFormat{IMG_FORMAT_BMP_4BITS};
     SoundFormat m_soundFormat{SND_FORMAT_WAV};
+
+
+    template<class NodeType>
+    struct Factory {
+        static std::shared_ptr<BaseNode> create_func(const std::string &type) {
+            return std::make_shared<NodeType>(type);
+        }
+    };
+
+    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
+    typedef std::map<std::string, GenericCreator> Registry;
+    Registry m_registry;
+
+    template<class Derived>
+    void registerNode(const std::string& key) {
+        m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
+    }
+
+
+
 };
 
 #endif // STORY_PROJECT_H
+
+

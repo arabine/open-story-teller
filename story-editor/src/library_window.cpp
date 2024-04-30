@@ -368,16 +368,6 @@ void LibraryWindow::Draw()
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
-    if (ImGui::Button( ICON_MDI_FOLDER " Select directory"))
-    {
-        IGFD::FileDialogConfig config;
-        config.path = ".";
-        config.countSelectionMax = 1;
-        config.flags = ImGuiFileDialogFlags_Modal;
-
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, config);
-    }
-
     if (ImGui::Button(ICON_MDI_FOLDER " Export to device"))
     {
         IGFD::FileDialogConfig config;
@@ -386,6 +376,16 @@ void LibraryWindow::Draw()
         config.flags = ImGuiFileDialogFlags_Modal;
 
         ImGuiFileDialog::Instance()->OpenDialog("ChooseOutputDirDialog", "Choose an output directory", nullptr, config);
+    }
+
+    if (ImGui::Button( ICON_MDI_FOLDER " Select directory"))
+    {
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.flags = ImGuiFileDialogFlags_Modal;
+
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseLibraryDirDialog", "Choose a library directory", nullptr, config);
     }
 
     if (!m_libraryManager.IsInitialized())
@@ -470,8 +470,7 @@ void LibraryWindow::Draw()
                     ImGui::TableSetColumnIndex(2);
                     ImGui::TableHeader(ImGui::TableGetColumnName(2));
 
-                    int internal_id = 1;                
-                    uint32_t row = 0; 
+                    int internal_id = 1;
                     for (auto &p : m_libraryManager)
                     {
                         ImGui::TableNextColumn();
@@ -480,19 +479,15 @@ void LibraryWindow::Draw()
                         ImGui::PushID(internal_id++);
                         
                         // Select
-                   
                         ImGui::TableNextColumn();
-                        bool state = p->IsSelected();
-                        ImGui::Checkbox("", &state);
+                        ImGui::Checkbox("", p->Selected());
 
-                        if (!state && select_all)
+                        if (!p->IsSelected() && select_all)
                         {
                             select_all = false; // Désélectionner "Select All" si un des items est désélectionné
                         }
 
-                        row++;
                         ImGui::TableNextColumn();
-                        
                         if (ImGui::SmallButton("Load"))
                         {
                             m_storyManager.OpenProject(p->GetUuid());

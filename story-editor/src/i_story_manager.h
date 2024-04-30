@@ -9,6 +9,7 @@
 
 #include "resource.h"
 #include "connection.h"
+#include "base_node.h"
 
 template <typename T>
 struct Callback;
@@ -46,8 +47,11 @@ public:
 
     // Node interaction
     virtual void Build(bool compileonly) = 0;
+    virtual  std::shared_ptr<BaseNode> CreateNode(const std::string &type) = 0;
+    virtual void DeleteNode(const std::string &id) = 0;
+    virtual void DeleteLink(std::shared_ptr<Connection> c) = 0;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;
-    virtual std::string GetNodeEntryLabel(const std::string &nodeId) = 0;
+ 
     virtual void Play() = 0;
     virtual void Ok() = 0;
     virtual void Stop() = 0;

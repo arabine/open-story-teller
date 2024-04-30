@@ -109,6 +109,6 @@ void EmulatorWindow::ClearImage()
 
 void EmulatorWindow::SetImage(const std::string &image)
 {
-    m_image.name = image;
+    m_imageFileName = image;
     m_image.Load(m_story.BuildFullAssetsPath(image));
 }

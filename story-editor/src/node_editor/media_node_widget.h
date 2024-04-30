@@ -7,34 +7,33 @@
 
 #include "base_node_widget.h"
 #include "i_story_manager.h"
+#include "i_story_project.h"
 #include "gui.h"
 #include <imgui_node_editor.h>
+#include "media_node.h"
 
-
-class MediaNode : public BaseNodeWidget
+class MediaNodeWidget : public BaseNodeWidget
 {
 public:
-    MediaNode(const std::string &title, IStoryManager &proj);
+    MediaNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node);
 
     void Draw() override;
 
     virtual void DrawProperties() override;
-    virtual std::string Build() override;
-    virtual std::string GetEntryLabel() override;
-    virtual std::string GenerateConstants() override;
-
     virtual void Initialize() override;
-    
 
 private:
-    IStoryManager &m_story;
+    IStoryManager &m_manager;
+    std::shared_ptr<MediaNode> m_mediaNode;
     Gui::Image  m_image;
-    std::string m_soundName;
+
     std::string m_soundPath;
     std::string m_buttonUniqueName;
+    
 
     void SetImage(const std::string &f);
     void SetSound(const std::string &f);
-    std::string ChoiceLabel() const;
+
     void StoreInternalData();
+   
 };

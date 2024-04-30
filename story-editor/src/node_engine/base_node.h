@@ -2,11 +2,11 @@
 
 #include <string>
 #include <memory>
-#include "json.hpp"
 #include <random>
 #include <string>
 
 #include "json.hpp"
+#include "i_story_project.h"
 
 class BaseNode
 {
@@ -18,6 +18,12 @@ public:
     };
 
     BaseNode(const std::string &type);
+    virtual ~BaseNode();
+
+    static std::string GetEntryLabel(const std::string &id);
+
+    virtual std::string Build(IStoryProject &story, int nb_out_conns) = 0;
+    virtual std::string GenerateConstants(IStoryProject &story, int nb_out_conns) = 0;
 
     void SetPosition(float x, float y);
 
@@ -50,6 +56,6 @@ private:
     std::string m_uuid;
     NodePosition m_pos;
 
-    nlohmann::json m_internal_data;
+    nlohmann::json m_internal_data{{}};
 };
 

@@ -6,10 +6,11 @@
 #include <regex>
 
 #include "json.hpp"
+#include "media_node.h"
 
 StoryProject::StoryProject()
 {
-
+    registerNode<MediaNode>("media-node");
 }
 
 StoryProject::~StoryProject()
@@ -27,6 +28,13 @@ void StoryProject::SetPaths(const std::string &uuid, const std::string &library_
     std::cout << "Working dir is: " << m_working_dir << std::endl;
 }
 
+void StoryProject::CopyToDevice(const std::string &outputDir)
+{
+    ResourceManager manager;
+
+    Load(manager);
+    
+}
 
 void StoryProject::New(const std::string &uuid, const std::string &library_path)
 {
@@ -70,8 +78,217 @@ bool StoryProject::ParseStoryInformation(nlohmann::json &j)
     return success;
 }
 
+void StoryProject::ModelToJson(nlohmann::json &model)
+{
+    nlohmann::json nodes = nlohmann::json::array();
+    for (const auto & n : m_nodes)
+    {
+        nodes.push_back(n->ToJson());
+    }
 
-bool StoryProject::Load(nlohmann::json &model, ResourceManager &manager)
+    model["nodes"] = nodes;
+
+    // Save links
+    nlohmann::json connections = nlohmann::json::array();
+    for (const auto& cnx : m_links)
+    {
+        nlohmann::json c(*cnx);
+        connections.push_back(c);
+        // Connection cnx = LinkToModel(linkInfo->ed_link->InputId, linkInfo->ed_link->OutputId);
+    }
+
+    model["connections"] = connections;
+}
+
+
+std::shared_ptr<BaseNode> StoryProject::CreateNode(const std::string &type)
+{
+
+    typename Registry::const_iterator i = m_registry.find(type);
+    if (i == m_registry.end()) {
+        throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +
+                                    ": key not registered");
+    }
+    else
+    {
+        return i->second(type);
+    }
+}
+
+void StoryProject::AddConnection(std::shared_ptr<Connection> c)
+ {
+    m_links.push_back(c);
+}
+
+void StoryProject::DeleteNode(const std::string &id)
+{
+    auto it = std::find_if(m_nodes.begin(), 
+                       m_nodes.end(), 
+                       [&id](std::shared_ptr<BaseNode> const &n) { return n->GetId() == id; });
+
+    if ( it != m_nodes.end() )
+    {
+        it->reset();
+        m_nodes.erase(it);
+    }
+}
+
+void StoryProject::DeleteLink(std::shared_ptr<Connection> c)
+{
+    auto it = std::find_if(m_links.begin(), 
+                       m_links.end(), 
+                       [&c](std::shared_ptr<Connection> const &cnx) {
+        return *cnx == *c; 
+    });
+
+    if ( it != m_links.end() )
+    {
+        it->reset();
+        m_links.erase(it);
+    }
+}
+
+bool StoryProject::ModelFromJson(const nlohmann::json &model)
+{
+    bool success = false;
+    try {
+
+        nlohmann::json nodesJsonArray = model["nodes"];
+
+        m_nodes.clear();
+        m_links.clear();
+
+        for (auto& element : nodesJsonArray) {
+           
+            std::string type = element["type"].get<std::string>();
+
+            auto n = CreateNode(type);
+            if (n)
+            {
+                n->FromJson(element);
+                m_nodes.push_back(n);
+            }
+            else
+            {
+                throw std::logic_error(std::string("No registered model with name ") + type);
+            }
+        }
+
+        // std::cout << model.dump(4) << std::endl;
+
+        // Ici on reste flexible sur les connexions, cela permet de créer éventuellement des 
+        // projets sans fils (bon, l'élément devrait quand même exister dans le JSON)
+        if (model.contains("connections"))
+        {
+            nlohmann::json connectionJsonArray = model["connections"];
+
+            // key: node UUID, value: output counts
+            std::map<std::string, int> outputCounts;
+
+            for (auto& connection : connectionJsonArray)
+            {
+                m_links.push_back(std::make_shared<Connection>(connection.get<Connection>()));
+            }
+        }
+        success = true;
+    }
+    catch(std::exception &e)
+    {
+        std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
+    }
+    return success;
+}
+
+int StoryProject::OutputsCount(const std::string &nodeId)
+{
+    int count = 0;
+    for (const auto & l : m_links)
+    { 
+        if (l->outNodeId == nodeId)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+std::list<std::shared_ptr<Connection>> StoryProject::GetNodeConnections(const std::string &nodeId)
+{
+    std::list<std::shared_ptr<Connection>> c;
+
+    for (const auto & l : m_links)
+    { 
+        if (l->outNodeId == nodeId)
+        {
+            c.push_back(l);
+        }
+    }
+
+    return c;
+}
+
+
+std::string StoryProject::FindFirstNode() const
+{
+    std::string id;
+
+    // First node is the one without connection on its input port
+
+    for (const auto & n : m_nodes)
+    {
+        bool foundConnection = false;
+
+        for (const auto& l : m_links)
+        {
+            if (l->inNodeId == n->GetId())
+            {
+                foundConnection = true;
+            }
+        }
+
+        if (!foundConnection)
+        {
+            id = n->GetId();
+            std::cout << "First node is: " + id << std::endl;
+            break;
+        }
+    }
+
+    return id;
+}
+
+
+bool StoryProject::Build(std::string &codeStr)
+{
+    std::stringstream code;
+    std::stringstream chip32;
+
+    std::string firstNode = FindFirstNode();
+
+    if (firstNode == "")
+    {
+        std::cout << "First node not found, there must be only one node with a free input." << std::endl;
+        return false;
+    }
+
+    code << "\tjump    " << BaseNode::GetEntryLabel(firstNode) << "\r\n";
+
+    // First generate all constants
+    for (const auto & n : m_nodes)
+    {
+        code << n->GenerateConstants(*this, OutputsCount(n->GetId())) << "\n";
+    }
+
+    for (const auto & n : m_nodes)
+    {
+        code << n->Build(*this, OutputsCount(n->GetId())) << "\n";
+    }
+
+    codeStr = code.str();
+    return true;
+}
+
+bool StoryProject::Load(ResourceManager &manager)
 {
     try {
         std::ifstream f(m_project_file_path);
@@ -98,7 +315,7 @@ bool StoryProject::Load(nlohmann::json &model, ResourceManager &manager)
 
                 if (j.contains("nodegraph"))
                 {
-                    model = j["nodegraph"];
+                    ModelFromJson(j["nodegraph"]);
                     m_initialized = true;
                 }
             }
@@ -173,7 +390,7 @@ bool StoryProject::Load(nlohmann::json &model, ResourceManager &manager)
     return m_initialized;
 }
 
-void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
+void StoryProject::Save(ResourceManager &manager)
 {
     nlohmann::json j;
     j["project"] = { {"name", m_name}, {"uuid", m_uuid}, { "title_image", m_titleImage }, { "title_sound", m_titleSound } };
@@ -194,6 +411,8 @@ void StoryProject::Save(const nlohmann::json &model, ResourceManager &manager)
         j["resources"] = resourcesData;
     }
 
+    nlohmann::json model;
+    ModelToJson(model);
     j["nodegraph"] = model;
 
     std::ofstream o(m_project_file_path);
@@ -240,6 +459,8 @@ void StoryProject::Clear()
     m_working_dir = "";
     m_project_file_path = "";
     m_initialized = false;
+    m_nodes.clear();
+    m_links.clear();
 }
 
 void StoryProject::EraseString(std::string &theString, const std::string &toErase)

@@ -18,5 +18,6 @@ public:
 private:
     IStoryManager &m_story;
     Gui::Image m_image;
+    std::string m_imageFileName;
 };
 

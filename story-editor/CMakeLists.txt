@@ -171,12 +171,13 @@ set(SRCS
 
     src/node_engine/base_node.h
     src/node_engine/base_node.cpp
+    src/node_engine/media_node.h
+    src/node_engine/media_node.cpp
     src/node_engine/connection.cpp
     src/node_engine/connection.h
 
-
-    src/node_editor/media_node.h
-    src/node_editor/media_node.cpp
+    src/node_editor/media_node_widget.h
+    src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.h
     src/node_editor/base_node_widget.cpp
     src/node_editor/node_editor_window.h
