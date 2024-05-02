@@ -239,6 +239,8 @@ set(SRCS
     ../shared/thread_safe_queue.h
     ../shared/library_manager.h
     ../shared/library_manager.cpp
+    ../shared/sys_lib.cpp
+    ../shared/sys_lib.h
 )
 
 if(WIN32)

@@ -21,7 +21,8 @@
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
-    : m_emulatorWindow(*this)
+    : m_libraryManager(*this)
+    , m_emulatorWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
     , m_libraryWindow(*this, m_libraryManager)
@@ -658,7 +659,7 @@ void MainWindow::OpenProject(const std::string &uuid)
 
 void MainWindow::ImportProject(const std::string &fileName, int format)
 {
-    PackArchive archive;
+    PackArchive archive(*this);
 
     archive.ImportStudioFormat(fileName, m_libraryManager.LibraryPath());
 
@@ -710,7 +711,7 @@ void MainWindow::Loop()
 
     while (!done)
     {
-        auto time = SDL_GetTicks();
+        Uint64 frameStart = SDL_GetTicks();
         bool aboutToClose = m_gui.PollEvent();
 
         m_gui.StartFrame();
@@ -755,8 +756,10 @@ void MainWindow::Loop()
 
         
         // Rendering and event handling
-        if ((SDL_GetTicks() - time) < 10) {
-            SDL_Delay(10);
+        Uint64 frameTime = SDL_GetTicks() - frameStart; // Temps écoulé pour la frame
+
+        if (frameTime < 16) { // Limite de 60 FPS
+            SDL_Delay(16 - frameTime); // Attendez pour compléter la frame
         }
 
 
@@ -819,19 +822,46 @@ std::shared_ptr<BaseNode> MainWindow::CreateNode(const std::string &type)
 
 void MainWindow::Build(bool compileonly)
 {
-    // 1. First compile nodes to assembly
-    if (CompileToAssembler())
+    if (m_story->GenerateScript(m_currentCode))
     {
-
-        // 2. Compile the assembly to machine binary
-        GenerateBinary();
+        m_editorWindow.SetScript(m_currentCode);
+        m_dbg.run_result = VM_FINISHED;
+        m_dbg.free_run = false;
 
         if (!compileonly)
         {
             // 3. Convert all media to desired type format
-            ConvertResources();
+            m_resources.ConvertResources(m_story->AssetsPath(), ""); // pas de répertoire de destination
+        }
+
+        Chip32::Assembler::Error err;
+        if (m_story->GenerateBinary(m_currentCode, err))
+        {
+            m_result.Print();
+
+            Log("Binary successfully generated.");
+
+            if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
+            {
+                //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
+//            m_romView->SetMemory(m_rom_data, m_program.size());
+                m_story->SaveBinary();
+                chip32_initialize(&m_chip32_ctx);
+                m_dbg.run_result = VM_READY;
+                UpdateVmView();
+            }
+            else
+            {
+                Log("Program too big. Expand ROM memory.");
+            }
+        }
+        else
+        {
+            Log(err.ToString(), true);
+            m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
         }
     }
+
 }
 
 void MainWindow::DeleteNode(const std::string &id)
@@ -849,94 +879,18 @@ std::list<std::shared_ptr<Connection>> MainWindow::GetNodeConnections(const std:
     return m_story->GetNodeConnections(nodeId);
 }
 
-bool MainWindow::CompileToAssembler()
-{
-    // 1. Check if the model can be compiled, check for errors and report
-    // FIXME
-
-    // 2. Generate the assembly code from the model
-    bool ret = m_story->Build(m_currentCode);
-
-    // Add global functions
-    if (ret)
-    {
-        std::string buffer;
-
-        std::ifstream f("scripts/media.asm");
-        f.seekg(0, std::ios::end);
-        buffer.resize(f.tellg());
-        f.seekg(0);
-        f.read(buffer.data(), buffer.size());
-        m_currentCode += buffer;
-
-        m_editorWindow.SetScript(m_currentCode);
-    }
-  
-    return ret;
-}
-
-void MainWindow::GenerateBinary()
-{
-    m_dbg.run_result = VM_FINISHED;
-    m_dbg.free_run = false;
-
-    if (m_assembler.Parse(m_currentCode) == true )
-    {
-        if (m_assembler.BuildBinary(m_program, m_result) == true)
-        {
-            m_result.Print();
-
-            Log("Binary successfully generated.");
-
-            // Update ROM memory
-            std::copy(m_program.begin(), m_program.end(), m_rom_data);
-
-            // FIXME
-//            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
-//            m_romView->SetMemory(m_rom_data, m_program.size());
-            m_story->SaveBinary(m_program);
-            chip32_initialize(&m_chip32_ctx);
-            m_dbg.run_result = VM_READY;
-            UpdateVmView();
-            //            DebugContext::DumpCodeAssembler(m_assembler);
-        }
-        else
-        {
-            Chip32::Assembler::Error err = m_assembler.GetLastError();
-            Log(err.ToString(), true);
-            m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
-        }
-    }
-    else
-    {
-        Chip32::Assembler::Error err = m_assembler.GetLastError();
-        Log(err.ToString(), true);
-        m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
-    }
-}
-
 void MainWindow::UpdateVmView()
 {
     // FIXME
 //    m_vmDock->updateRegistersView(m_chip32_ctx);
 
-
     // Highlight next line in the test editor
     uint32_t pcVal = m_chip32_ctx.registers[PC];
 
-    // On recherche quelle est la ligne qui possède une instruction à cette adresse
-    std::vector<Chip32::Instr>::const_iterator ptr = m_assembler.Begin();
-    for (; ptr != m_assembler.End(); ++ptr)
+    uint32_t line = 1;
+    if (m_story->GetAssemblyLine(pcVal, line))
     {
-        if ((ptr->addr == pcVal) && ptr->isRomCode())
-        {
-            break;
-        }
-    }
-
-    if (ptr != m_assembler.End())
-    {
-        m_dbg.line = (ptr->line - 1);
+        m_dbg.line = (line - 1);
         m_editorWindow.HighlightLine(m_dbg.line);
     }
     else
@@ -944,51 +898,10 @@ void MainWindow::UpdateVmView()
         // Not found
         Log("Reached end or instruction not found line: " + std::to_string(m_dbg.line));
     }
-
-
     // Refresh RAM content
 //    m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
 }
 
-void MainWindow::ConvertResources()
-{
-    auto [b, e] = m_resources.Items();
-    for (auto it = b; it != e; ++it)
-    {
-        std::string inputfile = m_story->BuildFullAssetsPath((*it)->file.c_str());
-        std::string outputfile = std::filesystem::path(m_story->AssetsPath() / StoryProject::RemoveFileExtension((*it)->file)).string();
-
-        int retCode = 0;
-        if ((*it)->format == "PNG")
-        {
-            outputfile += ".qoi"; // FIXME: prendre la config en cours désirée
-            retCode = MediaConverter::ImageToQoi(inputfile, outputfile);
-        }
-        else if ((*it)->format == "MP3")
-        {
-            outputfile += ".wav"; // FIXME: prendre la config en cours désirée
-            retCode = MediaConverter::Mp3ToWav(inputfile, outputfile);
-        }
-        else if ((*it)->format == "OGG")
-        {
-            outputfile += ".wav"; // FIXME: prendre la config en cours désirée
-            retCode = MediaConverter::OggToWav(inputfile, outputfile);
-        }
-        else
-        {
-            Log("Skipped: " + inputfile + ", unknown format" + outputfile, true);
-        }
-
-        if (retCode < 0)
-        {
-            Log("Failed to convert media file " + inputfile + ", error code: " + std::to_string(retCode) + " to: " + outputfile, true);
-        }
-        else if (retCode == 0)
-        {
-            Log("Convertered file: " + inputfile);
-        }
-    }
-}
 
 void MainWindow::SaveParams()
 {

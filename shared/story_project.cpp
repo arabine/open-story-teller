@@ -1,14 +1,17 @@
-#include "story_project.h"
+
 
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 #include <regex>
 
+#include "story_project.h"
 #include "json.hpp"
 #include "media_node.h"
+#include "sys_lib.h"
 
-StoryProject::StoryProject()
+StoryProject::StoryProject(ILogger &log)
+    : m_log(log)
 {
     registerNode<MediaNode>("media-node");
 }
@@ -31,9 +34,26 @@ void StoryProject::SetPaths(const std::string &uuid, const std::string &library_
 void StoryProject::CopyToDevice(const std::string &outputDir)
 {
     ResourceManager manager;
-
-    Load(manager);
     
+    Load(manager);  
+
+    // Output dir is the root. Build an assets directory to the device location
+    std::filesystem::path destRootDir = std::filesystem::path(outputDir) / m_uuid;
+    std::filesystem::path destAssetsDir = destRootDir /  "assets";
+    std::filesystem::create_directories(destAssetsDir);
+
+    // Generate and copy binary
+    std::string code;
+    GenerateScript(code);
+
+    Chip32::Assembler::Error err;
+    if (GenerateBinary(code, err))
+    {
+        std::filesystem::copy(BinaryFileName(), destRootDir, std::filesystem::copy_options::overwrite_existing);
+
+        // Convert resources (if necessary) and copy them to destination assets
+        manager.ConvertResources(AssetsPath(), destAssetsDir);
+    }
 }
 
 void StoryProject::New(const std::string &uuid, const std::string &library_path)
@@ -51,10 +71,15 @@ void StoryProject::New(const std::string &uuid, const std::string &library_path)
     m_initialized = true;
 }
 
-
-void StoryProject::SaveBinary(const std::vector<uint8_t> &m_program)
+std::filesystem::path StoryProject::BinaryFileName() const
 {
-    std::ofstream o(m_working_dir / "story.c32", std::ios::out | std::ios::binary);
+    return m_working_dir / "story.c32";
+}
+
+
+void StoryProject::SaveBinary()
+{
+    std::ofstream o(BinaryFileName() , std::ios::out | std::ios::binary);
     o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
     o.close();
 }
@@ -192,10 +217,44 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model)
         }
         success = true;
     }
-    catch(std::exception &e)
+    catch(nlohmann::json::exception &e)
     {
         std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
     }
+    return success;
+}
+
+bool StoryProject::CopyProgramTo(uint8_t *memory, uint32_t size)
+{
+    bool success = false;
+    // Update ROM memory
+    if (m_program.size() < size)
+    {
+        std::copy(m_program.begin(), m_program.end(), memory);
+        success = true;
+    }
+    return success;
+}
+
+bool StoryProject::GetAssemblyLine(uint32_t pointer_counter, uint32_t &line)
+{
+    bool success = false;
+    // On recherche quelle est la ligne qui possède une instruction à cette adresse
+    std::vector<Chip32::Instr>::const_iterator ptr = m_assembler.Begin();
+    for (; ptr != m_assembler.End(); ++ptr)
+    {
+        if ((ptr->addr == pointer_counter) && ptr->isRomCode())
+        {
+            break;
+        }
+    }
+
+    if (ptr != m_assembler.End())
+    {
+        line = ptr->line;
+        success = true; 
+    }
+
     return success;
 }
 
@@ -258,7 +317,7 @@ std::string StoryProject::FindFirstNode() const
 }
 
 
-bool StoryProject::Build(std::string &codeStr)
+bool StoryProject::GenerateScript(std::string &codeStr)
 {
     std::stringstream code;
     std::stringstream chip32;
@@ -267,7 +326,7 @@ bool StoryProject::Build(std::string &codeStr)
 
     if (firstNode == "")
     {
-        std::cout << "First node not found, there must be only one node with a free input." << std::endl;
+        m_log.Log("First node not found, there must be only one node with a free input.");
         return false;
     }
 
@@ -285,8 +344,50 @@ bool StoryProject::Build(std::string &codeStr)
     }
 
     codeStr = code.str();
+
+    // Add our utility functions
+    std::string buffer;
+
+    std::ifstream f("scripts/media.asm");
+    f.seekg(0, std::ios::end);
+    buffer.resize(f.tellg());
+    f.seekg(0);
+    f.read(buffer.data(), buffer.size());
+    codeStr += buffer;
+
     return true;
 }
+
+bool StoryProject::GenerateBinary(const std::string &code, Chip32::Assembler::Error &err)
+{
+    Chip32::Result result;
+    bool success = false;
+
+    if (m_assembler.Parse(code) == true)
+    {
+        if (m_assembler.BuildBinary(m_program, result) == true)
+        {
+            result.Print();
+
+            m_log.Log("Binary successfully generated.");
+            SaveBinary();
+            success = true;
+        }
+        else
+        {
+            err = m_assembler.GetLastError();
+            
+        }
+    }
+    else
+    {
+        err = m_assembler.GetLastError();
+        m_log.Log(err.ToString(), true);
+    }
+    return success;
+}
+
+
 
 bool StoryProject::Load(ResourceManager &manager)
 {
@@ -320,69 +421,8 @@ bool StoryProject::Load(ResourceManager &manager)
                 }
             }
         }
-
- /*
-
-        if (j.contains("nodes"))
-        {
-            for (auto& element : j["nodes"])
-            {
-                StoryNode n;
-
-                n.auto_jump = element["auto_jump"];
-
-                for (auto& jump : element["jumps"])
-                {
-                    n.jumps.push_back(jump.get<int>());
-                }
-
-                n.id = element["id"];
-                n.image = element["image"];
-                n.sound = element["sound"];
-
-                m_nodes.push_back(n);
-            }
-        }
-
-        m_images.clear();
-        if (j.contains("images"))
-        {
-            for (auto& element : j["images"])
-            {
-                Resource r;
-
-                r.file = element["file"];
-                r.description = element["description"];
-                r.format = element["format"];
-
-                m_images.push_back(r);
-            }
-        }
-
-        m_sounds.clear();
-        if (j.contains("sounds"))
-        {
-            for (auto& element : j["sounds"])
-            {
-                Resource r;
-
-                r.file = element["file"];
-                r.description = element["description"];
-                r.format = element["format"];
-
-                m_sounds.push_back(r);
-            }
-        }
-
-        m_type = j["type"];
-        m_code = j["code"];
-        m_name = j["name"];
-
-        success = true;
-
-*/
     }
-    catch(std::exception &e)
+    catch(nlohmann::json::exception &e)
     {
         std::cout << e.what() << std::endl;
     }
@@ -463,74 +503,7 @@ void StoryProject::Clear()
     m_links.clear();
 }
 
-void StoryProject::EraseString(std::string &theString, const std::string &toErase)
-{
-    std::size_t found;
-    found = theString.find(toErase);
-    if (found != std::string::npos)
-    {
-        theString.erase(found, toErase.size());
-    }
-}
 
-std::string StoryProject::ToUpper(const std::string &input)
-{
-    std::string str = input;
-    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
-    return str;
-}
-
-std::string StoryProject::GetFileName(const std::string &path)
-{
-    auto found = path.find_last_of("/\\");
-    return path.substr(found+1);
-}
-
-
-void StoryProject::ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace)
-{
-    std::size_t found;
-    do
-    {
-        found = theString.find(toFind);
-        if (found != std::string::npos)
-        {
-            theString.replace(found, 1, toReplace);
-        }
-    }
-    while (found != std::string::npos);
-}
-
-std::string StoryProject::RemoveFileExtension(const std::string &FileName)
-{
-    std::string f = GetFileName(FileName);
-    std::string ext = GetFileExtension(f);
-    EraseString(f, "." + ext);
-    return f;
-}
-
-std::string StoryProject::FileToConstant(const std::string &FileName, const std::string &extension)
-{
-    std::string f = RemoveFileExtension(FileName);
-    return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
-}
-
-std::string StoryProject::Normalize(const std::string &input)
-{
-    std::string valid_file = input;
-
-    std::replace(valid_file.begin(), valid_file.end(), '\\', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '/', '_');
-    std::replace(valid_file.begin(), valid_file.end(), ':', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '?', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '\"', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '<', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '>', '_');
-    std::replace(valid_file.begin(), valid_file.end(), '|', '_');
-    std::replace(valid_file.begin(), valid_file.end(), ' ', '_');
-
-    return valid_file;
-}
 
 void StoryProject::SetTitleImage(const std::string &titleImage)
 {
@@ -542,12 +515,7 @@ void StoryProject::SetTitleSound(const std::string &titleSound)
     m_titleSound = titleSound;
 }
 
-std::string StoryProject::GetFileExtension(const std::string &fileName)
-{
-    if(fileName.find_last_of(".") != std::string::npos)
-        return fileName.substr(fileName.find_last_of(".")+1);
-    return "";
-}
+
 
 void StoryProject::SetImageFormat(ImageFormat format)
 {
@@ -578,6 +546,12 @@ std::string StoryProject::GetWorkingDir() const
 std::string StoryProject::BuildFullAssetsPath(const std::string &fileName) const
 {
     return (AssetsPath() / fileName).generic_string();
+}
+
+std::string StoryProject::FileToConstant(const std::string &FileName, const std::string &extension)
+{
+    std::string f = SysLib::RemoveFileExtension(FileName);
+    return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
 }
 
 

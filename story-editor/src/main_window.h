@@ -63,7 +63,7 @@ struct DebugContext
 };
 
 
-class MainWindow : public IStoryManager, public IAudioEvent
+class MainWindow : public IStoryManager, public IAudioEvent, public ILogger
 {
 public:
     MainWindow();
@@ -82,9 +82,7 @@ private:
     uint8_t m_ram_data[16*1024];
     chip32_ctx_t m_chip32_ctx;
 
-    // Assembleur & Debugger
-    std::vector<uint8_t> m_program;
-    Chip32::Assembler m_assembler;
+    
     Chip32::Result m_result;
     DebugContext m_dbg;
     std::string m_currentCode;
@@ -124,7 +122,6 @@ private:
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;
     virtual void ImportProject(const std::string &fileName, int format);
-    virtual void Log(const std::string &txt, bool critical = false) override;
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
     virtual std::pair<FilterIterator, FilterIterator> Images() override;
@@ -148,6 +145,10 @@ private:
     virtual void Next() override;
     virtual void Previous() override;
 
+
+    // From ILogger
+    virtual void Log(const std::string &txt, bool critical = false) override;
+
     // From IAudioEvent
     virtual void EndOfAudio() override;
 
@@ -162,9 +163,6 @@ private:
     void CloseProject();
     void DrawStatusBar();
 
-    bool CompileToAssembler();
-    void ConvertResources();
-    void GenerateBinary();
     void UpdateVmView();
     uint8_t Syscall(chip32_ctx_t *ctx, uint8_t code);
     std::string GetFileNameFromMemory(uint32_t addr);

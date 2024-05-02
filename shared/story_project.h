@@ -11,6 +11,7 @@
 #include "connection.h"
 #include "base_node.h"
 #include "i_story_project.h"
+#include "chip32_assembler.h"
 
 // FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
 struct StoryNode
@@ -51,7 +52,7 @@ public:
     enum ImageFormat { IMG_FORMAT_BMP_4BITS, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
     enum SoundFormat { SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
 
-    StoryProject();
+    StoryProject(ILogger &log);
     ~StoryProject();
 
     bool *Selected() {
@@ -66,19 +67,25 @@ public:
     StoryNode *m_tree;
 */
     void New(const std::string &uuid, const std::string &library_path);
-    bool Build(std::string &codeStr);
+    std::filesystem::path BinaryFileName() const;
+    bool GenerateScript(std::string &codeStr);
+    bool GenerateBinary(const std::string &code, Chip32::Assembler::Error &err);
     bool Load(ResourceManager &manager);
     void Save(ResourceManager &manager);
-    void SaveBinary(const std::vector<uint8_t> &m_program);
+    void SaveBinary();
     void SetPaths(const std::string &uuid, const std::string &library_path);
     void CopyToDevice(const std::string &outputDir);
 
     void ModelToJson(nlohmann::json &model);
     bool ModelFromJson(const nlohmann::json &model);
 
+    bool CopyProgramTo(uint8_t *memory, uint32_t size);
+
+// returns >= 0 on success
+    bool GetAssemblyLine(uint32_t pointer_counter, uint32_t &line);
+
     void CreateTree();
     void Clear();
-
 
     std::pair<std::list<std::shared_ptr<BaseNode>>::iterator, std::list<std::shared_ptr<BaseNode>>::iterator> Nodes() {
         return std::make_pair(m_nodes.begin(), m_nodes.end());
@@ -102,18 +109,13 @@ public:
     std::string GetName() const { return m_name; }
     std::string GetUuid() const { return m_uuid; }
     std::string GetDescription() const { return m_description; }
-    int GetVersion() const { return m_version; }
+    uint32_t GetVersion() const { return m_version; }
 
     std::string BuildFullAssetsPath(const std::string &fileName) const;
 
-    std::filesystem::path AssetsPath() const { return m_assetsPath; }
-
-    static std::string GetFileExtension(const std::string &FileName);
-    static std::string GetFileName(const std::string &path);
-    static std::string RemoveFileExtension(const std::string &FileName);
-    static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
     static std::string FileToConstant(const std::string &FileName, const std::string &extension);
-    static std::string Normalize(const std::string &input);
+
+    std::filesystem::path AssetsPath() const { return m_assetsPath; }
 
     void SetTitleImage(const std::string &titleImage);
     void SetTitleSound(const std::string &titleSound);
@@ -123,9 +125,6 @@ public:
 
     // Initialize with an existing project
     const bool IsInitialized() const { return m_initialized; }
-
-    static void EraseString(std::string &theString, const std::string &toErase);
-    static std::string ToUpper(const std::string &input);
 
     bool ParseStoryInformation(nlohmann::json &j);
    
@@ -140,16 +139,21 @@ public:
     void DeleteLink(std::shared_ptr<Connection> c);
     
 private:
+    ILogger &m_log;
+
     // Project properties and location
     std::string m_name; /// human readable name
     std::string m_uuid;
     std::string m_titleImage;
     std::string m_titleSound;
     std::string m_description;
-    int m_version;
+    uint32_t m_version;
     bool m_selected{false};
 
     std::filesystem::path m_assetsPath;
+
+    Chip32::Assembler m_assembler;
+    std::vector<uint8_t> m_program;
 
     // Model in memory
     std::list<std::shared_ptr<Connection>> m_links;

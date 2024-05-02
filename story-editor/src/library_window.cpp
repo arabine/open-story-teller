@@ -1,11 +1,13 @@
+#include <filesystem>
+#include <functional>
+
+#include "IconsMaterialDesignIcons.h"
+#include "i_story_manager.h"
+#include "base64.hpp"
+#include "sys_lib.h"
 #include "library_window.h"
 #include "gui.h"
 #include "ImGuiFileDialog.h"
-#include <filesystem>
-#include "IconsMaterialDesignIcons.h"
-#include "i_story_manager.h"
-#include <functional>
-#include "base64.hpp"
 
 typedef int (*xfer_callback_t)(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
                                curl_off_t ultotal, curl_off_t ulnow);
@@ -237,18 +239,20 @@ void LibraryWindow::SharePointJsonDownloadedCallback(bool success, const std::st
         std::ifstream f(filename);
         nlohmann::json j = nlohmann::json::parse(f);
 
-
         std::string archive = j["@content.downloadUrl"].get<std::string>();
         std::string name = j["name"].get<std::string>();
-
 
         m_downloadQueue.push({
             "dl",
             archive,
-            ToLocalStoreFile(StoryProject::Normalize(name)),
+            ToLocalStoreFile(SysLib::Normalize(name)),
             std::bind(&LibraryWindow::StoryFileDownloadedCallback, this, std::placeholders::_1, std::placeholders::_2)
         });
 
+    }
+    catch(nlohmann::json::exception &e)
+    {
+        std::cout << "Json parse error: " << e.what() << std::endl;
     }
     catch(std::exception &e)
     {
@@ -261,7 +265,7 @@ void LibraryWindow::StoryFileDownloadedCallback(bool success, const std::string 
     std::cout << "Finished to download: " << filename << std::endl;
 
 
-    std::string ext = StoryProject::GetFileExtension(filename);
+    std::string ext = SysLib::GetFileExtension(filename);
 
     if (ext == "zip") 
     {
@@ -354,7 +358,7 @@ inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCant
 
 std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
 {
-    auto filename = StoryProject::GetFileName(url);
+    auto filename = SysLib::GetFileName(url);
 
     filename = m_libraryManager.LibraryPath() + "/store/" + filename;
     std::cout << "Store file: " << filename << std::endl;
@@ -576,7 +580,7 @@ void LibraryWindow::Draw()
                                 m_downloadQueue.push({
                                     "dl",
                                     obj.download,
-                                    ToLocalStoreFile(StoryProject::Normalize(obj.title)),
+                                    ToLocalStoreFile(SysLib::Normalize(obj.title)),
                                     std::bind(&LibraryWindow::StoryFileDownloadedCallback, this, std::placeholders::_1, std::placeholders::_2)
                                 });
                             }
@@ -647,9 +651,6 @@ void LibraryWindow::Draw()
 
             if (std::filesystem::is_directory(outputDir))
             {
-                // Generate TLV file (index of all stories)
-                m_libraryManager.Save();
-
                 // Copy all files to device
                 m_libraryManager.CopyToDevice(outputDir);
             }

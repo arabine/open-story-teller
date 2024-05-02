@@ -6,11 +6,12 @@
 #include <vector>
 #include "ni_parser.h"
 #include "json.hpp"
+#include "i_logger.h"
 
 class PackArchive
 {
 public:
-    PackArchive();
+    PackArchive(ILogger &log);
 
     bool Load(const std::string &filePath);
     std::string OpenImage(const std::string &fileName);
@@ -34,6 +35,7 @@ public:
 
     std::string HexDump(const char *desc, const void *addr, int len);
 private:
+    ILogger &m_log;
     Zip mZip;
     std::string mPackName;
     uint32_t mCurrentNodeId = 0;
@@ -47,11 +49,7 @@ private:
     std::map<std::string, std::string> m_resources;
 
     bool ParseNIFile(const std::string &root);
-    std::string GetFileName(const std::string &path);
-    std::string GetFileExtension(const std::string &FileName);
-    void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
-    void EraseString(std::string &theString, const std::string &toErase);
-    std::string ToUpper(const std::string &input);
+
 
     void DecipherFileOnDisk(const std::string &fileName);
     void DecipherFiles(const std::string &directory, const std::string &suffix);

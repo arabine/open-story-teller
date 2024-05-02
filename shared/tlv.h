@@ -15,34 +15,41 @@
 class Tlv
 {
 public:
-    explicit Tlv(const std::string &filename)
+    explicit Tlv()
     {
-        m_file = std::ofstream(filename, std::ios::out | std::ios::binary);
     }
 
     ~Tlv() {
-        m_file.close();
+
+    }
+
+    void Save(const std::string &filename)
+    {
+        auto f = std::ofstream(filename, std::ios::out | std::ios::binary);
+        f << m_mem;
+        std::flush(f);
+        f.close();
     }
 
     void add_array(uint16_t size)
     {
-        m_file.write(reinterpret_cast<const char*>(&m_objectType), sizeof(m_objectType));
-        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        m_mem.append(reinterpret_cast<const char*>(&m_arrayType), sizeof(m_arrayType));
+        m_mem.append(reinterpret_cast<const char*>(&size), sizeof(size));
     }
 
     void add_string(const char *s, uint16_t size)
     {
-        m_file.write(reinterpret_cast<const char*>(&m_stringType), sizeof(m_stringType));
-
-        m_file.write(s, size);
+        m_mem.append(reinterpret_cast<const char*>(&m_stringType), sizeof(m_stringType));
+        m_mem.append(reinterpret_cast<const char*>(&size), sizeof(size));
+        m_mem.append(s, size);
     }
 
     void add_integer(uint32_t value)
     {
         static const uint16_t size = 4;
-        m_file.write(reinterpret_cast<const char*>(&m_integerType), sizeof(m_integerType));
-        m_file.write(reinterpret_cast<const char*>(&size), sizeof(size));
-        m_file.write(reinterpret_cast<const char*>(&value), sizeof(value));
+        m_mem.append(reinterpret_cast<const char*>(&m_integerType), sizeof(m_integerType));
+        m_mem.append(reinterpret_cast<const char*>(&size), sizeof(size));
+        m_mem.append(reinterpret_cast<const char*>(&value), size);
     }
 
     void add_string(const std::string &s)
@@ -52,12 +59,12 @@ public:
 
     void add_object(uint16_t entries)
     {
-        m_file.write(reinterpret_cast<const char*>(&m_arrayType), sizeof(m_arrayType));
-        m_file.write(reinterpret_cast<const char*>(&entries), sizeof(entries));
+        m_mem.append(reinterpret_cast<const char*>(&m_objectType), sizeof(m_objectType));
+        m_mem.append(reinterpret_cast<const char*>(&entries), sizeof(entries));
     }
 
 private:
-    std::ofstream m_file;
+    std::string m_mem;
 
     uint8_t m_arrayType = TLV_ARRAY_TYPE;
     uint8_t m_objectType = TLV_OBJECT_TYPE;

@@ -4,12 +4,15 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "story_project.h"
+#include <thread>
 
+#include "story_project.h"
+#include "i_logger.h"
 class LibraryManager
 {
 public:
-    LibraryManager();
+    LibraryManager(ILogger &log);
+    ~LibraryManager();
 
     void Initialize(const std::string &library_path);
     bool IsInitialized() const;
@@ -34,13 +37,17 @@ public:
 
     std::shared_ptr<StoryProject> GetStory(const std::string &uuid);
 
+    std::string IndexFileName() const;
+
     void SetStoreUrl(const std::string &store_url) { m_storeUrl = store_url; }
     std::string GetStoreUrl() const { return m_storeUrl; }
 
 private:
+    ILogger &m_log;
     std::string m_library_path;
     std::vector<std::shared_ptr<StoryProject>> m_projectsList;
     std::string m_storeUrl;
+    std::thread m_copyWorker;
 };
 
 #endif // LIBRARYMANAGER_H

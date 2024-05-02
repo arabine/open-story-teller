@@ -13,8 +13,10 @@
 #include "story_project.h"
 #include "resource_manager.h"
 #include "uuid.h"
+#include "sys_lib.h"
 
-PackArchive::PackArchive()
+PackArchive::PackArchive(ILogger &log)
+    : m_log(log)
 {
 
 }
@@ -33,50 +35,6 @@ std::vector<std::string> PackArchive::GetImages()
     return imgList;
 }
 
-
-std::string PackArchive::GetFileName(const std::string &path)
-{
-    auto found = path.find_last_of("/\\");
-    return path.substr(found+1);
-}
-
-std::string PackArchive::GetFileExtension(const std::string &FileName)
-{
-    if(FileName.find_last_of(".") != std::string::npos)
-        return FileName.substr(FileName.find_last_of(".")+1);
-    return "";
-}
-
-void PackArchive::ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace)
-{
-    std::size_t found;
-    do
-    {
-        found = theString.find(toFind);
-        if (found != std::string::npos)
-        {
-            theString.replace(found, 1, toReplace);
-        }
-    }
-    while (found != std::string::npos);
-}
-
-void PackArchive::EraseString(std::string &theString, const std::string &toErase)
-{
-    std::size_t found;
-    found = theString.find(toErase);
-    if (found != std::string::npos)
-    {
-        theString.erase(found, toErase.size());
-    }
-}
-
-std::string PackArchive::ToUpper(const std::string &input)
-{
-    std::string str = input;
-    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
-    return str;
-}
 
 void PackArchive::Unzip(const std::string &filePath, const std::string &parent_dest_dir)
 {
@@ -189,7 +147,7 @@ std::vector<std::string> PackArchive::FilesToJson(const std::string &type, const
         res_file[12] = '\0';
 
         std::string res_file_string(res_file);
-        ReplaceCharacter(res_file_string, "\\", "/");
+        SysLib::ReplaceCharacter(res_file_string, "\\", "/");
 
         resList.push_back(res_file_string);
 
@@ -381,10 +339,10 @@ bool PackArchive::Load(const std::string &filePath)
     mZip.Close();
     mCurrentNodeId = 0;
 
-    std::string fileName = GetFileName(filePath);
-    std::string ext = GetFileExtension(fileName);
-    EraseString(fileName, "." + ext); // on retire l'extension du pack
-    mPackName = ToUpper(fileName);
+    std::string fileName = SysLib::GetFileName(filePath);
+    std::string ext = SysLib::GetFileExtension(fileName);
+    SysLib::EraseString(fileName, "." + ext); // on retire l'extension du pack
+    mPackName = SysLib::ToUpper(fileName);
 
     std::cout << "Pack name: " << mPackName << std::endl;
 
@@ -427,7 +385,7 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
         // STUDIO format
         std::ifstream f(basePath + "/story.json");
         nlohmann::json j = nlohmann::json::parse(f);
-        StoryProject proj;
+        StoryProject proj(m_log);
         ResourceManager res;
 
         if (j.contains("title"))
@@ -517,7 +475,7 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
     }
     catch(std::exception &e)
     {
-        std::cout << e.what() << std::endl;
+        m_log.Log(std::string("Import failure: ") + e.what());
     }
 
     return false;
@@ -527,7 +485,7 @@ std::string PackArchive::GetImage(const std::string &fileName)
 {
     //"C8B39950DE174EAA8E852A07FC468267/rf/000/05FB5530"
     std::string imagePath = mPackName + "/rf/" + fileName;
-    ReplaceCharacter(imagePath, "\\", "/");
+    SysLib::ReplaceCharacter(imagePath, "\\", "/");
 
     std::cout << "Loading " + imagePath << std::endl;
     return OpenImage(imagePath);
@@ -542,7 +500,7 @@ std::string PackArchive::CurrentSound()
 {
     //"C8B39950DE174EAA8E852A07FC468267/sf/000/05FB5530"
     std::string soundPath = mPackName + "/sf/" + std::string(mCurrentNode.si_file);
-    ReplaceCharacter(soundPath, "\\", "/");
+    SysLib::ReplaceCharacter(soundPath, "\\", "/");
 
     std::cout << "Loading " + soundPath << std::endl;
 

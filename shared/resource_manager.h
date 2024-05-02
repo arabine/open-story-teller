@@ -9,6 +9,7 @@
 #include <ranges>
 
 #include "resource.h"
+#include "i_logger.h"
 
 class ResourceManager
 {
@@ -23,6 +24,8 @@ public:
     }
 
     static std::string ExtentionInfo(std::string extension, int info_type);
+
+    void ConvertResources(const std::filesystem::path &assetsPath, const std::string &destAssetsPath);
 
     ~ResourceManager() {
 

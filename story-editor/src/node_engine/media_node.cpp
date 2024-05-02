@@ -1,7 +1,7 @@
 #include "media_node.h"
 #include "story_project.h"
 #include "connection.h"
-
+#include "sys_lib.h"
 
 static std::string ChoiceLabel(const std::string &id)
 {
@@ -74,25 +74,26 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
        << " Type: "
        << (nb_out_conns == 0 ? "End" : nb_out_conns == 1 ? "Transition" : "Choice")
        << "\n";
-    std::string image = StoryProject::RemoveFileExtension(image);
-    std::string sound = StoryProject::RemoveFileExtension(sound);
+
+    std::string img = SysLib::RemoveFileExtension(image);
+    std::string snd = SysLib::RemoveFileExtension(sound);
 
     // Le label de ce noeud est généré de la façon suivante :
     // "media" + Node ID + id du noeud parent. Si pas de noeud parent, alors rien
     ss << BaseNode::GetEntryLabel(GetId()) << ":\n";
 
-    if (image.size() > 0)
+    if (img.size() > 0)
     {
-        ss << "lcons r0, $" << image  << "\n";
+        ss << "lcons r0, $" << img  << "\n";
     }
     else
     {
         ss << "lcons r0, 0\n";
     }
 
-    if (sound.size() > 0)
+    if (snd.size() > 0)
     {
-        ss << "lcons r1, $" << sound  << "\n";
+        ss << "lcons r1, $" << snd  << "\n";
     }
     else
     {

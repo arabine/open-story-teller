@@ -8,7 +8,19 @@
 #include "uuid.h"
 
 
-LibraryManager::LibraryManager() {}
+LibraryManager::LibraryManager(ILogger &log)
+    : m_log(log)
+{
+
+}
+
+LibraryManager::~LibraryManager()
+{
+    if (m_copyWorker.joinable())
+    {
+        m_copyWorker.join();
+    }
+}
 
 void LibraryManager::Initialize(const std::string &library_path)
 {
@@ -43,7 +55,7 @@ void LibraryManager::Scan()
                     if (std::filesystem::exists(p))
                     {
                         // okay, open it
-                        auto proj = std::make_shared<StoryProject>();
+                        auto proj = std::make_shared<StoryProject>(m_log);
                         try {
                             std::ifstream f(p);
                             nlohmann::json j = nlohmann::json::parse(f);
@@ -55,7 +67,7 @@ void LibraryManager::Scan()
                                 m_projectsList.push_back(proj);
                             }
                         }
-                        catch(std::exception &e)
+                        catch(nlohmann::json::exception &e)
                         {
                             std::cout << e.what() << std::endl;
                         }
@@ -68,7 +80,7 @@ void LibraryManager::Scan()
 
 std::shared_ptr<StoryProject> LibraryManager::NewProject()
 {
-    auto story = std::make_shared<StoryProject>();
+    auto story = std::make_shared<StoryProject>(m_log);
     std::string uuid = Uuid().String();
 
     story->New(uuid, m_library_path);
@@ -92,10 +104,15 @@ std::shared_ptr<StoryProject> LibraryManager::GetStory(const std::string &uuid)
     return current;
 }
 
-void LibraryManager::Save()
+std::string LibraryManager::IndexFileName() const
 {
     auto p = std::filesystem::path(m_library_path) / "index.ost";
-    Tlv tlv(p.string());
+    return p.string();
+}
+
+void LibraryManager::Save()
+{
+    Tlv tlv;
 
     tlv.add_object(1);
     tlv.add_string(GetVersion());
@@ -115,6 +132,8 @@ void LibraryManager::Save()
         }
     }
 
+    tlv.Save(IndexFileName());
+
     /*
 
 
@@ -130,16 +149,37 @@ void LibraryManager::Save()
 
 void LibraryManager::CopyToDevice(const std::string &outputDir)
 {
-    std::thread myThread([&]() {
-        myThread.detach();
+    try
+    {  
+        // Generate TLV file (index of all stories)
+        Save();
+        // Copy TLV to the directory root
+        std::filesystem::copy(IndexFileName(), outputDir, std::filesystem::copy_options::overwrite_existing);
 
-        std::cout << "Starting to copy elements" << std::endl;
-
-        for (auto p : *this)
+        if (m_copyWorker.joinable())
         {
-            
+            m_copyWorker.join();
         }
-    }); 
+
+        m_copyWorker = std::thread([&, outputDir]() {
+         //   myThread.detach();
+
+            std::cout << "Starting to copy elements" << std::endl;
+
+            for (auto p : *this)
+            {
+                if (p->IsSelected())
+                {
+                    p->CopyToDevice(outputDir);
+                }
+            }
+        }); 
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Filesystem error: " << e.what() << std::endl;
+    } catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 bool LibraryManager::IsInitialized() const
