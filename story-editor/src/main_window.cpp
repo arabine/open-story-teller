@@ -17,7 +17,7 @@
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
 #endif
-
+#include "IconsMaterialDesignIcons.h"
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
@@ -267,9 +267,18 @@ void MainWindow::DrawMainMenuBar()
     {
         if (ImGui::BeginMenu("File"))
         {
+
             if (ImGui::MenuItem("New project"))
             {
-                showNewProject = true;
+                CloseProject();
+
+                m_story = m_libraryManager.NewProject();
+
+                if (m_story)
+                {
+                    SaveProject();
+                    OpenProject(m_story->GetUuid());
+                }
             }
 /*
             if (ImGui::BeginMenu("Open Recent"))
@@ -344,15 +353,6 @@ void MainWindow::DrawMainMenuBar()
         }
     }
 
-    if (showNewProject)
-    {
-        IGFD::FileDialogConfig config;
-        config.path = ".";
-        config.countSelectionMax = 1;
-        config.flags = ImGuiFileDialogFlags_Modal;
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDialog", "Choose a parent directory for your project", nullptr, config);
-    }
-
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     //ImVec2 parent_pos = ImGui::GetWindowPos();
@@ -395,8 +395,6 @@ void MainWindow::Initialize()
     m_nodeEditorWindow.Initialize();
     m_PropertiesWindow.Initialize();
     m_libraryWindow.Initialize();
-
-
 }
 
 
@@ -430,39 +428,6 @@ bool MainWindow::ShowQuitConfirm()
     return quitRequest;
 }
 
-
-void MainWindow::NewProjectPopup()
-{
-    // Always center this window when appearing
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-    if (ImGuiFileDialog::Instance()->Display("ChooseDirDialog"))
-    {
-        // action if OK
-        if (ImGuiFileDialog::Instance()->IsOk())
-        {
-            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            std::string projdir = ImGuiFileDialog::Instance()->GetCurrentPath();
-
-            if (!std::filesystem::is_directory(projdir))
-            {
-                CloseProject();
-
-                m_story = m_libraryManager.NewProject();
-
-                if (m_story)
-                {
-                    SaveProject();
-                    OpenProject(m_story->GetUuid());
-                }
-            }
-        }
-
-        // close
-        ImGuiFileDialog::Instance()->Close();
-    }
-}
 
 void MainWindow::ProjectPropertiesPopup()
 {
@@ -514,7 +479,7 @@ void MainWindow::ProjectPropertiesPopup()
             // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
             // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
             // stored in the object itself, etc.)
-            const char* image_items[] = { "BMP (compressed 4-bit palette)", "QOIF (Quite Ok Image Format" };
+            const char* image_items[] = { "Native (no conversion)", "QOIF (Quite Ok Image Format" };
             const char* image_combo_preview_value = image_items[image_item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
             if (ImGui::BeginCombo("##ComboImage", image_combo_preview_value, flags))
             {
@@ -539,7 +504,7 @@ void MainWindow::ProjectPropertiesPopup()
             // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
             // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
             // stored in the object itself, etc.)
-            const char* sound_items[] = { "WAV (16-bit stereo)", "QOAF (Quite Ok Audio Format" };
+            const char* sound_items[] = { "Native (no conversion)", "WAV (16-bit stereo)", "QOAF (Quite Ok Audio Format" };
             const char* sound_combo_preview_value = sound_items[sound_item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
             if (ImGui::BeginCombo("##ComboSound", sound_combo_preview_value, flags))
             {
@@ -558,9 +523,77 @@ void MainWindow::ProjectPropertiesPopup()
         }
 
 
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Image");
+        ImGui::SameLine();
+
+        ImGui::Text("%s", m_story->GetTitleImage().c_str());
+
+        ImGui::SameLine();
+
+        static bool isImage = true;
+        if (ImGui::Button("Select...##image")) {
+            ImGui::OpenPopup("popup_button");
+            isImage = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delimage")) {
+            m_story->SetTitleImage("");
+        }
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Sound");
+        ImGui::SameLine();
+
+        ImGui::Text("%s", m_story->GetTitleSound().c_str());
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Play " ICON_MDI_PLAY))
+        {
+            PlaySoundFile(BuildFullAssetsPath(m_story->GetTitleSound()));
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Select...##sound")) {
+            ImGui::OpenPopup("popup_button");
+            isImage = false;
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delsound")) {
+            m_story->SetTitleSound("");
+        }
+
+
+        if (ImGui::BeginPopup("popup_button")) {
+            ImGui::SeparatorText(isImage ? "Images" : "Sounds");
+
+            auto [filtreDebut, filtreFin] = isImage ? Images() : Sounds();
+            int n = 0;
+            for (auto it = filtreDebut; it != filtreFin; ++it, n++)
+            {
+                if (ImGui::Selectable((*it)->file.c_str()))
+                {
+                    if (isImage)
+                    {
+                        m_story->SetTitleImage((*it)->file);
+                    }
+                    else
+                    {
+                        m_story->SetTitleSound((*it)->file);
+                    }
+                }
+            }
+
+            ImGui::EndPopup(); // Note this does not do anything to the popup open/close state. It just terminates the content declaration.
+        }
+
+
         auto GetImageFormat = [](int idx) -> StoryProject::ImageFormat
         {
-            StoryProject::ImageFormat img{StoryProject::IMG_FORMAT_BMP_4BITS};
+            StoryProject::ImageFormat img{StoryProject::IMG_SAME_FORMAT};
             if (idx < StoryProject::IMG_FORMAT_COUNT) {
                 img = static_cast<StoryProject::ImageFormat>(idx);
             }
@@ -740,7 +773,6 @@ void MainWindow::Loop()
             m_PropertiesWindow.Draw();
         }
 
-        NewProjectPopup();
         ProjectPropertiesPopup();
 
         if (aboutToClose)

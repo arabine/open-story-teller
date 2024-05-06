@@ -158,7 +158,6 @@ private:
     void DrawMainMenuBar();
     bool ShowQuitConfirm();
 
-    void NewProjectPopup();
     void SaveProject();
     void CloseProject();
     void DrawStatusBar();

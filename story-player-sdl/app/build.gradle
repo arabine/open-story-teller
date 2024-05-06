@@ -1,0 +1,72 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 33
+    buildToolsVersion "30.0.3"
+    ndkVersion "21.4.7075529"
+
+    namespace 'org.openstoryteller.storyplayer'
+    
+    sourceSets {
+        main {
+            assets.srcDirs = ['../assets']
+        }
+    }
+
+    signingConfigs {
+        demokey {
+            storeFile file('demokey.jks')
+            storePassword "demokey"
+            keyAlias 'demokey'
+            keyPassword 'demokey'
+        }
+    }
+    defaultConfig {
+        applicationId "org.openstoryteller.storyplayer"
+        minSdkVersion 18
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0.0"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_NATIVE_API_LEVEL=33", "-DANDROID_STL=c++_shared", "-DANDROID=true", "-DANDROID_TOOLCHAIN=clang", "-DCMAKE_VERBOSE_MAKEFILE=ON"
+                cppFlags "-std=c++11 -frtti -fexceptions"
+                abiFilters "arm64-v8a", "armeabi-v7a" //, "x86_64", "x86"
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.demokey
+        }
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.demokey
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def fileName = project.name + '-' + variant.name + '-V' +
+                    defaultConfig.versionCode + "-" + buildTime() + ".apk"
+            outputFileName = fileName
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            version "3.27.0+"
+            path 'CMakeLists.txt'
+        }
+    }
+}
+
+static def buildTime() {
+    return new Date().format("yyyyMMdd", TimeZone.getDefault())
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}
+    

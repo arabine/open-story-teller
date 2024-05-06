@@ -36,7 +36,7 @@ std::string ResourceManager::ExtentionInfo(std::string extension, int info_type)
     }
 }
 
-void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::string &destAssetsPath)
+void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath)
 {
     auto [b, e] = Items();
     for (auto it = b; it != e; ++it)
@@ -77,7 +77,7 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
             // Log("Convertered file: " + inputfile);
 
             // Conversion success, now copy to output directory if necessary (ie: to an external device)
-            if ((destAssetsPath != assetsPath.generic_string()) && (std::filesystem::exists(destAssetsPath)))
+            if ((destAssetsPath != assetsPath) && (std::filesystem::exists(destAssetsPath)))
             {
                 // destination filename
                 auto destFile = destAssetsPath / outputfile.filename();

@@ -1,0 +1,3 @@
+LIBRARY   storyvm
+EXPORTS
+   storyvm_initialize

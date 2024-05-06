@@ -92,7 +92,6 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
     return true;
 }
 
-#define MANOLAB_VERSION "1.0"
 
 std::string GetDirectory (const std::string& path)
 {

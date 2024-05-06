@@ -49,8 +49,8 @@ struct StoryProject : public IStoryProject
 {
 
 public:
-    enum ImageFormat { IMG_FORMAT_BMP_4BITS, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
-    enum SoundFormat { SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
+    enum ImageFormat { IMG_SAME_FORMAT, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
+    enum SoundFormat { SND_SAME_FORMAT, SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
 
     StoryProject(ILogger &log);
     ~StoryProject();
@@ -167,7 +167,7 @@ private:
     int m_display_w{320};
     int m_display_h{240};
 
-    ImageFormat m_imageFormat{IMG_FORMAT_BMP_4BITS};
+    ImageFormat m_imageFormat{IMG_SAME_FORMAT};
     SoundFormat m_soundFormat{SND_FORMAT_WAV};
 
 

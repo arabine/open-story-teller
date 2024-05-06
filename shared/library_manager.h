@@ -20,8 +20,8 @@ public:
     std::string LibraryPath() const { return m_library_path; }
     static std::string GetVersion();
 
-    std::vector<std::shared_ptr<StoryProject>>::const_iterator begin() const { return m_projectsList.begin(); }
-    std::vector<std::shared_ptr<StoryProject>>::const_iterator end() const { return m_projectsList.end(); }
+    std::list<std::shared_ptr<StoryProject>>::const_iterator begin() const { return m_projectsList.begin(); }
+    std::list<std::shared_ptr<StoryProject>>::const_iterator end() const { return m_projectsList.end(); }
 
     uint32_t ProjectsCount() const { return m_projectsList.size(); };
 
@@ -45,7 +45,7 @@ public:
 private:
     ILogger &m_log;
     std::string m_library_path;
-    std::vector<std::shared_ptr<StoryProject>> m_projectsList;
+    std::list<std::shared_ptr<StoryProject>> m_projectsList;
     std::string m_storeUrl;
     std::thread m_copyWorker;
 };

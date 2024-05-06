@@ -83,3 +83,11 @@ story-editor/build-win32/
 build-story-editor-Desktop_Qt_GCC_64bit-Debug/
 
 firmware/build/
+
+story-player/stories/
+
+story-player/storyvm/build/
+
+story-player-sdl/build/
+
+story-player-raylib/build/

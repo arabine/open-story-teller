@@ -114,10 +114,22 @@ void LibraryManager::Save()
 {
     Tlv tlv;
 
-    tlv.add_object(1);
-    tlv.add_string(GetVersion());
+    tlv.add_object(2); // 2 éléments dans l'objet
 
-    tlv.add_array(m_projectsList.size());
+    tlv.add_integer(1); // version du fichier (1 == V1)
+
+    // On compte le nombre de projets sélecttionnés
+    uint16_t stories = 0;
+    for (auto &p : m_projectsList)
+    {
+        if (p->IsSelected())
+        {
+            stories++;
+        }
+    }
+
+    tlv.add_array(stories); // Nombre d'histoires
+    
     for (auto &p : m_projectsList)
     {
         if (p->IsSelected())
@@ -133,17 +145,6 @@ void LibraryManager::Save()
     }
 
     tlv.Save(IndexFileName());
-
-    /*
-
-
-    // Title image
-    std::string image =  RemoveFileExtension(m_titleImage) + ".qoi";
-    tlv.add_string(image.c_str(), image.size());
-
-    std::string sound =  RemoveFileExtension(m_titleSound) + ".wav";
-    tlv.add_string(sound.c_str(), sound.size()); // title sound
-*/
 }
 
 

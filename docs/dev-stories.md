@@ -34,23 +34,35 @@ The assets directory must contains all the resource files for the story (sounds,
 This binary file is encoded using a simple TLV format (Type Lenght Value) supporting the following types:
 
 
-| Type  | encoding |
-| ----- | ----- |
-| Object | 0xE7   |
-|  Array | 0xAB   |
-|  String |  0x3D  |
-|  Integer |  0x77  |
-|  Real |  0xB8  |
+| Type  | encoding | Value size |
+| ----- | ----- | ------- |
+| Object | 0xE7   | Variable |
+|  Array | 0xAB   | Variable |
+|  String |  0x3D  | Variable |
+|  Integer |  0x77  | 4 bytes |
+|  Real |  0xB8  | 4 bytes |
 
-Each Type is encoded on a byte.
+Each Type is encoded on a byte. Serialization uses little endian fir bytes ordering.
 
-The Length is encoded on two bytes, little endian. The length indicates the size of the Value.
+The Length is encoded on two bytes. The length indicates the size of the following value.
 
-## Application on the Index File Forma
+## Stories index format V1
 
-- Array
-   - Object
-      - String (UUID, folder name of the story)
-      - String (title image file name)
-      - String (sound title file name)
+The Index file root type is an object containing the file format version and the list of stories.
+
+Stories are stored in an array, each entry is the description of one story. A story is located in a directory wich name is the uuid (lower case).
+
+
+
+- Object (2 elements)
+  - Integer (format version)
+  - Array (n elements)
+     - Object (6 elements)
+        - String (UUID, folder name of the story)
+        - String (title image file name)
+        - String (sound title file name)
+        - String (Story name or title)
+        - String (Story description)
+        - Integer (Story version)
+
 

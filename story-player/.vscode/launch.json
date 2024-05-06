@@ -1,28 +1,49 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C/C++ debug",
-            "cwd": "${workspaceFolder}",
-            "type": "cppdbg",
+            "name": "flutter_launcher",
             "request": "launch",
-            "program": "${workspaceFolder}/build/story-player", // Binary to exec
-            "args": [
-                "build/config.yml"
-            ], // Arguments passed
-            "stopAtEntry": false,
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "${defaultBuildTask}",
-            "miDebuggerPath": "/usr/bin/gdb"
+            "type": "dart"
+        },
+        {
+            "name": "flutter_launcher (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "flutter_launcher (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Flutter Emulator",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "emulator"
+        },
+        {
+            "name": "Flutter Device",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "all"
+        },
+        {
+            "name": "Flutter Desktop",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "windows"  // Change this to 'macos' or 'linux' depending on your desktop platform
+        },
+        {
+            "name": "Flutter Desktop (Linux)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "linux"  // Change this to 'macos' or 'linux' depending on your desktop platform
         }
     ]
 }
