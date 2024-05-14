@@ -10,11 +10,12 @@ BaseNodeWidget::BaseNodeWidget(IStoryManager &manager,  std::shared_ptr<BaseNode
     , m_base(base)
 {
     m_node = std::make_unique<Node>(GetNextId(), ""); // ImGui internal ID
+    std::cout << " --> Created node widget: " << (int)m_node->ID.Get() << std::endl;
 }
 
 BaseNodeWidget::~BaseNodeWidget()
 {
-    std::cout << "Deleted node widget" << std::endl;
+    std::cout << " <-- Deleted node widget: " << (int)m_node->ID.Get() << std::endl;
 }
 
 void BaseNodeWidget::AddInput()
@@ -69,6 +70,14 @@ void BaseNodeWidget::FrameStart()
             // Use the parent node position, the one saved in the JSON project
             // FIXME: find a better way to do that?
             ed::SetNodePosition(m_node->ID, ImVec2(m_base->GetX(), m_base->GetY()));
+        }
+    }
+    else
+    {
+        // Si ce n'est pas la première frame, on synchronise la position du noeud avec l'objet
+        if (m_base)
+        {
+            m_base->SetPosition(GetX(), GetY());
         }
     }
     m_firstFrame = false;

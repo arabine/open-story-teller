@@ -13,7 +13,8 @@ static std::string ChoiceLabel(const std::string &id)
 MediaNode::MediaNode(const std::string &type)
     : BaseNode(type)
 {
-
+    nlohmann::json j{ {"image", ""}, {"sound", ""}};
+    SetInternalData(j);
 }
 
 

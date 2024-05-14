@@ -49,8 +49,7 @@ struct StoryProject : public IStoryProject
 {
 
 public:
-    enum ImageFormat { IMG_SAME_FORMAT, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
-    enum SoundFormat { SND_SAME_FORMAT, SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
+
 
     StoryProject(ILogger &log);
     ~StoryProject();
@@ -98,8 +97,12 @@ public:
     void Select(bool selected) { m_selected = selected; }
     bool IsSelected() const { return m_selected; }
     
-    void SetImageFormat(ImageFormat format);
-    void SetSoundFormat(SoundFormat format);
+    void SetImageFormat(Resource::ImageFormat format);
+    void SetSoundFormat(Resource::SoundFormat format);
+
+    Resource::ImageFormat GetImageFormat() const { return m_imageFormat; }
+    Resource::SoundFormat GetSoundFormat() const { return m_soundFormat; }
+
     void SetDisplayFormat(int w, int h);
     void SetName(const std::string &name) { m_name = name; }
     void SetUuid(const std::string &uuid) { m_uuid = uuid; }
@@ -167,9 +170,8 @@ private:
     int m_display_w{320};
     int m_display_h{240};
 
-    ImageFormat m_imageFormat{IMG_SAME_FORMAT};
-    SoundFormat m_soundFormat{SND_FORMAT_WAV};
-
+    Resource::ImageFormat m_imageFormat{Resource::IMG_SAME_FORMAT};
+    Resource::SoundFormat m_soundFormat{Resource::SND_SAME_FORMAT};
 
     template<class NodeType>
     struct Factory {
@@ -186,8 +188,6 @@ private:
     void registerNode(const std::string& key) {
         m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
     }
-
-
 
 };
 

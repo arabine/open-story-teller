@@ -11,21 +11,25 @@
 #include "resource.h"
 #include "i_logger.h"
 
+struct Media {
+    std::string type;
+    std::string format;
+};
+
+
+
 class ResourceManager
 {
-public:
-
-    
+public:   
     ResourceManager()
         : m_images(filter("image"))
         , m_sounds(filter("sound"))
     {
-
     }
 
     static std::string ExtentionInfo(std::string extension, int info_type);
 
-    void ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath);
+    void ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath,  Resource::ImageFormat imageFormat, Resource::SoundFormat soundFormat);
 
     ~ResourceManager() {
 
@@ -47,7 +51,6 @@ public:
         m_items.clear();
         UpdateIterators();
     }
-
 
     // Fonction pour créer un itérateur de début et de fin pour les éléments filtrés
     std::pair<FilterIterator, FilterIterator> filter(const std::string &type) const {

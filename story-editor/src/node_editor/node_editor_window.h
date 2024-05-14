@@ -54,6 +54,7 @@ public:
     void Initialize();
     void Clear();
     void Load(std::shared_ptr<StoryProject> story);
+    void SaveNodePositions();
 
     std::shared_ptr<BaseNodeWidget> GetSelectedNode();
 

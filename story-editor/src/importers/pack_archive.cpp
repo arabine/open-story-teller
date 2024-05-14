@@ -373,12 +373,8 @@ std::string PackArchive::OpenImage(const std::string &fileName)
     return f;
 }
 
-bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::string &outputDir)
-{   
-    auto uuid =  Uuid().String();
-    std::string basePath = outputDir + "/" + uuid;
-    Unzip(fileName, basePath);
-
+bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std::string &uuid, const std::string &outputDir)
+{
     try
     {
 
@@ -436,12 +432,7 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
 
                     stageActionLink[n["okTransition"]["actionNode"]] = node_uuid;
                 }
-/*
-                "okTransition":{
-            "actionNode":"19d7328f-d0d2-4443-a7a2-25270dafe52c",
-            "optionIndex":0
-         },
-         */
+
             }
 
             for (const auto & n : j["actionNodes"])
@@ -478,6 +469,16 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
         m_log.Log(std::string("Import failure: ") + e.what());
     }
 
+    return true; // FIXME
+}
+
+bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::string &outputDir)
+{   
+    auto uuid =  Uuid().String();
+    std::string basePath = outputDir + "/" + uuid;
+    Unzip(fileName, basePath);
+
+    ConvertJsonStudioToOst(basePath, uuid, outputDir);
     return false;
 }
 

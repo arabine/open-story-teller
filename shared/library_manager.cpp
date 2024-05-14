@@ -85,8 +85,8 @@ std::shared_ptr<StoryProject> LibraryManager::NewProject()
 
     story->New(uuid, m_library_path);
     story->SetDisplayFormat(320, 240);
-    story->SetImageFormat(StoryProject::IMG_FORMAT_QOIF);
-    story->SetSoundFormat(StoryProject::SND_FORMAT_WAV);
+    story->SetImageFormat(Resource::IMG_FORMAT_QOIF);
+    story->SetSoundFormat(Resource::SND_FORMAT_WAV);
     story->SetName("New project");
     return story;
 }
@@ -171,6 +171,7 @@ void LibraryManager::CopyToDevice(const std::string &outputDir)
             {
                 if (p->IsSelected())
                 {
+                    std::cout << "Copying " << p->GetName() << std::endl;
                     p->CopyToDevice(outputDir);
                 }
             }

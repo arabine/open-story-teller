@@ -6,9 +6,14 @@
 #include <vector>
 #include <iostream>
 #include <list>
+#include <unordered_map>
+
 
 struct Resource
 {
+    enum ImageFormat { IMG_SAME_FORMAT, IMG_FORMAT_QOIF, IMG_FORMAT_COUNT };
+    enum SoundFormat { SND_SAME_FORMAT, SND_FORMAT_WAV, SND_FORMAT_QOAF, SND_FORMAT_COUNT };
+
     std::string file;
     std::string description;
     std::string format;
@@ -17,6 +22,9 @@ struct Resource
     ~Resource() {
         // std::cout << "Res deleted" << std::endl;
     }
+
+    static std::string ImageFormatToString(ImageFormat format);
+    static std::string SoundFormatToString(SoundFormat format);
 };
 
 // Itérateur pour parcourir les éléments filtrés

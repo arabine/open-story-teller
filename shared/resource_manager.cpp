@@ -5,10 +5,7 @@
 #include "resource_manager.h"
 #include "media_converter.h"
 #include "sys_lib.h"
-struct Media {
-    std::string type;
-    std::string format;
-};
+
 
 static const std::unordered_map<std::string, Media> mediaTypes {
     {".mp3", {"sound", "MP3"}},
@@ -21,6 +18,7 @@ static const std::unordered_map<std::string, Media> mediaTypes {
     {".bmp", {"image","BMP"}},
 
 };
+
 
 std::string ResourceManager::ExtentionInfo(std::string extension, int info_type)
 {
@@ -36,7 +34,7 @@ std::string ResourceManager::ExtentionInfo(std::string extension, int info_type)
     }
 }
 
-void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath)
+void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath, Resource::ImageFormat imageFormat, Resource::SoundFormat soundFormat)
 {
     auto [b, e] = Items();
     for (auto it = b; it != e; ++it)
@@ -49,18 +47,39 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
         {
             if ((*it)->format == "PNG")
             {
-                outputfile += ".qoi"; // FIXME: prendre la config en cours désirée
-                retCode = MediaConverter::ImageToQoi(inputfile.generic_string(), outputfile.generic_string());
+                if (imageFormat == Resource::IMG_FORMAT_QOIF)
+                {
+                    outputfile += ".qoi"; // FIXME: prendre la config en cours désirée
+                    retCode = MediaConverter::ImageToQoi(inputfile.generic_string(), outputfile.generic_string());
+                }
+                else
+                {
+                    outputfile += ".png";
+                }
             }
             else if ((*it)->format == "MP3")
             {
-                outputfile += ".wav"; // FIXME: prendre la config en cours désirée
-                retCode = MediaConverter::Mp3ToWav(inputfile.generic_string(), outputfile.generic_string());
+                if (soundFormat == Resource::SND_FORMAT_WAV)
+                {
+                    outputfile += ".wav"; // FIXME: prendre la config en cours désirée
+                    retCode = MediaConverter::Mp3ToWav(inputfile.generic_string(), outputfile.generic_string());
+                }
+                else
+                {
+                    outputfile += ".mp3";
+                }
             }
             else if ((*it)->format == "OGG")
             {
-                outputfile += ".wav"; // FIXME: prendre la config en cours désirée
-                retCode = MediaConverter::OggToWav(inputfile.generic_string(), outputfile.generic_string());
+                if (soundFormat == Resource::SND_FORMAT_WAV)
+                {
+                    outputfile += ".wav"; // FIXME: prendre la config en cours désirée
+                    retCode = MediaConverter::OggToWav(inputfile.generic_string(), outputfile.generic_string());
+                }
+                else
+                {
+                    outputfile += ".ogg";
+                }
             }
             else
             {

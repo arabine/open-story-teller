@@ -232,6 +232,8 @@ set(SRCS
     ../shared/miniaudio.h
     ../shared/stb_vorbis.c
     ../shared/uuid.h
+    ../shared/resource.h
+    ../shared/resource.cpp
     ../shared/resource_manager.h
     ../shared/resource_manager.cpp
     ../shared/story_project.cpp

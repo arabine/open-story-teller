@@ -106,6 +106,8 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 
             auto [node_begin, node_end] = m_story->Nodes();
 
+            int i = 0;
+
             for (auto it = node_begin; it != node_end; ++it)
             {
                 auto n = CreateNodeWidget((*it)->GetType(), m_manager, (*it));
@@ -119,6 +121,8 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
                 {
                     throw std::logic_error(std::string("No registered model with name ") + (*it)->GetType());
                 }
+
+                std::cout << "Created " << ++i << " node" << std::endl;
             }
             auto [link_begin, link_end] = m_story->Links();
 
@@ -136,9 +140,15 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
             std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
         }
     }
+
+    std::cout << "Loaded " << m_nodes.size() << " nodes, " << m_links.size() << " links" << std::endl;
   
 }
 
+void NodeEditorWindow::SaveNodePositions()
+{
+    
+}
 
 void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId)
 {

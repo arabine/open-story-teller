@@ -32,6 +32,7 @@ public:
     void Previous();
     void Unzip(const std::string &filePath, const std::string &parent_dest_dir);
     void DecipherAll(const std::string &packFileName, const std::string &parent_dest_dir);
+    bool ConvertJsonStudioToOst(const std::string &basePath, const std::string &uuid, const std::string &outputDir);
 
     std::string HexDump(const char *desc, const void *addr, int len);
 private:

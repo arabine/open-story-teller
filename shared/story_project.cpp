@@ -52,7 +52,7 @@ void StoryProject::CopyToDevice(const std::string &outputDir)
         std::filesystem::copy(BinaryFileName(), destRootDir, std::filesystem::copy_options::overwrite_existing);
 
         // Convert resources (if necessary) and copy them to destination assets
-        manager.ConvertResources(AssetsPath(), destAssetsDir);
+        manager.ConvertResources(AssetsPath(), destAssetsDir, m_imageFormat, m_soundFormat);
     }
 }
 
@@ -136,7 +136,9 @@ std::shared_ptr<BaseNode> StoryProject::CreateNode(const std::string &type)
     }
     else
     {
-        return i->second(type);
+        auto n = i->second(type);
+        m_nodes.push_back(n);
+        return n;
     }
 }
 
@@ -191,7 +193,6 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model)
             if (n)
             {
                 n->FromJson(element);
-                m_nodes.push_back(n);
             }
             else
             {
@@ -215,12 +216,15 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model)
                 m_links.push_back(std::make_shared<Connection>(connection.get<Connection>()));
             }
         }
+
+        std::cout << "From model, loded nodes: "  << m_nodes.size() << ", links: " << m_links.size() << std::endl;
         success = true;
     }
     catch(nlohmann::json::exception &e)
     {
         std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
     }
+
     return success;
 }
 
@@ -517,12 +521,12 @@ void StoryProject::SetTitleSound(const std::string &titleSound)
 
 
 
-void StoryProject::SetImageFormat(ImageFormat format)
+void StoryProject::SetImageFormat(Resource::ImageFormat format)
 {
     m_imageFormat = format;
 }
 
-void StoryProject::SetSoundFormat(SoundFormat format)
+void StoryProject::SetSoundFormat(Resource::SoundFormat format)
 {
     m_soundFormat = format;
 }
