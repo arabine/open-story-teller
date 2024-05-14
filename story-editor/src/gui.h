@@ -47,8 +47,12 @@ public:
     static bool LoadRawImage(const std::string &filename, Image &image);
     static Size GetWindowSize();
 
+    static void PushBigFont();
+    static void PopBigFont();
+
 private:
     std::string m_executablePath;
+    
 };
 
 // namespace ImGui {

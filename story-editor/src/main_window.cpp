@@ -256,12 +256,14 @@ void MainWindow::DrawStatusBar()
     ImGui::End();
 }
 
-void MainWindow::DrawMainMenuBar()
+float MainWindow::DrawMainMenuBar()
 {
     bool showAboutPopup = false;
     bool showParameters = false;
     bool showNewProject = false;
     bool showOpenProject = false;
+
+    float height = 60; 
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -333,6 +335,8 @@ void MainWindow::DrawMainMenuBar()
             ImGui::EndMenu();
         }
 
+
+        height = ImGui::GetFrameHeight();
         ImGui::EndMainMenuBar();
     }
 
@@ -380,21 +384,31 @@ void MainWindow::DrawMainMenuBar()
         }
        ImGui::EndPopup();
     }
+
+    return height;
 }
 
-void MainWindow::Initialize()
+bool MainWindow::Initialize()
 {
+    bool success = false;
     LoadParams();
 
     // GUI Init
-    m_gui.Initialize();
-  //  gui.ApplyTheme();
+    if (m_gui.Initialize())
+    {
+        m_player.Initialize(); // Initialize audio after GUI (uses SDL)
+    //  gui.ApplyTheme();
 
-    m_editorWindow.Initialize();
-    m_emulatorWindow.Initialize();
-    m_nodeEditorWindow.Initialize();
-    m_PropertiesWindow.Initialize();
-    m_libraryWindow.Initialize();
+        m_editorWindow.Initialize();
+        m_emulatorWindow.Initialize();
+        m_nodeEditorWindow.Initialize();
+        m_PropertiesWindow.Initialize();
+        m_libraryWindow.Initialize();
+
+        success = true;
+    }
+
+    return success;
 }
 
 
@@ -591,20 +605,20 @@ void MainWindow::ProjectPropertiesPopup()
         }
 
 
-        auto GetImageFormat = [](int idx) -> StoryProject::ImageFormat
+        auto GetImageFormat = [](int idx) -> Resource::ImageFormat
         {
-            StoryProject::ImageFormat img{StoryProject::IMG_SAME_FORMAT};
-            if (idx < StoryProject::IMG_FORMAT_COUNT) {
-                img = static_cast<StoryProject::ImageFormat>(idx);
+            Resource::ImageFormat img{Resource::IMG_SAME_FORMAT};
+            if (idx < Resource::IMG_FORMAT_COUNT) {
+                img = static_cast<Resource::ImageFormat>(idx);
             }
             return img;
         };
 
-        auto GetSoundFormat = [](int idx) -> StoryProject::SoundFormat {
+        auto GetSoundFormat = [](int idx) -> Resource::SoundFormat {
 
-            StoryProject::SoundFormat img{StoryProject::SND_FORMAT_WAV};
-            if (idx < StoryProject::IMG_FORMAT_COUNT) {
-                img = static_cast<StoryProject::SoundFormat>(idx);
+            Resource::SoundFormat img{Resource::SND_FORMAT_WAV};
+            if (idx < Resource::IMG_FORMAT_COUNT) {
+                img = static_cast<Resource::SoundFormat>(idx);
             }
 
             return img;
@@ -651,6 +665,11 @@ void MainWindow::OpenProject(const std::string &uuid)
 {
     CloseProject();
     m_story = m_libraryManager.GetStory(uuid);
+
+    // DEBUG CODE !!!!!!!!!!!!!  Permet si décommenter de forcer l'import, permet de tester plus facilement l'algo en ouvrant le projet
+    // PackArchive arch(*this);
+    // std::string basePath = m_libraryManager.LibraryPath() + "/" + uuid;
+    // arch.ConvertJsonStudioToOst(basePath, uuid, m_libraryManager.LibraryPath());
 
     if (!m_story)
     {
@@ -712,11 +731,11 @@ void MainWindow::RefreshProjectInformation()
 
 void MainWindow::CloseProject()
 {
-    if (m_story)
-    {
-        m_story->Clear();
-        m_story.reset();
-    }
+    // if (m_story)
+    // {
+    //     m_story->Clear();
+    //     m_story.reset();
+    // }
 
     m_resources.Clear();
 
@@ -736,7 +755,43 @@ void MainWindow::CloseProject()
 }
 
 
+void MainWindow::DrawToolBar(float topPadding)
+{
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | 
+            ImGuiWindowFlags_NoMove | 
+            ImGuiWindowFlags_NoScrollbar | 
+            ImGuiWindowFlags_NoScrollWithMouse |
+            ImGuiWindowFlags_NoDocking;
 
+    // Définit la taille et la position de la barre d'outils
+    ImVec2 size = ImVec2(60, ImGui::GetIO().DisplaySize.y - topPadding);  // Largeur de 60 pixels et hauteur égale à celle de l'écran
+    ImGui::SetNextWindowSize(size);
+    ImGui::SetNextWindowPos(ImVec2(0, topPadding));  // Positionné à gauche et en haut
+
+    // Création de la fenêtre pour la barre d'outils
+    ImGui::Begin("ToolBar", nullptr, window_flags);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // rouge
+    float old_size = ImGui::GetFont()->Scale;
+    ImGui::GetFont()->Scale *= 2.5;
+
+    ImGui::PushFont(ImGui::GetFont());
+
+    // Ajouter des boutons à la barre d'outils
+    if (ImGui::Button(ICON_MDI_SPEAKER_STOP "##stop_sound", ImVec2(-1, 50))) {  // Le bouton prend toute la largeur de la fenêtre et a une hauteur de 50 pixels
+        m_player.Stop();
+    }
+    
+    ImGui::GetFont()->Scale = old_size;
+    ImGui::PopFont();
+    ImGui::PopStyleColor();
+
+    
+    // Fermeture de la fenêtre ImGui
+    ImGui::End();
+}
+
+#include "imgui_internal.h"
 void MainWindow::Loop()
 {
     // Main loop
@@ -749,13 +804,20 @@ void MainWindow::Loop()
 
         m_gui.StartFrame();
 
-       ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-        DrawMainMenuBar();
+        auto vp = ImGui::GetMainViewport();
+
+        auto pos = vp->WorkPos;
+        auto size = vp->WorkSize;
+        pos.x += 60;
+        size.x -= 60;
+        vp->WorkPos = pos;
+        vp->WorkSize = size;
+        ImGui::DockSpaceOverViewport(vp);
+        float height = DrawMainMenuBar();
+
        // DrawStatusBar();
 
-
         ProcessStory();
-
 
         // ------------  Draw all windows
         m_libraryWindow.Draw();
@@ -771,6 +833,12 @@ void MainWindow::Loop()
 
             m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
             m_PropertiesWindow.Draw();
+
+
+            // static ImGuiAxis toolbar2_axis = ImGuiAxis_Y;
+            // DockingToolbar("Toolbar2", &toolbar2_axis);
+
+            DrawToolBar(height);
         }
 
         ProjectPropertiesPopup();
@@ -863,7 +931,7 @@ void MainWindow::Build(bool compileonly)
         if (!compileonly)
         {
             // 3. Convert all media to desired type format
-            m_resources.ConvertResources(m_story->AssetsPath(), ""); // pas de répertoire de destination
+            m_resources.ConvertResources(m_story->AssetsPath(), "", m_story->GetImageFormat(), m_story->GetSoundFormat()); // pas de répertoire de destination
         }
 
         Chip32::Assembler::Error err;

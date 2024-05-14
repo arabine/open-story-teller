@@ -1,7 +1,6 @@
 #ifndef AUDIO_PLAYER_H
 #define AUDIO_PLAYER_H
 
-#include "miniaudio.h"
 #include <string>
 #include <thread>
 #include <mutex>
@@ -34,6 +33,8 @@ public:
     ~AudioPlayer();
 
     void Play(const std::string &filename);
+    void Stop();
+    void Initialize();
 
 private:
     IAudioEvent &m_event;
@@ -41,7 +42,7 @@ private:
     std::thread m_audioThread;
 
     void AudioThread();
-    void CloseAudio();
+
 };
 
 

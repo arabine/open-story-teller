@@ -6,9 +6,10 @@ int main(int, char**)
 {
 
     MainWindow w;
-    w.Initialize();
-
-    w.Loop();
+    if (w.Initialize())
+    {
+        w.Loop();
+    }  
 
     return 0;
 }

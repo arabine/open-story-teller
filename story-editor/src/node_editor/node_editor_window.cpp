@@ -37,7 +37,9 @@ NodeEditorWindow::~NodeEditorWindow()
 void NodeEditorWindow::Initialize()
 {
     ed::Config config;
-    config.SettingsFile = "Widgets.json";
+    config.SettingsFile = nullptr;
+    config.SaveSettings = nullptr;
+    config.LoadSettings = nullptr;
     m_context = ed::CreateEditor(&config);
 
     ed::SetCurrentEditor(m_context);

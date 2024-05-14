@@ -127,6 +127,25 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 # add_subdirectory(${sdl3_SOURCE_DIR}) 
 
 # =========================================================================================================================
+# SDL3 MIXER
+# =========================================================================================================================
+FetchContent_Declare(
+    sdl3_mixer
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+    GIT_TAG ace2d37796d2541123cdcbc06dce0b716a0416ad
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+    GIT_SUBMODULES ""
+)
+
+set(BUILD_SHARED_LIBS TRUE)
+set(SDL_PULSEAUDIO_SHARED TRUE)
+set(SDL_PIPEWIRE_SHARED TRUE)
+FetchContent_MakeAvailable(sdl3_mixer)
+include_directories(${sdl3_mixer_SOURCE_DIR}/include)
+
+
+# =========================================================================================================================
 # SDL3-Image
 # =========================================================================================================================
 # FetchContent_Declare(
@@ -326,6 +345,7 @@ if(UNIX)
         dl
         SDL3::SDL3
         SDL3_image::SDL3_image
+        SDL3_mixer::SDL3_mixer
         libcurl_static
      #   OpenSSL::SSL OpenSSL::Crypto
     )

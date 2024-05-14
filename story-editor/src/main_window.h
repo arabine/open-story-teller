@@ -69,7 +69,7 @@ public:
     MainWindow();
     ~MainWindow();
 
-    void Initialize();
+    bool Initialize();
     void Loop();
 
 private:
@@ -155,8 +155,9 @@ private:
     void SaveParams();
     void LoadParams();
 
-    void DrawMainMenuBar();
+    float DrawMainMenuBar();
     bool ShowQuitConfirm();
+    void DrawToolBar(float topPadding);
 
     void SaveProject();
     void CloseProject();

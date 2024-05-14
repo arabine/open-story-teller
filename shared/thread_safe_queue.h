@@ -33,6 +33,13 @@ public:
         queue.pop();
     }
 
+    void clear() {
+        std::lock_guard lock(mutex);
+        while(!queue.empty()) {
+            queue.pop();
+        }
+    }
+
     bool try_pop(T& popped_item) {
         std::unique_lock lock(mutex);
 

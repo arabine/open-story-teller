@@ -105,6 +105,18 @@ Gui::Gui()
     std::cout << "PATH: " << m_executablePath << std::endl;
 }
 
+static ImFont* normalFont;
+// static ImFont* bigFont;
+
+void Gui::PushBigFont()
+{
+    // ImGui::PushFont(bigFont);
+}
+
+void Gui::PopBigFont()
+{
+    // ImGui::PopFont();
+}
 
 bool Gui::Initialize()
 {
@@ -112,11 +124,29 @@ bool Gui::Initialize()
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 
     // Setup SDL3
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
     {
         printf("Error: SDL_Init(): %s\n", SDL_GetError());
-        return -1;
+        return false;
     }
+/*
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+    {
+        int i, num_devices;
+        SDL_AudioDeviceID *devices = SDL_GetAudioOutputDevices(&num_devices);
+        if (devices) {
+            for (i = 0; i < num_devices; ++i) {
+                SDL_AudioDeviceID instance_id = devices[i];
+                char *name = SDL_GetAudioDeviceName(instance_id);
+                SDL_Log("AudioDevice %" SDL_PRIu32 ": %s\n", instance_id, name);
+                SDL_free(name);
+            }
+            SDL_free(devices);
+        }
+        
+        printf("Error: SDL_InitSubSystem(): %s\n", SDL_GetError());
+        return false;
+    }*/
 
     // Enable native IME.
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
@@ -133,13 +163,13 @@ bool Gui::Initialize()
     if (window == nullptr)
     {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
-        return -1;
+        return false;
     }
     renderer = SDL_CreateRenderer(window, nullptr, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr)
     {
         SDL_Log("Error: SDL_CreateRenderer(): %s\n", SDL_GetError());
-        return -1;
+        return false;
     }
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
@@ -155,7 +185,9 @@ bool Gui::Initialize()
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 
-    io.Fonts->AddFontFromFileTTF( std::string(m_executablePath + "/fonts/roboto.ttf").c_str(), 20);
+    // bigFont = io.Fonts->AddFontFromFileTTF( std::string(m_executablePath + "/fonts/roboto.ttf").c_str(), 40);
+    // io.Fonts->Build();
+    normalFont = io.Fonts->AddFontFromFileTTF( std::string(m_executablePath + "/fonts/roboto.ttf").c_str(), 20);
 
     {
         ImFontConfig config;
