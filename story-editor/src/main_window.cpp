@@ -93,14 +93,42 @@ void MainWindow::Pause()
 
 void MainWindow::Next()
 {
-    Log("End of audio track");
+    Log("Next button");
     m_eventQueue.push({VmEventType::EvNextButton});
 }
 
 void MainWindow::Previous()
 {
-    Log("End of audio track");
+    Log("Previous button");
     m_eventQueue.push({VmEventType::EvPreviousButton});
+}
+
+std::string MainWindow::VmState() const
+{
+    std::string state = "Unknown";
+
+    switch (m_dbg.run_result)
+    {
+        case VM_READY:
+            state = "VM Ready";
+            break;
+        case VM_FINISHED:
+            state = "VM Finished";
+            break;
+        case VM_SKIPED:
+            state = "VM Skiped";
+            break;
+        case VM_WAIT_EVENT:
+            state = "VM Wait Event";
+            break;
+        case VM_OK:
+            state = "VM Ok";
+            break;
+        default:
+            state = "VM Error";
+            break;
+    }
+    return state;
 }
 
 void MainWindow::EndOfAudio()
@@ -659,6 +687,7 @@ void MainWindow::SaveProject()
 {
     nlohmann::json model;
     m_story->Save(m_resources);
+    Log("Project saved");
 }
 
 void MainWindow::OpenProject(const std::string &uuid)
@@ -858,8 +887,8 @@ void MainWindow::Loop()
         // Rendering and event handling
         Uint64 frameTime = SDL_GetTicks() - frameStart; // Temps écoulé pour la frame
 
-        if (frameTime < 16) { // Limite de 60 FPS
-            SDL_Delay(16 - frameTime); // Attendez pour compléter la frame
+        if (frameTime < 32) { // 16 ms =  60 FPS
+            SDL_Delay(32 - frameTime); // Attendez pour compléter la frame
         }
 
 

@@ -167,29 +167,79 @@ void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId i
     m_links.push_back(conn);
 }
 
+// retourne 1 si c'est une sortie, 2 une entrée, 0 pas trouvé
+int NodeEditorWindow::FindNodeAndPin(ed::PinId pinId, int &foundIndex, std::string &foundNodeId)
+{
+    int success = 0;
+    for (const auto & n : m_nodes)
+    {
+        // std::cout << "---> Node: " << n->Base()->GetId() << std::endl;
 
+        if (n->HasOnputPinId(pinId, foundIndex))
+        {
+            foundNodeId = n->Base()->GetId();
+            success = 1;
+            break;
+        }
 
+        if (n->HasInputPinId(pinId, foundIndex))
+        {
+            foundNodeId = n->Base()->GetId();
+            success = 2;
+            break;
+        }
+    }
+
+    return success;
+}
+
+bool NodeEditorWindow::FillConnection(std::shared_ptr<Connection> c, ed::PinId pinId)
+{
+    bool success = false;
+    std::string nodeId;
+    int nodeIndex;
+    int ret = FindNodeAndPin(pinId, nodeIndex, nodeId);
+    if (ret > 0)
+    {
+        if (ret == 1)
+        {
+            c->outNodeId = nodeId;
+            c->outPortIndex = nodeIndex;
+        }
+        else
+        {
+            c->inNodeId = nodeId;
+            c->inPortIndex = nodeIndex;
+        }
+        success = true;
+    }
+    return success;
+}
+
+/*
 std::shared_ptr<Connection> NodeEditorWindow::LinkToModel(ed::PinId InputId, ed::PinId OutputId)
 {
     auto c = std::make_shared<Connection>();
-    int index;
+    int foundIndex = -1;
     for (const auto & n : m_nodes)
     {
-        if (n->HasOnputPinId(OutputId, index))
+        // std::cout << "---> Node: " << n->Base()->GetId() << std::endl;
+
+        if (n->HasOnputPinId(OutputId, foundIndex))
         {
             c->outNodeId = n->Base()->GetId();
-            c->outPortIndex = index;
+            c->outPortIndex = foundIndex;
         }
 
-        if (n->HasInputPinId(InputId, index))
+        if (n->HasInputPinId(InputId, foundIndex))
         {
             c->inNodeId = n->Base()->GetId();
-            c->inPortIndex = index;
+            c->inPortIndex = foundIndex;
         }
     }
 
     return c;
-}
+}*/
 
 
 std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
@@ -243,8 +293,8 @@ void NodeEditorWindow::Draw()
         // Handle creation action, returns true if editor want to create new object (node or link)
         if (ed::BeginCreate())
         {
-            ed::PinId inputPinId, outputPinId;
-            if (ed::QueryNewLink(&inputPinId, &outputPinId))
+            ed::PinId startId, endId;
+            if (ed::QueryNewLink(&startId, &endId))
             {
                // QueryNewLink returns true if editor want to create new link between pins.
                //
@@ -258,18 +308,26 @@ void NodeEditorWindow::Draw()
                //   * input invalid, output valid - user started to drag new ling from output pin
                //   * input valid, output valid   - user dragged link over other pin, can be validated
 
-               if (inputPinId && outputPinId) // both are valid, let's accept link
+               if (startId && endId) // both are valid, let's accept link
                {
                    // ed::AcceptNewItem() return true when user release mouse button.
                    if (ed::AcceptNewItem())
                    {
-                       auto c = LinkToModel(inputPinId, outputPinId);
-                       m_story->AddConnection(c);
+                        auto c = std::make_shared<Connection>();
 
-                       CreateLink(c, inputPinId, outputPinId);
+                        // On cherche à quel noeud appartien les pin (selon si le lien a été créé à partir d'une entrée ou d'une sortie)
+                        if (FillConnection(c, startId))
+                        {
+                            if (FillConnection(c, endId))
+                            {
+                                m_story->AddConnection(c);
 
-                       // Draw new link.
-                       ed::Link(m_links.back()->ed_link->Id, inputPinId, outputPinId);
+                                CreateLink(c, startId, endId);
+
+                                // Draw new link.
+                                ed::Link(m_links.back()->ed_link->Id, startId, endId);
+                            }
+                        }
                    }
 
                    // You may choose to reject connection between these nodes

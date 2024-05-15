@@ -58,6 +58,7 @@ public:
     virtual void Pause() = 0;
     virtual void Next() = 0;
     virtual void Previous() = 0;
+    virtual std::string VmState() const = 0;
 };
 
 #endif // I_STORY_MANAGER_H

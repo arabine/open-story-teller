@@ -99,6 +99,8 @@ void EmulatorWindow::Draw()
 
     ImGui::SameLine();
 
+    ImGui::Text("VM state: %s", m_story.VmState().c_str());
+
     WindowBase::EndDraw();
 }
 

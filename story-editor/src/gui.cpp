@@ -36,7 +36,6 @@ your use of the corresponding standard functions.
 
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
-#include "qoi.h"
 
 
 static void glfw_error_callback(int error, const char* description)
@@ -49,13 +48,6 @@ static SDL_Renderer* renderer{nullptr};
 
 
 #include "stb_image.h"
-
-static std::string GetFileExtension(const std::string &fileName)
-{
-    if(fileName.find_last_of(".") != std::string::npos)
-        return fileName.substr(fileName.find_last_of(".")+1);
-    return "";
-}
 
 
 // Simple helper function to load an image into a OpenGL texture with common settings

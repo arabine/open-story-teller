@@ -119,7 +119,6 @@ void StoryProject::ModelToJson(nlohmann::json &model)
     {
         nlohmann::json c(*cnx);
         connections.push_back(c);
-        // Connection cnx = LinkToModel(linkInfo->ed_link->InputId, linkInfo->ed_link->OutputId);
     }
 
     model["connections"] = connections;
@@ -273,6 +272,32 @@ int StoryProject::OutputsCount(const std::string &nodeId)
         }
     }
     return count;
+}
+
+std::string StoryProject::ImageExtension(const std::string &filename) const
+{
+    std::string ext = SysLib::GetFileExtension(filename);
+    if (m_imageFormat == Resource::ImageFormat::IMG_FORMAT_QOIF)
+    {
+        return "qoi";
+    }
+    
+    return ext;
+}
+
+std::string StoryProject::SoundExtension(const std::string &filename) const
+{
+    std::string ext = SysLib::GetFileExtension(filename);
+    if (m_soundFormat == Resource::SoundFormat::SND_FORMAT_QOAF)
+    {
+        return "qoa";
+    }
+    else if (m_soundFormat == Resource::SoundFormat::SND_FORMAT_WAV)
+    {
+        return "wav";
+    }
+    
+    return ext;
 }
 
 std::list<std::shared_ptr<Connection>> StoryProject::GetNodeConnections(const std::string &nodeId)
@@ -555,7 +580,7 @@ std::string StoryProject::BuildFullAssetsPath(const std::string &fileName) const
 std::string StoryProject::FileToConstant(const std::string &FileName, const std::string &extension)
 {
     std::string f = SysLib::RemoveFileExtension(FileName);
-    return "$" + f + " DC8 \"" + f + extension + "\", 8\r\n";
+    return "$" + f + " DC8 \"" + f + "." + extension + "\", 8\r\n";
 }
 
 

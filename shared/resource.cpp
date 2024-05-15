@@ -27,3 +27,4 @@ std::string Resource::SoundFormatToString(SoundFormat format)
     }
     return text;
 }
+

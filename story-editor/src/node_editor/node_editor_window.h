@@ -116,6 +116,8 @@ private:
     ed::PinId GetInputPin(const std::string &modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(const std::string &modelNodeId, int pinIndex);
     void CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId);
-    std::shared_ptr<Connection> LinkToModel(ed::PinId InputId, ed::PinId OutputId);
+    // std::shared_ptr<Connection> LinkToModel(ed::PinId InputId, ed::PinId OutputId);
+    int FindNodeAndPin(ed::PinId pinId, int &foundIndex, std::string &foundNodeId);
+    bool FillConnection(std::shared_ptr<Connection> c, ed::PinId pinId);
 };
 

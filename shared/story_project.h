@@ -135,6 +135,8 @@ public:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
     std::string FindFirstNode() const;
     virtual int OutputsCount(const std::string &nodeId) override;
+    virtual std::string ImageExtension(const std::string &filename) const override;
+    virtual std::string SoundExtension(const std::string &filename) const override;
 
     std::shared_ptr<BaseNode> CreateNode(const std::string& type);
     void AddConnection(std::shared_ptr<Connection> c);

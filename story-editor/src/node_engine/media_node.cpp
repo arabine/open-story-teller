@@ -24,11 +24,11 @@ std::string MediaNode::GenerateConstants(IStoryProject &story, int nb_out_conns)
 
     if (image.size() > 0)
     {
-        s = StoryProject::FileToConstant(image, ".qoi");  // FIXME: Generate the extension setup in user option of output format
+        s = StoryProject::FileToConstant(image, story.ImageExtension(image));
     }
     if (sound.size() > 0)
     {
-        s += StoryProject::FileToConstant(sound, ".wav");  // FIXME: Generate the extension setup in user option of output format
+        s += StoryProject::FileToConstant(sound, story.SoundExtension(sound));  // FIXME: Generate the extension setup in user option of output format
     }
 
 

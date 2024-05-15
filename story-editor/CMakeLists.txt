@@ -148,23 +148,23 @@ include_directories(${sdl3_mixer_SOURCE_DIR}/include)
 # =========================================================================================================================
 # SDL3-Image
 # =========================================================================================================================
-# FetchContent_Declare(
-# SDL2_image
-# GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-# GIT_TAG origin/main
-# GIT_SHALLOW TRUE
-# GIT_PROGRESS TRUE
-# )
+FetchContent_Declare(
+    sdl_image
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+    GIT_TAG origin/main
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+)
 
-# # START ADDITION
-# set(SDL2IMAGE_INSTALL OFF)
-# set(BUILD_SHARED_LIBS FALSE)
-# # END ADDITION
 
-add_subdirectory(libs/SDL_image) 
-include_directories(libs/SDL_image/include)
+set(SDL3IMAGE_INSTALL OFF)
+set(BUILD_SHARED_LIBS FALSE)
+FetchContent_MakeAvailable(sdl_image)
+include_directories(${sdl_image_SOURCE_DIR}/include)
 
-# FetchContent_MakeAvailable(SDL2_image)
+# =========================================================================================================================
+# Project sources
+# =========================================================================================================================
 set(SRCS
 
     src/main.cpp
@@ -332,11 +332,12 @@ target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
 target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR} ${CMAKE_BINARY_DIR}/libs/SDL_image)
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR})
 
 # On est obligé de passer par une variable pour injecter 
 # certaines informations à CPACK
 set(SDL_BIN_DIR ${sdl3_BINARY_DIR})
+set(SDL_IMAGE_BIN_DIR ${sdl_image_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
@@ -387,6 +388,12 @@ if(WIN32)
 
     # Personnaliser l'icône pour les installateurs Windows
     set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/story-editor-logo.ico") 
+endif()
+
+if(LINUX)
+    install_files("." FILES "${SDL_BIN_DIR}/SDL3.so")
+    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.so")
+    
 endif()
 
 if (APPLE)

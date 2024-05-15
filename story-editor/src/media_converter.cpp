@@ -14,18 +14,38 @@
 #define STBI_NO_LINEAR
 #include "stb_image.h"
 
-#define QOI_IMPLEMENTATION
-#undef QOI_NO_STDIO
-#include "qoi.h"
-
 #define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
+
+#include "qoi.h"
+
+
+static int qoi_encode_and_write(const char *filename, const void *data, const qoi_desc *desc) {
+	FILE *f = fopen(filename, "wb");
+	int size;
+	void *encoded;
+
+	if (!f) {
+		return 0;
+	}
+
+	encoded = qoi_encode(data, desc, &size);
+	if (!encoded) {
+		fclose(f);
+		return 0;
+	}
+
+	fwrite(encoded, 1, size, f);
+	fclose(f);
+
+	free(encoded);
+	return size;
+}
 
 MediaConverter::MediaConverter()
 {
 
 }
-
 
 int MediaConverter::ImageToQoi(const std::string &inputFileName, const std::string &outputFileName)
 {
@@ -54,7 +74,8 @@ int MediaConverter::ImageToQoi(const std::string &inputFileName, const std::stri
         desc.width = w;
         desc.height = h;
 
-        int encoded = qoi_write(outputFileName.c_str(), pixels, &desc);
+
+        int encoded = qoi_encode_and_write(outputFileName.c_str(), pixels, &desc);
         free(pixels);
 
         if (!encoded)
@@ -241,101 +262,3 @@ int MediaConverter::OggToWav(const std::string &inputFileName, const std::string
 
     return cSuccess;
 }
-
-/*
-
-OGG TO WAV
-
-#define STB_VORBIS_HEADER_ONLY
-#include "stb_vorbis.c"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-// Function to read the entire contents of a file into memory
-unsigned char* read_entire_file(const char* filename, int* length) {
-    FILE* f = fopen(filename, "rb");
-    if (!f) return NULL;
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    unsigned char* buffer = (unsigned char*)malloc(size);
-    if (!buffer) {
-        fclose(f);
-        return NULL;
-    }
-    fread(buffer, 1, size, f);
-    fclose(f);
-    if (length) *length = (int)size;
-    return buffer;
-}
-
-int main(int argc, char** argv) {
-    if (argc != 3) {
-        printf("Usage: %s input.ogg output.wav\n", argv[0]);
-        return 1;
-    }
-
-    const char* input_filename = argv[1];
-    const char* output_filename = argv[2];
-
-    int ogg_length;
-    unsigned char* ogg_data = read_entire_file(input_filename, &ogg_length);
-    if (!ogg_data) {
-        printf("Failed to read input file %s\n", input_filename);
-        return 1;
-    }
-
-    int channels, sample_rate;
-    short* samples = stb_vorbis_decode_memory(ogg_data, ogg_length, &channels, &sample_rate);
-    if (!samples) {
-        printf("Failed to decode OGG file %s\n", input_filename);
-        free(ogg_data);
-        return 1;
-    }
-
-    // Write WAV file header
-    FILE* wav_file = fopen(output_filename, "wb");
-    if (!wav_file) {
-        printf("Failed to create output file %s\n", output_filename);
-        free(ogg_data);
-        free(samples);
-        return 1;
-    }
-    fwrite("RIFF", 1, 4, wav_file);
-    int total_size = 36 + channels * (sample_rate * sizeof(short));
-    fwrite(&total_size, 4, 1, wav_file);
-    fwrite("WAVEfmt ", 1, 8, wav_file);
-    int format_size = 16;
-    fwrite(&format_size, 4, 1, wav_file);
-    short format_type = 1; // PCM
-    fwrite(&format_type, 2, 1, wav_file);
-    fwrite(&channels, 2, 1, wav_file);
-    fwrite(&sample_rate, 4, 1, wav_file);
-    int byte_rate = sample_rate * channels * sizeof(short);
-    fwrite(&byte_rate, 4, 1, wav_file);
-    short block_align = channels * sizeof(short);
-    fwrite(&block_align, 2, 1, wav_file);
-    short bits_per_sample = 16;
-    fwrite(&bits_per_sample, 2, 1, wav_file);
-    fwrite("data", 1, 4, wav_file);
-    int data_size = channels * (sample_rate * sizeof(short));
-    fwrite(&data_size, 4, 1, wav_file);
-
-    // Write sample data
-    fwrite(samples, sizeof(short), sample_rate * channels, wav_file);
-
-    fclose(wav_file);
-
-    free(ogg_data);
-    free(samples);
-
-    printf("Conversion complete. WAV file saved as %s\n", output_filename);
-
-    return 0;
-}
-
-
-
-*/
-

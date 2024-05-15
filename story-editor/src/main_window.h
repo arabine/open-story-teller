@@ -144,6 +144,7 @@ private:
     virtual void Pause() override;
     virtual void Next() override;
     virtual void Previous() override;
+    virtual std::string VmState() const override;
 
 
     // From ILogger

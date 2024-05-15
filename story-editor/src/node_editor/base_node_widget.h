@@ -177,6 +177,8 @@ public:
         atIndex = 0;
         for (auto &i : m_node->Outputs)
         {
+            // std::cout << "Output Pin id: " << (int)i.ID.Get() << std::endl;
+
             if (i.ID == pinId)
             {
                 found = true;
