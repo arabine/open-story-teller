@@ -9,13 +9,14 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
-import 'package:http_parser/http_parser.dart';
+import 'package:http_parser/http_parser.dart'; // y'a un warning mais il faut laisser cet import
 import 'package:saf/saf.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 
-import 'package:flutter_launcher/storyvm.dart';
+import 'libstory/storyvm.dart';
+import 'libstory/indexfile.dart';
 
 import 'package:logger/logger.dart';
 
@@ -112,7 +113,7 @@ Future printIps() async {
 void main() {
   StoryVm.loadLibrary();
   StoryVm.initialize();
-  StoryVm.start();
+
   udpServer();
   httpServer();
   printIps();
@@ -170,9 +171,16 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+enum PlayerState { disabled, indexFile, inStory }
+
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   String myPath = 'fffff';
+  IndexFile indexFile = IndexFile();
+  String currentImage = 'assets/320x240.png';
+  final player = AudioPlayer();
+  StreamSubscription? mediaPub;
+  PlayerState state = PlayerState.disabled;
+  StreamSubscription? audioPlayerSub;
 
   void initPaths() async {
     Directory? dir;
@@ -191,23 +199,42 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _MyHomePageState() {
     initPaths();
+    mediaPub = eventBus.on<MediaEvent>().listen((event) {
+      setState(() {
+          if (event.image.isNotEmpty) {
+            currentImage = '${indexFile.getCurrentStoryPath()}/assets/${event.image}';
+          }
+      });
+
+        if (event.sound.isNotEmpty) {
+            player.play(DeviceFileSource('${indexFile.getCurrentStoryPath()}/assets/${event.sound}'));
+        }
+    });
+
+    audioPlayerSub = player.onPlayerComplete.listen((event) {
+      if (state == PlayerState.inStory) {
+        // Send end of music event
+        StoryVm.endOfSound();
+      }
+    });
+
+    state = PlayerState.indexFile;
   }
 
-  void _incrementCounter() {
+  void showCurrentStory() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      currentImage = indexFile.getCurrentTitleImage();
+      logger.d('Current image: $currentImage');
     });
+
+    var asset = DeviceFileSource(indexFile.getCurrentSoundImage());
+    logger.d('Asset: ${asset.toString()}');
+    await player.play(asset);
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
+    // This method is rerun every time setState is called, for instance
     //
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
@@ -233,18 +260,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
             Text(
               myPath,
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const Image(image: AssetImage('assets/320x240.png')),
+            Image(image: AssetImage(currentImage)),
           ],
         ),
       ),
@@ -253,7 +273,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           children: <Widget>[
             IconButton(
-              tooltip: 'Open navigation menu',
+              tooltip: 'Select library directory',
               icon: const Icon(
                 Icons.folder,
                 size: 40,
@@ -283,29 +303,63 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
 
                   if (isGranted == true) {
-                    StoryVm.loadIndexFile('$selectedDirectory/index.ost');
+                    setState(() {
+                      myPath = selectedDirectory;
+                    });
+                    bool success = await indexFile.loadIndexFile(selectedDirectory);
+                    if (success) {
+                      showCurrentStory();
+                    }
                   }
                 }
               },
               color: const Color(0xFFb05728),
             ),
             IconButton(
-              tooltip: 'Search',
+              tooltip: 'Previous',
               icon: const Icon(Icons.arrow_circle_left, size: 40),
-              onPressed: () {},
+              onPressed: () {
+                if (state == PlayerState.inStory) {
+                    StoryVm.previousButton();
+                } else if (state == PlayerState.indexFile) {
+                  indexFile.previous();
+                  showCurrentStory();
+                }
+              },
               color: const Color(0xFFb05728),
             ),
             IconButton(
-              tooltip: 'Favorite',
+              tooltip: 'Next',
               icon: const Icon(Icons.arrow_circle_right, size: 40),
-              onPressed: () {},
+              onPressed: () {
+
+                if (state == PlayerState.inStory) {
+                    StoryVm.nextButton();
+                } else if (state == PlayerState.indexFile) { 
+                  indexFile.next();
+                  showCurrentStory();
+                }
+              },
               color: const Color(0xFFb05728),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () {
+
+           if (state == PlayerState.inStory) {
+              StoryVm.okButton();
+           } else if (state == PlayerState.indexFile) {
+              String path = indexFile.getCurrentStoryPath();
+
+              if (path.isNotEmpty) {
+                StoryVm.start(path);
+                state = PlayerState.inStory;
+              }
+           }
+        
+        },
         tooltip: 'Ok',
         backgroundColor: const Color(0xFF0092c8),
         foregroundColor: Colors.white,

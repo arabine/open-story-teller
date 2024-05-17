@@ -20,7 +20,7 @@ You'll need:
 Here is a list of packages for Ubuntu-like systems:
 
 ```
-sudo apt install cmake mesa-utils mesa-common-dev ninja-build libxext-dev
+sudo apt install cmake mesa-utils mesa-common-dev ninja-build libxext-dev libpipewire-0.3-dev libasound2-dev libpulse-dev
 ```
 
 ## How to build

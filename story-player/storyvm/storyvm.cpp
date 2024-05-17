@@ -25,12 +25,12 @@ static media_callback gMediaCallback = nullptr;
 //---------------------------------------------------------------------------------------
 // VM Stuff
 //---------------------------------------------------------------------------------------
-uint8_t rom_data[16*1024];
-uint8_t ram_data[16*1024];
-chip32_ctx_t chip32_ctx;
+static uint8_t rom_data[16*1024];
+static uint8_t ram_data[16*1024];
+static chip32_ctx_t chip32_ctx;
 
 
-chip32_result_t run_result;
+static chip32_result_t run_result;
 
 
 static uint8_t IndexBuf[260];
@@ -67,10 +67,10 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
 
     if (code == 1) //  // Execute media
     {
-        printf("SYSCALL 1\n");
-        fflush(stdout);
-//        UnloadTexture(*tex);
-//        *tex =
+        std::cout << "[STORYVM] Syscall 1" << std::endl;
+        // for (int i = 0; i< REGISTER_COUNT; i++) {
+        //     std::cout << "[STORYVM] Reg: " << i << ", value: " << (int)ctx->registers[i] << std::endl;
+        // }
 
         if (ctx->registers[R0] != 0)
         {
@@ -80,17 +80,14 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
 
             if (gMediaCallback)
             {
+                std::cout << "[STORYVM] Execute callback (image)" << std::endl;
                 gMediaCallback(0, image);
             }
-
-
-         //   texture = LoadTexture(image_path); // FIXME
         }
         else
         {
-            // UnloadTexture(texture); // FIXME
+            std::cout << "[STORYVM] No image" << std::endl;
         }
-
 
         if (ctx->registers[R1] != 0)
         {
@@ -100,26 +97,20 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
 
             if (gMediaCallback)
             {
+                std::cout << "[STORYVM] Execute callback (sound)" << std::endl;
                 gMediaCallback(1, sound);
             }
-
-            // gMusic = LoadMusicStream(sound_path);
-            // gMusic.looping = false;
-            // gMusicLoaded = true;
-
-
-// FIXME
-            // if (IsMusicReady(gMusic))
-            // {
-            //     PlayMusicStream(gMusic);
-            // }
         }
+        else
+        {
+            std::cout << "[STORYVM] No sound" << std::endl;
+        }
+
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     else if (code == 2) // Wait Event
     {
-        printf("SYSCALL 2\n");
-        fflush(stdout);
+        std::cout << "[STORYVM] Syscall 2 (wait for event)" << std::endl;
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     return retCode;
@@ -132,18 +123,24 @@ extern "C"  void storyvm_run()
     if (run_result == VM_OK)
     {
         run_result = chip32_step(&chip32_ctx);
+
+        // for (int i = 0; i< REGISTER_COUNT; i++) {
+        //     std::cout << "[STORYVM] Reg: " << i << ", value: " << (int)chip32_ctx.registers[i] << std::endl;
+        // }
     }
 }
 
 
 extern "C"  void storyvm_stop()
 {
+    std::cout << "[STORYVM] Stop: " << std::endl;
     run_result = VM_FINISHED;
 }
 
 
 extern "C" void storyvm_initialize(media_callback cb)
 {
+    std::cout << "[STORYVM] Initialize: " << (void *)cb << std::endl;
     gMediaCallback = cb;
 
     chip32_ctx.stack_size = 512;
@@ -161,13 +158,41 @@ extern "C" void storyvm_initialize(media_callback cb)
     run_result = VM_FINISHED;
 
     storyvm_stop();
-     
-    std::cout << "[STORYVM] Initialized" << std::endl;
 }
 
 
+enum VmEventType {EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
+
 extern "C"  void storyvm_send_event(int event)
 {
+    if (event == VmEventType::EvStep)
+    {
+        run_result = VM_OK;
+    }
+    else if (event == VmEventType::EvOkButton)
+    {
+        chip32_ctx.registers[R0] = 0x01;
+        run_result = VM_OK;
+    }
+    else if (event == VmEventType::EvPreviousButton)
+    {
+        chip32_ctx.registers[R0] = 0x02;
+        run_result = VM_OK;
+    }
+    else if (event == VmEventType::EvNextButton)
+    {
+        chip32_ctx.registers[R0] = 0x04;
+        run_result = VM_OK;
+    }
+    else if (event == VmEventType::EvAudioFinished)
+    {
+        chip32_ctx.registers[R0] = 0x08;
+        run_result = VM_OK;
+    }
+    else if (event == VmEventType::EvStop)
+    {
+        run_result = VM_FINISHED;
+    }
 }
 
 extern "C"  void storyvm_start(const uint8_t *data, uint32_t size)
@@ -177,12 +202,12 @@ extern "C"  void storyvm_start(const uint8_t *data, uint32_t size)
         memcpy(chip32_ctx.rom.mem, data, size);
         run_result = VM_OK;
         chip32_initialize(&chip32_ctx);
+        std::cout << "[STORYVM] Start" << std::endl;
     }
     else
     {
         run_result = VM_FINISHED;
+        std::cout << "[STORYVM] Not started (not enough memory)" << std::endl;
     }
-
-     std::cout << "[STORYVM] Start" << std::endl;
 }
 

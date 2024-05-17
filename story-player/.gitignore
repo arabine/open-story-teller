@@ -31,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/linux/flutter/generated_plugin*
 
 # Symbolication related
 app.*.symbols
