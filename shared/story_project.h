@@ -114,7 +114,7 @@ public:
     std::string GetDescription() const { return m_description; }
     uint32_t GetVersion() const { return m_version; }
 
-    std::string BuildFullAssetsPath(const std::string &fileName) const;
+    std::string BuildFullAssetsPath(const std::string_view fileName) const;
 
     static std::string FileToConstant(const std::string &FileName, const std::string &extension);
 

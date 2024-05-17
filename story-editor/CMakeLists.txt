@@ -132,7 +132,7 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 FetchContent_Declare(
     sdl3_mixer
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-    GIT_TAG ace2d37796d2541123cdcbc06dce0b716a0416ad
+    GIT_TAG origin/main
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
     GIT_SUBMODULES ""

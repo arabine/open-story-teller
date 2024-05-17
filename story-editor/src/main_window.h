@@ -123,7 +123,7 @@ private:
     virtual void OpenProject(const std::string &uuid) override;
     virtual void ImportProject(const std::string &fileName, int format);
     virtual void PlaySoundFile(const std::string &fileName) override;;
-    virtual std::string BuildFullAssetsPath(const std::string &fileName) const override;
+    virtual std::string BuildFullAssetsPath(const std::string_view fileName) const override;
     virtual std::pair<FilterIterator, FilterIterator> Images() override;
     virtual std::pair<FilterIterator, FilterIterator> Sounds() override;
 
@@ -137,6 +137,7 @@ private:
     virtual void DeleteNode(const std::string &id) override;
     virtual void DeleteLink(std::shared_ptr<Connection> c) override;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
+    virtual void LoadBinaryStory(const std::string &filename) override;
 
     virtual void Play() override;
     virtual void Ok() override;

@@ -235,7 +235,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         {
             // sound file name address is in R1
             std::string soundFile = m_story->BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
-            Log(", Sound: " + soundFile);
+            Log("Sound: " + soundFile);
             m_player.Play(soundFile);
         }
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
@@ -909,7 +909,7 @@ void MainWindow::PlaySoundFile(const std::string &fileName)
     m_player.Play(fileName);
 }
 
-std::string MainWindow::BuildFullAssetsPath(const std::string &fileName) const
+std::string MainWindow::BuildFullAssetsPath(const std::string_view fileName) const
 {
     return m_story->BuildFullAssetsPath(fileName);
 }
@@ -949,6 +949,27 @@ std::shared_ptr<BaseNode> MainWindow::CreateNode(const std::string &type)
     return m_story->CreateNode(type);
 }
 
+void MainWindow::LoadBinaryStory(const std::string &filename)
+{
+    FILE *fp = fopen(filename.c_str(), "rb");
+    if (fp != NULL)
+    {
+        fseek(fp, 0L, SEEK_END);
+        long int sz = ftell(fp);
+        fseek(fp, 0L, SEEK_SET);
+
+        if (sz <= m_chip32_ctx.rom.size)
+        {
+            fread(m_chip32_ctx.rom.mem, sz, 1, fp);
+            m_dbg.run_result = VM_READY;
+            chip32_initialize(&m_chip32_ctx);
+            Log("Loaded binary file: " + filename);
+        }
+        fclose(fp);
+    }
+}
+
+
 void MainWindow::Build(bool compileonly)
 {
     if (m_story->GenerateScript(m_currentCode))
@@ -967,8 +988,6 @@ void MainWindow::Build(bool compileonly)
         if (m_story->GenerateBinary(m_currentCode, err))
         {
             m_result.Print();
-
-            Log("Binary successfully generated.");
 
             if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
             {

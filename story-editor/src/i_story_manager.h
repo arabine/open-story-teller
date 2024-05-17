@@ -35,7 +35,7 @@ public:
     virtual void ImportProject(const std::string &fileName, int format) = 0;
     virtual void Log(const std::string &txt, bool critical = false) = 0;
     virtual void PlaySoundFile(const std::string &fileName) = 0;
-    virtual std::string BuildFullAssetsPath(const std::string &fileName) const = 0;
+    virtual std::string BuildFullAssetsPath(const std::string_view fileName) const = 0;
 
     // Resources management
     virtual std::pair<FilterIterator, FilterIterator> Images() = 0;
@@ -51,6 +51,7 @@ public:
     virtual void DeleteNode(const std::string &id) = 0;
     virtual void DeleteLink(std::shared_ptr<Connection> c) = 0;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;
+     virtual void LoadBinaryStory(const std::string &filename) = 0;
  
     virtual void Play() = 0;
     virtual void Ok() = 0;

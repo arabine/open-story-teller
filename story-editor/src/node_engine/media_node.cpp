@@ -17,18 +17,33 @@ MediaNode::MediaNode(const std::string &type)
     SetInternalData(j);
 }
 
+void MediaNode::StoreInternalData()
+{
+    nlohmann::json j;
+    j["image"] = m_image;
+    j["sound"] = m_sound;
+
+    SetInternalData(j);
+}
+
+void MediaNode::Initialize()
+{
+    nlohmann::json j = GetInternalData();
+    m_image = j["image"].get<std::string>();
+    m_sound = j["sound"].get<std::string>();
+}
 
 std::string MediaNode::GenerateConstants(IStoryProject &story, int nb_out_conns)
 {
     std::string s;
 
-    if (image.size() > 0)
+    if (m_image.size() > 0)
     {
-        s = StoryProject::FileToConstant(image, story.ImageExtension(image));
+        s = StoryProject::FileToConstant(m_image, story.ImageExtension(m_image));
     }
-    if (sound.size() > 0)
+    if (m_sound.size() > 0)
     {
-        s += StoryProject::FileToConstant(sound, story.SoundExtension(sound));  // FIXME: Generate the extension setup in user option of output format
+        s += StoryProject::FileToConstant(m_sound, story.SoundExtension(m_sound));  // FIXME: Generate the extension setup in user option of output format
     }
 
 
@@ -65,6 +80,27 @@ std::string MediaNode::GenerateConstants(IStoryProject &story, int nb_out_conns)
     return s;
 }
 
+void MediaNode::SetImage(const std::string &image)
+{
+    m_image = image;
+    StoreInternalData();
+}
+
+std::string_view MediaNode::GetImage() const
+{
+    return m_image;
+}
+
+void MediaNode::SetSound(const std::string &sound)
+{
+    m_sound = sound;
+    StoreInternalData();
+}
+
+std::string_view MediaNode::GetSound() const
+{
+    return m_sound;
+}
 
 std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
 {
@@ -76,8 +112,8 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
        << (nb_out_conns == 0 ? "End" : nb_out_conns == 1 ? "Transition" : "Choice")
        << "\n";
 
-    std::string img = SysLib::RemoveFileExtension(image);
-    std::string snd = SysLib::RemoveFileExtension(sound);
+    std::string img = SysLib::RemoveFileExtension(m_image);
+    std::string snd = SysLib::RemoveFileExtension(m_sound);
 
     // Le label de ce noeud est généré de la façon suivante :
     // "media" + Node ID + id du noeud parent. Si pas de noeud parent, alors rien

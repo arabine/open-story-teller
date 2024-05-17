@@ -46,6 +46,8 @@ void StoryProject::CopyToDevice(const std::string &outputDir)
     std::string code;
     GenerateScript(code);
 
+    std::cout << code << std::endl;
+
     Chip32::Assembler::Error err;
     if (GenerateBinary(code, err))
     {
@@ -192,6 +194,7 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model)
             if (n)
             {
                 n->FromJson(element);
+                n->Initialize();
             }
             else
             {
@@ -533,7 +536,6 @@ void StoryProject::Clear()
 }
 
 
-
 void StoryProject::SetTitleImage(const std::string &titleImage)
 {
     m_titleImage = titleImage;
@@ -543,8 +545,6 @@ void StoryProject::SetTitleSound(const std::string &titleSound)
 {
     m_titleSound = titleSound;
 }
-
-
 
 void StoryProject::SetImageFormat(Resource::ImageFormat format)
 {
@@ -572,7 +572,7 @@ std::string StoryProject::GetWorkingDir() const
     return m_working_dir.string();
 }
 
-std::string StoryProject::BuildFullAssetsPath(const std::string &fileName) const
+std::string StoryProject::BuildFullAssetsPath(const std::string_view fileName) const
 {
     return (AssetsPath() / fileName).generic_string();
 }

@@ -1,5 +1,6 @@
 #include "emulator_window.h"
 #include "gui.h"
+#include "ImGuiFileDialog.h"
 #include "IconsMaterialDesignIcons.h"
 
 EmulatorWindow::EmulatorWindow(IStoryManager &proj)
@@ -100,6 +101,37 @@ void EmulatorWindow::Draw()
     ImGui::SameLine();
 
     ImGui::Text("VM state: %s", m_story.VmState().c_str());
+
+
+    if (ImGui::Button("Load binary story (.c32)"))
+    {
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        config.countSelectionMax = 1;
+        config.flags = ImGuiFileDialogFlags_Modal;
+        ImGuiFileDialog::Instance()->OpenDialog("LoadBinarySoryDlgKey", 
+            "Choose a binary story", 
+            ".c32",
+            config
+        );
+    }
+
+     // ---------------- Load Binary story
+    if (ImGuiFileDialog::Instance()->Display("LoadBinarySoryDlgKey"))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+            std::string filter = ImGuiFileDialog::Instance()->GetCurrentFilter();
+            
+            m_story.LoadBinaryStory(filePathName);
+        }
+        // close
+        ImGuiFileDialog::Instance()->Close();
+    }
+
+
 
     WindowBase::EndDraw();
 }

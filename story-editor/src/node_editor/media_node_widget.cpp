@@ -101,19 +101,8 @@ void MediaNodeWidget::Draw()
 void MediaNodeWidget::Initialize()
 {
     BaseNodeWidget::Initialize();
-    nlohmann::json j = m_mediaNode->GetInternalData();
-    SetImage(j["image"].get<std::string>());
-    SetSound(j["sound"].get<std::string>());
-}
-
-
-void MediaNodeWidget::StoreInternalData()
-{
-    nlohmann::json j;
-    j["image"] = m_mediaNode->image;
-    j["sound"] = m_mediaNode->sound;
-
-    m_mediaNode->SetInternalData(j);
+    m_image.Load(m_manager.BuildFullAssetsPath(m_mediaNode->GetImage()));
+    m_soundPath = m_manager.BuildFullAssetsPath(m_mediaNode->GetSound());
 }
 
 void MediaNodeWidget::DrawProperties()
@@ -122,7 +111,7 @@ void MediaNodeWidget::DrawProperties()
     ImGui::Text("Image");
     ImGui::SameLine();
 
-    ImGui::Text("%s", m_mediaNode->image.c_str());
+    ImGui::Text("%s", m_mediaNode->GetImage().data());
 
     ImGui::SameLine();
 
@@ -133,14 +122,15 @@ void MediaNodeWidget::DrawProperties()
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delimage")) {
-        SetImage("");
+        m_mediaNode->SetImage("");
+        Initialize();
     }
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Sound");
     ImGui::SameLine();
 
-    ImGui::Text("%s", m_mediaNode->sound.c_str());
+    ImGui::Text("%s", m_mediaNode->GetSound().data());
 
     ImGui::SameLine();
 
@@ -158,7 +148,8 @@ void MediaNodeWidget::DrawProperties()
 
     ImGui::SameLine();
     if (ImGui::Button(ICON_MDI_CLOSE_BOX_OUTLINE "##delsound")) {
-        SetSound("");
+        m_mediaNode->SetSound("");
+        Initialize();
     }
 
     // This is the actual popup Gui drawing section.
@@ -173,32 +164,19 @@ void MediaNodeWidget::DrawProperties()
             {
                 if (isImage)
                 {
-                    SetImage((*it)->file);
+                    m_mediaNode->SetImage((*it)->file);
                 }
                 else
                 {
-                    SetSound((*it)->file);
+                    m_mediaNode->SetSound((*it)->file);
                 }
+                Initialize();
             }
         }
 
         ImGui::EndPopup(); // Note this does not do anything to the popup open/close state. It just terminates the content declaration.
     }
 
-}
-
-void MediaNodeWidget::SetImage(const std::string &f)
-{
-    m_mediaNode->image = f;
-    m_image.Load(m_manager.BuildFullAssetsPath(f));
-    StoreInternalData();
-}
-
-void MediaNodeWidget::SetSound(const std::string &f)
-{
-    m_mediaNode->sound = f;
-    m_soundPath = m_manager.BuildFullAssetsPath(m_mediaNode->sound);
-    StoreInternalData();
 }
 
 

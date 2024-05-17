@@ -29,11 +29,5 @@ private:
 
     std::string m_soundPath;
     std::string m_buttonUniqueName;
-    
-
-    void SetImage(const std::string &f);
-    void SetSound(const std::string &f);
-
-    void StoreInternalData();
-   
+ 
 };

@@ -6,15 +6,23 @@
 #include "i_script_node.h"
 #include "i_story_project.h"
 
-struct MediaNode : public BaseNode
+class MediaNode : public BaseNode
 {
-
+public:
     MediaNode(const std::string &type);
 
+    virtual void Initialize() override;
     virtual std::string Build(IStoryProject &story, int nb_out_conns) override;
     virtual std::string GenerateConstants(IStoryProject &story, int nb_out_conns) override;
 
-    std::string image;
-    std::string sound;
+    void SetImage(const std::string &image);
+    std::string_view GetImage() const;
+    void SetSound(const std::string &sound);
+    std::string_view GetSound() const;
+    void StoreInternalData();
+
+private:
+    std::string m_image;
+    std::string m_sound;
 };
 

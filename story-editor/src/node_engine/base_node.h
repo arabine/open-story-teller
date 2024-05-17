@@ -22,6 +22,7 @@ public:
 
     static std::string GetEntryLabel(const std::string &id);
 
+    virtual void Initialize() = 0;
     virtual std::string Build(IStoryProject &story, int nb_out_conns) = 0;
     virtual std::string GenerateConstants(IStoryProject &story, int nb_out_conns) = 0;
 
