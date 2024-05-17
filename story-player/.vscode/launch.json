@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "flutter_launcher",
+            "name": "story_player",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "flutter_launcher (profile mode)",
+            "name": "story_player (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "flutter_launcher (release mode)",
+            "name": "story_player (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

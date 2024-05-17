@@ -1,4 +1,4 @@
-package com.example.flutter_launcher
+package org.openstoryteller.story_player
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -3,112 +3,34 @@ import 'package:flutter/material.dart' hide Router;
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart' as io;
-import 'package:shelf_router/shelf_router.dart';
-import 'package:mime/mime.dart';
-import 'package:path/path.dart' as p;
-import 'package:http_parser/http_parser.dart'; // y'a un warning mais il faut laisser cet import
 import 'package:saf/saf.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:external_path/external_path.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:logger/logger.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'libstory/storyvm.dart';
 import 'libstory/indexfile.dart';
+import 'httpserver.dart';
 
-import 'package:logger/logger.dart';
-
-var logger = Logger(printer: PrettyPrinter(methodCount: 0));
-
-void httpServer() async {
-  final router = Router();
-
-  // Route pour uploader des fichiers
-  router.post('/upload', (Request request) async {
-    var contentType = MediaType.parse(request.headers['content-type']!);
-    var boundary = contentType.parameters['boundary']!;
-    var transformer = MimeMultipartTransformer(boundary);
-    var bodyStream = request.read();
-    var parts = await transformer.bind(bodyStream).toList();
-
-    for (var part in parts) {
-      var contentDisp = part.headers['content-disposition']!;
-      var filename = _extractFilename(contentDisp);
-      if (filename != null) {
-        var filePath = p.join('uploads', filename);
-        await _saveFile(part, filePath);
-        logger.d('File uploaded: $filePath');
-      }
-    }
-
-    return Response.ok('File uploaded successfully');
-  });
-
-  // Route pour lister les fichiers
-  router.get('/files', (Request request) async {
-    final directory = Directory('uploads');
-    final files =
-        directory.listSync().map((file) => p.basename(file.path)).toList();
-    final json = {'files': files};
-    return Response.ok(jsonEncode(json),
-        headers: {'Content-Type': 'application/json'});
-  });
-
-  // Démarrer le serveur
-  io.serve(router, 'localhost', 8080).then((server) {
-    logger.d('Serving at http://${server.address.host}:${server.port}');
-  });
-}
-
-String? _extractFilename(String contentDisposition) {
-  return RegExp('filename="([^"]*)"').firstMatch(contentDisposition)?.group(1);
-}
-
-Future<void> _saveFile(MimeMultipart part, String filename) async {
-  var file = File(filename);
-  await file.create(recursive: true);
-  await part.pipe(file.openWrite());
-}
-
-void udpServer() async {
-  // Créer un socket UDP
-  var port = 8080; // Vous pouvez spécifier le port de votre choix
-  var address =
-      InternetAddress.anyIPv4; // Écouter sur toutes les interfaces IPv4
-  RawDatagramSocket socket = await RawDatagramSocket.bind(address, port);
-  logger.d('Serveur UDP écoutant sur ${address.address}:$port');
-
-  // Gérer les événements du socket
-  socket.listen((RawSocketEvent event) {
-    if (event == RawSocketEvent.read) {
-      Datagram? datagram = socket.receive();
-      if (datagram != null) {
-        var message = utf8.decode(datagram.data);
-        logger.d(
-            'Message reçu de ${datagram.address.address}:${datagram.port}: $message');
-
-        // Envoyer une réponse
-        String response = 'Reçu: $message';
-        List<int> data = utf8.encode(response);
-        socket.send(data, datagram.address, datagram.port);
-        logger.d(
-            'Réponse envoyée à ${datagram.address.address}:${datagram.port}');
-      }
-    }
-  });
-}
-
-Future printIps() async {
-  for (var interface in await NetworkInterface.list()) {
-    logger.d('== Interface: ${interface.name} ==');
-    for (var addr in interface.addresses) {
-      logger.d(
-          '${addr.address} ${addr.host} ${addr.isLoopback} ${addr.rawAddress} ${addr.type.name}');
-    }
+class ProductionFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) {
+    return true;
   }
 }
+
+var logger = Logger(
+  printer: PrettyPrinter(methodCount: 0),
+  filter: ProductionFilter(), // Use the ProductionFilter to enable logging in release mode
+  
+);
+
 
 void main() {
   StoryVm.loadLibrary();
@@ -182,6 +104,13 @@ class _MyHomePageState extends State<MyHomePage> {
   PlayerState state = PlayerState.disabled;
   StreamSubscription? audioPlayerSub;
 
+  Image img = const Image(image: AssetImage('assets/320x240.png'));
+
+ // final Permission _permission = Permission.storage;
+  PermissionStatus _permissionStatus = PermissionStatus.denied;
+
+  var _openResult = 'Unknown';
+
   void initPaths() async {
     Directory? dir;
 
@@ -206,6 +135,8 @@ class _MyHomePageState extends State<MyHomePage> {
           }
       });
 
+      img = Image.file(File(currentImage));
+
         if (event.sound.isNotEmpty) {
             player.play(DeviceFileSource('${indexFile.getCurrentStoryPath()}/assets/${event.sound}'));
         }
@@ -221,16 +152,52 @@ class _MyHomePageState extends State<MyHomePage> {
     state = PlayerState.indexFile;
   }
 
-  void showCurrentStory() async {
+  Uint8List soundBuffer = Uint8List(0);
+
+  void showCurrentStoryIndex() async {
     setState(() {
       currentImage = indexFile.getCurrentTitleImage();
       logger.d('Current image: $currentImage');
     });
 
-    var asset = DeviceFileSource(indexFile.getCurrentSoundImage());
-    logger.d('Asset: ${asset.toString()}');
-    await player.play(asset);
+    img = Image.file(File(currentImage));
+
+    // File sound = File(indexFile.getCurrentSoundImage());
+    // soundBuffer = sound.readAsBytesSync();
+    // // logger.d('Asset: ${asset.toString()}');
+    // await player.play(BytesSource(soundBuffer));
+
+    player.play(DeviceFileSource(indexFile.getCurrentSoundImage()));
   }
+
+
+  void chooseLibraryDirectory() async {
+     // FilePickerResult? result = await FilePicker.platform.pickFiles();
+      String ?path = await FilePicker.platform.getDirectoryPath();
+
+      if (path != null) {
+        logger.d("Selected directory: $path");
+
+          setState(() {
+            myPath = path;
+        });
+        bool success = await indexFile.loadIndexFile(path);
+        if (success) {
+            showCurrentStoryIndex();
+            state = PlayerState.indexFile;
+        }
+      }
+  }
+
+  void handleClick(String value) async {
+    switch (value) {
+      case 'Library':
+        chooseLibraryDirectory();
+        break;
+      case 'Settings':
+        break;
+    }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +207,23 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+      appBar: AppBar(
+        // title: Text('Homepage'),
+        backgroundColor: const Color(0xFF9ab4a4),
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: handleClick,
+            itemBuilder: (BuildContext context) {
+              return {'Library'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+          ),
+        ],
+      ),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
@@ -262,9 +246,9 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Text(
               myPath,
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            Image(image: AssetImage(currentImage)),
+            img,
           ],
         ),
       ),
@@ -272,49 +256,31 @@ class _MyHomePageState extends State<MyHomePage> {
         color: const Color(0xFF9ab4a4),
         child: Row(
           children: <Widget>[
-            IconButton(
+           /* IconButton(
               tooltip: 'Select library directory',
               icon: const Icon(
                 Icons.folder,
                 size: 40,
               ),
               onPressed: () async {
-                String? selectedDirectory =
-                    await FilePicker.platform.getDirectoryPath();
+                // FilePickerResult? result = await FilePicker.platform.pickFiles();
+                String ?path = await FilePicker.platform.getDirectoryPath();
 
-                if (selectedDirectory == null) {
-                  // User canceled the picker
-                } else {
-                  bool? isGranted = true;
-                  logger.d(selectedDirectory);
+                if (path != null) {
+                  logger.d("Selected directory: $path");
 
-                  if (Platform.isAndroid) {
-                    Saf saf = Saf(selectedDirectory);
-
-                    isGranted =
-                        await saf.getDirectoryPermission(isDynamic: false);
-
-                    if (isGranted != null && isGranted) {
-                      // Perform some file operations
-                      logger.d('Granted!');
-                    } else {
-                      // failed to get the permission
-                    }
-                  }
-
-                  if (isGranted == true) {
-                    setState(() {
-                      myPath = selectedDirectory;
-                    });
-                    bool success = await indexFile.loadIndexFile(selectedDirectory);
-                    if (success) {
-                      showCurrentStory();
-                    }
+                   setState(() {
+                      myPath = path;
+                  });
+                  bool success = await indexFile.loadIndexFile(path);
+                  if (success) {
+                      showCurrentStoryIndex();
+                      state = PlayerState.indexFile;
                   }
                 }
               },
               color: const Color(0xFFb05728),
-            ),
+            ),*/
             IconButton(
               tooltip: 'Previous',
               icon: const Icon(Icons.arrow_circle_left, size: 40),
@@ -323,7 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     StoryVm.previousButton();
                 } else if (state == PlayerState.indexFile) {
                   indexFile.previous();
-                  showCurrentStory();
+                  showCurrentStoryIndex();
                 }
               },
               color: const Color(0xFFb05728),
@@ -337,7 +303,22 @@ class _MyHomePageState extends State<MyHomePage> {
                     StoryVm.nextButton();
                 } else if (state == PlayerState.indexFile) { 
                   indexFile.next();
-                  showCurrentStory();
+                  showCurrentStoryIndex();
+                }
+              },
+              color: const Color(0xFFb05728),
+            ),
+            IconButton(
+              tooltip: 'Home',
+              icon: const Icon(Icons.home_filled, size: 40),
+              onPressed: () {
+
+                if (state == PlayerState.inStory) {
+                  player.stop();
+                  showCurrentStoryIndex();
+                  state = PlayerState.indexFile;
+                } else if (state == PlayerState.indexFile) { 
+                  player.stop();
                 }
               },
               color: const Color(0xFFb05728),

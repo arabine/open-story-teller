@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:logger/logger.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
@@ -117,14 +118,33 @@ class IndexFile {
   Future<bool> loadIndexFile(String libraryRoot) async {
     libraryPath = libraryRoot;
     indexFileIsValid = false;
-    final file = File('$libraryRoot/index.ost');
-    if (!await file.exists()) {
-      logger.d('Le fichier n\'existe pas.');
-      return false;
-    }
 
+    String indexFileName = '$libraryRoot/index.ost';
+
+    bool isGranted = true;
+
+    // if (Platform.isAndroid) {
+
+    //   if (await Permission.manageExternalStorage.request().isGranted) {
+    //     isGranted = true;
+    //   }
+    // } else {
+    //   isGranted = true;
+    // }
+
+    if (isGranted) {
+        final file = File(indexFileName);
+        if (!await file.exists()) {
+          logger.d('Le fichier n\'existe pas.');
+          return false;
+        }
+        indexFileBuffer = file.readAsBytesSync();
+    } else {
+      logger.e("Cannot access to file: $indexFileName");
+    }
+   
     // Ouvrir le fichier en mode lecture binaire
-    indexFileBuffer = file.readAsBytesSync();
+    
     readPtr = 0;
     indexFileStream =
         ByteData.sublistView(indexFileBuffer, readPtr); // start at zero
