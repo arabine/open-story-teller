@@ -3,10 +3,12 @@
 #include <fstream>
 #include <memory>
 
-CodeEditor::CodeEditor()
+CodeEditor::CodeEditor(IStoryManager &project)
     : WindowBase("Code editor")
+    , m_storyManager(project)
 {
-    mEditor.SetReadOnly(true);
+    mEditor.SetReadOnly(false);
+    SetFlags(ImGuiWindowFlags_MenuBar);
 }
 
 void CodeEditor::Initialize()
@@ -18,8 +20,8 @@ void CodeEditor::Initialize()
 
 
     // "breakpoint" markers
-   // m_breakPoints.insert(42);
-  //  mEditor.SetBreakpoints(m_breakPoints);
+    // m_breakPoints.insert(42);
+    // mEditor.SetBreakpoints(m_breakPoints);
 
 }
 
@@ -39,6 +41,12 @@ void CodeEditor::SetScript(const std::string &txt)
 {
     mEditor.SetText(txt);
 }
+
+std::string CodeEditor::GetScript() const
+{
+    return mEditor.GetText();
+}
+
 
 void CodeEditor::Draw()
 {
@@ -108,6 +116,21 @@ void CodeEditor::Draw()
     ImGui::Text("%6d/%-6d %6d lines  | %s | %s ", cpos.mLine + 1, cpos.mColumn + 1, mEditor.GetTotalLines(),
         mEditor.IsOverwrite() ? "Ovr" : "Ins",
         mEditor.CanUndo() ? "*" : " ");
+
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Toggle breakpoint")) {
+        if (m_breakPoints.contains(cpos.mLine))
+        {
+            m_breakPoints.erase(cpos.mLine);
+        }
+        else
+        {
+            m_breakPoints.insert(cpos.mLine);
+        }
+        mEditor.SetBreakpoints(m_breakPoints);
+
+        m_storyManager.ToggleBreakpoint(cpos.mLine);
+    }
 
     mEditor.Render("TextEditor");
     WindowBase::EndDraw();

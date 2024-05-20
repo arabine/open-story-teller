@@ -2,6 +2,7 @@
 #define WINDOWBASE_H
 
 #include <string>
+#include "imgui.h"
 
 class WindowBase
 {
@@ -26,10 +27,15 @@ public:
         m_disabled = false;
     }
 
+    void SetFlags(ImGuiWindowFlags flags) {
+        m_windowFlags = flags;
+    }
+
 private:
 
     bool m_disabled{false};
     std::string m_title;
+    ImGuiWindowFlags m_windowFlags = 0;
 };
 
 #endif // WINDOWBASE_H

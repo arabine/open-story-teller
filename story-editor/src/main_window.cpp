@@ -23,6 +23,7 @@
 MainWindow::MainWindow()
     : m_libraryManager(*this)
     , m_emulatorWindow(*this)
+    , m_codeEditorWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
     , m_libraryWindow(*this, m_libraryManager)
@@ -192,7 +193,7 @@ void MainWindow::ProcessStory()
     {
         if (m_dbg.m_breakpoints.contains(m_dbg.line + 1))
         {
-            Log("Breakpoint on line: " + std::to_string(m_dbg.line + 1));
+          //  Log("Breakpoint on line: " + std::to_string(m_dbg.line + 1));
             m_dbg.free_run = false;
             return;
         }
@@ -427,7 +428,7 @@ bool MainWindow::Initialize()
         m_player.Initialize(); // Initialize audio after GUI (uses SDL)
     //  gui.ApplyTheme();
 
-        m_editorWindow.Initialize();
+        m_codeEditorWindow.Initialize();
         m_emulatorWindow.Initialize();
         m_nodeEditorWindow.Initialize();
         m_PropertiesWindow.Initialize();
@@ -725,7 +726,7 @@ void MainWindow::OpenProject(const std::string &uuid)
         m_nodeEditorWindow.Enable();
         m_emulatorWindow.Enable();
         m_consoleWindow.Enable();
-        m_editorWindow.Enable();
+        m_codeEditorWindow.Enable();
         m_resourcesWindow.Enable();
         m_PropertiesWindow.Enable();
     }
@@ -771,12 +772,12 @@ void MainWindow::CloseProject()
     m_nodeEditorWindow.Clear();
     m_emulatorWindow.ClearImage();
     m_consoleWindow.ClearLog();
-    m_editorWindow.ClearErrors();
-    m_editorWindow.SetScript("");
+    m_codeEditorWindow.ClearErrors();
+    m_codeEditorWindow.SetScript("");
 
     m_nodeEditorWindow.Disable();
     m_emulatorWindow.Disable();
-    m_editorWindow.Disable();
+    m_codeEditorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
 
@@ -855,7 +856,7 @@ void MainWindow::Loop()
         {
             m_consoleWindow.Draw();
             m_emulatorWindow.Draw();
-            m_editorWindow.Draw();
+            m_codeEditorWindow.Draw();
             m_resourcesWindow.Draw();
             m_nodeEditorWindow.Draw();
 
@@ -969,47 +970,71 @@ void MainWindow::LoadBinaryStory(const std::string &filename)
     }
 }
 
+void MainWindow::ToggleBreakpoint(int line)
+{
+    if (m_dbg.m_breakpoints.contains(line))
+    {
+        m_dbg.m_breakpoints.erase(line);
+    }
+    else
+    {
+        m_dbg.m_breakpoints.insert(line);
+    }
+}
 
-void MainWindow::Build(bool compileonly)
+void MainWindow::BuildNodes(bool compileonly)
 {
     if (m_story->GenerateScript(m_currentCode))
     {
-        m_editorWindow.SetScript(m_currentCode);
-        m_dbg.run_result = VM_FINISHED;
-        m_dbg.free_run = false;
+        m_codeEditorWindow.SetScript(m_currentCode);
+        Build(compileonly);
+    }
+}
 
-        if (!compileonly)
+
+void MainWindow::Build(bool compileonly)
+{
+    m_dbg.run_result = VM_FINISHED;
+    m_dbg.free_run = false;
+
+    if (!compileonly)
+    {
+        // 3. Convert all media to desired type format
+        m_resources.ConvertResources(m_story->AssetsPath(), "", m_story->GetImageFormat(), m_story->GetSoundFormat()); // pas de répertoire de destination
+    }
+
+    Chip32::Assembler::Error err;
+    m_codeEditorWindow.ClearErrors();
+    if (m_story->GenerateBinary(m_currentCode, err))
+    {
+        m_result.Print();
+
+        if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
         {
-            // 3. Convert all media to desired type format
-            m_resources.ConvertResources(m_story->AssetsPath(), "", m_story->GetImageFormat(), m_story->GetSoundFormat()); // pas de répertoire de destination
-        }
-
-        Chip32::Assembler::Error err;
-        if (m_story->GenerateBinary(m_currentCode, err))
-        {
-            m_result.Print();
-
-            if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
-            {
-                //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
+            //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
 //            m_romView->SetMemory(m_rom_data, m_program.size());
-                m_story->SaveBinary();
-                chip32_initialize(&m_chip32_ctx);
-                m_dbg.run_result = VM_READY;
-                UpdateVmView();
-            }
-            else
-            {
-                Log("Program too big. Expand ROM memory.");
-            }
+            m_story->SaveBinary();
+            chip32_initialize(&m_chip32_ctx);
+            m_dbg.run_result = VM_READY;
+            UpdateVmView();
         }
         else
         {
-            Log(err.ToString(), true);
-            m_editorWindow.AddError(err.line, err.message); // show also the error in the code editor
+            Log("Program too big. Expand ROM memory.");
         }
     }
+    else
+    {
+        Log(err.ToString(), true);
+        m_codeEditorWindow.AddError(err.line, err.message); // show also the error in the code editor
+    }
+}
 
+
+void MainWindow::BuildCode(bool compileonly)
+{
+    m_currentCode = m_codeEditorWindow.GetScript();
+    Build(compileonly);
 }
 
 void MainWindow::DeleteNode(const std::string &id)
@@ -1039,7 +1064,7 @@ void MainWindow::UpdateVmView()
     if (m_story->GetAssemblyLine(pcVal, line))
     {
         m_dbg.line = (line - 1);
-        m_editorWindow.HighlightLine(m_dbg.line);
+        m_codeEditorWindow.HighlightLine(m_dbg.line);
     }
     else
     {

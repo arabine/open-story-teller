@@ -9,7 +9,7 @@ WindowBase::WindowBase(const std::string &title)
 
 bool WindowBase::BeginDraw()
 {
-    bool ok  = ImGui::Begin(m_title.c_str(), nullptr);
+    bool ok  = ImGui::Begin(m_title.c_str(), nullptr, m_windowFlags);
 
     if (m_disabled)
     {

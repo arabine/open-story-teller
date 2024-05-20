@@ -97,7 +97,7 @@ private:
     Gui m_gui;
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
-    CodeEditor m_editorWindow;
+    CodeEditor m_codeEditorWindow;
 
     char m_project_name[256] = "";
 
@@ -133,11 +133,13 @@ private:
     virtual void DeleteResource(FilterIterator &it) override;
     
     virtual  std::shared_ptr<BaseNode> CreateNode(const std::string &type) override;
-    virtual void Build(bool compileonly) override;
+    virtual void BuildNodes(bool compileonly) override;
+    virtual void BuildCode(bool compileonly) override;
     virtual void DeleteNode(const std::string &id) override;
     virtual void DeleteLink(std::shared_ptr<Connection> c) override;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
     virtual void LoadBinaryStory(const std::string &filename) override;
+    virtual void ToggleBreakpoint(int line) override;
 
     virtual void Play() override;
     virtual void Ok() override;
@@ -172,6 +174,7 @@ private:
     void StepInstruction();
     void RefreshProjectInformation();
     void ProjectPropertiesPopup();
+    void Build(bool compileonly);
 };
 
 #endif // MAINWINDOW_H

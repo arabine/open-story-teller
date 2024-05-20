@@ -46,12 +46,14 @@ public:
     virtual void DeleteResource(FilterIterator &it) = 0;
 
     // Node interaction
-    virtual void Build(bool compileonly) = 0;
+    virtual void BuildNodes(bool compileonly) = 0;
+    virtual void BuildCode(bool compileonly) = 0;
     virtual  std::shared_ptr<BaseNode> CreateNode(const std::string &type) = 0;
     virtual void DeleteNode(const std::string &id) = 0;
     virtual void DeleteLink(std::shared_ptr<Connection> c) = 0;
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;
-     virtual void LoadBinaryStory(const std::string &filename) = 0;
+    virtual void LoadBinaryStory(const std::string &filename) = 0;
+    virtual void ToggleBreakpoint(int line) = 0;
  
     virtual void Play() = 0;
     virtual void Ok() = 0;

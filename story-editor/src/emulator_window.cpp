@@ -76,13 +76,14 @@ void EmulatorWindow::Draw()
 
     ImGui::SeparatorText("Script control and debug");
 
-    if (ImGui::Button("Generate pack"))
+    if (ImGui::Button("Build nodes"))
     {
-        m_story.Build(false);
+        m_story.BuildNodes(true);
     }
-    if (ImGui::Button("Build script"))
+    ImGui::SameLine();
+    if (ImGui::Button("Build code"))
     {
-        m_story.Build(true);
+        m_story.BuildCode(true);
     }
     ImGui::SameLine();
     if (ImGui::Button("Play"))
