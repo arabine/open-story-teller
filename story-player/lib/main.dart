@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Router;
+import 'package:path/path.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -98,18 +99,14 @@ enum PlayerState { disabled, indexFile, inStory }
 class _MyHomePageState extends State<MyHomePage> {
   String myPath = 'fffff';
   IndexFile indexFile = IndexFile();
-  String currentImage = 'assets/320x240.png';
+  String currentImage = 'assets/logo.png';
   final player = AudioPlayer();
   StreamSubscription? mediaPub;
   PlayerState state = PlayerState.disabled;
   StreamSubscription? audioPlayerSub;
 
-  Image img = const Image(image: AssetImage('assets/320x240.png'));
+  Image img = const Image(image: AssetImage('assets/logo.png'));
 
- // final Permission _permission = Permission.storage;
-  PermissionStatus _permissionStatus = PermissionStatus.denied;
-
-  var _openResult = 'Unknown';
 
   void initPaths() async {
     Directory? dir;
@@ -221,7 +218,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               }).toList();
             },
+            
           ),
+          const Divider()
+          , const Text("v1.1")
         ],
       ),
       body: Center(

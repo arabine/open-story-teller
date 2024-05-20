@@ -91,3 +91,7 @@ story-player/storyvm/build/
 story-player-sdl/build/
 
 story-player-raylib/build/
+
+story-player/linux/flutter/generated_plugin_registrant.cc
+
+story-player/linux/flutter/generated_plugins.cmake

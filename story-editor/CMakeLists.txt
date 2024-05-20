@@ -132,10 +132,10 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 FetchContent_Declare(
     sdl3_mixer
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-    GIT_TAG origin/main
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-    GIT_SUBMODULES ""
+    GIT_TAG cc78718f6e87354fee8ffe4dc516a20f608c2d65
+    # GIT_SHALLOW TRUE
+    # GIT_PROGRESS TRUE
+    # GIT_SUBMODULES ""
 )
 
 set(BUILD_SHARED_LIBS TRUE)
@@ -151,10 +151,9 @@ include_directories(${sdl3_mixer_SOURCE_DIR}/include)
 FetchContent_Declare(
     sdl_image
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-    GIT_TAG origin/main
-    GIT_SHALLOW TRUE
+    GIT_TAG ff62eb68aebe9801f06695c86a67292c6f166b16
     GIT_PROGRESS TRUE
-)
+) 
 
 
 set(SDL3IMAGE_INSTALL OFF)

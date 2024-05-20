@@ -121,16 +121,17 @@ class IndexFile {
 
     String indexFileName = '$libraryRoot/index.ost';
 
-    bool isGranted = true;
+    bool isGranted = false;
 
-    // if (Platform.isAndroid) {
-
-    //   if (await Permission.manageExternalStorage.request().isGranted) {
-    //     isGranted = true;
-    //   }
-    // } else {
-    //   isGranted = true;
-    // }
+    if (Platform.isAndroid) {
+      if (await Permission.storage.request().isGranted) {
+        if (await Permission.manageExternalStorage.request().isGranted) {
+          isGranted = true;
+        }
+      }
+    } else {
+      isGranted = true;
+    }
 
     if (isGranted) {
         final file = File(indexFileName);
