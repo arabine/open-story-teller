@@ -55,7 +55,8 @@ static const uint32_t NbRegs = sizeof(AllRegs) / sizeof(AllRegs[0]);
 // Keep same order than the opcodes list!!
 static const std::string Mnemonics[] = {
     "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "sub", "mul", "div",
-    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "jumpr", "skipz", "skipnz"
+    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "jumpr", "skipz", "skipnz",
+    "eq", "gt", "lt"
 };
 
 static OpCode OpCodes[] = OPCODES_LIST;
@@ -166,7 +167,7 @@ bool Assembler::GetRegisterName(uint8_t reg, std::string &regName)
 
 bool Assembler::CompileMnemonicArguments(Instr &instr)
 {
-    uint8_t ra, rb;
+    uint8_t ra, rb, rc;
 
     switch(instr.code.opcode)
     {
@@ -238,6 +239,16 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         instr.compiledArgs.push_back(ra);
         instr.compiledArgs.push_back(rb);
         instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+        break;
+    case OP_CMP_EQ:
+    case OP_CMP_GT:
+    case OP_CMP_LT:
+        GET_REG(instr.args[0], ra);
+        GET_REG(instr.args[1], rb);
+        GET_REG(instr.args[2], rc);
+        instr.compiledArgs.push_back(ra);
+        instr.compiledArgs.push_back(rb);
+        instr.compiledArgs.push_back(rc);
         break;
     default:
         CHIP32_CHECK(instr, false, "Unsupported mnemonic: " + instr.mnemonic);

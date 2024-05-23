@@ -24,6 +24,7 @@ MainWindow::MainWindow()
     : m_libraryManager(*this)
     , m_emulatorWindow(*this)
     , m_codeEditorWindow(*this)
+    , m_cpuWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this)
     , m_libraryWindow(*this, m_libraryManager)
@@ -77,10 +78,21 @@ void MainWindow::Play()
 
 }
 
+void MainWindow::Step()
+{
+    m_eventQueue.push({VmEventType::EvStep});
+}
+
+void MainWindow::Run()
+{
+    m_eventQueue.push({VmEventType::EvRun});
+}
+
 void MainWindow::Ok()
 {
     m_eventQueue.push({VmEventType::EvOkButton});
 }
+
 
 void MainWindow::Stop()
 {
@@ -160,6 +172,12 @@ void MainWindow::ProcessStory()
         {
             if (event.type == VmEventType::EvStep)
             {
+                StepInstruction();
+                m_dbg.run_result = VM_OK;
+            }
+            else if (event.type == VmEventType::EvRun)
+            {
+                m_dbg.free_run = true;
                 m_dbg.run_result = VM_OK;
             }
             else if (event.type == VmEventType::EvOkButton)
@@ -191,13 +209,17 @@ void MainWindow::ProcessStory()
 
     if (m_dbg.run_result == VM_OK)
     {
-        if (m_dbg.m_breakpoints.contains(m_dbg.line + 1))
+        if (m_dbg.m_breakpoints.contains(m_dbg.line))
         {
           //  Log("Breakpoint on line: " + std::to_string(m_dbg.line + 1));
+            m_dbg.run_result = VM_WAIT_EVENT;
             m_dbg.free_run = false;
-            return;
         }
-        StepInstruction();
+
+        if (m_dbg.free_run)
+        {
+            StepInstruction();
+        }
     }
 
     if (m_dbg.run_result == VM_FINISHED)
@@ -729,6 +751,7 @@ void MainWindow::OpenProject(const std::string &uuid)
         m_codeEditorWindow.Enable();
         m_resourcesWindow.Enable();
         m_PropertiesWindow.Enable();
+        m_cpuWindow.Enable();
     }
     else
     {
@@ -780,6 +803,7 @@ void MainWindow::CloseProject()
     m_codeEditorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
+    m_cpuWindow.Disable();
 
     RefreshProjectInformation();
 }
@@ -859,6 +883,7 @@ void MainWindow::Loop()
             m_codeEditorWindow.Draw();
             m_resourcesWindow.Draw();
             m_nodeEditorWindow.Draw();
+            m_cpuWindow.Draw();
 
 
             m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
@@ -982,6 +1007,18 @@ void MainWindow::ToggleBreakpoint(int line)
     }
 }
 
+uint32_t MainWindow::GetRegister(int reg)
+{
+    uint32_t regVal = 0;
+
+    if (reg >= 0 && reg < REGISTER_COUNT)
+    {
+        regVal = m_chip32_ctx.registers[reg];
+    }
+
+    return regVal;
+}
+
 void MainWindow::BuildNodes(bool compileonly)
 {
     if (m_story->GenerateScript(m_currentCode))
@@ -1060,11 +1097,10 @@ void MainWindow::UpdateVmView()
     // Highlight next line in the test editor
     uint32_t pcVal = m_chip32_ctx.registers[PC];
 
-    uint32_t line = 1;
-    if (m_story->GetAssemblyLine(pcVal, line))
+    if (m_story->GetAssemblyLine(pcVal, m_dbg.line))
     {
-        m_dbg.line = (line - 1);
         m_codeEditorWindow.HighlightLine(m_dbg.line);
+        std::cout << "Executing line: " << m_dbg.line << std::endl;
     }
     else
     {

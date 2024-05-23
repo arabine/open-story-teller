@@ -207,6 +207,9 @@ set(SRCS
     src/properties_window.cpp
     src/properties_window.h
 
+    src/cpu_window.cpp
+    src/cpu_window.h
+
     src/gui.h
     src/gui.cpp
 

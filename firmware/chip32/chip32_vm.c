@@ -85,6 +85,18 @@ static inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
 static const OpCode OpCodes[] = OPCODES_LIST;
 static const uint16_t OpCodesSize = sizeof(OpCodes) / sizeof(OpCodes[0]);
 
+
+static void push(chip32_ctx_t *ctx, uint32_t val) {
+    ctx->registers[SP] -= 4;
+    ctx->ram.mem[ctx->registers[SP]] = val;
+}
+
+static uint32_t pop(chip32_ctx_t *ctx) {
+    uint32_t val = ctx->ram.mem[ctx->registers[SP]];
+    ctx->registers[SP] += 4;
+    return val;
+}
+
 // =======================================================================================
 // FUNCTIONS
 // =======================================================================================
@@ -162,8 +174,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         _CHECK_CAN_PUSH(1)
-        ctx->registers[SP] -= 4;
-        memcpy(&ctx->ram.mem[ctx->registers[SP]], &ctx->registers[reg], sizeof(uint32_t));
+        push(ctx, ctx->registers[reg]);
         break;
     }
     case OP_POP:
@@ -171,8 +182,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         _CHECK_CAN_POP(1)
-        memcpy(&ctx->registers[reg], &ctx->ram.mem[ctx->registers[SP]], sizeof(uint32_t));
-        ctx->registers[SP] += 4;
+        ctx->registers[reg] = pop(ctx);
         break;
     }
     case OP_CALL:
@@ -181,11 +191,23 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         ctx->registers[PC] = ctx->registers[reg] - 1;
+
+        // Save Tx registers on stack
+        _CHECK_CAN_POP(10)
+        for (int i = 0; i < 10; i++) {
+            push(ctx, ctx->registers[T0 + i]);
+        }
+
         break;
     }
     case OP_RET:
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
+
+        // restore Tx registers from stack
+        for (int i = 0; i < 10; i++) {
+            ctx->registers[T9 - i] = pop(ctx);
+        }
         break;
     }
     case OP_STORE:
@@ -351,6 +373,40 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
             bytes = OpCodes[instr].bytes;
             ctx->registers[PC] += bytes; // jump over argument bytes
         }
+        break;
+    }
+
+    case OP_CMP_EQ:
+    {
+        const uint8_t reg1 = _NEXT_BYTE;
+        const uint8_t reg2 = _NEXT_BYTE;
+        const uint8_t reg3 = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg1)
+        _CHECK_REGISTER_VALID(reg2)
+        _CHECK_REGISTER_VALID(reg3)
+        ctx->registers[reg1] = ctx->registers[reg2] == ctx->registers[reg3] ? 1 : 0;
+        break;
+    }
+    case OP_CMP_GT:
+    {
+        const uint8_t reg1 = _NEXT_BYTE;
+        const uint8_t reg2 = _NEXT_BYTE;
+        const uint8_t reg3 = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg1)
+        _CHECK_REGISTER_VALID(reg2)
+        _CHECK_REGISTER_VALID(reg3)
+        ctx->registers[reg1] = ctx->registers[reg2] > ctx->registers[reg3] ? 1 : 0;
+        break;
+    }
+    case OP_CMP_LT:
+    {
+        const uint8_t reg1 = _NEXT_BYTE;
+        const uint8_t reg2 = _NEXT_BYTE;
+        const uint8_t reg3 = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg1)
+        _CHECK_REGISTER_VALID(reg2)
+        _CHECK_REGISTER_VALID(reg3)
+        ctx->registers[reg1] = ctx->registers[reg2] < ctx->registers[reg3] ? 1 : 0;
         break;
     }
     }

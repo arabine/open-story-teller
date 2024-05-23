@@ -1,5 +1,5 @@
 #include "code_editor.h"
-
+#include "IconsMaterialDesignIcons.h"
 #include <fstream>
 #include <memory>
 
@@ -54,8 +54,6 @@ void CodeEditor::Draw()
 
 
     auto cpos = mEditor.GetCursorPosition();
-
-
 
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
     if (ImGui::BeginMenuBar())
@@ -119,17 +117,26 @@ void CodeEditor::Draw()
 
     ImGui::SameLine();
     if (ImGui::SmallButton("Toggle breakpoint")) {
-        if (m_breakPoints.contains(cpos.mLine))
+        if (m_breakPoints.contains(cpos.mLine + 1))
         {
-            m_breakPoints.erase(cpos.mLine);
+            m_breakPoints.erase(cpos.mLine + 1);
         }
         else
         {
-            m_breakPoints.insert(cpos.mLine);
+            m_breakPoints.insert(cpos.mLine + 1);
         }
         mEditor.SetBreakpoints(m_breakPoints);
 
-        m_storyManager.ToggleBreakpoint(cpos.mLine);
+        m_storyManager.ToggleBreakpoint(cpos.mLine + 1);
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(ICON_MDI_SKIP_NEXT "##step_instruction")) {
+        m_storyManager.Step();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::SmallButton(ICON_MDI_PLAY "##run")) {
+        m_storyManager.Run();
     }
 
     mEditor.Render("TextEditor");

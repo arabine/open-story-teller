@@ -380,7 +380,7 @@ bool StoryProject::GenerateScript(std::string &codeStr)
     // Add our utility functions
     std::string buffer;
 
-    std::ifstream f("scripts/media.asm");
+    std::ifstream f("scripts/media.chip32");
     f.seekg(0, std::ios::end);
     buffer.resize(f.tellg());
     f.seekg(0);
@@ -580,7 +580,7 @@ std::string StoryProject::BuildFullAssetsPath(const std::string_view fileName) c
 std::string StoryProject::FileToConstant(const std::string &FileName, const std::string &extension)
 {
     std::string f = SysLib::RemoveFileExtension(FileName);
-    return "$" + f + " DC8 \"" + f + "." + extension + "\", 8\r\n";
+    return "$" + FileName + " DC8 \"" + FileName + "\", 8\r\n";
 }
 
 

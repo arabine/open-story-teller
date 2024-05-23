@@ -21,10 +21,20 @@ void PropertiesWindow::Draw()
 
     ImGui::SeparatorText("Selected node");
 
-
+    static  std::shared_ptr<BaseNodeWidget> prev;
     if (m_selectedNode)
     {
-        static char buf1[32] = ""; ImGui::InputText("Title",     buf1, 32);
+        static char buf1[100] = "";
+
+        if (prev != m_selectedNode)
+        {
+            prev = m_selectedNode;
+          //  auto t = m_selectedNode->Base()->GetTitle();
+            strncpy (buf1, m_selectedNode->Base()->GetTitle().data(), sizeof(buf1)) ;
+        }
+        
+        ImGui::InputText("Title",     buf1, 32);
+        m_selectedNode->Base()->SetTitle(buf1);
         ImGui::Text("Node ID: %s", m_selectedNode->Base()->GetId().data());
         m_selectedNode->DrawProperties();
     }

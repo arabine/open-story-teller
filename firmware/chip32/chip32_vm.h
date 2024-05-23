@@ -80,6 +80,11 @@ typedef enum
     OP_SKIPZ = 24,  ///<  skip next instruction if zero, e.g.: skipz r0
     OP_SKIPNZ = 25, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
+    // Comparison
+    OP_CMP_EQ = 26,  ///< compare two registers for equality, result in first e.g.: cmp_eq r4, r0, r1 (r4 = (r0 == r1 ? 1 : 0)
+    OP_CMP_GT = 27,  ///< compare if first register is greater than the second, result in first e.g.: cmp_gt r4, r0, r1
+    OP_CMP_LT = 28,  ///< compare if first register is less than the second, result in first e.g.: cmp_lt r4, r0, r1
+
     INSTRUCTION_COUNT
 } chip32_instruction_t;
 
@@ -122,7 +127,7 @@ typedef enum
     // special
     PC,
     SP,
-    RA,
+    RA,  
     // count
     REGISTER_COUNT
 } chip32_register_t;
@@ -152,10 +157,11 @@ typedef struct {
 
 #define OPCODES_LIST { { OP_NOP, 0, 0 }, { OP_HALT, 0, 0 }, { OP_SYSCALL, 1, 1 }, { OP_LCONS, 2, 5 }, \
 { OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, \
-{ OP_STORE, 3, 4 }, { OP_LOAD, 3, 4 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
+{ OP_STORE, 3, 3 }, { OP_LOAD, 3, 3 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
 { OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 1 }, { OP_RET, 0, 0 }, \
-{ OP_JUMP, 1, 2 }, { OP_JUMPR, 1, 1 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 } }
+{ OP_JUMP, 1, 2 }, { OP_JUMPR, 1, 1 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 }, \
+{ OP_CMP_EQ, 3, 3 }, { OP_CMP_GT, 3, 3 }, { OP_CMP_LT, 3, 3 } }
 
 /**
   Whole memory is 64KB

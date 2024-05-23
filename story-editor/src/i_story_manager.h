@@ -54,8 +54,11 @@ public:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;
     virtual void LoadBinaryStory(const std::string &filename) = 0;
     virtual void ToggleBreakpoint(int line) = 0;
+    virtual uint32_t GetRegister(int reg) = 0;
  
     virtual void Play() = 0;
+    virtual void Step() = 0;
+    virtual void Run() = 0;
     virtual void Ok() = 0;
     virtual void Stop() = 0;
     virtual void Pause() = 0;

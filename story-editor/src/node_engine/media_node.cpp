@@ -46,8 +46,6 @@ std::string MediaNode::GenerateConstants(IStoryProject &story, int nb_out_conns)
         s += StoryProject::FileToConstant(m_sound, story.SoundExtension(m_sound));  // FIXME: Generate the extension setup in user option of output format
     }
 
-
-
     // Generate choice table if needed (out ports > 1)
     std::stringstream ss;
     std::string label = ChoiceLabel(GetId());
@@ -121,7 +119,7 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
 
     if (img.size() > 0)
     {
-        ss << "lcons r0, $" << img  << "\n";
+        ss << "lcons r0, $" << m_image  << "\n";
     }
     else
     {
@@ -130,7 +128,7 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
 
     if (snd.size() > 0)
     {
-        ss << "lcons r1, $" << snd  << "\n";
+        ss << "lcons r1, $" << m_sound  << "\n";
     }
     else
     {

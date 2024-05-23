@@ -40,7 +40,7 @@ public:
     void SetId(const std::string &id) { m_uuid = id; }
     std::string GetId() const { return m_uuid; }
 
-    void SeTitle(const std::string &title) { m_title = title; }
+    void SetTitle(const std::string &title) { m_title = title; }
     std::string GetTitle() const { return m_title; }
 
     void FromJson(const nlohmann::json &);

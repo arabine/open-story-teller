@@ -1,0 +1,29 @@
+{
+    "name": "chip32-syntax",
+    "displayName": "Chip32 Syntax Highlighting",
+    "description": "Syntax highlighting for Chip32 assembly language",
+    "version": "0.0.1",
+    "publisher": "Anthony Rabine",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arabine/open-story-teller"},
+    "engines": {
+        "vscode": "^1.0.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "chip32",
+            "extensions": [".chip32"],
+            "aliases": ["Chip32", "chip32"]
+        }],
+        "grammars": [{
+            "language": "chip32",
+            "scopeName": "source.assembly",
+            "path": "./syntaxes/chip32.tmLanguage.json"
+        }]
+    }
+}

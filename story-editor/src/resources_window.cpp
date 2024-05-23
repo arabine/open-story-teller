@@ -22,7 +22,7 @@ ResourcesWindow::~ResourcesWindow()
 void ResourcesWindow::ChooseFile()
 {
     static const char * soundFormats = ".wav,.mp3,.ogg,.flac";
-    static const char * imagesFormats = ".bmp *.png *.jpg";
+    static const char * imagesFormats = ".bmp,.png,.jpg";
 
     if (m_showImportDialog)
     {

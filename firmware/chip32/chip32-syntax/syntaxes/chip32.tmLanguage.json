@@ -1,0 +1,27 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Chip32",
+    "patterns": [
+        {
+            "match": "\\b(nop|halt|syscall|lcons|mov|push|pop|store|load|add|sub|mul|div|shiftl|shiftr|ishiftr|and|or|xor|not|call|ret|jump|jumpr|skipz|skipnz|eq|gt|lt)\\b",
+            "name": "keyword.control.assembly"
+        },
+        {
+            "match": "\\b(r[0-9]+|t[0-9]+|pc|sp|ra)\\b",
+            "name": "variable.parameter.register.assembly"
+        },
+        {
+            "match": "@",
+            "name": "keyword.operator.assembly"
+        },
+        {
+            "match": "\\b(0x[0-9a-fA-F]+)\\b",
+            "name": "constant.numeric.hex.assembly"
+        },
+        {
+            "match": ";.*",
+            "name": "comment.line.assembly"
+        }
+    ],
+    "scopeName": "source.assembly"
+}

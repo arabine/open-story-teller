@@ -21,13 +21,14 @@
 #include "audio_player.h"
 #include "library_manager.h"
 #include "library_window.h"
+#include "cpu_window.h"
 
 struct DebugContext
 {
     uint32_t event_mask{0};
     bool wait_event{0};
     bool free_run{false};
-    int line{-1};
+    uint32_t line{0};
     chip32_result_t run_result{VM_FINISHED};
 
     std::set<int> m_breakpoints;
@@ -73,7 +74,7 @@ public:
     void Loop();
 
 private:
-    enum VmEventType { EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
+    enum VmEventType { EvNoEvent, EvStep, EvRun, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
 
     std::shared_ptr<StoryProject> m_story;
 
@@ -98,6 +99,7 @@ private:
     EmulatorWindow m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
     CodeEditor m_codeEditorWindow;
+    CpuWindow m_cpuWindow;
 
     char m_project_name[256] = "";
 
@@ -140,8 +142,11 @@ private:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
     virtual void LoadBinaryStory(const std::string &filename) override;
     virtual void ToggleBreakpoint(int line) override;
+    virtual uint32_t GetRegister(int reg) override;
 
     virtual void Play() override;
+    virtual void Step() override;
+    virtual void Run() override;
     virtual void Ok() override;
     virtual void Stop() override;
     virtual void Pause() override;
