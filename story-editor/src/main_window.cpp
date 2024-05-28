@@ -21,7 +21,8 @@
 #include "ImGuiFileDialog.h"
 
 MainWindow::MainWindow()
-    : m_libraryManager(*this)
+    : m_resources(*this)
+    , m_libraryManager(*this)
     , m_emulatorWindow(*this)
     , m_codeEditorWindow(*this)
     , m_cpuWindow(*this)
@@ -104,6 +105,11 @@ void MainWindow::Pause()
 
 }
 
+void MainWindow::Home()
+{
+    m_eventQueue.push({VmEventType::EvHomeButton});
+}
+
 void MainWindow::Next()
 {
     Log("Next button");
@@ -182,23 +188,43 @@ void MainWindow::ProcessStory()
             }
             else if (event.type == VmEventType::EvOkButton)
             {
-                m_chip32_ctx.registers[R0] = 0x01;
-                m_dbg.run_result = VM_OK;
+                if (m_dbg.IsValidEvent(EV_MASK_OK_BUTTON))
+                {
+                    m_chip32_ctx.registers[R0] = EV_MASK_OK_BUTTON;
+                    m_dbg.run_result = VM_OK;
+                }
             }
             else if (event.type == VmEventType::EvPreviousButton)
             {
-                m_chip32_ctx.registers[R0] = 0x02;
-                m_dbg.run_result = VM_OK;
+                if (m_dbg.IsValidEvent(EV_MASK_PREVIOUS_BUTTON))
+                {
+                    m_chip32_ctx.registers[R0] = EV_MASK_PREVIOUS_BUTTON;
+                    m_dbg.run_result = VM_OK;
+                }
             }
             else if (event.type == VmEventType::EvNextButton)
             {
-                m_chip32_ctx.registers[R0] = 0x04;
-                m_dbg.run_result = VM_OK;
+                if (m_dbg.IsValidEvent(EV_MASK_NEXT_BUTTON))
+                {
+                    m_chip32_ctx.registers[R0] = EV_MASK_NEXT_BUTTON;
+                    m_dbg.run_result = VM_OK;
+                }
             }
             else if (event.type == VmEventType::EvAudioFinished)
             {
-                m_chip32_ctx.registers[R0] = 0x08;
-                m_dbg.run_result = VM_OK;
+                if (m_dbg.IsValidEvent(EV_MASK_END_OF_AUDIO))
+                {
+                    m_chip32_ctx.registers[R0] = EV_MASK_END_OF_AUDIO;
+                    m_dbg.run_result = VM_OK;
+                }
+            }
+            else if (event.type == VmEventType::EvHomeButton)
+            {
+                if (m_dbg.IsValidEvent(EV_MASK_HOME_BUTTON))
+                {
+                    m_chip32_ctx.registers[R0] = EV_MASK_HOME_BUTTON;
+                    m_dbg.run_result = VM_OK;
+                }
             }
             else if (event.type == VmEventType::EvStop)
             {
@@ -261,7 +287,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
             Log("Sound: " + soundFile);
             m_player.Play(soundFile);
         }
-        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+        retCode = SYSCALL_RET_OK; // We continue execution, script must wait for event if necessary (end of audio)
     }
     // WAIT EVENT bits:
     // 0: block
@@ -272,7 +298,11 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
     // 5: rotary right
     else if (code == 2) // Wait for event
     {
+        // Empty event queue
+        m_eventQueue.clear();
+
         // Event mask is located in R0
+        m_dbg.event_mask = m_chip32_ctx.registers[R0];
         // optional timeout is located in R1
         // if timeout is set to zero, wait for infinite and beyond
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause

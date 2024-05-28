@@ -62,6 +62,7 @@ public:
     virtual void Ok() = 0;
     virtual void Stop() = 0;
     virtual void Pause() = 0;
+    virtual void Home() = 0;
     virtual void Next() = 0;
     virtual void Previous() = 0;
     virtual std::string VmState() const = 0;

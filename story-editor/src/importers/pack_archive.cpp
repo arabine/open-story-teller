@@ -382,7 +382,7 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
         std::ifstream f(basePath + "/story.json");
         nlohmann::json j = nlohmann::json::parse(f);
         StoryProject proj(m_log);
-        ResourceManager res;
+        ResourceManager res(m_log);
 
         if (j.contains("title"))
         {

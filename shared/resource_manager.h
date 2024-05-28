@@ -21,8 +21,9 @@ struct Media {
 class ResourceManager
 {
 public:   
-    ResourceManager()
-        : m_images(filter("image"))
+    ResourceManager(ILogger &log)
+        : m_log(log)
+        , m_images(filter("image"))
         , m_sounds(filter("sound"))
     {
     }
@@ -76,6 +77,7 @@ public:
 
 
 private:
+    ILogger &m_log;
     std::list<std::shared_ptr<Resource>> m_items;
     std::pair<FilterIterator, FilterIterator> m_images;
     std::pair<FilterIterator, FilterIterator> m_sounds;

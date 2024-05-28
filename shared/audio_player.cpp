@@ -60,6 +60,10 @@ void AudioPlayer::Initialize()
 
 void AudioPlayer::Play(const std::string &filename)
 {
+    // On coupe le son en cours
+    g_audioQueue.clear();
+    Mix_HaltMusic();
+    Mix_FreeMusic(music);
     g_audioQueue.push({"play", filename});
 }
 

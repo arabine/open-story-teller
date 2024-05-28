@@ -23,6 +23,21 @@
 #include "library_window.h"
 #include "cpu_window.h"
 
+
+
+#define EV_MASK_OK_BUTTON 0b1
+#define EV_MASK_PREVIOUS_BUTTON 0b10
+#define EV_MASK_NEXT_BUTTON 0b100
+#define EV_MASK_UP_BUTTON 0b1000
+#define EV_MASK_DOWN_BUTTON 0b10000
+#define EV_MASK_HOME_BUTTON 0b100000
+#define EV_MASK_SELECT_BUTTON 0b1000000
+#define EV_MASK_START_BUTTON 0b10000000
+#define EV_MASK_STOP_BUTTON 0b100000000
+#define EV_MASK_PAUSE_BUTTON 0b1000000000
+#define EV_MASK_END_OF_AUDIO 0b10000000000
+#define EV_MASK_ALL 0xFFFFFFFFUL
+
 struct DebugContext
 {
     uint32_t event_mask{0};
@@ -35,6 +50,10 @@ struct DebugContext
 
     void Stop() {
         run_result = VM_FINISHED;
+    }
+
+    bool IsValidEvent(uint32_t event) {
+        return (event_mask & event) != 0;
     }
 
     static void DumpCodeAssembler(Chip32::Assembler & assembler) {
@@ -74,7 +93,7 @@ public:
     void Loop();
 
 private:
-    enum VmEventType { EvNoEvent, EvStep, EvRun, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
+    enum VmEventType { EvNoEvent, EvStep, EvRun, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop, EvHomeButton};
 
     std::shared_ptr<StoryProject> m_story;
 
@@ -82,12 +101,10 @@ private:
     uint8_t m_rom_data[16*1024];
     uint8_t m_ram_data[16*1024];
     chip32_ctx_t m_chip32_ctx;
-
     
     Chip32::Result m_result;
     DebugContext m_dbg;
     std::string m_currentCode;
-
 
     std::vector<std::string> m_recentProjects;
 
@@ -120,7 +137,6 @@ private:
 
     ThreadSafeQueue<VmEvent> m_eventQueue;
 
-
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;
     virtual void ImportProject(const std::string &fileName, int format);
@@ -150,6 +166,7 @@ private:
     virtual void Ok() override;
     virtual void Stop() override;
     virtual void Pause() override;
+    virtual void Home() override;
     virtual void Next() override;
     virtual void Previous() override;
     virtual std::string VmState() const override;

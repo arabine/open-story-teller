@@ -56,9 +56,14 @@ void EmulatorWindow::Draw()
         m_story.Ok();
     }
     ImGui::SameLine();
-    if (ImGui::Button(ICON_MDI_STOP_CIRCLE_OUTLINE, ImVec2(50, 50)))
+    if (ImGui::Button(ICON_MDI_PAUSE, ImVec2(50, 50)))
     {
         m_story.Pause();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_MDI_HOME, ImVec2(50, 50)))
+    {
+        m_story.Home();
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_MDI_ARROW_LEFT_BOLD_CIRCLE_OUTLINE, ImVec2(50, 50)))

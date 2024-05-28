@@ -138,13 +138,13 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
     ss << "syscall 1\n";
 
     // Check output connections number
-    // == 0: end node        : generate halt
+    // == 0: end node        : wait for home button or return du choice node at the end of the audio
     // == 1: transition node : image + sound on demand, jump directly to the other node when OK
     // > 1 : choice node     : call the node choice manager
 
     if (nb_out_conns == 0) // End node
     {
-        ss << "halt\n";
+        ss << "ret\n";
     }
     else if (nb_out_conns == 1) // it is a transition node
     {
@@ -165,7 +165,9 @@ std::string MediaNode::Build(IStoryProject &story, int nb_out_conns)
     }
     else // Choice node
     {
-        ss << "lcons r0, $" << ChoiceLabel(GetId()) << "\n"
+        ss << "lcons r0, 0b10000000000\n" // ; mask for end of audio, Ok, and home buttons
+           << "syscall 2\n"  // ; wait for event (OK, home or end of audio), return to choice loop"
+           << "lcons r0, $" << ChoiceLabel(GetId()) << "\n"
            << "jump .media ; no return possible, so a jump is enough";
     }
     return ss.str();

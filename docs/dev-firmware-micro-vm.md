@@ -14,6 +14,9 @@ Here is a description of that VM.
 | sp    | 21     | stack pointer                    | Y         |
 | ra    | 22     | return address                   | N         |
 
+Registers that are preserved means that the VM will store them on the stack before the `call` operation. Then, after the return (`ret`), theses registers are restored.
+
+Registers that are not preserved must be saved manually (by writing code) by the user before using them.
 
 # Instructions
 
@@ -45,6 +48,55 @@ Here is a description of that VM.
 | jumpr |  23   |  1   |  jump to address contained in a register. | `jumpr t9` |
 | skipz |  24   |  1   |  skip next instruction if zero. | `skipz r0` |
 | skipnz |  25   |  1   |  skip next instruction if not zero. | `skipnz r2` |
+| eq | 26 | 2 |  compare two registers for equality, result in first |  `eq r4, r0, r1 ; equivalent to C code: r4 = (r0 == r1) ? 1 : 0` |
+| gt | 27 | 2 |  compare if first register is greater than the second, result in first |  `gt r4, r0, r1` |
+| lt | 28 | 2 |  compare if first register is less than the second, result in first |  `lt r4, r0, r1` |
+
+
+# System calls
+
+The story player machine supports the following system calls:
+
+## SYSCALL 1 (Play media)
+
+This system call is used to play media. Use R0 and R1 to pass arguments:
+
+- R0 is for the image:
+  - if zero, clear the screen
+  - Otherwise pass the address in ROM or RAM where is stored the image filename
+
+- R1 is for the sound:
+  - if zero, do not play anything
+  - Otherwise pass the address in ROM or RAM where is stored the sound filename
+
+The file must be stored in the `/assets` subdirectory of the current story.
+
+The syscall do not blocks. User must wait for `end of sound` event if necessary.
+
+## SYSCALL 2 (wait event)
+
+This system call is used to wait for machine events. Use R0 to mask events to wait for (events not selected are ignored).
+
+| Event  |    Bit   |
+|-------       |--------    |
+| OK button  |   0    |
+| Previous button  |   1   |
+| Next button  |    2    |
+| Up button  |    3    |
+| Down button  |   4    |
+| Home button  |    5    |
+| Select button  |  6    |
+| Start button  |   7    |
+| Stop button  |   8    |
+| Pause button  |   9    |
+| End of audio  |   10    |
+
+
+Example:
+
+```
+    mov r0, 
+```
 
 # Assembler
 

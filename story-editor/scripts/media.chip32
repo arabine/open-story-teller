@@ -10,7 +10,8 @@
     ; t4: address of the last element in the choice array
     ; t5: where to jump when OK button is pressed
     
-    mov t3, r0  ; on sauvegarde R0 (rx non préservés)
+    mov t3, r0  ; copie de R0 pour travailler dessus
+    mov t2, r0  ; sauvegarde de R0
     load r0, @t3, 4 ; Le premier élément est le nombre de choix possibles, ex: r0 = 12
     lcons t1, 4
     mul r0, t1  ; on calcule l'offset: r0 = nb_elements * 4 = 48
@@ -27,19 +28,16 @@
     ; Return argument in R0: the address of the node to call whe OK is pressed
     mov t5, r0  ; save it
     
-    ; wait for event (OK or wheel)
+    ; wait for event
+    lcons r0, 0b111 ; mask for OK, previous and next buttons
     syscall 2
     ; Event is stored in R0
-    ; 1 = ok
-    ; 2 = previous
-    ; 4 = next
-    ; 8 = audio finished
 
     ; -----  Test if event is OK button
     lcons r1, 1 ; mask for OK button
     and r1, r0 ; r1 = r1 AND r0
     skipz r1 ; not OK, skip jump
-    jumpr t5 ; we do not plan to return here, so a jump is enough
+    jump .media_wait_event
     
     ; test previous event
     lcons r1, 2 ; mask for previous button
@@ -67,4 +65,10 @@
  
  .media_set_last:  ; on reboucle sur le dernier élément de la structure
     mov t0, t4
+    jump .media_loop
+
+.media_wait_event:
+    call t5 ; jump to the node
+    lcons r0, 0b10000100001 ; mask for end of audio, Ok, and home buttons
+    syscall 2 ; wait for event (OK, home or end of audio), return to choice loop
     jump .media_loop

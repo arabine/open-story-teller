@@ -34,7 +34,7 @@ std::string ResourceManager::ExtentionInfo(std::string extension, int info_type)
     }
 }
 
-void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath, Resource::ImageFormat imageFormat, Resource::SoundFormat soundFormat)
+void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, const std::filesystem::path &destAssetsPath, Resource::ImageFormat targetImageFormat, Resource::SoundFormat targetSoundFormat)
 {
     auto [b, e] = Items();
     for (auto it = b; it != e; ++it)
@@ -47,7 +47,7 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
         {
             if ((*it)->format == "PNG")
             {
-                if (imageFormat == Resource::IMG_FORMAT_QOIF)
+                if (targetImageFormat == Resource::IMG_FORMAT_QOIF)
                 {
                     outputfile += ".qoi"; // FIXME: prendre la config en cours désirée
                     retCode = MediaConverter::ImageToQoi(inputfile.generic_string(), outputfile.generic_string());
@@ -59,7 +59,7 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
             }
             else if ((*it)->format == "MP3")
             {
-                if (soundFormat == Resource::SND_FORMAT_WAV)
+                if (targetSoundFormat == Resource::SND_FORMAT_WAV)
                 {
                     outputfile += ".wav"; // FIXME: prendre la config en cours désirée
                     retCode = MediaConverter::Mp3ToWav(inputfile.generic_string(), outputfile.generic_string());
@@ -71,7 +71,7 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
             }
             else if ((*it)->format == "OGG")
             {
-                if (soundFormat == Resource::SND_FORMAT_WAV)
+                if (targetSoundFormat == Resource::SND_FORMAT_WAV)
                 {
                     outputfile += ".wav"; // FIXME: prendre la config en cours désirée
                     retCode = MediaConverter::OggToWav(inputfile.generic_string(), outputfile.generic_string());
@@ -81,9 +81,26 @@ void ResourceManager::ConvertResources(const std::filesystem::path &assetsPath, 
                     outputfile += ".ogg";
                 }
             }
+            else if ((*it)->format == "WAV")
+            {
+                if (targetSoundFormat == Resource::SND_SAME_FORMAT)
+                {
+                    outputfile += ".wav";
+                }
+                else if (targetSoundFormat == Resource::SND_FORMAT_WAV)
+                {
+                    m_log.Log("Skipped: " + inputfile.generic_string() + ", already in WAV format" + outputfile.generic_string(), true);
+                    outputfile += ".wav";
+                }
+                else
+                {
+                    m_log.Log("Skipped: " + inputfile.generic_string() + ", conversion not supported!  " + outputfile.generic_string(), true);
+                    outputfile += ".wav";
+                }
+            }
             else
             {
-                // Log("Skipped: " + inputfile + ", unknown format" + outputfile, true);
+                m_log.Log("Skipped: " + inputfile.generic_string() + ", unknown format" + outputfile.generic_string(), true);
             }
         }
 

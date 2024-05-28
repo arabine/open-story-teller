@@ -93,8 +93,8 @@ typedef enum
 
 | name  | number | type                             | preserved |
 |-------|--------|----------------------------------|-----------|
-| r0-r9 | 0-9    | general-purpose                  | Y         |
-| t0-t9 | 10-19  | temporary registers              | N         |
+| r0-r9 | 0-9    | general-purpose                  | N         |
+| t0-t9 | 10-19  | temporary registers              | Y         |
 | pc    | 20     | program counter                  | Y         |
 | sp    | 21     | stack pointer                    | Y         |
 | ra    | 22     | return address                   | N         |

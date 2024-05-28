@@ -33,7 +33,7 @@ void StoryProject::SetPaths(const std::string &uuid, const std::string &library_
 
 void StoryProject::CopyToDevice(const std::string &outputDir)
 {
-    ResourceManager manager;
+    ResourceManager manager(m_log);
     
     Load(manager);  
 

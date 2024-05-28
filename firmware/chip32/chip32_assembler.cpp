@@ -135,6 +135,17 @@ std::vector<std::string> Split(std::string line)
     return result;
 }
 
+uint32_t convertStringToLong(const std::string& str) {
+    char* end;
+    if (str.compare(0, 2, "0x") == 0 || str.compare(0, 2, "0X") == 0) {
+        return static_cast<uint32_t>(strtol(str.c_str(), &end, 16));
+    } else if (str.compare(0, 2, "0b") == 0 || str.compare(0, 2, "0B") == 0) {
+        return static_cast<uint32_t>(strtol(str.c_str() + 2, &end, 2));
+    } else {
+        return static_cast<uint32_t>(strtol(str.c_str(), &end, 10));
+    }
+}
+
 // =============================================================================
 // ASSEMBLER CLASS
 // =============================================================================
@@ -187,7 +198,7 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
             instr.useLabel = true;
             leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
         } else { // immediate value
-            leu32_put(instr.compiledArgs, static_cast<uint32_t>(strtol(instr.args[1].c_str(),  NULL, 0)));
+            leu32_put(instr.compiledArgs, convertStringToLong(instr.args[1]));
         }
         break;
     case OP_POP:
