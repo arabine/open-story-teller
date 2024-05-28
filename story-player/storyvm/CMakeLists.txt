@@ -7,5 +7,5 @@ add_library(storyvm
   ../../firmware/chip32/chip32_vm.c
 )
 
-include_directories(../../firmware/chip32)
+include_directories(../../firmware/chip32 ../../shared)
 

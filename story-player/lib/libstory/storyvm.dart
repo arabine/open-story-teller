@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:logger/logger.dart';
 import 'package:event_bus/event_bus.dart';
+import 'generated_story_machine.dart';
 
 var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
@@ -54,8 +55,6 @@ typedef VmRun = void Function();
 
 typedef VmSendEventType = Void Function(Int);
 typedef VmSendEvent = void Function(int event);
-
-enum VmEvent { evNoEvent, evStep, evOkButton, evPreviousButton, evNextButton, evAudioFinished, evStop }
 
 class StoryVm {
   static late DynamicLibrary nativeApiLib;
@@ -138,22 +137,27 @@ class StoryVm {
 
   static void endOfSound() {
 
-      vmSendEvent(VmEvent.evAudioFinished.index);
+      vmSendEvent(EV_MASK_END_OF_AUDIO);
   }
 
   static void okButton() {
 
-      vmSendEvent(VmEvent.evOkButton.index);
+      vmSendEvent(EV_MASK_OK_BUTTON);
   }
 
   static void previousButton() {
 
-      vmSendEvent(VmEvent.evPreviousButton.index);
+      vmSendEvent(EV_MASK_PREVIOUS_BUTTON);
   }
 
   static void nextButton() {
 
-      vmSendEvent(VmEvent.evNextButton.index);
+      vmSendEvent(EV_MASK_NEXT_BUTTON);
+  }
+
+    static void homeButton() {
+
+      vmSendEvent(EV_MASK_HOME_BUTTON);
   }
 
   static void stop() {

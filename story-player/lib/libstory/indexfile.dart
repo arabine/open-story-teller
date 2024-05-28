@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
@@ -124,11 +125,22 @@ class IndexFile {
     bool isGranted = false;
 
     if (Platform.isAndroid) {
-      if (await Permission.storage.request().isGranted) {
+
+      AndroidDeviceInfo deviceInfo = await DeviceInfoPlugin().androidInfo;
+
+      if (deviceInfo.version.sdkInt <= 32) {
+          if (await Permission.storage.request().isGranted) {
+            isGranted = true;
+          }
+      } else {
         if (await Permission.manageExternalStorage.request().isGranted) {
           isGranted = true;
         }
       }
+      if (!isGranted) {
+        await openAppSettings();
+      }
+
     } else {
       isGranted = true;
     }

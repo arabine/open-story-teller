@@ -49,6 +49,9 @@ dependencies:
   event_bus: ^2.0.0
   external_path: ^1.0.3
   permission_handler: ^10.4.5
+  device_info_plus: ^10.1.0
+  ffigen: ^12.0.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
@@ -104,4 +107,9 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
     - assets/logo.png
-    
+  
+ffigen:
+  output: 'lib/libstory/generated_story_machine.dart'
+  headers:
+    entry-points:
+      - '../shared/story_machine.h'

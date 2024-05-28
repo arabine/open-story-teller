@@ -11,7 +11,7 @@
 
 #include "chip32_vm.h"
 #include "dlib_export.h"
-
+#include "story_machine.h"
 
 
 static char root_dir[260];
@@ -31,11 +31,15 @@ static chip32_ctx_t chip32_ctx;
 
 
 static chip32_result_t run_result;
-
+static uint32_t event_mask = 0;
 
 static uint8_t IndexBuf[260];
 static uint8_t ImageBuf[100];
 static uint8_t SoundBuf[100];
+
+static bool IsValidEvent(uint32_t event) {
+    return (event_mask & event) != 0;
+}
 
 
 int get_filename_from_memory(chip32_ctx_t *ctx, uint32_t addr, char *filename_mem)
@@ -106,11 +110,12 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
             std::cout << "[STORYVM] No sound" << std::endl;
         }
 
-        retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
+        retCode = SYSCALL_RET_OK; // set the VM in pause
     }
     else if (code == 2) // Wait Event
     {
         std::cout << "[STORYVM] Syscall 2 (wait for event)" << std::endl;
+        event_mask = ctx->registers[R0];
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
     return retCode;
@@ -160,38 +165,16 @@ extern "C" void storyvm_initialize(media_callback cb)
     storyvm_stop();
 }
 
-
-enum VmEventType {EvNoEvent, EvStep, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop};
-
 extern "C"  void storyvm_send_event(int event)
 {
-    if (event == VmEventType::EvStep)
+    if (IsValidEvent(event))
     {
+        chip32_ctx.registers[R0] = event;
         run_result = VM_OK;
     }
-    else if (event == VmEventType::EvOkButton)
+    else
     {
-        chip32_ctx.registers[R0] = 0x01;
-        run_result = VM_OK;
-    }
-    else if (event == VmEventType::EvPreviousButton)
-    {
-        chip32_ctx.registers[R0] = 0x02;
-        run_result = VM_OK;
-    }
-    else if (event == VmEventType::EvNextButton)
-    {
-        chip32_ctx.registers[R0] = 0x04;
-        run_result = VM_OK;
-    }
-    else if (event == VmEventType::EvAudioFinished)
-    {
-        chip32_ctx.registers[R0] = 0x08;
-        run_result = VM_OK;
-    }
-    else if (event == VmEventType::EvStop)
-    {
-        run_result = VM_FINISHED;
+        std::cout << "[STORYVM] Invalid event" << std::endl;
     }
 }
 

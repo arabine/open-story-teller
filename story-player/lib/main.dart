@@ -14,6 +14,7 @@ import 'package:external_path/external_path.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logger/logger.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'libstory/storyvm.dart';
 import 'libstory/indexfile.dart';
@@ -97,7 +98,7 @@ class MyHomePage extends StatefulWidget {
 enum PlayerState { disabled, indexFile, inStory }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String myPath = 'fffff';
+  String libraryDir = 'fffff';
   IndexFile indexFile = IndexFile();
   String currentImage = 'assets/logo.png';
   final player = AudioPlayer();
@@ -105,22 +106,42 @@ class _MyHomePageState extends State<MyHomePage> {
   PlayerState state = PlayerState.disabled;
   StreamSubscription? audioPlayerSub;
 
+  
+
   Image img = const Image(image: AssetImage('assets/logo.png'));
 
 
   void initPaths() async {
-    Directory? dir;
+    
 
-    if (Platform.isAndroid) {
-      dir = await getExternalStorageDirectory();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? libDir = prefs.getString('library-directory');
+
+    if (libDir != null) {
+      setState(() {
+        libraryDir = libDir;
+      });
+      bool success = await indexFile.loadIndexFile(libDir);
+      if (success) {
+        showCurrentStoryIndex();
+        state = PlayerState.indexFile;
+      }
     } else {
-      dir = await getApplicationDocumentsDirectory();
+      logger.d("No library directory found");
+      Directory? dir;
+       if (Platform.isAndroid) {
+        dir = await getExternalStorageDirectory();
+      } else {
+        dir = await getApplicationDocumentsDirectory();
+      }
+      if (dir != null) {
+        setState(() {
+          libraryDir = '${dir.toString()}/stories';
+        });
+      }
     }
-
-    setState(() {
-      myPath = dir.toString();
-    });
-    logger.d("===============+> $myPath");
+    
+    logger.d("===============+> $libraryDir");
   }
 
   _MyHomePageState() {
@@ -174,9 +195,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (path != null) {
         logger.d("Selected directory: $path");
-
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('library-directory', path);
           setState(() {
-            myPath = path;
+            libraryDir = path;
         });
         bool success = await indexFile.loadIndexFile(path);
         if (success) {
@@ -244,10 +266,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              myPath,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            // Text(
+            //   libraryDir,
+            //   style: Theme.of(context).textTheme.bodySmall,
+            // ),
             img,
           ],
         ),
@@ -256,31 +278,6 @@ class _MyHomePageState extends State<MyHomePage> {
         color: const Color(0xFF9ab4a4),
         child: Row(
           children: <Widget>[
-           /* IconButton(
-              tooltip: 'Select library directory',
-              icon: const Icon(
-                Icons.folder,
-                size: 40,
-              ),
-              onPressed: () async {
-                // FilePickerResult? result = await FilePicker.platform.pickFiles();
-                String ?path = await FilePicker.platform.getDirectoryPath();
-
-                if (path != null) {
-                  logger.d("Selected directory: $path");
-
-                   setState(() {
-                      myPath = path;
-                  });
-                  bool success = await indexFile.loadIndexFile(path);
-                  if (success) {
-                      showCurrentStoryIndex();
-                      state = PlayerState.indexFile;
-                  }
-                }
-              },
-              color: const Color(0xFFb05728),
-            ),*/
             IconButton(
               tooltip: 'Previous',
               icon: const Icon(Icons.arrow_circle_left, size: 40),
@@ -314,9 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
 
                 if (state == PlayerState.inStory) {
-                  player.stop();
-                  showCurrentStoryIndex();
-                  state = PlayerState.indexFile;
+                  StoryVm.homeButton();
                 } else if (state == PlayerState.indexFile) { 
                   player.stop();
                 }
