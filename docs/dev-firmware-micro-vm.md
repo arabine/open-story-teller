@@ -95,8 +95,27 @@ This system call is used to wait for machine events. Use R0 to mask events to wa
 Example:
 
 ```
-    mov r0, 
+    mov r0, 0b1000
+    syscall 2
 ```
+
+## SYSCALL  3 (Send signal)
+
+Send a specific signal event to the machine.
+Use R0 register to pass the signal argument.
+
+```
+    mov r0, 42
+    syscall 3
+```
+
+Supported signals:
+
+| Signal  |    Number   |
+|-------       |--------    |
+| reserved |   0   |
+| Quit story |   1    |
+
 
 # Assembler
 

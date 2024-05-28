@@ -160,6 +160,14 @@ class _MyHomePageState extends State<MyHomePage> {
         }
     });
 
+    eventBus.on<SignalEvent>().listen((event) {
+      if (event.signal == 1) {
+        state = PlayerState.indexFile;
+        showCurrentStoryIndex();
+      }
+    });
+
+
     audioPlayerSub = player.onPlayerComplete.listen((event) {
       if (state == PlayerState.inStory) {
         // Send end of music event

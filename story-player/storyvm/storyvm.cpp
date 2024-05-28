@@ -118,6 +118,19 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
         event_mask = ctx->registers[R0];
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
+    else if (code == 3) // Signal
+    {
+        if (ctx->registers[R0] == 1)
+        {
+            // EXIT
+            std::cout << "[STORYVM] Syscall 3 (exit)" << std::endl;
+            if (gMediaCallback)
+            {
+                std::cout << "[STORYVM] Execute callback (sound)" << std::endl;
+                gMediaCallback(2, "");
+            }
+        }
+    }
     return retCode;
 }
 

@@ -29,7 +29,7 @@
     mov t5, r0  ; save it
     
     ; wait for event
-    lcons r0, 0b111 ; mask for OK, previous and next buttons
+    lcons r0, 0b100111 ; mask for OK, previous and next buttons, home button
     syscall 2
     ; Event is stored in R0
 
@@ -44,6 +44,11 @@
     and r1, r0 ; r1 = r1 AND r0
     skipz r1 ; not OK, skip jump
     jump .media_previous
+
+    lcons r1, 0b100000 ; mask for home button
+    and r1, r0 ; r1 = r1 AND r0
+    skipz r1 ; not Home, skip jump
+    jump .media_exit
 
     ; all other events mean: next node
     eq  r0, t0, t4   ;  t4 est le dernier élément
@@ -72,3 +77,8 @@
     lcons r0, 0b10000100001 ; mask for end of audio, Ok, and home buttons
     syscall 2 ; wait for event (OK, home or end of audio), return to choice loop
     jump .media_loop
+
+.media_exit:
+    lcons r0, 1 ; Home button pressed, send signal to exit story
+    syscall 3 ; exit story, we should never return from this call
+    halt ; just in case

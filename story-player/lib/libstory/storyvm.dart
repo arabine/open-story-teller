@@ -22,6 +22,12 @@ class MediaEvent {
   MediaEvent(this.image, this.sound);
 }
 
+class SignalEvent {
+  int signal;
+
+  SignalEvent(this.signal);
+}
+
 Completer<bool> periodic(Duration interval, Function(int cycle) callback) {
   final done = Completer<bool>();
   () async {
@@ -96,8 +102,10 @@ class StoryVm {
 
     if (i == 0) {
         eventBus.fire(MediaEvent(file, ""));
-    } else {
+    } else if (i == 1) {
         eventBus.fire(MediaEvent("", file));
+    } else if (i == 2) {
+        eventBus.fire(SignalEvent(1));
     }
     
   }
