@@ -2,7 +2,7 @@
 
 #include <map>
 #include <set>
-#include <set>
+#include <utility>
 
 #include <imgui_node_editor.h>
 #include "base_node_widget.h"
@@ -10,11 +10,9 @@
 #include "i_story_manager.h"
 #include "json.hpp"
 #include "story_project.h"
-
+#include "node_editor_page.h"
 
 namespace ed = ax::NodeEditor;
-
-
 
 # ifdef _MSC_VER
 # define portable_strcpy    strcpy_s
@@ -26,35 +24,15 @@ namespace ed = ax::NodeEditor;
 
 class NodeEditorWindow  : public WindowBase
 {
-public:
-    struct EditorLink {
-        ed::LinkId Id;
-        ed::PinId  InputId;
-        ed::PinId  OutputId;
-    };
-
-    // Stuff from ImGuiNodeEditor, each element has a unique ID within one editor
-    struct LinkInfo
-    {
-
-        LinkInfo()
-        {
-            ed_link = std::make_shared<EditorLink>();
-            model = std::make_shared<Connection>();
-        }
-
-        std::shared_ptr<EditorLink> ed_link;
-        std::shared_ptr<Connection> model;
-    };
-
+public:   
     NodeEditorWindow(IStoryManager &manager);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
     void Initialize();
-    void Clear();
     void Load(std::shared_ptr<StoryProject> story);
     void SaveNodePositions();
+    void OpenFunction(const std::string &uuid, const std::string &name);
 
     std::shared_ptr<BaseNodeWidget> GetSelectedNode();
 
@@ -63,11 +41,16 @@ private:
 
     bool m_loaded{false};
 
-    ed::EditorContext* m_context = nullptr;
-
+    // "main" is the entry point editor context. You always need to create one.
+    // Then each function can have its own editor context, for example if you want to create multiple graphs.
+    // the key is main, or the UUID of the function
+    std::list<std::shared_ptr<NodeEditorPage>> m_pages;
+    std::shared_ptr<NodeEditorPage> m_currentPage;
+    std::string m_newPageUuid;
+    std::string m_newPageName;
     std::shared_ptr<StoryProject> m_story;
-    std::list<std::shared_ptr<BaseNodeWidget>>   m_nodes;
-    std::list<std::shared_ptr<LinkInfo>>   m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
+    std::list<std::shared_ptr<NodeEditorPage>> m_callStack;
+   
     void ToolbarUI();
 
     void BuildNode(Node* node)
@@ -113,11 +96,10 @@ private:
         }
     }
 
+    void LoadPage(const std::string &uuid, const std::string &name);
     ed::PinId GetInputPin(const std::string &modelNodeId, int pinIndex);
     ed::PinId GetOutputPin(const std::string &modelNodeId, int pinIndex);
     void CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId);
-    // std::shared_ptr<Connection> LinkToModel(ed::PinId InputId, ed::PinId OutputId);
-    int FindNodeAndPin(ed::PinId pinId, int &foundIndex, std::string &foundNodeId);
     bool FillConnection(std::shared_ptr<Connection> c, ed::PinId pinId);
 };
 

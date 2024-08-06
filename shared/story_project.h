@@ -49,8 +49,6 @@ struct StoryProject : public IStoryProject
 {
 
 public:
-
-
     StoryProject(ILogger &log);
     ~StoryProject();
 
@@ -142,6 +140,12 @@ public:
     void AddConnection(std::shared_ptr<Connection> c);
     void DeleteNode(const std::string &id);
     void DeleteLink(std::shared_ptr<Connection> c);
+
+    std::vector<std::string> GetNodeTypes() const { 
+        std::vector<std::string> l;
+        for(auto const& imap: m_registry) l.push_back(imap.first);
+        return l;
+    }
     
 private:
     ILogger &m_log;

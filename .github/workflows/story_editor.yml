@@ -24,11 +24,13 @@ jobs:
               mkdir build
               cd build
               cmake -DCMAKE_BUILD_TYPE=Release ..
+              make
               ls
         - name: package_setup
           working-directory: ./story-editor/build
           run : |
-              make package
+              cpack
+              cpack -G DEB
               ls
   build_win32:
       runs-on: ubuntu-latest

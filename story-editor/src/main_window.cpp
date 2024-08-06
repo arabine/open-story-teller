@@ -822,7 +822,7 @@ void MainWindow::CloseProject()
 
     m_resources.Clear();
 
-    m_nodeEditorWindow.Clear();
+    m_nodeEditorWindow.Initialize();
     m_emulatorWindow.ClearImage();
     m_consoleWindow.ClearLog();
     m_codeEditorWindow.ClearErrors();
@@ -978,6 +978,11 @@ std::pair<FilterIterator, FilterIterator> MainWindow::Images()
 std::pair<FilterIterator, FilterIterator> MainWindow::Sounds()
 {
     return m_resources.Sounds();
+}
+
+void MainWindow::OpenFunction(const std::string &uuid, const std::string &name)
+{
+    m_nodeEditorWindow.OpenFunction(uuid, name);
 }
 
 void MainWindow::AddResource(std::shared_ptr<Resource> res)

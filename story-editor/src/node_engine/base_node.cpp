@@ -2,9 +2,10 @@
 #include "uuid.h"
 #include <iostream>
 
-BaseNode::BaseNode(const std::string &type)
+BaseNode::BaseNode(const std::string &type, const std::string &typeName)
 {
     m_type = type;
+    m_typeName = typeName;
     m_uuid = Uuid().String();
 
     nlohmann::json obj{};

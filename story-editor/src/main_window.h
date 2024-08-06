@@ -130,6 +130,7 @@ private:
     virtual std::string BuildFullAssetsPath(const std::string_view fileName) const override;
     virtual std::pair<FilterIterator, FilterIterator> Images() override;
     virtual std::pair<FilterIterator, FilterIterator> Sounds() override;
+    virtual void OpenFunction(const std::string &uuid, const std::string &name) override;
 
     virtual void AddResource(std::shared_ptr<Resource> res) override;
     virtual void ClearResources() override;

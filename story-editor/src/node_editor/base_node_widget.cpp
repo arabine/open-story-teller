@@ -9,6 +9,7 @@ BaseNodeWidget::BaseNodeWidget(IStoryManager &manager,  std::shared_ptr<BaseNode
     : m_manager(manager)
     , m_base(base)
 {
+    // A node is specific to the Node Gfx library
     m_node = std::make_unique<Node>(GetNextId(), ""); // ImGui internal ID
     std::cout << " --> Created node widget: " << (int)m_node->ID.Get() << std::endl;
 }
@@ -58,6 +59,13 @@ void BaseNodeWidget::Initialize()
     
 }
 
+void BaseNodeWidget::SetOutPinName(int pinIndex, const std::string &name)
+{
+    if (pinIndex < m_node->Outputs.size())
+    {
+        m_node->Outputs[pinIndex].Name = name;
+    }
+}
 
 void BaseNodeWidget::FrameStart()
 {
@@ -107,7 +115,14 @@ void BaseNodeWidget::DrawPins()
         ImGui::Dummy(ImVec2(320 - textWidth * 2, 0)); // Hacky magic number to space out the output pin.
         ImGui::SameLine();
         ed::BeginPin(output.ID, ed::PinKind::Output);
-        ImGui::Text( "#%d " ICON_MDI_OCTAGON_OUTLINE, i++);
+        if (output.Name.empty())
+        {
+            ImGui::Text( "#%d " ICON_MDI_OCTAGON_OUTLINE, i++);
+        }
+        else
+        {
+            ImGui::Text( "%s" ICON_MDI_OCTAGON_OUTLINE, output.Name.c_str()  );
+        }
         ed::EndPin();
     }
 }

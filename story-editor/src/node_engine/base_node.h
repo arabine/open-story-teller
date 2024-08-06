@@ -17,7 +17,7 @@ public:
         float y;
     };
 
-    BaseNode(const std::string &type);
+    BaseNode(const std::string &type, const std::string &typeName);
     virtual ~BaseNode();
 
     static std::string GetEntryLabel(const std::string &id);
@@ -32,9 +32,16 @@ public:
     virtual float GetX() const;
     virtual float GetY() const;
 
+    // Coded type, internal use
     std::string GetType() const
     {
         return m_type;
+    }
+
+    // Human readable type
+    std::string GetTypeName() const
+    {
+        return m_typeName;
     }
 
     void SetId(const std::string &id) { m_uuid = id; }
@@ -54,6 +61,7 @@ public:
 private:
     std::string m_title{"Default title"};
     std::string m_type;
+    std::string m_typeName;
     std::string m_uuid;
     NodePosition m_pos;
 

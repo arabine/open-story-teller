@@ -8,12 +8,14 @@
 #include "story_project.h"
 #include "json.hpp"
 #include "media_node.h"
+#include "function_node.h"
 #include "sys_lib.h"
 
 StoryProject::StoryProject(ILogger &log)
     : m_log(log)
 {
     registerNode<MediaNode>("media-node");
+    registerNode<FunctionNode>("function-node");
 }
 
 StoryProject::~StoryProject()

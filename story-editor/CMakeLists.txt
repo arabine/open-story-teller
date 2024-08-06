@@ -157,7 +157,7 @@ FetchContent_Declare(
 
 
 set(SDL3IMAGE_INSTALL OFF)
-set(BUILD_SHARED_LIBS FALSE)
+set(BUILD_SHARED_LIBS TRUE)
 FetchContent_MakeAvailable(sdl_image)
 include_directories(${sdl_image_SOURCE_DIR}/include)
 
@@ -191,6 +191,8 @@ set(SRCS
     src/node_engine/base_node.cpp
     src/node_engine/media_node.h
     src/node_engine/media_node.cpp
+    src/node_engine/function_node.h
+    src/node_engine/function_node.cpp
     src/node_engine/connection.cpp
     src/node_engine/connection.h
 
@@ -200,6 +202,8 @@ set(SRCS
     src/node_editor/base_node_widget.cpp
     src/node_editor/node_editor_window.h
     src/node_editor/node_editor_window.cpp
+    src/node_editor/function_node_widget.h
+    src/node_editor/function_node_widget.cpp
 
     src/resources_window.cpp
     src/resources_window.h
@@ -340,6 +344,7 @@ target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl
 # certaines informations à CPACK
 set(SDL_BIN_DIR ${sdl3_BINARY_DIR})
 set(SDL_IMAGE_BIN_DIR ${sdl_image_BINARY_DIR})
+set(SDL_MIXER_BIN_DIR ${sdl3_mixer_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
@@ -357,6 +362,7 @@ elseif(WIN32)
         OpenGL::GL
         SDL3::SDL3
         SDL3_image::SDL3_image
+        SDL3_mixer::SDL3_mixer
         libcurl_static
         ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
     )
@@ -369,6 +375,7 @@ install(TARGETS ${STORY_EDITOR_PROJECT} RUNTIME DESTINATION ".")
 
 # Personnaliser les options d'installation
 set(CPACK_PACKAGE_NAME "Open-Story-Editor")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Anthony Rabine")
 set(CPACK_PACKAGE_DESCRIPTION "Open Story Teller - Node based editor")
 set(CPACK_PACKAGE_VENDOR "D8S")
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
@@ -384,6 +391,8 @@ install_files("." FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini")
 
 if(WIN32)
     install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
+    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.dll")
+    install_files("." FILES "${SDL_MIXER_BIN_DIR}/SDL3_mixer.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libstdc++-6.dll")
     install_files("." FILES "/usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libgcc_s_seh-1.dll")
@@ -393,9 +402,10 @@ if(WIN32)
 endif()
 
 if(LINUX)
-    install_files("." FILES "${SDL_BIN_DIR}/SDL3.so")
-    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.so")
-    
+
+    install_files("." FILES "${SDL_BIN_DIR}/libSDL3.so")
+    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/libSDL3_image.so")
+    install_files("." FILES "${SDL_MIXER_BIN_DIR}/libSDL3_mixer.so")
 endif()
 
 if (APPLE)

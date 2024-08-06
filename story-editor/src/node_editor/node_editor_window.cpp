@@ -10,6 +10,7 @@
 #include "IconsFontAwesome5_c.h"
 
 #include "media_node_widget.h"
+#include "function_node_widget.h"
 #include "gui.h"
 #include "uuid.h"
 
@@ -27,71 +28,62 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
 {
 
     registerNode<MediaNodeWidget>("media-node");
+    registerNode<FunctionNodeWidget>("function-node");
 }
 
 NodeEditorWindow::~NodeEditorWindow()
 {
-    ed::DestroyEditor(m_context);
+    m_pages.clear();
+    m_story.reset();
 }
+
+static const std::string gMainUuid = "490745ab-df4d-476d-ae27-027e94b8ee0a";
 
 void NodeEditorWindow::Initialize()
 {
-    ed::Config config;
-    config.SettingsFile = nullptr;
-    config.SaveSettings = nullptr;
-    config.LoadSettings = nullptr;
-    m_context = ed::CreateEditor(&config);
+    m_pages.clear();
+    m_callStack.clear();
 
-    ed::SetCurrentEditor(m_context);
+    m_currentPage = std::make_shared<NodeEditorPage>(gMainUuid, "Main");
+    m_pages.emplace_back(m_currentPage);
+  
+    m_currentPage->Select();
 }
 
-void NodeEditorWindow::Clear()
+void NodeEditorWindow::LoadPage(const std::string &uuid, const std::string &name)
 {
-    m_nodes.clear();
-    m_links.clear();
-    m_story.reset();
+    // On cherche la page correspondante dans la std::list
+    // Si elle n'existe pas, c'est une nouvelle fonction
+    auto it = std::find_if(m_pages.begin(), m_pages.end(), [uuid](std::shared_ptr<NodeEditorPage> p) { return p->Uuid() == uuid; });
+
+    std::shared_ptr<NodeEditorPage> page;
+
+    if (it == m_pages.end())
+    {
+        // New page
+        page = std::make_shared<NodeEditorPage>(uuid, name);
+    }
+    else
+    {
+        page = *it;
+    }
+    
+    if (m_currentPage->Uuid() != uuid)
+    {
+        m_callStack.push_back(m_currentPage); // save where we are
+        m_currentPage = page;
+        m_currentPage->Select();
+    }
 }
 
 ed::PinId NodeEditorWindow::GetInputPin(const std::string &modelNodeId, int pinIndex)
 {
-    ed::PinId id = 0;
-
-    for (auto & n : m_nodes)
-    {
-        if (n->Base()->GetId() == modelNodeId)
-        {
-            id = n->GetInputPinAt(pinIndex);
-            break;
-        }
-    }
-
-    if (id.Get() == 0)
-    {
-        std::cout << "Invalid Id: " << modelNodeId << " input pin: " << pinIndex <<" not found" << std::endl;
-    }
-
-    return id;
+    return m_currentPage->GetInputPin(modelNodeId, pinIndex);
 }
 
 ed::PinId NodeEditorWindow::GetOutputPin(const std::string &modelNodeId, int pinIndex)
 {
-    ed::PinId id = 0;
-
-    for (auto & n : m_nodes)
-    {
-        if (n->Base()->GetId() == modelNodeId)
-        {
-            id = n->GetOutputPinAt(pinIndex);
-            break;
-        }
-    }
-
-    if (id.Get() == 0)
-    {
-        std::cout << "Invalid Id: " << modelNodeId << " output pin: " << pinIndex <<" not found" << std::endl;
-    }
-
-    return id;
+    return m_currentPage->GetOutputPin(modelNodeId, pinIndex);
 }
 
 void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
@@ -103,8 +95,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
         try {
 
             BaseNodeWidget::InitId();
-            m_nodes.clear();
-            m_links.clear();
+            Initialize();
 
             auto [node_begin, node_end] = m_story->Nodes();
 
@@ -117,7 +108,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
                 {
                     n->Initialize();
                     n->SetOutputs(m_story->OutputsCount((*it)->GetId())); // il faut que les noeuds aient une bonne taille de outputs avant de créer les liens
-                    m_nodes.push_back(n);
+                    m_currentPage->AddNode(n);
                 }
                 else
                 {
@@ -143,13 +134,19 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
         }
     }
 
-    std::cout << "Loaded " << m_nodes.size() << " nodes, " << m_links.size() << " links" << std::endl;
+    std::cout << "Loaded " << m_currentPage->m_nodes.size() << " nodes, " << m_currentPage->m_links.size() << " links" << std::endl;
   
 }
 
 void NodeEditorWindow::SaveNodePositions()
 {
     
+}
+
+void NodeEditorWindow::OpenFunction(const std::string &uuid, const std::string &name)
+{
+    m_newPageUuid = uuid;
+    m_newPageName = name;
 }
 
 void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId)
@@ -164,41 +161,16 @@ void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId i
     conn->ed_link->OutputId = outId;
 
     // Since we accepted new link, lets add one to our list of links.
-    m_links.push_back(conn);
+    m_currentPage->m_links.push_back(conn);
 }
 
-// retourne 1 si c'est une sortie, 2 une entrée, 0 pas trouvé
-int NodeEditorWindow::FindNodeAndPin(ed::PinId pinId, int &foundIndex, std::string &foundNodeId)
-{
-    int success = 0;
-    for (const auto & n : m_nodes)
-    {
-        // std::cout << "---> Node: " << n->Base()->GetId() << std::endl;
-
-        if (n->HasOnputPinId(pinId, foundIndex))
-        {
-            foundNodeId = n->Base()->GetId();
-            success = 1;
-            break;
-        }
-
-        if (n->HasInputPinId(pinId, foundIndex))
-        {
-            foundNodeId = n->Base()->GetId();
-            success = 2;
-            break;
-        }
-    }
-
-    return success;
-}
 
 bool NodeEditorWindow::FillConnection(std::shared_ptr<Connection> c, ed::PinId pinId)
 {
     bool success = false;
     std::string nodeId;
     int nodeIndex;
-    int ret = FindNodeAndPin(pinId, nodeIndex, nodeId);
+    int ret = m_currentPage->FindNodeAndPin(pinId, nodeIndex, nodeId);
     if (ret > 0)
     {
         if (ret == 1)
@@ -216,53 +188,13 @@ bool NodeEditorWindow::FillConnection(std::shared_ptr<Connection> c, ed::PinId p
     return success;
 }
 
-/*
-std::shared_ptr<Connection> NodeEditorWindow::LinkToModel(ed::PinId InputId, ed::PinId OutputId)
-{
-    auto c = std::make_shared<Connection>();
-    int foundIndex = -1;
-    for (const auto & n : m_nodes)
-    {
-        // std::cout << "---> Node: " << n->Base()->GetId() << std::endl;
-
-        if (n->HasOnputPinId(OutputId, foundIndex))
-        {
-            c->outNodeId = n->Base()->GetId();
-            c->outPortIndex = foundIndex;
-        }
-
-        if (n->HasInputPinId(InputId, foundIndex))
-        {
-            c->inNodeId = n->Base()->GetId();
-            c->inPortIndex = foundIndex;
-        }
-    }
-
-    return c;
-}*/
-
 
 std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 {
     std::shared_ptr<BaseNodeWidget> selected;
 
-    ed::SetCurrentEditor(m_context);
-    if (ed::GetSelectedObjectCount() > 0)
-    {
-        ed::NodeId nId;
-        int nodeCount = ed::GetSelectedNodes(&nId, 1);
-
-        if (nodeCount > 0)
-        {
-            for (auto & n : m_nodes)
-            {
-                if (n->GetInternalId() == nId.Get())
-                {
-                    selected = n;
-                }
-            }
-        }
-    }
+    m_currentPage->Select();
+    selected = m_currentPage->GetSelectedNode();
     ed::SetCurrentEditor(nullptr);
 
     return selected;
@@ -271,24 +203,23 @@ std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 
 void NodeEditorWindow::Draw()
 {
+    if (!m_newPageUuid.empty())
+    {
+        LoadPage(m_newPageUuid, m_newPageName);
+        m_newPageUuid.clear();
+    }
+
     if (WindowBase::BeginDraw())
     {
+        m_currentPage->Select();
 
-        ed::SetCurrentEditor(m_context);
-        ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+        ToolbarUI();
+
+        ed::Begin(m_currentPage->Uuid().data(), ImVec2(0.0, 0.0f));
 
 
-        for (const auto & n : m_nodes)
-        {
-            ImGui::PushID(n->GetInternalId());
-            n->Draw();
-            ImGui::PopID();
-        }
-
-        for (const auto& linkInfo : m_links)
-        {
-            ed::Link(linkInfo->ed_link->Id, linkInfo->ed_link->OutputId, linkInfo->ed_link->InputId);
-        }
+        // Draw our nodes
+        m_currentPage->Draw();
 
         // Handle creation action, returns true if editor want to create new object (node or link)
         if (ed::BeginCreate())
@@ -325,7 +256,7 @@ void NodeEditorWindow::Draw()
                                 CreateLink(c, startId, endId);
 
                                 // Draw new link.
-                                ed::Link(m_links.back()->ed_link->Id, startId, endId);
+                                ed::Link(m_currentPage->m_links.back()->ed_link->Id, startId, endId);
                             }
                         }
                    }
@@ -347,16 +278,15 @@ void NodeEditorWindow::Draw()
             {
                 if (ed::AcceptDeletedItem())
                 {
-                    auto it = std::find_if(m_nodes.begin(), m_nodes.end(), [nodeId](std::shared_ptr<BaseNodeWidget> node) { return node->GetInternalId() == nodeId.Get(); });
-                    if (it != m_nodes.end())
+                    std::shared_ptr<BaseNodeWidget> node;
+                    if (m_currentPage->GetNode(nodeId, node))
                     {
                         // First delete model, then current entry
-                        m_manager.DeleteNode((*it)->Base()->GetId());
-                        m_nodes.erase(it);
+                        m_manager.DeleteNode(node->Base()->GetId());
+                        m_currentPage->DeleteNode(nodeId);
                     }
                 }
             }
-
 
             // There may be many links marked for deletion, let's loop over them.
             ed::LinkId deletedLinkId;
@@ -365,13 +295,11 @@ void NodeEditorWindow::Draw()
                // If you agree that link can be deleted, accept deletion.
                if (ed::AcceptDeletedItem())
                {
-
-                    auto it = std::find_if(m_links.begin(), m_links.end(), [deletedLinkId](std::shared_ptr<LinkInfo> inf) { return inf->ed_link->Id == deletedLinkId; });
-                    if (it != m_links.end())
+                    std::shared_ptr<Connection> model;
+                    if (m_currentPage->GetModel(deletedLinkId, model))
                     {
-                        // First delete model, then current entry
-                        m_manager.DeleteLink((*it)->model);
-                        m_links.erase(it);
+                        m_manager.DeleteLink(model);
+                        m_currentPage->EraseLink(deletedLinkId);
                     }
                }
 
@@ -393,18 +321,23 @@ void NodeEditorWindow::Draw()
         if (ImGui::BeginPopup("Create New Node"))
         {
             auto newNodePostion = openPopupPosition;
-            Node* node = nullptr;
-            if (ImGui::MenuItem("Media Node"))
+            std::shared_ptr<BaseNode> base;
+            auto nodeTypes = m_story->GetNodeTypes();
+
+            for (auto &type : nodeTypes)
             {
-                auto base = m_manager.CreateNode("media-node");
-                if (base)
+                if (ImGui::MenuItem(type.c_str()))
                 {
-                    auto n = CreateNodeWidget(base->GetType(), m_manager, base);
-                    if (n)
+                    base = m_manager.CreateNode(type);
+                    if (base)
                     {
-                        n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
-                        n->Initialize();
-                        m_nodes.push_back(n);
+                        auto n = CreateNodeWidget(type, m_manager, base);
+                        if (n)
+                        {
+                            n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
+                            n->Initialize();
+                            m_currentPage->AddNode(n);
+                        }
                     }
                 }
             }
@@ -420,7 +353,7 @@ void NodeEditorWindow::Draw()
 
         ed::Resume();
 
-
+        
         ed::End();
         ed::SetCurrentEditor(nullptr);
 
@@ -431,30 +364,49 @@ void NodeEditorWindow::Draw()
 
 void NodeEditorWindow::ToolbarUI()
 {
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(42, Gui::GetWindowSize().h));
+    auto& io = ImGui::GetIO();
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    ImVec2 window_size = ImGui::GetWindowSize();
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
+    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    // {
+    //     const ImGuiViewport* viewport = ImGui::GetWindowViewport();
+    //     window_flags |= ImGuiWindowFlags_NoDocking;
+    //     io.ConfigViewportsNoDecoration = true;
+    //     ImGui::SetNextWindowViewport(viewport->ID);
+    // }
+    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+    // ImGui::PushStyleColor(ImGuiCol_Button, m_StyleColors[BluePrintStyleColor_ToolButton]);
+    // ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_StyleColors[BluePrintStyleColor_ToolButtonHovered]);
+    // ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_StyleColors[BluePrintStyleColor_ToolButtonActive]);
+    // ImGui::PushStyleColor(ImGuiCol_TexGlyphShadow, ImVec4(0.1, 0.1, 0.1, 0.8));
+    // ImGui::PushStyleVar(ImGuiStyleVar_TexGlyphShadowOffset, ImVec2(2.0, 2.0));
 
-    ImGuiWindowFlags window_flags = 0
-                                    | ImGuiWindowFlags_NoTitleBar
-                                    | ImGuiWindowFlags_NoResize
-                                    | ImGuiWindowFlags_NoMove
-                                    | ImGuiWindowFlags_NoScrollbar
-                                    | ImGuiWindowFlags_NoSavedSettings
-        ;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::Begin("TOOLBAR", NULL, window_flags);
-    ImGui::PopStyleVar();
+    // ImGui::PopStyleVar();
 
-    if (ImGui::Button(ICON_FA_COG))
+    // Draw call stack, each function is a button
+    for (auto page : m_callStack)
     {
-        ImGui::OpenPopup("Options");
-    }
+        if (ImGui::Button(page->Name().data()))
+        {
+            // Erase all pages after this iterator
+            auto it = std::find(m_callStack.begin(), m_callStack.end(), page);
+            m_callStack.erase(it, m_callStack.end());
 
-    if (ImGui::Button(ICON_FA_SIGN_OUT_ALT))
-    {
-       // mEvent.ExitGame();
+            LoadPage(page->Uuid().data(), page->Name().data());
+            break;
+        }
+        ImGui::SameLine();
+        ImGui::Text(">");
+        ImGui::SameLine();
     }
-
 
     ImGui::End();
+    // ImGui::PopStyleVar();
+    // ImGui::PopStyleColor(4);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        io.ConfigViewportsNoDecoration = false;
+    }
 }

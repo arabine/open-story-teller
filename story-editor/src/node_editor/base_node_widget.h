@@ -106,6 +106,7 @@ public:
     virtual void Draw() = 0;
     virtual void DrawProperties() = 0;
 
+    void SetOutPinName(int pinIndex, const std::string &name);
 
     void FrameStart();
     void FrameEnd();
