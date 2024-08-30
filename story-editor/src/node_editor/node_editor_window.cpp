@@ -45,7 +45,8 @@ void NodeEditorWindow::Initialize()
     m_callStack.clear();
 
     m_currentPage = std::make_shared<NodeEditorPage>(gMainUuid, "Main");
-    m_pages.emplace_back(m_currentPage);
+    m_pages.push_back(m_currentPage);
+    m_callStack.push_back(m_currentPage);
   
     m_currentPage->Select();
 }
@@ -70,9 +71,9 @@ void NodeEditorWindow::LoadPage(const std::string &uuid, const std::string &name
     
     if (m_currentPage->Uuid() != uuid)
     {
-        m_callStack.push_back(m_currentPage); // save where we are
         m_currentPage = page;
         m_currentPage->Select();
+        m_callStack.push_back(m_currentPage); // show current page in call stack
     }
 }
 
@@ -97,7 +98,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
             BaseNodeWidget::InitId();
             Initialize();
 
-            auto [node_begin, node_end] = m_story->Nodes();
+            auto [node_begin, node_end] = m_story->Nodes(m_currentPage->Uuid());
 
             int i = 0;
 
@@ -117,7 +118,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 
                 std::cout << "Created " << ++i << " node" << std::endl;
             }
-            auto [link_begin, link_end] = m_story->Links();
+            auto [link_begin, link_end] = m_story->Links(m_currentPage->Uuid());
 
             for (auto it = link_begin; it != link_end; ++it)
             {
@@ -203,6 +204,8 @@ std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 
 void NodeEditorWindow::Draw()
 {
+    // Check if we need to load a new page
+    // Typically if we are in a function and we want to open a new one
     if (!m_newPageUuid.empty())
     {
         LoadPage(m_newPageUuid, m_newPageName);
@@ -251,7 +254,7 @@ void NodeEditorWindow::Draw()
                         {
                             if (FillConnection(c, endId))
                             {
-                                m_story->AddConnection(c);
+                                m_story->AddConnection(m_currentPage->Uuid(), c);
 
                                 CreateLink(c, startId, endId);
 
@@ -282,7 +285,7 @@ void NodeEditorWindow::Draw()
                     if (m_currentPage->GetNode(nodeId, node))
                     {
                         // First delete model, then current entry
-                        m_manager.DeleteNode(node->Base()->GetId());
+                        m_story->DeleteNode(m_currentPage->Uuid(), node->Base()->GetId());
                         m_currentPage->DeleteNode(nodeId);
                     }
                 }
@@ -298,7 +301,7 @@ void NodeEditorWindow::Draw()
                     std::shared_ptr<Connection> model;
                     if (m_currentPage->GetModel(deletedLinkId, model))
                     {
-                        m_manager.DeleteLink(model);
+                        m_story->DeleteLink(m_currentPage->Uuid(), model);
                         m_currentPage->EraseLink(deletedLinkId);
                     }
                }
@@ -328,7 +331,7 @@ void NodeEditorWindow::Draw()
             {
                 if (ImGui::MenuItem(type.c_str()))
                 {
-                    base = m_manager.CreateNode(type);
+                    base = m_story->CreateNode(m_currentPage->Uuid(), type);
                     if (base)
                     {
                         auto n = CreateNodeWidget(type, m_manager, base);
@@ -390,12 +393,17 @@ void NodeEditorWindow::ToolbarUI()
     {
         if (ImGui::Button(page->Name().data()))
         {
-            // Erase all pages after this iterator
-            auto it = std::find(m_callStack.begin(), m_callStack.end(), page);
-            m_callStack.erase(it, m_callStack.end());
+            if (page->Uuid() != m_currentPage->Uuid())
+            {
+             
+                // Erase all pages after this iterator
+                auto it = std::find(m_callStack.begin(), m_callStack.end(), page);
+                m_callStack.erase(it, m_callStack.end());
 
-            LoadPage(page->Uuid().data(), page->Name().data());
-            break;
+                LoadPage(page->Uuid().data(), page->Name().data());
+                break;
+            }
+            
         }
         ImGui::SameLine();
         ImGui::Text(">");

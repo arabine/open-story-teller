@@ -187,15 +187,6 @@ set(SRCS
     src/platform_folders.cpp
     src/platform_folders.h
 
-    src/node_engine/base_node.h
-    src/node_engine/base_node.cpp
-    src/node_engine/media_node.h
-    src/node_engine/media_node.cpp
-    src/node_engine/function_node.h
-    src/node_engine/function_node.cpp
-    src/node_engine/connection.cpp
-    src/node_engine/connection.h
-
     src/node_editor/media_node_widget.h
     src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.h
@@ -223,14 +214,11 @@ set(SRCS
     src/media_converter.cpp
     src/media_converter.h
 
-    src/i_story_manager.h
-
     src/miniz.c
     src/zip.cpp
 
     src/importers/pack_archive.cpp
     src/importers/ni_parser.c
-
 
     libs/ImGuiColorTextEdit/TextEditor.cpp
     libs/ImGuiColorTextEdit/TextEditor.h
@@ -257,17 +245,25 @@ set(SRCS
     ../shared/miniaudio.h
     ../shared/stb_vorbis.c
     ../shared/uuid.h
-    ../shared/resource.h
-    ../shared/resource.cpp
     ../shared/resource_manager.h
     ../shared/resource_manager.cpp
-    ../shared/story_project.cpp
-    ../shared/story_project.h
+
     ../shared/thread_safe_queue.h
     ../shared/library_manager.h
     ../shared/library_manager.cpp
-    ../shared/sys_lib.cpp
-    ../shared/sys_lib.h
+
+    # Core engine files
+    
+    ../core/src/compiler.cpp
+    ../core/src/story_project.cpp
+    ../core/src/story_page.cpp
+    ../core/src/base_node.cpp
+    ../core/src/media_node.cpp
+    ../core/src/function_node.cpp
+    ../core/src/connection.cpp
+
+    ../core/lib/sys_lib.cpp
+    ../core/lib/resource.cpp
 )
 
 if(WIN32)
@@ -307,7 +303,9 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../firmware/library
     ../firmware/chip32
     ../shared
-
+    ../core/src
+    ../core/lib
+    ../core/interfaces
 )
 
 add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})

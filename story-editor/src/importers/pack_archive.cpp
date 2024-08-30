@@ -384,6 +384,8 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
         StoryProject proj(m_log);
         ResourceManager res(m_log);
 
+        std::shared_ptr<StoryPage> page = proj.CreatePage("main");
+
         if (j.contains("title"))
         {
             proj.New(uuid, outputDir);
@@ -414,7 +416,7 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
 
             for (const auto & n : j["stageNodes"])
             {
-                auto node = proj.CreateNode("media-node");
+                auto node = proj.CreateNode("main", "media-node");
 
                 if (node)
                 {
@@ -452,7 +454,7 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
                         c->inPortIndex = 0;
 
                         i++;
-                        proj.AddConnection(c);
+                        page->AddLink(c);
                     }
                 }
                 else

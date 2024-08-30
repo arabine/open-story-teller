@@ -360,6 +360,7 @@ float MainWindow::DrawMainMenuBar()
                 if (m_story)
                 {
                     SaveProject();
+                    m_libraryManager.Scan(); // Add new project to library
                     OpenProject(m_story->GetUuid());
                 }
             }
@@ -1005,11 +1006,6 @@ void MainWindow::DeleteResource(FilterIterator &it)
     return m_resources.Delete(it);
 }
 
-std::shared_ptr<BaseNode> MainWindow::CreateNode(const std::string &type)
-{
-    return m_story->CreateNode(type);
-}
-
 void MainWindow::LoadBinaryStory(const std::string &filename)
 {
     FILE *fp = fopen(filename.c_str(), "rb");
@@ -1072,7 +1068,8 @@ void MainWindow::Build(bool compileonly)
     if (!compileonly)
     {
         // 3. Convert all media to desired type format
-        m_resources.ConvertResources(m_story->AssetsPath(), "", m_story->GetImageFormat(), m_story->GetSoundFormat()); // pas de répertoire de destination
+        auto options = m_story->GetOptions();
+        m_resources.ConvertResources(m_story->AssetsPath(), "", options.image_format, options.sound_format); // pas de répertoire de destination
     }
 
     Chip32::Assembler::Error err;
@@ -1109,20 +1106,6 @@ void MainWindow::BuildCode(bool compileonly)
     Build(compileonly);
 }
 
-void MainWindow::DeleteNode(const std::string &id)
-{
-    m_story->DeleteNode(id);
-}
-
-void MainWindow::DeleteLink(std::shared_ptr<Connection> c)
-{
-    m_story->DeleteLink(c);
-}
-
-std::list<std::shared_ptr<Connection>> MainWindow::GetNodeConnections(const std::string &nodeId)
-{
-    return m_story->GetNodeConnections(nodeId);
-}
 
 void MainWindow::UpdateVmView()
 {
