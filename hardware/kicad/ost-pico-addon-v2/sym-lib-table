@@ -1,0 +1,8 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "sdcard-libs")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/sdcard-libs.kicad_sym")(options "")(descr ""))
+  (lib (name "TPA6139A2PWR")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/audio-libs/TPA6139A2PWR.kicad_sym")(options "")(descr ""))
+  (lib (name "PJ-327U-SMT")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/audio-libs/PJ-327U-SMT.kicad_sym")(options "")(descr ""))
+  (lib (name "104031-0811")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/sdcard-libs/104031-0811.kicad_sym")(options "")(descr ""))
+  (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "/mnt/work/git/open-story-teller/hardware/kicad/rp-pico-libs/MCU_RaspberryPi_and_Boards.kicad_sym")(options "")(descr ""))
+)

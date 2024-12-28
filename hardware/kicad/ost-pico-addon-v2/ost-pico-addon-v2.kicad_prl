@@ -39,6 +39,7 @@
       9,
       10,
       11,
+      12,
       13,
       14,
       15,
@@ -73,7 +74,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "ost-pico-addon.kicad_prl",
+    "filename": "ost-pico-addon-v2.kicad_prl",
     "version": 3
   },
   "project": {

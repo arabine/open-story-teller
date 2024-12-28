@@ -1,0 +1,1233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/mnt/work/git/open-story-teller/hardware/kicad/ost-pico-addon/ost-pico-addon.kicad_sch</source>
+    <date>mar. 19 mars 2024 08:18:22</date>
+    <tool>Eeschema 7.0.8-7.0.8~ubuntu23.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>ost-pico-addon.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C8">
+      <value>47uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c7a0b392-6cd7-47c0-a6e7-57716ca5d059</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>47uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c15182a4-95f6-4a10-a8af-ffebb11bed9b</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0b3a29e3-cf83-4539-82a9-41aa956eab0e</tstamps>
+    </comp>
+    <comp ref="C12">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ea358a89-3d5f-449b-bbf1-1d8e85c55f29</tstamps>
+    </comp>
+    <comp ref="C13">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c1e5d872-319a-4da6-a5ad-6deff39aaa2a</tstamps>
+    </comp>
+    <comp ref="C14">
+      <value>270pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6636ab6b-6c62-49a5-baab-3a6c327a7855</tstamps>
+    </comp>
+    <comp ref="C15">
+      <value>47uF/6.3V/20%/X5R/C0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="Fieldname 1">Value 1</field>
+        <field name="Fieldname2">Value2</field>
+        <field name="Fieldname3">Value3</field>
+      </fields>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C-OLIMEX_RCL" description=""/>
+      <property name="Fieldname 1" value="Value 1"/>
+      <property name="Fieldname2" value="Value2"/>
+      <property name="Fieldname3" value="Value3"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6ebb8057-3766-4374-9ce1-dc792f24a6d1</tstamps>
+    </comp>
+    <comp ref="C16">
+      <value>270pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8381fc1f-afdf-4ca9-9bd0-69c04ff3cdf7</tstamps>
+    </comp>
+    <comp ref="C17">
+      <value>47uF/6.3V/20%/X5R/C0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="Fieldname 1">Value 1</field>
+        <field name="Fieldname2">Value2</field>
+        <field name="Fieldname3">Value3</field>
+      </fields>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C-OLIMEX_RCL" description=""/>
+      <property name="Fieldname 1" value="Value 1"/>
+      <property name="Fieldname2" value="Value2"/>
+      <property name="Fieldname3" value="Value3"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d760cdef-9423-4fe1-9b9d-a94cf1de57da</tstamps>
+    </comp>
+    <comp ref="C18">
+      <value>100nF/50V/20%/Y5V/C0603</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="Fieldname 1">Value 1</field>
+        <field name="Fieldname2">Value2</field>
+        <field name="Fieldname3">Value3</field>
+      </fields>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C-OLIMEX_RCL" description=""/>
+      <property name="Fieldname 1" value="Value 1"/>
+      <property name="Fieldname2" value="Value2"/>
+      <property name="Fieldname3" value="Value3"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5381e40c-2d4e-4712-bf01-41f73f657924</tstamps>
+    </comp>
+    <comp ref="C19">
+      <value>270pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6e88ae98-17c7-4ea9-ac94-314c7f417b3e</tstamps>
+    </comp>
+    <comp ref="C20">
+      <value>270pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e1a061da-76b4-4dc8-9ab6-308ff99e7072</tstamps>
+    </comp>
+    <comp ref="C21">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5d5bfb9f-eaa7-4371-9678-38b1c31a4376</tstamps>
+    </comp>
+    <comp ref="C22">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7197f1f1-f5c0-4739-aaab-edac05a2b235</tstamps>
+    </comp>
+    <comp ref="C23">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0bae992b-0618-4897-a46f-15e9b0b203f3</tstamps>
+    </comp>
+    <comp ref="C24">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>723f18d0-984e-47af-af27-2f7297ad5cf7</tstamps>
+    </comp>
+    <comp ref="C25">
+      <value>2.2uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>01af536f-3a8c-4fcc-9420-8fa12c9692fd</tstamps>
+    </comp>
+    <comp ref="C26">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fa12e894-8efe-4122-9302-6bd3d1c30f7c</tstamps>
+    </comp>
+    <comp ref="C27">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>76d2007a-7312-4eab-a10e-f80b21a174d7</tstamps>
+    </comp>
+    <comp ref="C28">
+      <value>1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2c7a2349-2086-4e5f-bbe0-dfac778fe20f</tstamps>
+    </comp>
+    <comp ref="FB1">
+      <value>FB0805</value>
+      <footprint>Inductor_SMD:L_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1b3c0f7c-b952-40a8-b121-1d7b5e1a46c1</tstamps>
+    </comp>
+    <comp ref="FB2">
+      <value>FB0805</value>
+      <footprint>Inductor_SMD:L_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>42a2f05b-941a-47bc-be69-f02aa0dcb1f7</tstamps>
+    </comp>
+    <comp ref="FB3">
+      <value>FB0805</value>
+      <footprint>Inductor_SMD:L_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a091fcf9-bfc9-49ed-b272-7c99c27b3c0a</tstamps>
+    </comp>
+    <comp ref="FB4">
+      <value>FB0805</value>
+      <footprint>Inductor_SMD:L_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6352cc19-b4ac-41cb-af5b-4a9c941e2490</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>Conn_01x09_Male</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x09_P2.54mm_Vertical</footprint>
+      <libsource lib="Connector" part="Conn_01x09_Male" description="Generic connector, single row, 01x09, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Generic connector, single row, 01x09, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="ki_keywords" value="connector"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6792e0d6-4532-468b-963b-58e00c844c9c</tstamps>
+    </comp>
+    <comp ref="J2">
+      <value>47219-2001</value>
+      <footprint>sdcard-libs:MOLEX_47219-2001</footprint>
+      <fields>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=eda</field>
+        <field name="Description">
+1.1mm Pitch microSD Card Connector, Hinge Type, Lead Free | Molex Incorporated 47219-2001
+</field>
+        <field name="MANUFACTURER">MOLEX</field>
+        <field name="MF">Molex</field>
+        <field name="MP">47219-2001</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=106506&amp;manufacturer=Molex&amp;part_name=47219-2001&amp;search_term=47219</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=snap</field>
+      </fields>
+      <libsource lib="sdcard-libs" part="47219-2001" description=""/>
+      <property name="MF" value="Molex"/>
+      <property name="Description" value="&#xA;1.1mm Pitch microSD Card Connector, Hinge Type, Lead Free | Molex Incorporated 47219-2001&#xA;"/>
+      <property name="Package" value="None"/>
+      <property name="Price" value="None"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=eda"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=snap"/>
+      <property name="MP" value="47219-2001"/>
+      <property name="Purchase-URL" value="https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=106506&amp;manufacturer=Molex&amp;part_name=47219-2001&amp;search_term=47219"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="MANUFACTURER" value="MOLEX"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>50d85226-226d-43cd-a848-9180a574df9d</tstamps>
+    </comp>
+    <comp ref="J3">
+      <value>buttons</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_2x07_P2.54mm_Vertical</footprint>
+      <libsource lib="Connector_Generic" part="Conn_02x07_Odd_Even" description="Generic connector, double row, 02x07, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Generic connector, double row, 02x07, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="ki_keywords" value="connector"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9fe02365-24a3-4f16-a607-9437ef3b9f51</tstamps>
+    </comp>
+    <comp ref="J4">
+      <value>Conn_01x02_Pin</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <libsource lib="Connector" part="Conn_01x02_Pin" description="Generic connector, single row, 01x02, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Generic connector, single row, 01x02, script generated"/>
+      <property name="ki_keywords" value="connector"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3cbea491-b944-4d79-9448-f84414a7bb8c</tstamps>
+    </comp>
+    <comp ref="J5">
+      <value>PJ-327U-SMT</value>
+      <footprint>audio:PJ327USMT</footprint>
+      <datasheet>http://www.helloxkb.com/public/images/pdf/PJ-327U-SMT.pdf</datasheet>
+      <fields>
+        <field name="Height">5.7</field>
+        <field name="Manufacturer_Name">XKB Connectivity</field>
+        <field name="Manufacturer_Part_Number">PJ-327U-SMT</field>
+      </fields>
+      <libsource lib="PJ-327U-SMT" part="PJ-327U-SMT" description="3.5 Audio Connector Copper ring gold plated 5-pin Level 3 headphone socket W12xD6.0xH4.4"/>
+      <property name="Height" value="5.7"/>
+      <property name="Manufacturer_Name" value="XKB Connectivity"/>
+      <property name="Manufacturer_Part_Number" value="PJ-327U-SMT"/>
+      <property name="Mouser Part Number" value=""/>
+      <property name="Mouser Price/Stock" value=""/>
+      <property name="Arrow Part Number" value=""/>
+      <property name="Arrow Price/Stock" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="3.5 Audio Connector Copper ring gold plated 5-pin Level 3 headphone socket W12xD6.0xH4.4"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>346c065d-1a03-4021-baec-bbb05153b03f</tstamps>
+    </comp>
+    <comp ref="J6">
+      <value>Conn_01x02_Pin</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="Connector" part="Conn_01x02_Pin" description="Generic connector, single row, 01x02, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Generic connector, single row, 01x02, script generated"/>
+      <property name="ki_keywords" value="connector"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>38fa95b3-30af-4e0e-9425-f6594904c3ae</tstamps>
+    </comp>
+    <comp ref="J7">
+      <value>Conn_01x02_Pin</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="Connector" part="Conn_01x02_Pin" description="Generic connector, single row, 01x02, script generated"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Generic connector, single row, 01x02, script generated"/>
+      <property name="ki_keywords" value="connector"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>13764234-99e0-4b2e-b021-1ee498b93367</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>R_US</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Resistor, US symbol"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2fc70245-4b28-42c5-bc57-afeb1224511d</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>R_US</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="Resistor, US symbol"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>88f8a235-6c60-499c-82cb-42618e85ec68</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>100K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>743ee0d9-2303-4d4c-aae7-28415b5a3288</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ba2e6727-ab91-46e2-b3bf-76cb76544642</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3c979399-3268-43e1-9e4e-17c3f7365557</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>1K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>38b43a46-5645-46cc-9a47-2c3ba085e663</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>1K(n.a.)</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ef0c3ed1-29dc-44c2-9abb-2d418332ec2d</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>49K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>389bd937-bef9-4270-8246-afa791603270</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>Pico</value>
+      <footprint>MCU_RaspberryPi_and_Boards:RPi_Pico_SMD_TH</footprint>
+      <libsource lib="MCU_RaspberryPi_and_Boards" part="Pico" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5b62176e-3a11-404b-9569-9f563d850388</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>PCM5102A</value>
+      <footprint>Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/pcm5102a.pdf</datasheet>
+      <libsource lib="Audio" part="PCM5102A" description="2.1 VRMS, 112dB Audio Stereo DAC with PLL and 32-bit, 384kHz PCM Interface, TSSOP-20"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <property name="ki_description" value="2.1 VRMS, 112dB Audio Stereo DAC with PLL and 32-bit, 384kHz PCM Interface, TSSOP-20"/>
+      <property name="ki_keywords" value="audio dac 2ch 32bit 384kHz"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bff96830-597a-4c41-8450-37b7da68e297</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>PAM8003</value>
+      <footprint>audio:SO16</footprint>
+      <libsource lib="ESP32-ADF_Rev_C-rescue" part="PAM8003-OLIMEX_IC-ESP32-ADF_Rev_B-rescue" description=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>558e47bc-f496-4772-89c4-ba80a46c393b</tstamps>
+    </comp>
+    <comp ref="U7">
+      <value>TPA6139A2PWR</value>
+      <footprint>audio:SOP65P640X120-14N</footprint>
+      <fields>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=eda</field>
+        <field name="Description">
+25-mW, stereo, analog input headphone amplifier with programmable gain
+</field>
+        <field name="MF">Texas Instruments</field>
+        <field name="MP">TPA6139A2PWR</field>
+        <field name="Package">TSSOP-14 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=55929&amp;manufacturer=Texas Instruments&amp;part_name=TPA6139A2PWR&amp;search_term=None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=snap</field>
+      </fields>
+      <libsource lib="TPA6139A2PWR" part="TPA6139A2PWR" description=""/>
+      <property name="MF" value="Texas Instruments"/>
+      <property name="Description" value="&#xA;25-mW, stereo, analog input headphone amplifier with programmable gain&#xA;"/>
+      <property name="Package" value="TSSOP-14 Texas Instruments"/>
+      <property name="Price" value="None"/>
+      <property name="SnapEDA_Link" value="https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=snap"/>
+      <property name="MP" value="TPA6139A2PWR"/>
+      <property name="Purchase-URL" value="https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=55929&amp;manufacturer=Texas Instruments&amp;part_name=TPA6139A2PWR&amp;search_term=None"/>
+      <property name="Availability" value="In Stock"/>
+      <property name="Check_prices" value="https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=eda"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="ost-pico-addon.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5e75c607-c2da-413c-8ad2-a6189bf3038c</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Audio" part="PCM5102A">
+      <description>2.1 VRMS, 112dB Audio Stereo DAC with PLL and 32-bit, 384kHz PCM Interface, TSSOP-20</description>
+      <docs>https://www.ti.com/lit/ds/symlink/pcm5102a.pdf</docs>
+      <footprints>
+        <fp>TSSOP*4.4x6.5mm*P0.65mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">PCM5102A</field>
+        <field name="Footprint">Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/pcm5102a.pdf</field>
+      </fields>
+      <pins>
+        <pin num="1" name="CPVDD" type="passive"/>
+        <pin num="2" name="CAPP" type="passive"/>
+        <pin num="3" name="CPGND" type="power_in"/>
+        <pin num="4" name="CAPM" type="passive"/>
+        <pin num="5" name="VNEG" type="passive"/>
+        <pin num="6" name="OUTL" type="output"/>
+        <pin num="7" name="OUTR" type="output"/>
+        <pin num="8" name="AVDD" type="power_in"/>
+        <pin num="9" name="AGND" type="power_in"/>
+        <pin num="10" name="DEMP" type="input"/>
+        <pin num="11" name="FLT" type="input"/>
+        <pin num="12" name="SCK" type="input"/>
+        <pin num="13" name="BCK" type="input"/>
+        <pin num="14" name="DIN" type="input"/>
+        <pin num="15" name="LRCK" type="input"/>
+        <pin num="16" name="FMT" type="input"/>
+        <pin num="17" name="XSMT" type="input"/>
+        <pin num="18" name="LDOO" type="passive"/>
+        <pin num="19" name="DGND" type="power_in"/>
+        <pin num="20" name="DVDD" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x02_Pin">
+      <description>Generic connector, single row, 01x02, script generated</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x02_Pin</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x09_Male">
+      <description>Generic connector, single row, 01x09, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x09_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector_Generic" part="Conn_02x07_Odd_Even">
+      <description>Generic connector, double row, 02x07, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_2x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_02x07_Odd_Even</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+        <pin num="13" name="Pin_13" type="passive"/>
+        <pin num="14" name="Pin_14" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R_US">
+      <description>Resistor, US symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_US</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-ADF_Rev_C-rescue" part="C-OLIMEX_RCL">
+      <footprints>
+        <fp>C?</fp>
+        <fp>C_????_*</fp>
+        <fp>C_????</fp>
+        <fp>SMD*_c</fp>
+        <fp>Capacitor*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C-OLIMEX_RCL</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-ADF_Rev_C-rescue" part="C_Small-OLIMEX_RCL">
+      <footprints>
+        <fp>C?</fp>
+        <fp>C_????_*</fp>
+        <fp>C_????</fp>
+        <fp>SMD*_c</fp>
+        <fp>Capacitor*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Small-OLIMEX_RCL</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-ADF_Rev_C-rescue" part="FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue">
+      <fields>
+        <field name="Reference">FB</field>
+        <field name="Value">FB0805-lz1ddd-ESP32-ADF_Rev_B-rescue</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="power_in"/>
+        <pin num="2" name="" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-ADF_Rev_C-rescue" part="PAM8003-OLIMEX_IC-ESP32-ADF_Rev_B-rescue">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">PAM8003-OLIMEX_IC-ESP32-ADF_Rev_B-rescue</field>
+      </fields>
+      <pins>
+        <pin num="1" name="PVDDL" type="power_in"/>
+        <pin num="2" name="OUTLN" type="output"/>
+        <pin num="3" name="PGNDL" type="power_in"/>
+        <pin num="4" name="OUTLP" type="output"/>
+        <pin num="5" name="#SHDN" type="input"/>
+        <pin num="6" name="VREF" type="bidirectional"/>
+        <pin num="7" name="INL" type="input"/>
+        <pin num="8" name="GND" type="power_in"/>
+        <pin num="9" name="VDD" type="power_in"/>
+        <pin num="10" name="INR" type="input"/>
+        <pin num="12" name="VOL" type="input"/>
+        <pin num="13" name="OUTRP" type="output"/>
+        <pin num="14" name="PGNDR" type="power_in"/>
+        <pin num="15" name="OUTRN" type="output"/>
+        <pin num="16" name="PVDDR" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESP32-ADF_Rev_C-rescue" part="R_Small-OLIMEX_RCL">
+      <footprints>
+        <fp>Resistor_*</fp>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_Small-OLIMEX_RCL</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MCU_RaspberryPi_and_Boards" part="Pico">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">Pico</field>
+        <field name="Footprint">RPi_Pico:RPi_Pico_SMD_TH</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GPIO0" type="bidirectional"/>
+        <pin num="2" name="GPIO1" type="bidirectional"/>
+        <pin num="3" name="GND" type="power_in"/>
+        <pin num="4" name="GPIO2" type="bidirectional"/>
+        <pin num="5" name="GPIO3" type="bidirectional"/>
+        <pin num="6" name="GPIO4" type="bidirectional"/>
+        <pin num="7" name="GPIO5" type="bidirectional"/>
+        <pin num="8" name="GND" type="power_in"/>
+        <pin num="9" name="GPIO6" type="bidirectional"/>
+        <pin num="10" name="GPIO7" type="bidirectional"/>
+        <pin num="11" name="GPIO8" type="bidirectional"/>
+        <pin num="12" name="GPIO9" type="bidirectional"/>
+        <pin num="13" name="GND" type="power_in"/>
+        <pin num="14" name="GPIO10" type="bidirectional"/>
+        <pin num="15" name="GPIO11" type="bidirectional"/>
+        <pin num="16" name="GPIO12" type="bidirectional"/>
+        <pin num="17" name="GPIO13" type="bidirectional"/>
+        <pin num="18" name="GND" type="power_in"/>
+        <pin num="19" name="GPIO14" type="bidirectional"/>
+        <pin num="20" name="GPIO15" type="bidirectional"/>
+        <pin num="21" name="GPIO16" type="bidirectional"/>
+        <pin num="22" name="GPIO17" type="bidirectional"/>
+        <pin num="23" name="GND" type="power_in"/>
+        <pin num="24" name="GPIO18" type="bidirectional"/>
+        <pin num="25" name="GPIO19" type="bidirectional"/>
+        <pin num="26" name="GPIO20" type="bidirectional"/>
+        <pin num="27" name="GPIO21" type="bidirectional"/>
+        <pin num="28" name="GND" type="power_in"/>
+        <pin num="29" name="GPIO22" type="bidirectional"/>
+        <pin num="30" name="RUN" type="input"/>
+        <pin num="31" name="GPIO26_ADC0" type="bidirectional"/>
+        <pin num="32" name="GPIO27_ADC1" type="bidirectional"/>
+        <pin num="33" name="AGND" type="power_in"/>
+        <pin num="34" name="GPIO28_ADC2" type="bidirectional"/>
+        <pin num="35" name="ADC_VREF" type="power_in"/>
+        <pin num="36" name="3V3" type="power_in"/>
+        <pin num="37" name="3V3_EN" type="input"/>
+        <pin num="38" name="GND" type="bidirectional"/>
+        <pin num="39" name="VSYS" type="power_in"/>
+        <pin num="40" name="VBUS" type="power_in"/>
+        <pin num="41" name="SWCLK" type="input"/>
+        <pin num="42" name="GND" type="power_in"/>
+        <pin num="43" name="SWDIO" type="bidirectional"/>
+      </pins>
+    </libpart>
+    <libpart lib="PJ-327U-SMT" part="PJ-327U-SMT">
+      <description>3.5 Audio Connector Copper ring gold plated 5-pin Level 3 headphone socket W12xD6.0xH4.4</description>
+      <docs>http://www.helloxkb.com/public/images/pdf/PJ-327U-SMT.pdf</docs>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">PJ-327U-SMT</field>
+        <field name="Footprint">PJ327USMT</field>
+        <field name="Datasheet">http://www.helloxkb.com/public/images/pdf/PJ-327U-SMT.pdf</field>
+        <field name="Height">5.7</field>
+        <field name="Manufacturer_Name">XKB Connectivity</field>
+        <field name="Manufacturer_Part_Number">PJ-327U-SMT</field>
+      </fields>
+      <pins>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+        <pin num="4" name="4" type="passive"/>
+        <pin num="5" name="5" type="passive"/>
+        <pin num="6" name="6" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="TPA6139A2PWR" part="TPA6139A2PWR">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">TPA6139A2PWR</field>
+        <field name="Footprint">TPA6139A2PWR:SOP65P640X120-14N</field>
+        <field name="MF">Texas Instruments</field>
+        <field name="Description">
+25-mW, stereo, analog input headphone amplifier with programmable gain
+</field>
+        <field name="Package">TSSOP-14 Texas Instruments</field>
+        <field name="Price">None</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=snap</field>
+        <field name="MP">TPA6139A2PWR</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=55929&amp;manufacturer=Texas Instruments&amp;part_name=TPA6139A2PWR&amp;search_term=None</field>
+        <field name="Availability">In Stock</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/TPA6139A2PWR/Texas+Instruments/view-part/?ref=eda</field>
+      </fields>
+      <pins>
+        <pin num="1" name="-IN_L" type="input"/>
+        <pin num="2" name="OUT_L" type="output"/>
+        <pin num="3" name="GND" type="power_in"/>
+        <pin num="4" name="~{MUTE}" type="input"/>
+        <pin num="5" name="VSS" type="output"/>
+        <pin num="6" name="CN" type="bidirectional"/>
+        <pin num="9" name="CP" type="bidirectional"/>
+        <pin num="10" name="VDD" type="power_in"/>
+        <pin num="11" name="GND" type="power_in"/>
+        <pin num="12" name="GAIN" type="input"/>
+        <pin num="13" name="OUT_R" type="output"/>
+        <pin num="14" name="-IN_R" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="sdcard-libs" part="47219-2001">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">47219-2001</field>
+        <field name="Footprint">47219-2001:MOLEX_47219-2001</field>
+        <field name="MF">Molex</field>
+        <field name="Description">
+1.1mm Pitch microSD Card Connector, Hinge Type, Lead Free | Molex Incorporated 47219-2001
+</field>
+        <field name="Package">None</field>
+        <field name="Price">None</field>
+        <field name="Check_prices">https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=eda</field>
+        <field name="SnapEDA_Link">https://www.snapeda.com/parts/47219-2001/Molex/view-part/?ref=snap</field>
+        <field name="MP">47219-2001</field>
+        <field name="Purchase-URL">https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=106506&amp;manufacturer=Molex&amp;part_name=47219-2001&amp;search_term=47219</field>
+        <field name="Availability">In Stock</field>
+        <field name="MANUFACTURER">MOLEX</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DAT2" type="bidirectional"/>
+        <pin num="2" name="CD/DAT3" type="bidirectional"/>
+        <pin num="3" name="CMD" type="bidirectional"/>
+        <pin num="4" name="VDD" type="power_in"/>
+        <pin num="5" name="CLK" type="input"/>
+        <pin num="6" name="VSS" type="power_in"/>
+        <pin num="7" name="DAT0" type="bidirectional"/>
+        <pin num="8" name="DAT1" type="bidirectional"/>
+        <pin num="G1" name="GND@1" type="power_in"/>
+        <pin num="G2" name="GND@2" type="power_in"/>
+        <pin num="G3" name="GND@3" type="power_in"/>
+        <pin num="G4" name="GND@4" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Audio">
+      <uri>/usr/share/kicad/symbols//Audio.kicad_sym</uri>
+    </library>
+    <library logical="Connector">
+      <uri>/usr/share/kicad/symbols//Connector.kicad_sym</uri>
+    </library>
+    <library logical="Connector_Generic">
+      <uri>/usr/share/kicad/symbols//Connector_Generic.kicad_sym</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+    </library>
+    <library logical="PJ-327U-SMT">
+      <uri>/mnt/work/git/open-story-teller/hardware/kicad/audio-libs/PJ-327U-SMT.kicad_sym</uri>
+    </library>
+    <library logical="TPA6139A2PWR">
+      <uri>/mnt/work/git/open-story-teller/hardware/kicad/audio-libs/TPA6139A2PWR.kicad_sym</uri>
+    </library>
+    <library logical="sdcard-libs">
+      <uri>/mnt/work/git/open-story-teller/hardware/kicad/sdcard-libs.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="+3.3V">
+      <node ref="J1" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="VDD" pintype="power_in"/>
+      <node ref="J3" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="U1" pin="36" pinfunction="3V3" pintype="power_in"/>
+    </net>
+    <net code="2" name="+3.3VA">
+      <node ref="C15" pin="1" pintype="passive"/>
+      <node ref="C17" pin="1" pintype="passive"/>
+      <node ref="C18" pin="2" pintype="passive"/>
+      <node ref="C28" pin="2" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="U5" pin="1" pinfunction="PVDDL" pintype="power_in"/>
+      <node ref="U5" pin="16" pinfunction="PVDDR" pintype="power_in"/>
+      <node ref="U5" pin="9" pinfunction="VDD" pintype="power_in"/>
+      <node ref="U7" pin="10" pinfunction="VDD" pintype="power_in"/>
+    </net>
+    <net code="3" name="+3V3">
+      <node ref="U3" pin="1" pinfunction="CPVDD" pintype="passive"/>
+      <node ref="U3" pin="17" pinfunction="XSMT" pintype="input"/>
+      <node ref="U3" pin="20" pinfunction="DVDD" pintype="power_in"/>
+      <node ref="U3" pin="8" pinfunction="AVDD" pintype="power_in"/>
+    </net>
+    <net code="4" name="DBG_TX">
+      <node ref="J4" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="GPIO0" pintype="bidirectional"/>
+    </net>
+    <net code="5" name="GND">
+      <node ref="C13" pin="2" pintype="passive"/>
+      <node ref="C14" pin="2" pintype="passive"/>
+      <node ref="C15" pin="2" pintype="passive"/>
+      <node ref="C16" pin="1" pintype="passive"/>
+      <node ref="C17" pin="2" pintype="passive"/>
+      <node ref="C18" pin="1" pintype="passive"/>
+      <node ref="C19" pin="2" pintype="passive"/>
+      <node ref="C20" pin="1" pintype="passive"/>
+      <node ref="C21" pin="1" pintype="passive"/>
+      <node ref="C23" pin="2" pintype="passive"/>
+      <node ref="C26" pin="1" pintype="passive"/>
+      <node ref="C28" pin="1" pintype="passive"/>
+      <node ref="J1" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J2" pin="6" pinfunction="VSS" pintype="power_in"/>
+      <node ref="J2" pin="G1" pinfunction="GND@1" pintype="power_in"/>
+      <node ref="J2" pin="G2" pinfunction="GND@2" pintype="power_in"/>
+      <node ref="J2" pin="G3" pinfunction="GND@3" pintype="power_in"/>
+      <node ref="J2" pin="G4" pinfunction="GND@4" pintype="power_in"/>
+      <node ref="J3" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J4" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="U1" pin="13" pinfunction="GND" pintype="power_in"/>
+      <node ref="U1" pin="18" pinfunction="GND" pintype="power_in"/>
+      <node ref="U1" pin="23" pinfunction="GND" pintype="power_in"/>
+      <node ref="U1" pin="28" pinfunction="GND" pintype="power_in"/>
+      <node ref="U1" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="U1" pin="33" pinfunction="AGND" pintype="power_in"/>
+      <node ref="U1" pin="38" pinfunction="GND" pintype="bidirectional"/>
+      <node ref="U1" pin="8" pinfunction="GND" pintype="power_in"/>
+      <node ref="U3" pin="10" pinfunction="DEMP" pintype="input"/>
+      <node ref="U3" pin="11" pinfunction="FLT" pintype="input"/>
+      <node ref="U3" pin="12" pinfunction="SCK" pintype="input"/>
+      <node ref="U3" pin="16" pinfunction="FMT" pintype="input"/>
+      <node ref="U3" pin="19" pinfunction="DGND" pintype="power_in"/>
+      <node ref="U3" pin="3" pinfunction="CPGND" pintype="power_in"/>
+      <node ref="U3" pin="9" pinfunction="AGND" pintype="power_in"/>
+      <node ref="U5" pin="14" pinfunction="PGNDR" pintype="power_in"/>
+      <node ref="U5" pin="3" pinfunction="PGNDL" pintype="power_in"/>
+      <node ref="U5" pin="8" pinfunction="GND" pintype="power_in"/>
+      <node ref="U7" pin="11" pinfunction="GND" pintype="power_in"/>
+      <node ref="U7" pin="3" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="6" name="HP_DET">
+      <node ref="J5" pin="6" pinfunction="6" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U5" pin="5" pinfunction="#SHDN" pintype="input"/>
+      <node ref="U7" pin="4" pinfunction="~{MUTE}" pintype="input"/>
+    </net>
+    <net code="7" name="I2C0_SCL">
+      <node ref="U1" pin="27" pinfunction="GPIO21" pintype="bidirectional"/>
+    </net>
+    <net code="8" name="I2C0_SDA">
+      <node ref="U1" pin="26" pinfunction="GPIO20" pintype="bidirectional"/>
+    </net>
+    <net code="9" name="I2S_DATA">
+      <node ref="U1" pin="34" pinfunction="GPIO28_ADC2" pintype="bidirectional"/>
+      <node ref="U3" pin="14" pinfunction="DIN" pintype="input"/>
+    </net>
+    <net code="10" name="I2S_LRCK">
+      <node ref="U1" pin="32" pinfunction="GPIO27_ADC1" pintype="bidirectional"/>
+      <node ref="U3" pin="15" pinfunction="LRCK" pintype="input"/>
+    </net>
+    <net code="11" name="I2S_SCLK">
+      <node ref="U1" pin="31" pinfunction="GPIO26_ADC0" pintype="bidirectional"/>
+      <node ref="U3" pin="13" pinfunction="BCK" pintype="input"/>
+    </net>
+    <net code="12" name="IO_1">
+      <node ref="J3" pin="13" pinfunction="Pin_13" pintype="passive"/>
+      <node ref="U1" pin="29" pinfunction="GPIO22" pintype="bidirectional"/>
+    </net>
+    <net code="13" name="IO_4">
+      <node ref="J3" pin="7" pinfunction="Pin_7" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="GPIO4" pintype="bidirectional"/>
+    </net>
+    <net code="14" name="IO_5">
+      <node ref="J3" pin="5" pinfunction="Pin_5" pintype="passive"/>
+      <node ref="U1" pin="7" pinfunction="GPIO5" pintype="bidirectional"/>
+    </net>
+    <net code="15" name="IO_6">
+      <node ref="J3" pin="3" pinfunction="Pin_3" pintype="passive"/>
+      <node ref="U1" pin="19" pinfunction="GPIO14" pintype="bidirectional"/>
+    </net>
+    <net code="16" name="KEY0">
+      <node ref="J3" pin="8" pinfunction="Pin_8" pintype="passive"/>
+      <node ref="U1" pin="20" pinfunction="GPIO15" pintype="bidirectional"/>
+    </net>
+    <net code="17" name="KEY2">
+      <node ref="J3" pin="6" pinfunction="Pin_6" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="GPIO2" pintype="bidirectional"/>
+    </net>
+    <net code="18" name="KEY3">
+      <node ref="J3" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="GPIO3" pintype="bidirectional"/>
+    </net>
+    <net code="19" name="LINE_OUT_L">
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="C24" pin="1" pintype="passive"/>
+      <node ref="U3" pin="6" pinfunction="OUTL" pintype="output"/>
+    </net>
+    <net code="20" name="LINE_OUT_R">
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C25" pin="1" pintype="passive"/>
+      <node ref="U3" pin="7" pinfunction="OUTR" pintype="output"/>
+    </net>
+    <net code="21" name="Net-(C8-Pad1)">
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="J5" pin="3" pinfunction="3" pintype="passive"/>
+    </net>
+    <net code="22" name="Net-(C9-Pad1)">
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="J5" pin="5" pinfunction="5" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(C11-Pad1)">
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+    </net>
+    <net code="24" name="Net-(C12-Pad1)">
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="R8" pin="2" pintype="passive"/>
+    </net>
+    <net code="25" name="Net-(J6-Pin_1)">
+      <node ref="C16" pin="2" pintype="passive"/>
+      <node ref="FB2" pin="1" pintype="power_in"/>
+      <node ref="J6" pin="1" pinfunction="Pin_1" pintype="passive"/>
+    </net>
+    <net code="26" name="Net-(J6-Pin_2)">
+      <node ref="C14" pin="1" pintype="passive"/>
+      <node ref="FB1" pin="1" pintype="power_in"/>
+      <node ref="J6" pin="2" pinfunction="Pin_2" pintype="passive"/>
+    </net>
+    <net code="27" name="Net-(J7-Pin_1)">
+      <node ref="C20" pin="2" pintype="passive"/>
+      <node ref="FB4" pin="1" pintype="power_in"/>
+      <node ref="J7" pin="1" pinfunction="Pin_1" pintype="passive"/>
+    </net>
+    <net code="28" name="Net-(J7-Pin_2)">
+      <node ref="C19" pin="1" pintype="passive"/>
+      <node ref="FB3" pin="1" pintype="power_in"/>
+      <node ref="J7" pin="2" pinfunction="Pin_2" pintype="passive"/>
+    </net>
+    <net code="29" name="Net-(U3-CAPM)">
+      <node ref="C22" pin="2" pintype="passive"/>
+      <node ref="U3" pin="4" pinfunction="CAPM" pintype="passive"/>
+    </net>
+    <net code="30" name="Net-(U3-CAPP)">
+      <node ref="C22" pin="1" pintype="passive"/>
+      <node ref="U3" pin="2" pinfunction="CAPP" pintype="passive"/>
+    </net>
+    <net code="31" name="Net-(U3-LDOO)">
+      <node ref="C21" pin="2" pintype="passive"/>
+      <node ref="U3" pin="18" pinfunction="LDOO" pintype="passive"/>
+    </net>
+    <net code="32" name="Net-(U3-VNEG)">
+      <node ref="C23" pin="1" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="VNEG" pintype="passive"/>
+    </net>
+    <net code="33" name="Net-(U5-INL)">
+      <node ref="R8" pin="1" pintype="passive"/>
+      <node ref="U5" pin="7" pinfunction="INL" pintype="input"/>
+    </net>
+    <net code="34" name="Net-(U5-INR)">
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="U5" pin="10" pinfunction="INR" pintype="input"/>
+    </net>
+    <net code="35" name="Net-(U5-OUTLN)">
+      <node ref="FB2" pin="2" pintype="power_out"/>
+      <node ref="U5" pin="2" pinfunction="OUTLN" pintype="output"/>
+    </net>
+    <net code="36" name="Net-(U5-OUTLP)">
+      <node ref="FB1" pin="2" pintype="power_out"/>
+      <node ref="U5" pin="4" pinfunction="OUTLP" pintype="output"/>
+    </net>
+    <net code="37" name="Net-(U5-OUTRN)">
+      <node ref="FB4" pin="2" pintype="power_out"/>
+      <node ref="U5" pin="15" pinfunction="OUTRN" pintype="output"/>
+    </net>
+    <net code="38" name="Net-(U5-OUTRP)">
+      <node ref="FB3" pin="2" pintype="power_out"/>
+      <node ref="U5" pin="13" pinfunction="OUTRP" pintype="output"/>
+    </net>
+    <net code="39" name="Net-(U5-VOL)">
+      <node ref="R10" pin="2" pintype="passive"/>
+      <node ref="R9" pin="1" pintype="passive"/>
+      <node ref="U5" pin="12" pinfunction="VOL" pintype="input"/>
+    </net>
+    <net code="40" name="Net-(U5-VREF)">
+      <node ref="C13" pin="1" pintype="passive"/>
+      <node ref="U5" pin="6" pinfunction="VREF" pintype="bidirectional"/>
+    </net>
+    <net code="41" name="Net-(U7--IN_L)">
+      <node ref="C24" pin="2" pintype="passive"/>
+      <node ref="U7" pin="1" pinfunction="-IN_L" pintype="input"/>
+    </net>
+    <net code="42" name="Net-(U7--IN_R)">
+      <node ref="C25" pin="2" pintype="passive"/>
+      <node ref="U7" pin="14" pinfunction="-IN_R" pintype="input"/>
+    </net>
+    <net code="43" name="Net-(U7-CN)">
+      <node ref="C27" pin="2" pintype="passive"/>
+      <node ref="U7" pin="6" pinfunction="CN" pintype="bidirectional"/>
+    </net>
+    <net code="44" name="Net-(U7-CP)">
+      <node ref="C27" pin="1" pintype="passive"/>
+      <node ref="U7" pin="9" pinfunction="CP" pintype="bidirectional"/>
+    </net>
+    <net code="45" name="Net-(U7-GAIN)">
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="U7" pin="12" pinfunction="GAIN" pintype="input"/>
+    </net>
+    <net code="46" name="Net-(U7-OUT_L)">
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="U7" pin="2" pinfunction="OUT_L" pintype="output"/>
+    </net>
+    <net code="47" name="Net-(U7-OUT_R)">
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="U7" pin="13" pinfunction="OUT_R" pintype="output"/>
+    </net>
+    <net code="48" name="Net-(U7-VSS)">
+      <node ref="C26" pin="2" pintype="passive"/>
+      <node ref="U7" pin="5" pinfunction="VSS" pintype="output"/>
+    </net>
+    <net code="49" name="ROT_1">
+      <node ref="J3" pin="10" pinfunction="Pin_10" pintype="passive"/>
+      <node ref="U1" pin="9" pinfunction="GPIO6" pintype="bidirectional"/>
+    </net>
+    <net code="50" name="ROT_2">
+      <node ref="J3" pin="12" pinfunction="Pin_12" pintype="passive"/>
+      <node ref="U1" pin="10" pinfunction="GPIO7" pintype="bidirectional"/>
+    </net>
+    <net code="51" name="ROT_BUTTON">
+      <node ref="J3" pin="14" pinfunction="Pin_14" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="GPIO1" pintype="bidirectional"/>
+    </net>
+    <net code="52" name="SD_CS">
+      <node ref="J1" pin="6" pinfunction="Pin_6" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="CD/DAT3" pintype="bidirectional"/>
+      <node ref="U1" pin="22" pinfunction="GPIO17" pintype="bidirectional"/>
+    </net>
+    <net code="53" name="SD_SPI_CLK">
+      <node ref="J1" pin="3" pinfunction="Pin_3" pintype="passive"/>
+      <node ref="J2" pin="5" pinfunction="CLK" pintype="input"/>
+      <node ref="U1" pin="24" pinfunction="GPIO18" pintype="bidirectional"/>
+    </net>
+    <net code="54" name="SD_SPI_MISO">
+      <node ref="J1" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="J2" pin="7" pinfunction="DAT0" pintype="bidirectional"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="U1" pin="21" pinfunction="GPIO16" pintype="bidirectional"/>
+    </net>
+    <net code="55" name="SD_SPI_MOSI">
+      <node ref="J1" pin="5" pinfunction="Pin_5" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="CMD" pintype="bidirectional"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="U1" pin="25" pinfunction="GPIO19" pintype="bidirectional"/>
+    </net>
+    <net code="56" name="unconnected-(J1-Pin_7-Pad7)">
+      <node ref="J1" pin="7" pinfunction="Pin_7" pintype="passive+no_connect"/>
+    </net>
+    <net code="57" name="unconnected-(J1-Pin_8-Pad8)">
+      <node ref="J1" pin="8" pinfunction="Pin_8" pintype="passive+no_connect"/>
+    </net>
+    <net code="58" name="unconnected-(J1-Pin_9-Pad9)">
+      <node ref="J1" pin="9" pinfunction="Pin_9" pintype="passive+no_connect"/>
+    </net>
+    <net code="59" name="unconnected-(J2-DAT1-Pad8)">
+      <node ref="J2" pin="8" pinfunction="DAT1" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="60" name="unconnected-(J2-DAT2-Pad1)">
+      <node ref="J2" pin="1" pinfunction="DAT2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="61" name="unconnected-(J3-Pin_9-Pad9)">
+      <node ref="J3" pin="9" pinfunction="Pin_9" pintype="passive"/>
+    </net>
+    <net code="62" name="unconnected-(J3-Pin_11-Pad11)">
+      <node ref="J3" pin="11" pinfunction="Pin_11" pintype="passive"/>
+    </net>
+    <net code="63" name="unconnected-(J5-Pad4)">
+      <node ref="J5" pin="4" pinfunction="4" pintype="passive+no_connect"/>
+    </net>
+    <net code="64" name="unconnected-(U1-3V3_EN-Pad37)">
+      <node ref="U1" pin="37" pinfunction="3V3_EN" pintype="input"/>
+    </net>
+    <net code="65" name="unconnected-(U1-ADC_VREF-Pad35)">
+      <node ref="U1" pin="35" pinfunction="ADC_VREF" pintype="power_in"/>
+    </net>
+    <net code="66" name="unconnected-(U1-GND-Pad42)">
+      <node ref="U1" pin="42" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="67" name="unconnected-(U1-GPIO8-Pad11)">
+      <node ref="U1" pin="11" pinfunction="GPIO8" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="68" name="unconnected-(U1-GPIO9-Pad12)">
+      <node ref="U1" pin="12" pinfunction="GPIO9" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="69" name="unconnected-(U1-GPIO10-Pad14)">
+      <node ref="U1" pin="14" pinfunction="GPIO10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="70" name="unconnected-(U1-GPIO11-Pad15)">
+      <node ref="U1" pin="15" pinfunction="GPIO11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="71" name="unconnected-(U1-GPIO12-Pad16)">
+      <node ref="U1" pin="16" pinfunction="GPIO12" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="72" name="unconnected-(U1-GPIO13-Pad17)">
+      <node ref="U1" pin="17" pinfunction="GPIO13" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="73" name="unconnected-(U1-RUN-Pad30)">
+      <node ref="U1" pin="30" pinfunction="RUN" pintype="input"/>
+    </net>
+    <net code="74" name="unconnected-(U1-SWCLK-Pad41)">
+      <node ref="U1" pin="41" pinfunction="SWCLK" pintype="input"/>
+    </net>
+    <net code="75" name="unconnected-(U1-SWDIO-Pad43)">
+      <node ref="U1" pin="43" pinfunction="SWDIO" pintype="bidirectional"/>
+    </net>
+    <net code="76" name="unconnected-(U1-VBUS-Pad40)">
+      <node ref="U1" pin="40" pinfunction="VBUS" pintype="power_in"/>
+    </net>
+    <net code="77" name="unconnected-(U1-VSYS-Pad39)">
+      <node ref="U1" pin="39" pinfunction="VSYS" pintype="power_in"/>
+    </net>
+  </nets>
+</export>

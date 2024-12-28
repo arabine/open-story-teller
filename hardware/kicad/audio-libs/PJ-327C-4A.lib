@@ -1,0 +1,25 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#SamacSys ECAD Model PJ-327C-4A
+#/2380909/1353607/2.50/4/4/Connector
+DEF PJ-327C-4A J 0 30 Y Y 1 F N
+F0 "J" 650 300 50 H V L CNN
+F1 "PJ-327C-4A" 650 200 50 H V L CNN
+F2 "PJ327C4A" 650 100 50 H I L CNN
+F3 "https://datasheet.lcsc.com/lcsc/1810121720_Korean-Hroparts-Elec-PJ-327C-4A_C145813.pdf" 650 0 50 H I L CNN
+F4 "3.5mm headphone jack 30V 500mA SMD  Audio Connectors ROHS" 650 -100 50 H I L CNN "Description"
+F5 "5.9" 650 -200 50 H I L CNN "Height"
+F6 "" 650 -300 50 H I L CNN "JAK Electronics Part Number"
+F7 "" 650 -400 50 H I L CNN "JAK Electronics Price/Stock"
+F8 "Korean Hroparts Elec" 650 -500 50 H I L CNN "Manufacturer_Name"
+F9 "PJ-327C-4A" 650 -600 50 H I L CNN "Manufacturer_Part_Number"
+DRAW
+X 4 3 800 -100 200 L 50 50 0 0 P
+X 2 4 0 -100 200 R 50 50 0 0 P
+X 1 5 0 0 200 R 50 50 0 0 P
+X 3 6 800 0 200 L 50 50 0 0 P
+P 5 0 1 6 200 100 600 100 600 -200 200 -200 200 100 N
+ENDDRAW
+ENDDEF
+#
+#End Library

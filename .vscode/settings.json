@@ -101,7 +101,10 @@
         "shared_mutex": "cpp",
         "stop_token": "cpp",
         "streambuf": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "source_location": "cpp",
+        "stdfloat": "cpp",
+        "text_encoding": "cpp"
     }
 
 }
