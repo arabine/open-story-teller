@@ -37,7 +37,7 @@ void EmulatorWindow::Draw()
 
     if (m_image.Valid())
     {
-        ImGui::Image(m_image.texture, ImVec2(320, 240));
+        ImGui::Image(reinterpret_cast<ImTextureID>(m_image.texture), ImVec2(320, 240));
     }
     else
     {

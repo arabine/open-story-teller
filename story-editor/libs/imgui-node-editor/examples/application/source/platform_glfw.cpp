@@ -14,6 +14,7 @@
 # endif
 
 # include <imgui.h>
+# include <imgui_internal.h>
 # include "imgui_impl_glfw.h"
 
 struct PlatformGLFW final
@@ -45,6 +46,7 @@ struct PlatformGLFW final
     bool            m_IsMinimized = false;
     bool            m_WasMinimized = false;
     Renderer*       m_Renderer = nullptr;
+    ImU32           m_LastEventId = 0;
 };
 
 std::unique_ptr<Platform> CreatePlatform(Application& application)
@@ -97,9 +99,10 @@ bool PlatformGLFW::OpenMainWindow(const char* title, int width, int height)
     initializer = &ImGui_ImplGlfw_InitForOpenGL;
 # else
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    initializer = &ImGui_ImplGlfw_InitForNone;
+    initializer = &ImGui_ImplGlfw_InitForOther;
 # endif
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GL_TRUE);
+    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GL_TRUE);
 
     width  = width  < 0 ? 1440 : width;
     height = height < 0 ?  800 : height;
@@ -241,7 +244,31 @@ void PlatformGLFW::SetRenderer(Renderer* renderer)
 
 void PlatformGLFW::NewFrame()
 {
+    auto& io = ImGui::GetIO();
+    auto& ctx = *ImGui::GetCurrentContext();
+
     ImGui_ImplGlfw_NewFrame();
+
+    auto inputEventCountAfterUpdate = ctx.InputEventsQueue.Size;
+
+    auto windowScale = GetWindowScale();
+
+    for (auto& event : ctx.InputEventsQueue)
+    {
+        if (event.EventId <= m_LastEventId)
+            continue;
+
+        m_LastEventId = event.EventId;
+
+        if (event.Type == ImGuiInputEventType_MousePos)
+        {
+            if (event.MousePos.PosX > -FLT_MAX && event.MousePos.PosY > -FLT_MAX)
+            {
+                event.MousePos.PosX *= windowScale;
+                event.MousePos.PosY *= windowScale;
+            }
+        }
+    }
 
     if (m_WasMinimized)
     {
@@ -279,7 +306,7 @@ void PlatformGLFW::UpdatePixelDensity()
     float framebufferScale = scale;
 # endif
 
-    SetWindowScale(windowScale); // this is how windows is scaled, not window content
+    SetWindowScale(1.0f / windowScale); // this is how windows is scaled, not window content
 
     SetFramebufferScale(framebufferScale);
 }

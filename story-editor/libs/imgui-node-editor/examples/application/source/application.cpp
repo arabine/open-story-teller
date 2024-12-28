@@ -2,13 +2,7 @@
 # include "setup.h"
 # include "platform.h"
 # include "renderer.h"
-
-extern "C" {
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_STATIC
-#include "stb_image.h"
-}
-
+# include "stb_image.h"
 
 Application::Application(const char* name)
     : Application(name, 0, nullptr)
@@ -94,9 +88,8 @@ void Application::RecreateFontAtlas()
     io.Fonts = IM_NEW(ImFontAtlas);
 
     ImFontConfig config;
-    config.OversampleH = 4;
-    config.OversampleV = 4;
-    config.PixelSnapH = false;
+    config.PixelSnapH = true;
+    config.RasterizerDensity = m_Platform->GetFramebufferScale();
 
     m_DefaultFont = io.Fonts->AddFontFromFileTTF("data/Play-Regular.ttf", 18.0f, &config);
     m_HeaderFont  = io.Fonts->AddFontFromFileTTF("data/Cuprum-Bold.ttf",  20.0f, &config);
@@ -113,29 +106,19 @@ void Application::Frame()
 
     if (m_Platform->HasFramebufferScaleChanged())
     {
+        m_Renderer->InvalidateResources();
         RecreateFontAtlas();
+        m_Renderer->UpdateResources();
         m_Platform->AcknowledgeFramebufferScaleChanged();
     }
 
     const float windowScale      = m_Platform->GetWindowScale();
     const float framebufferScale = m_Platform->GetFramebufferScale();
 
-    if (io.WantSetMousePos)
-    {
-        io.MousePos.x *= windowScale;
-        io.MousePos.y *= windowScale;
-    }
-
     m_Platform->NewFrame();
 
-    // Don't touch "uninitialized" mouse position
-    if (io.MousePos.x > -FLT_MAX && io.MousePos.y > -FLT_MAX)
-    {
-        io.MousePos.x    /= windowScale;
-        io.MousePos.y    /= windowScale;
-    }
-    io.DisplaySize.x /= windowScale;
-    io.DisplaySize.y /= windowScale;
+    io.DisplaySize.x *= windowScale;
+    io.DisplaySize.y *= windowScale;
 
     io.DisplayFramebufferScale.x = framebufferScale;
     io.DisplayFramebufferScale.y = framebufferScale;
@@ -163,7 +146,30 @@ void Application::Frame()
     // Rendering
     m_Renderer->Clear(ImColor(32, 32, 32, 255));
     ImGui::Render();
-    m_Renderer->RenderDrawData(ImGui::GetDrawData());
+
+    // Manually scale the draw data, because ImGui backends are not yet
+    // consistent in handling FramebufferScale
+    auto drawData = ImGui::GetDrawData();
+
+    drawData->DisplaySize.x *= framebufferScale;
+    drawData->DisplaySize.y *= framebufferScale;
+
+    for (int i = 0; i < drawData->CmdListsCount; i++)
+    {
+        auto& cmdList = drawData->CmdLists[i];
+        for (auto& vtx : cmdList->VtxBuffer)
+        {
+            vtx.pos.x *= framebufferScale;
+            vtx.pos.y *= framebufferScale;
+        }
+    }
+
+    drawData->ScaleClipRects(drawData->FramebufferScale);
+
+    drawData->FramebufferScale.x = 1.0f;
+    drawData->FramebufferScale.y = 1.0f;
+
+    m_Renderer->RenderDrawData(drawData);
 
     m_Platform->FinishFrame();
 }

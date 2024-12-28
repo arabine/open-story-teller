@@ -20,42 +20,37 @@ env:
 
 jobs:
   Windows:
-    runs-on: windows-2019
-    env:
-      VS_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
-      MSBUILD_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\
+    runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Configure CMake
       run: cmake -S examples -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      
+
   macOS:
     runs-on: macos-latest
 
     steps:
-    - name: Install Dependencies
-      run: |
-        brew install glfw3    
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Configure CMake
       run: cmake -S examples -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      
+
   Linux:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install Dependencies
+    - uses: actions/checkout@v4
+    - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libglfw3-dev    
-    - uses: actions/checkout@v2
+          sudo apt update
+          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libwayland-dev libxkbcommon-dev mesa-common-dev libgl1-mesa-dev
+
     - name: Configure CMake
       run: cmake -S examples -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      
+

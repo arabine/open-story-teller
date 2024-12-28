@@ -454,7 +454,7 @@ float MainWindow::DrawMainMenuBar()
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
 
         ImGui::Text("%s", SDL_GetPlatform());
-        ImGui::Text("CPU cores: %d", SDL_GetCPUCount());
+        ImGui::Text("CPU cores: %d", SDL_GetNumLogicalCPUCores());
         ImGui::Text("RAM: %.2f GB", SDL_GetSystemRAM() / 1024.0f);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::Separator();
@@ -831,7 +831,7 @@ void MainWindow::CloseProject()
 
     m_nodeEditorWindow.Disable();
     m_emulatorWindow.Disable();
-    m_codeEditorWindow.Disable();
+    // m_codeEditorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
     m_cpuWindow.Disable();
@@ -897,7 +897,7 @@ void MainWindow::Loop()
         size.x -= 60;
         vp->WorkPos = pos;
         vp->WorkSize = size;
-        ImGui::DockSpaceOverViewport(vp);
+        ImGui::DockSpaceOverViewport(0, vp);
         float height = DrawMainMenuBar();
 
        // DrawStatusBar();

@@ -147,28 +147,28 @@ private:
 # undef CRUDE_MAX4
 # undef CRUDE_MAX3
 # undef CRUDE_MAX2
-    using storage_t = std::aligned_storage<max_size, max_align>::type;
+    struct storage_t { alignas(max_align) unsigned char data[max_size]; };
 
-    static       object*   object_ptr(      storage_t& storage) { return reinterpret_cast<       object*>(&storage); }
-    static const object*   object_ptr(const storage_t& storage) { return reinterpret_cast<const  object*>(&storage); }
-    static       array*     array_ptr(      storage_t& storage) { return reinterpret_cast<        array*>(&storage); }
-    static const array*     array_ptr(const storage_t& storage) { return reinterpret_cast<const   array*>(&storage); }
-    static       string*   string_ptr(      storage_t& storage) { return reinterpret_cast<       string*>(&storage); }
-    static const string*   string_ptr(const storage_t& storage) { return reinterpret_cast<const  string*>(&storage); }
-    static       boolean* boolean_ptr(      storage_t& storage) { return reinterpret_cast<      boolean*>(&storage); }
-    static const boolean* boolean_ptr(const storage_t& storage) { return reinterpret_cast<const boolean*>(&storage); }
-    static       number*   number_ptr(      storage_t& storage) { return reinterpret_cast<       number*>(&storage); }
-    static const number*   number_ptr(const storage_t& storage) { return reinterpret_cast<const  number*>(&storage); }
+    static       object*   object_ptr(      storage_t& storage) { return reinterpret_cast<       object*>(storage.data); }
+    static const object*   object_ptr(const storage_t& storage) { return reinterpret_cast<const  object*>(storage.data); }
+    static       array*     array_ptr(      storage_t& storage) { return reinterpret_cast<        array*>(storage.data); }
+    static const array*     array_ptr(const storage_t& storage) { return reinterpret_cast<const   array*>(storage.data); }
+    static       string*   string_ptr(      storage_t& storage) { return reinterpret_cast<       string*>(storage.data); }
+    static const string*   string_ptr(const storage_t& storage) { return reinterpret_cast<const  string*>(storage.data); }
+    static       boolean* boolean_ptr(      storage_t& storage) { return reinterpret_cast<      boolean*>(storage.data); }
+    static const boolean* boolean_ptr(const storage_t& storage) { return reinterpret_cast<const boolean*>(storage.data); }
+    static       number*   number_ptr(      storage_t& storage) { return reinterpret_cast<       number*>(storage.data); }
+    static const number*   number_ptr(const storage_t& storage) { return reinterpret_cast<const  number*>(storage.data); }
 
     static type_t construct(storage_t& storage, type_t type)
     {
         switch (type)
         {
-            case type_t::object:    new (&storage) object();  break;
-            case type_t::array:     new (&storage) array();   break;
-            case type_t::string:    new (&storage) string();  break;
-            case type_t::boolean:   new (&storage) boolean(); break;
-            case type_t::number:    new (&storage) number();  break;
+            case type_t::object:    new (storage.data) object();  break;
+            case type_t::array:     new (storage.data) array();   break;
+            case type_t::string:    new (storage.data) string();  break;
+            case type_t::boolean:   new (storage.data) boolean(); break;
+            case type_t::number:    new (storage.data) number();  break;
             default: break;
         }
 
@@ -176,15 +176,15 @@ private:
     }
 
     static type_t construct(storage_t& storage,       null)           { (void)storage;                                        return type_t::null;    }
-    static type_t construct(storage_t& storage,       object&& value) { new (&storage)  object(std::forward<object>(value));  return type_t::object;  }
-    static type_t construct(storage_t& storage, const object&  value) { new (&storage)  object(value);                        return type_t::object;  }
-    static type_t construct(storage_t& storage,       array&&  value) { new (&storage)   array(std::forward<array>(value));   return type_t::array;   }
-    static type_t construct(storage_t& storage, const array&   value) { new (&storage)   array(value);                        return type_t::array;   }
-    static type_t construct(storage_t& storage,       string&& value) { new (&storage)  string(std::forward<string>(value));  return type_t::string;  }
-    static type_t construct(storage_t& storage, const string&  value) { new (&storage)  string(value);                        return type_t::string;  }
-    static type_t construct(storage_t& storage, const char*    value) { new (&storage)  string(value);                        return type_t::string;  }
-    static type_t construct(storage_t& storage,       boolean  value) { new (&storage) boolean(value);                        return type_t::boolean; }
-    static type_t construct(storage_t& storage,       number   value) { new (&storage)  number(value);                        return type_t::number;  }
+    static type_t construct(storage_t& storage,       object&& value) { new (storage.data)  object(std::forward<object>(value));  return type_t::object;  }
+    static type_t construct(storage_t& storage, const object&  value) { new (storage.data)  object(value);                        return type_t::object;  }
+    static type_t construct(storage_t& storage,       array&&  value) { new (storage.data)   array(std::forward<array>(value));   return type_t::array;   }
+    static type_t construct(storage_t& storage, const array&   value) { new (storage.data)   array(value);                        return type_t::array;   }
+    static type_t construct(storage_t& storage,       string&& value) { new (storage.data)  string(std::forward<string>(value));  return type_t::string;  }
+    static type_t construct(storage_t& storage, const string&  value) { new (storage.data)  string(value);                        return type_t::string;  }
+    static type_t construct(storage_t& storage, const char*    value) { new (storage.data)  string(value);                        return type_t::string;  }
+    static type_t construct(storage_t& storage,       boolean  value) { new (storage.data) boolean(value);                        return type_t::boolean; }
+    static type_t construct(storage_t& storage,       number   value) { new (storage.data)  number(value);                        return type_t::number;  }
 
     static void destruct(storage_t& storage, type_t type)
     {

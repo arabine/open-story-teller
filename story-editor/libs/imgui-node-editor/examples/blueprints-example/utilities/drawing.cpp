@@ -112,11 +112,7 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
                 const auto p0 = rect_center - ImVec2(r, r);
                 const auto p1 = rect_center + ImVec2(r, r);
 
-#if IMGUI_VERSION_NUM > 18101
                 drawList->AddRectFilled(p0, p1, color, 0, ImDrawFlags_RoundCornersAll);
-#else
-                drawList->AddRectFilled(p0, p1, color, 0, 15);
-#endif
             }
             else
             {
@@ -126,18 +122,10 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
 
                 if (innerColor & 0xFF000000)
                 {
-#if IMGUI_VERSION_NUM > 18101
                     drawList->AddRectFilled(p0, p1, innerColor, 0, ImDrawFlags_RoundCornersAll);
-#else
-                    drawList->AddRectFilled(p0, p1, innerColor, 0, 15);
-#endif
                 }
 
-#if IMGUI_VERSION_NUM > 18101
                 drawList->AddRect(p0, p1, color, 0, ImDrawFlags_RoundCornersAll, 2.0f * outline_scale);
-#else
-                drawList->AddRect(p0, p1, color, 0, 15, 2.0f * outline_scale);
-#endif
             }
         }
 
@@ -180,11 +168,7 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
                 const auto p0 = rect_center - ImVec2(r, r);
                 const auto p1 = rect_center + ImVec2(r, r);
 
-#if IMGUI_VERSION_NUM > 18101
                 drawList->AddRectFilled(p0, p1, color, cr, ImDrawFlags_RoundCornersAll);
-#else
-                drawList->AddRectFilled(p0, p1, color, cr, 15);
-#endif
             }
             else
             {
@@ -195,18 +179,10 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
 
                 if (innerColor & 0xFF000000)
                 {
-#if IMGUI_VERSION_NUM > 18101
                     drawList->AddRectFilled(p0, p1, innerColor, cr, ImDrawFlags_RoundCornersAll);
-#else
-                    drawList->AddRectFilled(p0, p1, innerColor, cr, 15);
-#endif
                 }
 
-#if IMGUI_VERSION_NUM > 18101
                 drawList->AddRect(p0, p1, color, cr, ImDrawFlags_RoundCornersAll, 2.0f * outline_scale);
-#else
-                drawList->AddRect(p0, p1, color, cr, 15, 2.0f * outline_scale);
-#endif
             }
         }
         else if (type == IconType::Diamond)

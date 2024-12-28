@@ -32,8 +32,10 @@ using namespace gl;
 #     include <glbinding/glbinding.h>// Initialize with glbinding::initialize()
 #     include <glbinding/gl/gl.h>
 using namespace gl;
-# else
+# elif defined(IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
 #     include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+# else
+#     include "imgui_impl_opengl3_loader.h"
 # endif
 
 struct ImTexture
@@ -53,6 +55,8 @@ struct RendererOpenGL3 final
     void Clear(const ImVec4& color) override;
     void Present() override;
     void Resize(int width, int height) override;
+    void InvalidateResources() override;
+    void UpdateResources() override;
 
     ImVector<ImTexture>::iterator FindTexture(ImTextureID texture);
     ImTextureID CreateTexture(const void* data, int width, int height) override;
@@ -143,6 +147,16 @@ void RendererOpenGL3::Present()
 void RendererOpenGL3::Resize(int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void RendererOpenGL3::InvalidateResources()
+{
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+}
+
+void RendererOpenGL3::UpdateResources()
+{
+    ImGui_ImplOpenGL3_CreateFontsTexture();
 }
 
 ImTextureID RendererOpenGL3::CreateTexture(const void* data, int width, int height)

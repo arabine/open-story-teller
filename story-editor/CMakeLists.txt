@@ -25,7 +25,7 @@ find_package(OpenGL REQUIRED)
 # set(OPENSSL_ROOT_DIR /libs/openssl)
 # find_package(OpenSSL REQUIRED)
 
-set(IMGUI_VERSION 1.90)
+set(IMGUI_VERSION 1.91.6)
 
 include(FetchContent)
 
@@ -94,6 +94,20 @@ add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
 # =========================================================================================================================
+# ImGui Text editor
+# =========================================================================================================================
+# FetchContent_Declare(
+#     te
+#     GIT_REPOSITORY https://github.com/ChemistAion/ImTextEdit
+#     GIT_TAG 81ec756b5627dd351fe0dac26a7403982349df68
+#     GIT_SHALLOW TRUE
+#     GIT_PROGRESS TRUE
+# )
+
+# FetchContent_MakeAvailable(te)
+
+
+# =========================================================================================================================
 # SDL2
 # =========================================================================================================================
 
@@ -115,7 +129,7 @@ add_subdirectory(libs/ImGuiFileDialog)
 FetchContent_Declare(
     sdl3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG prerelease-3.1.0
+    GIT_TAG 78cc5c173404488d80751af226d1eaf67033bcc4   # === preview-3.1.6
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
 )
@@ -132,7 +146,7 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 FetchContent_Declare(
     sdl3_mixer
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-    GIT_TAG cc78718f6e87354fee8ffe4dc516a20f608c2d65
+    GIT_TAG d4eba31e4ac23a81fffad02e91b17dcb2449a2cb
     # GIT_SHALLOW TRUE
     # GIT_PROGRESS TRUE
     # GIT_SUBMODULES ""
@@ -151,7 +165,7 @@ include_directories(${sdl3_mixer_SOURCE_DIR}/include)
 FetchContent_Declare(
     sdl_image
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-    GIT_TAG ff62eb68aebe9801f06695c86a67292c6f166b16
+    GIT_TAG bcc97c044266080256ef6ed0d690859677212b2b
     GIT_PROGRESS TRUE
 ) 
 
@@ -220,8 +234,7 @@ set(SRCS
     src/importers/pack_archive.cpp
     src/importers/ni_parser.c
 
-    libs/ImGuiColorTextEdit/TextEditor.cpp
-    libs/ImGuiColorTextEdit/TextEditor.h
+
     libs/imgui-node-editor/imgui_node_editor.cpp
     libs/imgui-node-editor/imgui_canvas.cpp
     libs/imgui-node-editor/imgui_node_editor_api.cpp
@@ -288,7 +301,9 @@ endif()
 target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${imgui_SOURCE_DIR}
     ${sdl2_SOURCE_DIR}/include
-    libs/ImGuiColorTextEdit/
+
+    # ${te_SOURCE_DIR}
+    
     ${imgui_SOURCE_DIR}/backends
     libs/ImGuiFileDialog
     libs/imgui-node-editor

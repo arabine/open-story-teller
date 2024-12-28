@@ -65,7 +65,7 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
     /* Use the tonemap operator to convert to SDR output */
     const char *tonemap = NULL;
     SDL_SetStringProperty(SDL_GetSurfaceProperties(surface), SDL_PROP_SURFACE_TONEMAP_OPERATOR_STRING, tonemap);
-    temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32);
+    temp = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
     SDL_DestroySurface(surface);
     if (!temp) {
         SDL_Log("Couldn't convert surface: %s\n", SDL_GetError());
@@ -79,8 +79,11 @@ bool LoadTextureFromFile(const char* filename, Gui::Image &img)
        return false;
     }
 
-    SDL_QueryTexture(static_cast<SDL_Texture*>(img.texture), NULL, NULL, &img.w, &img.h);
-    
+    float w, h = 0;
+    SDL_GetTextureSize(static_cast<SDL_Texture*>(img.texture), &w, &h);
+    img.w = (int)w;
+    img.h = (int)h;
+
     return true;
 }
 
@@ -116,7 +119,7 @@ bool Gui::Initialize()
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 
     // Setup SDL3
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0)
     {
         printf("Error: SDL_Init(): %s\n", SDL_GetError());
         return false;
@@ -141,7 +144,7 @@ bool Gui::Initialize()
     }*/
 
     // Enable native IME.
-    SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+    // SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
     // Create window with SDL_Renderer graphics context
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
@@ -157,7 +160,7 @@ bool Gui::Initialize()
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
         return false;
     }
-    renderer = SDL_CreateRenderer(window, nullptr, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, nullptr);
     if (renderer == nullptr)
     {
         SDL_Log("Error: SDL_CreateRenderer(): %s\n", SDL_GetError());
@@ -289,7 +292,7 @@ void Gui::EndFrame()
 
     ImGui::Render();
 
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData()); // SDL3
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer); // SDL3
     // ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData()); // SDL2
 
     SDL_RenderPresent(renderer);

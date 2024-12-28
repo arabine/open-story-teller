@@ -12,6 +12,7 @@ find_package(imgui REQUIRED)
 set(_imgui_node_editor_Sources
     ${IMGUI_NODE_EDITOR_ROOT_DIR}/crude_json.cpp
     ${IMGUI_NODE_EDITOR_ROOT_DIR}/crude_json.h
+    ${IMGUI_NODE_EDITOR_ROOT_DIR}/misc/crude_json.natvis
     ${IMGUI_NODE_EDITOR_ROOT_DIR}/imgui_bezier_math.h
     ${IMGUI_NODE_EDITOR_ROOT_DIR}/imgui_bezier_math.inl
     ${IMGUI_NODE_EDITOR_ROOT_DIR}/imgui_canvas.cpp
@@ -44,6 +45,5 @@ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
 
 find_package_handle_standard_args(
     imgui_node_editor
-    REQUIRED_VARS
-        IMGUI_NODE_EDITOR_ROOT_DIR
+    DEFAULT_MSG
 )

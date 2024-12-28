@@ -236,6 +236,7 @@ private:
     Range* m_CurrentRange = nullptr;
 # endif
 
+    int m_DrawListFirstCommandIndex = 0;
     int m_DrawListCommadBufferSize = 0;
     int m_DrawListStartVertexIndex = 0;
 
@@ -257,13 +258,8 @@ private:
     ImVec2 m_WindowPosBackup;
     ImVec2 m_ViewportPosBackup;
     ImVec2 m_ViewportSizeBackup;
-# if IMGUI_VERSION_NUM > 18002
     ImVec2 m_ViewportWorkPosBackup;
     ImVec2 m_ViewportWorkSizeBackup;
-# else
-    ImVec2 m_ViewportWorkOffsetMinBackup;
-    ImVec2 m_ViewportWorkOffsetMaxBackup;
-# endif
 # endif
 };
 

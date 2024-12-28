@@ -128,11 +128,19 @@ struct Example:
             // Arrow buttons with Repeater
             static int counter = 0;
             float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+# if IMGUI_VERSION_NUM >= 19094
+            ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+# else
             ImGui::PushButtonRepeat(true);
+# endif
             if (ImGui::ArrowButton("##left", ImGuiDir_Left)) { counter--; }
             ImGui::SameLine(0.0f, spacing);
             if (ImGui::ArrowButton("##right", ImGuiDir_Right)) { counter++; }
+# if IMGUI_VERSION_NUM >= 19094
+            ImGui::PopItemFlag();
+# else
             ImGui::PopButtonRepeat();
+# endif
             ImGui::SameLine();
             ImGui::Text("%d", counter);
 
@@ -384,8 +392,8 @@ struct Example:
                         }
                     }
                 }
+                ed::EndCreate();
             }
-            ed::EndCreate();
 
             // Handle deletion action ---------------------------------------------------------------------------
             if (ed::BeginDelete())
@@ -405,8 +413,8 @@ struct Example:
                         }
                     }
                 }
+                ed::EndDelete();
             }
-            ed::EndDelete();
 
         ed::End();
         ed::SetCurrentEditor(nullptr);

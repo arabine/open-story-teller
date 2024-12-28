@@ -1,23 +1,19 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(imgui-node-editor)
+project(imgui-node-editor-examples)
 
 # Define IMGUI_NODE_EDITOR_ROOT_DIR pointing to project root directory
-get_filename_component(IMGUI_NODE_EDITOR_ROOT_DIR ${CMAKE_SOURCE_DIR}/.. ABSOLUTE CACHE)
+get_filename_component(IMGUI_NODE_EDITOR_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/.. ABSOLUTE CACHE)
 
 # Enable solution folders in Visual Studio and Folders in Xcode
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Point CMake where to look for module files.
-list(APPEND CMAKE_MODULE_PATH ${IMGUI_NODE_EDITOR_ROOT_DIR}/misc/cmake-modules)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Node editor use C++14
 set(CMAKE_CXX_STANDARD            14)
 set(CMAKE_CXX_STANDARD_REQUIRED   YES)
-
-
-
-
 
 # Macro that will configure an example application
 macro(add_example_executable name)
@@ -132,3 +128,5 @@ add_subdirectory(simple-example)
 add_subdirectory(widgets-example)
 add_subdirectory(basic-interaction-example)
 add_subdirectory(blueprints-example)
+
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT blueprints-example)

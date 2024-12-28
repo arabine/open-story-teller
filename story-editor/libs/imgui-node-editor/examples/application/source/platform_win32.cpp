@@ -13,6 +13,7 @@
 # include <string>
 
 # include <imgui.h>
+# include <imgui_internal.h>
 # include "imgui_impl_win32.h"
 
 # if defined(_UNICODE)
@@ -53,7 +54,7 @@ struct PlatformWin32 final
     void FinishFrame() override;
     void Quit() override;
 
-    void SetDpiScale(float dpiScale);
+    //void SetDpiScale(float dpiScale);
 
     LRESULT WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -64,6 +65,7 @@ struct PlatformWin32 final
     bool            m_WasMinimized = false;
     bool            m_CanCloseResult = false;
     Renderer*       m_Renderer = nullptr;
+    ImU32           m_LastEventId = 0;
 };
 
 std::unique_ptr<Platform> CreatePlatform(Application& application)
@@ -84,6 +86,8 @@ bool PlatformWin32::ApplicationStart(int argc, char** argv)
         return false;
 
     s_Instance = this;
+
+    ImGui_ImplWin32_EnableDpiAwareness();
 
     auto winProc = [](HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT
     {
@@ -114,8 +118,6 @@ bool PlatformWin32::ApplicationStart(int argc, char** argv)
         return false;
     }
 
-    ImGui_ImplWin32_EnableDpiAwareness();
-
     return true;
 }
 
@@ -135,26 +137,73 @@ bool PlatformWin32::OpenMainWindow(const char* title, int width, int height)
     if (m_MainWindowHandle)
         return false;
 
-    m_MainWindowHandle = CreateWindow(
+    const auto windowStyle = WS_OVERLAPPEDWINDOW;
+    const auto windowStyleEx = WS_EX_OVERLAPPEDWINDOW;
+
+    RECT rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = width;
+    rect.bottom = height;
+    AdjustWindowRectEx(&rect, windowStyle, false, windowStyleEx);
+
+    auto windowWidth = rect.right - rect.left;
+    auto windowHeight = rect.bottom - rect.top;
+
+    m_MainWindowHandle = CreateWindowEx(
+        WS_EX_OVERLAPPEDWINDOW,
         m_WindowClass.lpszClassName,
         Utf8ToNative(title).c_str(),
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT,
-        width < 0 ? CW_USEDEFAULT : width,
-        height < 0 ? CW_USEDEFAULT : height,
+        width < 0 ? CW_USEDEFAULT : windowWidth,
+        height < 0 ? CW_USEDEFAULT : windowHeight,
         nullptr, nullptr, m_WindowClass.hInstance, nullptr);
 
     if (!m_MainWindowHandle)
         return false;
 
+# if RENDERER(IMGUI_OGL3)
+    if (!ImGui_ImplWin32_InitForOpenGL(m_MainWindowHandle))
+# else
     if (!ImGui_ImplWin32_Init(m_MainWindowHandle))
+# endif
     {
         DestroyWindow(m_MainWindowHandle);
         m_MainWindowHandle = nullptr;
         return false;
     }
 
-    SetDpiScale(ImGui_ImplWin32_GetDpiScaleForHwnd(m_MainWindowHandle));
+    const auto windowScale = ImGui_ImplWin32_GetDpiScaleForHwnd(m_MainWindowHandle);
+
+    RECT clientRect;
+    GetClientRect(m_MainWindowHandle, &clientRect);
+
+    POINT origin = { clientRect.left, clientRect.top };
+    ClientToScreen(m_MainWindowHandle, &origin);
+
+    // move rect by origin
+    clientRect.right  += origin.x - clientRect.left;
+    clientRect.bottom += origin.y - clientRect.top;
+    clientRect.left    = origin.x;
+    clientRect.top     = origin.y;
+
+    if (width >= 0)
+        clientRect.right = static_cast<int>((clientRect.right - clientRect.left) * windowScale) + clientRect.left;
+    if (height >= 0)
+        clientRect.bottom = static_cast<int>((clientRect.bottom - clientRect.top) * windowScale) + clientRect.top;
+
+    RECT windowRect = clientRect;
+    AdjustWindowRectEx(&windowRect, windowStyle, false, windowStyleEx);
+
+    SetWindowPos(m_MainWindowHandle, nullptr,
+        windowRect.left, windowRect.top,
+        windowRect.right - windowRect.left,
+        windowRect.bottom - windowRect.top,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+
+    SetWindowScale(1.0f / windowScale);
+    SetFramebufferScale(windowScale);
 
     return true;
 }
@@ -236,7 +285,30 @@ void PlatformWin32::SetRenderer(Renderer* renderer)
 
 void PlatformWin32::NewFrame()
 {
+    auto& io = ImGui::GetIO();
+    auto& ctx = *ImGui::GetCurrentContext();
+
     ImGui_ImplWin32_NewFrame();
+    auto inputEventCountAfterUpdate = ctx.InputEventsQueue.Size;
+
+    auto windowScale = GetWindowScale();
+
+    for (auto& event : ctx.InputEventsQueue)
+    {
+        if (event.EventId <= m_LastEventId)
+            continue;
+
+        m_LastEventId = event.EventId;
+
+        if (event.Type == ImGuiInputEventType_MousePos)
+        {
+            if (event.MousePos.PosX > -FLT_MAX && event.MousePos.PosY > -FLT_MAX)
+            {
+                event.MousePos.PosX *= windowScale;
+                event.MousePos.PosY *= windowScale;
+            }
+        }
+    }
 
     if (m_WasMinimized)
     {
@@ -254,12 +326,6 @@ void PlatformWin32::FinishFrame()
 void PlatformWin32::Quit()
 {
     PostQuitMessage(0);
-}
-
-void PlatformWin32::SetDpiScale(float dpiScale)
-{
-    SetWindowScale(dpiScale);
-    SetFramebufferScale(dpiScale);
 }
 
 LRESULT PlatformWin32::WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -299,8 +365,21 @@ LRESULT PlatformWin32::WinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_DPICHANGED:
-            SetDpiScale(ImGui_ImplWin32_GetDpiScaleForHwnd(hWnd));
+        {
+            RECT* const prcNewWindow = (RECT*)lParam;
+            SetWindowPos(hWnd,
+                NULL,
+                prcNewWindow ->left,
+                prcNewWindow ->top,
+                prcNewWindow->right - prcNewWindow->left,
+                prcNewWindow->bottom - prcNewWindow->top,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+
+            const auto windowScale = ImGui_ImplWin32_GetDpiScaleForHwnd(hWnd);
+            SetWindowScale(1.0f / windowScale);
+            SetFramebufferScale(windowScale);
             return 0;
+        }
 
         case WM_DESTROY:
             PostQuitMessage(0);
