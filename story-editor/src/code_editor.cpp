@@ -72,7 +72,7 @@ void CodeEditor::TextViewDraw()
 
 
 CodeEditor::CodeEditor(IStoryManager &project)
-    : WindowBase("Code editor")
+    : WindowBase("Code viewer")
     , m_storyManager(project)
 {
     // mEditor.SetReadOnly(false);
@@ -109,19 +109,19 @@ void CodeEditor::SetScript(const std::string &txt)
 {
     m_text = txt;
 
-        m_text = R"(
-    fdsfds
-    fds
-ffffffffffffffffffffff
-    ff
-    fd
-feeeee
-    21234f
-e
-    fdsfs
-    )";
+//         m_text = R"(
+//     fdsfds
+//     fds
+// ffffffffffffffffffffff
+//     ff
+//     fd
+// feeeee
+//     21234f
+// e
+//     fdsfs
+//     )";
 
-    HighlightLine(2);
+//     HighlightLine(2);
 }
 
 std::string CodeEditor::GetScript() const
@@ -139,6 +139,7 @@ void CodeEditor::Draw()
     // auto cpos = mEditor.GetCursorPosition();
 
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    /*
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -156,7 +157,7 @@ void CodeEditor::Draw()
             // if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
             //     mEditor.SetReadOnly(ro);
             ImGui::Separator();
-/*
+
             if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && mEditor.CanUndo()))
                 mEditor.Undo();
             if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && mEditor.CanRedo()))
@@ -172,7 +173,7 @@ void CodeEditor::Draw()
                 mEditor.Delete();
             if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText() != nullptr))
                 mEditor.Paste();
-                */
+                
 
             ImGui::Separator();
 
@@ -181,7 +182,7 @@ void CodeEditor::Draw()
 
             ImGui::EndMenu();
         }
-/*
+
         if (ImGui::BeginMenu("View"))
         {
             if (ImGui::MenuItem("Dark palette"))
@@ -192,9 +193,10 @@ void CodeEditor::Draw()
                 mEditor.SetPalette(TextEditor::GetRetroBluePalette());
             ImGui::EndMenu();
         }
-        */
+    
         ImGui::EndMenuBar();
     }
+    */
 
     // ImGui::Text("%6d/%-6d %6d lines  | %s | %s ", cpos.mLine + 1, cpos.mColumn + 1, mEditor.GetTotalLines(),
     //     mEditor.IsOverwrite() ? "Ovr" : "Ins",

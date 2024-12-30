@@ -797,7 +797,14 @@ void MainWindow::ImportProject(const std::string &fileName, int format)
 {
     PackArchive archive(*this);
 
-    archive.ImportStudioFormat(fileName, m_libraryManager.LibraryPath());
+    if (format == 0)
+    {
+        archive.ImportStudioFormat(fileName, m_libraryManager.LibraryPath());
+    }
+    else 
+    {
+        archive.ImportCommercialFormat(fileName, m_libraryManager.LibraryPath());
+    }
 
 }
 
@@ -831,7 +838,7 @@ void MainWindow::CloseProject()
 
     m_nodeEditorWindow.Disable();
     m_emulatorWindow.Disable();
-    // m_codeEditorWindow.Disable();
+    m_codeEditorWindow.Disable();
     m_resourcesWindow.Disable();
     m_PropertiesWindow.Disable();
     m_cpuWindow.Disable();

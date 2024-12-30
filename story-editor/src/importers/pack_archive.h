@@ -13,10 +13,11 @@ class PackArchive
 public:
     PackArchive(ILogger &log);
 
-    bool Load(const std::string &filePath);
+    bool LoadNiFile(const std::string &filePath);
     std::string OpenImage(const std::string &fileName);
 
     bool ImportStudioFormat(const std::string &fileName, const std::string &outputDir);
+    void ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir);
 
     std::string CurrentImage();
     std::string CurrentSound();
@@ -31,7 +32,7 @@ public:
     void Next();
     void Previous();
     void Unzip(const std::string &filePath, const std::string &parent_dest_dir);
-    void DecipherAll(const std::string &packFileName, const std::string &parent_dest_dir);
+    
     bool ConvertJsonStudioToOst(const std::string &basePath, const std::string &uuid, const std::string &outputDir);
 
     std::string HexDump(const char *desc, const void *addr, int len);

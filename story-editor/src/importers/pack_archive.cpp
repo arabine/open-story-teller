@@ -156,25 +156,32 @@ std::vector<std::string> PackArchive::FilesToJson(const std::string &type, const
     return resList;
 }
 
-void PackArchive::DecipherAll(const std::string &packFileName, const std::string &parent_dest_dir)
+void PackArchive::ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir)
 {
-//    return;
+    auto uuid =  Uuid().String();
+    std::string basePath = outputDir + "/" + uuid;
 
-    Unzip(packFileName, parent_dest_dir);
-    Load(packFileName);
+    Unzip(packFileName, basePath);
+    LoadNiFile(packFileName);
 
-    std::string path = mPackName + "/rf";
+    std::string path = basePath + "/" + mPackName + "/rf";
     for (const auto & entry : std::filesystem::directory_iterator(path))
     {
-        std::cout << entry.path() << std::endl;
-        DecipherFiles(entry.path().generic_string(), ".bmp");
+        if (entry.is_directory())
+        {
+            std::cout << entry.path() << std::endl;
+            DecipherFiles(entry.path().generic_string(), ".bmp");
+        }
     }
 
-    path = mPackName + "/sf";
+    path = basePath + "/" + mPackName + "/sf";
     for (const auto & entry : std::filesystem::directory_iterator(path))
     {
-        std::cout << entry.path() << std::endl;
-        DecipherFiles(entry.path().generic_string(), ".mp3");
+        if (entry.is_directory())
+        {
+            std::cout << entry.path() << std::endl;
+            DecipherFiles(entry.path().generic_string(), ".mp3");
+        }
     }
 
     nlohmann::json j;
@@ -333,7 +340,7 @@ $MyArray            DV8    10 ; array of 10 bytes
     chip32.close();
 }
 
-bool PackArchive::Load(const std::string &filePath)
+bool PackArchive::LoadNiFile(const std::string &filePath)
 {
     bool success = false;
     mZip.Close();

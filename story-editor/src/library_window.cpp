@@ -348,8 +348,9 @@ inline void InfosPane(const char *vFilter, IGFDUserDatas vUserDatas, bool *vCant
 
     
     ImGui::Text("Select file format: ");
-    ImGui::RadioButton("Commercial stories", &formatFilter, 0); ImGui::SameLine();
-    ImGui::RadioButton("Studio format", &formatFilter, 1); ImGui::SameLine();
+    ImGui::RadioButton("Studio format", &formatFilter, 0); ImGui::SameLine();
+    ImGui::RadioButton("Commercial stories", &formatFilter, 1); ImGui::SameLine();
+    
 
   //  ImGui::Checkbox("if not checked you cant validate the dialog", &canValidateDialog);
     if (vCantContinue)
@@ -367,8 +368,6 @@ std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
 
 void LibraryWindow::Draw()
 {
-    static int importFormat = 0;
-
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
 
@@ -437,7 +436,7 @@ void LibraryWindow::Draw()
                     config.flags = ImGuiFileDialogFlags_Modal;
                     ImGuiFileDialog::Instance()->OpenDialog("ImportStoryDlgKey", 
                         "Import story", 
-                        ".zip, .json",
+                        ".zip, .json, .pk",
                         config
                     );
                 }
@@ -609,10 +608,8 @@ void LibraryWindow::Draw()
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
             std::string filter = ImGuiFileDialog::Instance()->GetCurrentFilter();
-            
-            m_storyManager.ImportProject(filePathName, importFormat);
-
-            // action
+            // Import "Studio" or "Commercial" format
+            m_storyManager.ImportProject(filePathName, formatFilter);
         }
         // close
         ImGuiFileDialog::Instance()->Close();
