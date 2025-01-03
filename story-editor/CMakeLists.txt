@@ -182,58 +182,32 @@ set(SRCS
 
     src/main.cpp
 
-    src/window_base.h
     src/window_base.cpp
-
     src/console_window.cpp
-    src/console_window.h
-
     src/emulator_window.cpp
-    src/emulator_window.h
-
     src/main_window.cpp
-    src/main_window.h
-
     src/library_window.cpp
-    src/library_window.h
-
-
     src/platform_folders.cpp
-    src/platform_folders.h
 
-    src/node_editor/media_node_widget.h
+
     src/node_editor/media_node_widget.cpp
-    src/node_editor/base_node_widget.h
     src/node_editor/base_node_widget.cpp
-    src/node_editor/node_editor_window.h
     src/node_editor/node_editor_window.cpp
-    src/node_editor/function_node_widget.h
     src/node_editor/function_node_widget.cpp
 
     src/resources_window.cpp
-    src/resources_window.h
-
     src/properties_window.cpp
-    src/properties_window.h
-
     src/cpu_window.cpp
-    src/cpu_window.h
-
-    src/gui.h
     src/gui.cpp
 
     src/code_editor.cpp
-    src/code_editor.h
-
     src/media_converter.cpp
-    src/media_converter.h
 
     src/miniz.c
     src/zip.cpp
 
     src/importers/pack_archive.cpp
     src/importers/ni_parser.c
-
 
     libs/imgui-node-editor/imgui_node_editor.cpp
     libs/imgui-node-editor/imgui_canvas.cpp
@@ -253,17 +227,11 @@ set(SRCS
     ../firmware/chip32/chip32_vm.c
 
     ../shared/audio_player.cpp
-    ../shared/audio_player.h
-    ../shared/tlv.h
-    ../shared/miniaudio.h
     ../shared/stb_vorbis.c
-    ../shared/uuid.h
-    ../shared/resource_manager.h
     ../shared/resource_manager.cpp
-
-    ../shared/thread_safe_queue.h
-    ../shared/library_manager.h
     ../shared/library_manager.cpp
+    ../shared/downloader.cpp
+    ../shared/story_db.cpp
 
     # Core engine files
     

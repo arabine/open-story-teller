@@ -1178,7 +1178,7 @@ void MainWindow::LoadParams()
             m_libraryManager.Initialize(library_path);
         }
 
-        nlohmann::json store_url = j.value("store_url", "https://gist.githubusercontent.com/DantSu/8920929530b58f2acbfcf1ed0e7746f9/raw/stories-contrib.json");
+        nlohmann::json store_url = j.value("store_url", "https://gist.githubusercontent.com/DantSu/3aea4c1fe15070bcf394a40b89aec33e/raw/stories.json");
         m_libraryManager.SetStoreUrl(store_url);
 
     }

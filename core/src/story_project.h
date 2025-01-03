@@ -15,7 +15,7 @@
 #include "story_page.h"
 #include "story_options.h"
 
-// FIXME : Structure très Lunii style, à utiliser pour la conversion peut-être ...
+// FIXME : Structure très proche de la boiboite, à utiliser pour la conversion peut-être ...
 struct StoryNode
 {
     bool auto_jump;

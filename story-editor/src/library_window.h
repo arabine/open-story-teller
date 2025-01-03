@@ -5,15 +5,9 @@
 #include "library_manager.h"
 #include "i_story_manager.h"
 #include "thread_safe_queue.h"
+#include "downloader.h"
 
 #include <curl/curl.h>
-
-struct StoryInf {
-    int age;
-    std::string title;
-    std::string description;
-    std::string download;
-};
 
 struct DownloadCommand {
     std::string order;
@@ -80,6 +74,7 @@ private:
     IStoryManager &m_storyManager;
     LibraryManager &m_libraryManager;
 
+    Downloader m_downloader;
     CURL *m_curl;
     char m_storeUrl[1024];
     std::thread m_downloadThread;
@@ -90,18 +85,18 @@ private:
 
     std::mutex m_downloadBusyMutex;
     bool m_downloadBusy{false};
-
-    std::vector<StoryInf> m_store;
-    std::string m_storeIndexFilename;
+    
+    std::string m_communityStoreFile;
+    std::string m_commercialStoreFile;
 
     std::string m_storeRawJson;
-    void ParseStoreDataCallback(bool success, const std::string &filename);
+    void ParseCommercialStoreDataCallback(bool success, const std::string &filename);
+    void ParseCommunityStoreDataCallback(bool success, const std::string &filename);
     void StoryFileDownloadedCallback(bool success, const std::string &filename);
     void DownloadThread();
     int TransferCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 
     std::string ToLocalStoreFile(const std::string &url);
-
     bool CheckIfSharepoint(const std::string &url, std::string &decoded_url);
     void SharePointJsonDownloadedCallback(bool success, const std::string &filename);
 };

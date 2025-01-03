@@ -193,3 +193,81 @@ std::string LibraryManager::GetVersion()
 {
    return std::to_string(VERSION_MAJOR) + '.' + std::to_string(VERSION_MINOR) + '.' + std::to_string(VERSION_PATCH);
 }
+
+void LibraryManager::AddStory(IStoryDb::Info &info, int origin)
+{
+    m_storyDb.AddStory(info, origin);
+}
+
+void LibraryManager::ParseCommunityStore(const std::string &jsonFileName)
+{
+    try {
+        std::ifstream f(jsonFileName);
+        nlohmann::json j = nlohmann::json::parse(f);
+
+        if (!j.contains("data")) {
+            throw std::runtime_error("Invalid JSON: 'data' key not found");
+        }
+
+        const auto& data = j["data"];
+
+        m_storyDb.ClearCommunity();
+        for (const auto &obj : data)
+        {
+            IStoryDb::Info s;
+
+            s.title = obj["title"].get<std::string>();
+            s.description = obj["description"].get<std::string>();
+            s.download = obj["download"].get<std::string>();
+            s.age = obj["age"].get<int>();
+
+            m_storyDb.AddStory(s, StoryDb::cCommunityStore);
+        }
+    }
+    catch(std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+}
+
+void LibraryManager::ParseCommercialStore(const std::string &jsonFileName)
+{
+    try
+    {
+
+        std::ifstream f(jsonFileName);
+        nlohmann::json j = nlohmann::json::parse(f);
+
+        if (!j.contains("response")) {
+            throw std::runtime_error("Invalid JSON: 'response' key not found");
+        }
+
+        const auto& response = j["response"];
+        m_storyDb.ClearCommercial();
+
+        for (auto it = response.begin(); it != response.end(); ++it)
+        {
+            const auto& pack = it.value();
+
+            IStoryDb::Info story;
+            story.title = pack["title"].get<std::string>();
+            story.uuid = pack["uuid"].get<std::string>();
+
+            if (pack.contains("localized_infos") && pack["localized_infos"].contains("fr_FR"))
+            {
+                const auto& localized = pack["localized_infos"]["fr_FR"];
+                story.title = localized["title"].get<std::string>();
+                story.description = localized["description"].get<std::string>();
+
+                if (localized.contains("image") && localized["image"].contains("image_url")) {
+                    story.image_url = localized["image"]["image_url"].get<std::string>();
+                }
+            }
+
+            m_storyDb.AddStory(story, StoryDb::cCommercialStore);
+        }
+    } catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << std::endl;
+    }
+}
+

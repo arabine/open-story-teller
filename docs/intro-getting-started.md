@@ -7,7 +7,7 @@ This documentation will guide you to make your own story teller. You can choose 
 Before starting, here is a complete list of links where you'll find project information:
 
 - :octopus: [Github](https://github.com/arabine/open-story-teller): source code for the firmware, the player and the story editor, issue tracking
-- Free stories community (in French) [Discord](https://monurl.ca/DiscordLuniiYT)
+- Free stories community (in French) [Discord](https://monurl.ca/lunii.creations)
 - My Discord channel for this project: https://discord.gg/4TW4B3R4Ye
 
 ## Helping

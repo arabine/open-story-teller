@@ -43,7 +43,7 @@ std::string SysLib::GetFileName(const std::string &path)
         }
         else
         {
-            return "";
+            return path;
         }
     }
     else

@@ -59,7 +59,10 @@ LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library)
 
     m_storeUrl[0] = 0;
 
-   // std::strcpy(m_storeUrl, "https://gist.githubusercontent.com/DantSu/8920929530b58f2acbfcf1ed0e7746f9/raw/stories-contrib.json");
+   // std::strcpy(m_storeUrl, "https://gist.githubusercontent.com/DantSu/3aea4c1fe15070bcf394a40b89aec33e/raw/stories.json");
+
+   // https://gist.githubusercontent.com/DantSu/3aea4c1fe15070bcf394a40b89aec33e/raw/stories.json
+
 }
 
 LibraryWindow::~LibraryWindow()
@@ -105,27 +108,47 @@ void LibraryWindow::Initialize()
         curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, static_cast<xfer_callback_t>(Callback<int(void *, curl_off_t, curl_off_t, curl_off_t, curl_off_t)>::callback));
     }
 
-
-    std::strcpy(&m_storeUrl[0], m_libraryManager.GetStoreUrl().c_str());
-    m_storeIndexFilename = ToLocalStoreFile(m_storeUrl);
-
-    if (std::filesystem::is_regular_file(m_storeIndexFilename))
+    auto communityStoreUrl = m_libraryManager.GetStoreUrl();
+    if (!communityStoreUrl.empty())
     {
-        // seems legit
-        ParseStoreDataCallback(true, m_storeIndexFilename);
+        std::strcpy(&m_storeUrl[0], m_libraryManager.GetStoreUrl().c_str());
+        m_communityStoreFile = ToLocalStoreFile(m_storeUrl);
+
+        if (std::filesystem::is_regular_file(m_communityStoreFile))
+        {
+            std::cout << "Community store file already exists, skipping download" << std::endl;
+            ParseCommunityStoreDataCallback(true, m_communityStoreFile);
+        }
+        else
+        {
+            // Not exists, download it
+            m_downloadQueue.push({
+                "dl",
+                m_storeUrl,
+                m_communityStoreFile,
+                std::bind(&LibraryWindow::ParseCommunityStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
+            });
+
+        }
     }
+
+    m_commercialStoreFile = ToLocalStoreFile("commercial_store_db.json");
+    if (std::filesystem::is_regular_file(m_commercialStoreFile))
+    {
+        std::cout << "Commercial store file already exists, skipping download" << std::endl;
+        ParseCommercialStoreDataCallback(true, m_commercialStoreFile);
+    } 
     else
     {
-        // Not exists, download it
         m_downloadQueue.push({
-            "dl",
+            "dl_commercial",
             m_storeUrl,
-            m_storeIndexFilename,
-            std::bind(&LibraryWindow::ParseStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
+            m_communityStoreFile,
+            std::bind(&LibraryWindow::ParseCommercialStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
         });
-
     }
 }
+
 
 
 void LibraryWindow::DownloadThread()
@@ -144,6 +167,22 @@ void LibraryWindow::DownloadThread()
         else if (cmd.order == "dl")
         {
             download_file(m_curl, cmd.url, cmd.filename, cmd.finished_callback);
+        }
+        else if (cmd.order == "dl_commercial")
+        {
+            try
+            {
+                std::cout << "Fetching token..." << std::endl;
+                std::string token = m_downloader.FetchToken();
+                std::cout << "Token: " << token << std::endl;
+
+                std::cout << "Fetching data and saving to file..." << std::endl;
+                m_downloader.FetchDataAndSaveToFile(token, m_commercialStoreFile);
+
+                ParseCommercialStoreDataCallback(true, m_commercialStoreFile);
+            } catch (const std::exception& ex) {
+                std::cerr << "Error: " << ex.what() << std::endl;
+            }
         }
     }
 }
@@ -313,28 +352,27 @@ void LibraryWindow::StoryFileDownloadedCallback(bool success, const std::string 
 
 }
 
-void LibraryWindow::ParseStoreDataCallback(bool success, const std::string &filename)
+void LibraryWindow::ParseCommercialStoreDataCallback(bool success, const std::string &filename)
 {
-    try {
-        std::ifstream f(m_storeIndexFilename);
-        nlohmann::json j = nlohmann::json::parse(f);
-
-        m_store.clear();
-        for (const auto &obj : j)
-        {
-            StoryInf s;
-
-            s.title = obj["title"].get<std::string>();
-            s.description = obj["description"].get<std::string>();
-            s.download = obj["download"].get<std::string>();
-            s.age = obj["age"].get<int>();
-
-            m_store.push_back(s);
-        }
-    }
-    catch(std::exception &e)
+    if (success)
     {
-        std::cout << e.what() << std::endl;
+        m_libraryManager.ParseCommercialStore(m_commercialStoreFile);   
+    }
+    else
+    {
+        std::cout << "Error while downloading commercial store index file" << std::endl;
+    }
+}
+
+void LibraryWindow::ParseCommunityStoreDataCallback(bool success, const std::string &filename)
+{
+    if (success)
+    {
+        m_libraryManager.ParseCommunityStore(m_communityStoreFile);   
+    }
+    else
+    {
+        std::cout << "Error while downloading community store index file" << std::endl;
     }
 }
 
@@ -362,7 +400,7 @@ std::string LibraryWindow::ToLocalStoreFile(const std::string &url)
     auto filename = SysLib::GetFileName(url);
 
     filename = m_libraryManager.LibraryPath() + "/store/" + filename;
-    std::cout << "Store file: " << filename << std::endl;
+    std::cout << "Url: " << url << " will be downloaded in store file: " << filename << std::endl;
     return filename;
 }
 
@@ -513,16 +551,22 @@ void LibraryWindow::Draw()
             // ============================================================================
             if (ImGui::BeginTabItem("Remote Store##StoreTabBar", nullptr, ImGuiTabItemFlags_None))
             {
-                ImGui::InputTextWithHint("##store_url", "Store URL", m_storeUrl, IM_ARRAYSIZE(m_storeUrl));
+                bool changed = ImGui::InputTextWithHint("##store_url", "Store URL", m_storeUrl, IM_ARRAYSIZE(m_storeUrl));
+
+                if (changed)
+                {
+                    m_libraryManager.SetStoreUrl(m_storeUrl);
+                }
+
                 ImGui::SameLine();
                 if (ImGui::Button("Load"))
                 {
-                    m_storeIndexFilename = ToLocalStoreFile(m_storeUrl);
+                    m_communityStoreFile = ToLocalStoreFile(m_storeUrl);
                     m_downloadQueue.push({
                         "dl",
                         m_storeUrl,
-                        m_storeIndexFilename,
-                        std::bind(&LibraryWindow::ParseStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
+                        m_communityStoreFile,
+                        std::bind(&LibraryWindow::ParseCommunityStoreDataCallback, this, std::placeholders::_1, std::placeholders::_2)
                     });
                 }
 
@@ -557,7 +601,7 @@ void LibraryWindow::Draw()
                     ImGui::TableHeadersRow();
 
                     int id = 1;
-                    for (const auto &obj : m_store)
+                    for (const auto &obj : m_libraryManager.CommunityDbView())
                     {
                         ImGui::TableNextColumn();
                         ImGui::Text("%s", obj.title.c_str());

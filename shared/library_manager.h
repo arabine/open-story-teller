@@ -8,6 +8,8 @@
 
 #include "story_project.h"
 #include "i_logger.h"
+#include "story_db.h"
+
 class LibraryManager
 {
 public:
@@ -42,12 +44,26 @@ public:
     void SetStoreUrl(const std::string &store_url) { m_storeUrl = store_url; }
     std::string GetStoreUrl() const { return m_storeUrl; }
 
+    void AddStory(IStoryDb::Info &info, int origin);
+
+    void ParseCommunityStore(const std::string &jsonFileName);
+    void ParseCommercialStore(const std::string &jsonFileName);
+
+    auto CommunityDbView() const {
+        return m_storyDb.CommunityDbView();
+    }
+
+    auto CommercialDbView() const {
+        return m_storyDb.CommercialDbView();
+    }
+
 private:
     ILogger &m_log;
     std::string m_library_path;
     std::list<std::shared_ptr<StoryProject>> m_projectsList;
     std::string m_storeUrl;
     std::thread m_copyWorker;
+    StoryDb m_storyDb;
 };
 
 #endif // LIBRARYMANAGER_H

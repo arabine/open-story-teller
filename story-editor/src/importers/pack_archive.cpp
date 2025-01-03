@@ -202,10 +202,19 @@ $MyArray            DV8    10 ; array of 10 bytes
 */
 
 
-    // NI file is not ciphered
+    // RI file is not ciphered
     uint8_t data[512];
     uint32_t size = ni_get_ri_block(data);
-    WriteDataOnDisk(mPackName + "/ri", data, size);
+  //  WriteDataOnDisk(mPackName + "/ri", data, size);
+
+    StoryProject proj(m_log);
+    ResourceManager res(m_log);
+
+    std::shared_ptr<StoryPage> page = proj.CreatePage("main");
+
+
+        proj.New(uuid, outputDir);
+        proj.SetName(j["title"].get<std::string>());
 
     nlohmann::json jsonImages;
     {
@@ -224,7 +233,7 @@ $MyArray            DV8    10 ; array of 10 bytes
     j["images"] = jsonImages;
 
     size = ni_get_si_block(data);
-    WriteDataOnDisk(mPackName + "/si", data, size);
+  //  WriteDataOnDisk(mPackName + "/si", data, size);
 
 
     nlohmann::json jsonSounds;
@@ -244,7 +253,7 @@ $MyArray            DV8    10 ; array of 10 bytes
     j["sounds"] = jsonSounds;
 
     size = ni_get_li_block(data);
-    WriteDataOnDisk(mPackName + "/li", data, size);
+  //  WriteDataOnDisk(mPackName + "/li", data, size);
 
 
     std::vector<uint32_t> transitions;
@@ -333,11 +342,7 @@ $MyArray            DV8    10 ; array of 10 bytes
     j["name"] = "";
     j["type"] = "lunii";
 
-    std::ofstream o("pack.json");
-    o << std::setw(4) << j << std::endl; // pretty print
 
-    o.close();
-    chip32.close();
 }
 
 bool PackArchive::LoadNiFile(const std::string &filePath)
