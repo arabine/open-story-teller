@@ -21,7 +21,6 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
-
 # set(OPENSSL_ROOT_DIR /libs/openssl)
 # find_package(OpenSSL REQUIRED)
 
@@ -29,99 +28,84 @@ set(IMGUI_VERSION 1.91.6)
 
 include(FetchContent)
 
+include(cmake/CPM.cmake)
+
+
+# =========================================================================================================================
+# MBedTLS
+# =========================================================================================================================
+CPMAddPackage("gh:Mbed-TLS/mbedtls#v3.6.2")
+
+find_package(MbedTLS REQUIRED)
+include_directories(${MbedTLS_INCLUDE_DIR})
+# set(MBEDTLS_STATIC_LIBRARY ON)
+
+# =========================================================================================================================
+# CibetWeb
+# =========================================================================================================================
+CPMAddPackage(
+    NAME civetweb
+    GITHUB_REPOSITORY  civetweb/civetweb
+    VERSION 1.16
+    OPTIONS 
+        "CIVETWEB_BUILD_TESTING OFF"
+        "CIVETWEB_ENABLE_SERVER_EXECUTABLE OFF"
+        "CIVETWEB_ENABLE_CXX ON"
+        "CIVETWEB_ENABLE_WEBSOCKETS ON"
+        "CIVETWEB_ENABLE_ASAN OFF"
+)
+ 
+find_package(civetweb REQUIRED)
+include_directories(${civetweb_SOURCE_DIR}/include)
+
 # =========================================================================================================================
 # CURL
 # =========================================================================================================================
 
+
 # Définit les options de cURL pour utiliser mBedTLS
-set(CMAKE_USE_OPENSSL OFF)
-set(CMAKE_USE_MBEDTLS ON)
+
+set(CURL_USE_OPENSSL OFF  CACHE BOOL "Disable OpenSSL." FORCE)
+set(CURL_USE_MBEDTLS ON  CACHE BOOL "Use MBED TLS." FORCE)
+set(CURL_USE_LIBSSH2 OFF  CACHE BOOL "Disable SSH." FORCE)
+set(MBEDTLS_INCLUDE_DIRS ${mbedtls_SOURCE_DIR}/include)
+set(MBEDTLS_LIBRARY ${mbedtls_BINARY_DIR}/libmbedtls.a)
+set(MBEDX509_LIBRARY ${mbedtls_BINARY_DIR}/libmbedx509.a)
+set(MBEDCRYPTO_LIBRARY ${mbedtls_BINARY_DIR}/libmbedcrypto.a)
 
 # Télécharge et configure cURL
 FetchContent_Declare(
   curl
   GIT_REPOSITORY https://github.com/curl/curl.git
   GIT_TAG        curl-8_7_1
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE
 )
-
-FetchContent_GetProperties(curl)
-if(NOT curl_POPULATED)
-  FetchContent_Populate(curl)
 
 set(BUILD_CURL_EXE FALSE)
 set(BUILD_STATIC_LIBS TRUE)
-  add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR})
-endif()
+FetchContent_MakeAvailable(curl)
 
 # Assurez-vous que votre projet trouve les headers de mBedTLS et cURL
 include_directories(${mbedtls_SOURCE_DIR}/include)
 include_directories(${curl_SOURCE_DIR}/include)
 
-# FetchContent_Declare(curl
-#     URL https://github.com/curl/curl/archive/refs/tags/curl-8_6_0.zip
-# )
-
-# set(CURL_USE_mbedTLS       ON  CACHE BOOL "Use MBED TLS." FORCE)
-# set(BUILD_TESTING          OFF CACHE BOOL "No tests build, plz." FORCE)
-# set(USE_MANUAL             OFF CACHE BOOL "No manuals, plz." FORCE)
-# set(BUILD_CURL_EXE         OFF CACHE BOOL "No executable, plz. Only the lib" FORCE)
-# set(CURL_ENABLE_EXPORT_TARGET OFF CACHE BOOL "No installation build, plz." FORCE)
-# set(CURL_DISABLE_IMAPS     ON  CACHE BOOL "Use MBED TLS." FORCE)
-# set(BUILD_CURL_EXE FALSE)
-# set(BUILD_STATIC_LIBS TRUE)
-
-# FetchContent_MakeAvailable(curl)
-# include_directories( ${CURL_INCLUDE_DIRS} )
 
 # =========================================================================================================================
 # IMGUI and plugins
 # =========================================================================================================================
-FetchContent_Declare(imgui
+FetchContent_Declare(
+    imgui
     URL https://github.com/ocornut/imgui/archive/refs/tags/v${IMGUI_VERSION}-docking.zip
 )
 
-FetchContent_GetProperties(imgui)
-
-if(NOT imgui_POPULATED)
-    set(FETCHCONTENT_QUIET NO)
-    FetchContent_Populate(imgui)
-endif()
+FetchContent_MakeAvailable(imgui)
 
 # ImGuiFileDialog
 include_directories(${imgui_SOURCE_DIR})
 add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/CustomImGuiFileDialogConfig.h")
 add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
-
-# =========================================================================================================================
-# ImGui Text editor
-# =========================================================================================================================
-# FetchContent_Declare(
-#     te
-#     GIT_REPOSITORY https://github.com/ChemistAion/ImTextEdit
-#     GIT_TAG 81ec756b5627dd351fe0dac26a7403982349df68
-#     GIT_SHALLOW TRUE
-#     GIT_PROGRESS TRUE
-# )
-
-# FetchContent_MakeAvailable(te)
-
-
-# =========================================================================================================================
-# SDL2
-# =========================================================================================================================
-
-# FetchContent_Declare(
-#     sdl2
-#     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-#     GIT_TAG origin/SDL2
-#     GIT_SHALLOW TRUE
-#     GIT_PROGRESS TRUE
-# )
-
-# set(BUILD_SHARED_LIBS TRUE)
-# set(SDL_STATIC TRUE)
-# FetchContent_MakeAvailable(sdl2)
 
 # =========================================================================================================================
 # SDL3
@@ -143,20 +127,31 @@ include_directories(${sdl3_SOURCE_DIR}/include)
 # =========================================================================================================================
 # SDL3 MIXER
 # =========================================================================================================================
-FetchContent_Declare(
-    sdl3_mixer
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-    GIT_TAG d4eba31e4ac23a81fffad02e91b17dcb2449a2cb
-    # GIT_SHALLOW TRUE
-    # GIT_PROGRESS TRUE
-    # GIT_SUBMODULES ""
+
+CPMAddPackage(
+   NAME sdl3_mixer
+   URL https://github.com/libsdl-org/SDL_mixer/archive/d4eba31e4ac23a81fffad02e91b17dcb2449a2cb.tar.gz
+
+    OPTIONS 
+        "BUILD_SHARED_LIBS TRUE"
+        "SDL_PULSEAUDIO_SHARED TRUE"
+        "SDL_PIPEWIRE_SHARED TRUE" 
 )
 
-set(BUILD_SHARED_LIBS TRUE)
-set(SDL_PULSEAUDIO_SHARED TRUE)
-set(SDL_PIPEWIRE_SHARED TRUE)
-FetchContent_MakeAvailable(sdl3_mixer)
-include_directories(${sdl3_mixer_SOURCE_DIR}/include)
+# FetchContent_Declare(
+#     sdl3_mixer
+#     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+#     GIT_TAG d4eba31e4ac23a81fffad02e91b17dcb2449a2cb
+#     # GIT_SHALLOW TRUE # Ne pas activer shallow sinon le tag n'est pas trouvé
+#     # GIT_PROGRESS TRUE
+#     GIT_SUBMODULES ""
+# )
+
+# set(BUILD_SHARED_LIBS TRUE)
+# set(SDL_PULSEAUDIO_SHARED TRUE)
+# set(SDL_PIPEWIRE_SHARED TRUE)
+# FetchContent_MakeAvailable(sdl3_mixer)
+# include_directories(${sdl3_mixer_SOURCE_DIR}/include)
 
 
 # =========================================================================================================================
@@ -167,6 +162,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
     GIT_TAG bcc97c044266080256ef6ed0d690859677212b2b
     GIT_PROGRESS TRUE
+    # GIT_SHALLOW TRUE # Ne pas activer shallow sinon le tag n'est pas trouvé
 ) 
 
 
@@ -202,9 +198,9 @@ set(SRCS
 
     src/code_editor.cpp
     src/media_converter.cpp
-
     src/miniz.c
     src/zip.cpp
+    src/web_server.cpp
 
     src/importers/pack_archive.cpp
     src/importers/ni_parser.c
@@ -315,11 +311,16 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 endif()
 
-target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
+# target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
 
-target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
+# target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC ${sdl3_BINARY_DIR} ${curl_BINARY_DIR})
+target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC 
+    ${sdl3_BINARY_DIR}
+    ${curl_BINARY_DIR}
+    ${mbedtls_BINARY_DIR}
+    # ${CivetWeb_BINARY_DIR}
+)
 
 # On est obligé de passer par une variable pour injecter 
 # certaines informations à CPACK
@@ -329,14 +330,18 @@ set(SDL_MIXER_BIN_DIR ${sdl3_mixer_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
-        pthread
-        OpenGL::GL
-        dl
+
+        
         SDL3::SDL3
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
         libcurl_static
-     #   OpenSSL::SSL OpenSSL::Crypto
+        MbedTLS::mbedtls
+        civetweb-cpp
+        pthread
+        OpenGL::GL
+        dl
+
     )
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}

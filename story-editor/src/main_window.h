@@ -23,6 +23,7 @@
 #include "library_window.h"
 #include "cpu_window.h"
 #include "story_machine.h"
+#include "web_server.h"
 
 struct DebugContext
 {
@@ -122,6 +123,8 @@ private:
     };
 
     ThreadSafeQueue<VmEvent> m_eventQueue;
+
+    WebServer m_webServer;
 
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;

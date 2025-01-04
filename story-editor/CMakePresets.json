@@ -1,0 +1,44 @@
+{
+    "version": 10,
+    "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 23,
+      "patch": 0
+    },
+    "configurePresets": [
+      {
+        "name": "default",
+        "displayName": "Default configuration",
+        "description": "Default build using Ninja generator",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build",
+        "environment": {
+          "CPM_SOURCE_CACHE": "$env{HOME}/.cache/CPM"
+        }
+      },
+      {
+        "name": "Configure-StoryEditor-Debug",
+        "inherits": "default",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+        }
+      },
+      {
+        "name": "Configure-StoryEditor-Release",
+        "inherits": "default",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+        }
+      }
+    ],
+    "buildPresets": [
+      {
+        "name": "Build-StoryEditor-Debug",
+        "configurePreset": "Configure-StoryEditor-Debug"
+      },
+      {
+        "name": "Build-StoryEditor-Release",
+        "configurePreset": "Configure-StoryEditor-Release"
+      }
+    ]
+}

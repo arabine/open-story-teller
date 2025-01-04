@@ -53,7 +53,7 @@
             "gdbPath": "gdb-multiarch",
             "svdFile": "${workspaceRoot}/software/platform/raspberry-pico-w/rp2040.svd",
             // "device": "STM32L431VC",
-            "runToMain": true,
+            "runToEntryPoint": "main",
             "preRestartCommands": [
                 "cd ${workspaceRoot}/software/build/RaspberryPico",
                 "file open-story-teller.elf",
