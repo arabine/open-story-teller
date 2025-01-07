@@ -7,7 +7,7 @@ class WebServer :  public CivetHandler
 
 public:
     WebServer();
-    ~WebServer() {}
+    ~WebServer();
 
 private:
 
