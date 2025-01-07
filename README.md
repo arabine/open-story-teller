@@ -63,6 +63,22 @@ The Story plater is a purely software implementation of a simple story player. I
 
 ![editor](art/story_player.png)
 
+There are multiple implementations in this directory (Flutter, SDL, Raylib). The one that will be maintain is probably the Raylib version besause this framework is the easiest one to port on multiple platforms.
+
+
+# Developer corner
+
+## Build the Story Player
+
+### Web version
+
+Emscripten must be installed.
+
+```
+mkdir build-web && cd build-web
+emcmake cmake .. -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Debug
+emmake make
+```
 
 # License
 

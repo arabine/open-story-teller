@@ -2,7 +2,7 @@
 
     "cmake.sourceDirectory": [
         "${workspaceFolder}/story-editor",
-        "${workspaceFolder}/story-player",
+        "${workspaceFolder}/story-player-raylib",
         "${workspaceFolder}/software"
     ],
     "files.associations": {

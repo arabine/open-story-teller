@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="title" content="OpenStoryTeller Web Player">
+    <meta name="description" content="OpenStoryTeller Web Player">
+    <meta name="keywords" content="story, player, teller">
+
+    <title>OpenStoryTeller Web Player</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
+    <style>
+        /* body { 
+            margin: 0px;
+            text-align: center;
+        } */
+        canvas.emscripten { border: 0px none; background-color: black; display: inline; }
+
+        #canvas-container {
+            width: 100%;
+            text-align:center;
+        }
+
+    </style>
+    </head>
+    <body>
+        <main class="container-fluid">
+            <vertical-menu></vertical-menu>
+
+            <div id="canvas-container">
+                <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+            </div>
+            <p id="output" />
+
+        </main>
+
+        <script>
+            var Module = {
+                print: (function() {
+                    var element = document.getElementById('output');
+                    if (element) element.value = ''; // clear browser cache
+                    return function(text) {
+                        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                        console.log(text);
+                        if (element) {
+                          element.value += text + "\n";
+                          element.scrollTop = element.scrollHeight; // focus on bottom
+                        }
+                    };
+                })(),            
+                canvas: (function() {
+                    var canvas = document.getElementById('canvas');
+                    return canvas;
+                })(),
+                locateFile: function(s) {
+                return 'bin/' + s;
+                }
+            };
+        </script>
+        <script async type="text/javascript" src="bin/story-player.js"></script>
+        <script src="vertical-menu.js" type="module"></script>
+ 
+    </body>
+</html>

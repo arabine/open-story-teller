@@ -27,6 +27,11 @@
 #include "chip32_vm.h"
 #include <stdbool.h>
 
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
+
 int set_filename_from_memory(chip32_ctx_t *ctx, uint32_t addr, char *filename_mem)
 {
     int valid = 0;
@@ -147,7 +152,7 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
             gMusic.looping = false;
             gMusicLoaded = true;
 
-            if (IsMusicReady(gMusic))
+            if (IsMusicValid(gMusic))
             {
                 PlayMusicStream(gMusic);
             }
@@ -163,17 +168,158 @@ uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
     return retCode;
 }
 
+    // VM Stuff
+    //---------------------------------------------------------------------------------------
+    uint8_t rom_data[16*1024];
+    uint8_t ram_data[16*1024];
+    chip32_ctx_t chip32_ctx;
+
+    
+    chip32_result_t run_result = VM_FINISHED;
+
+    // Directories
+    //---------------------------------------------------------------------------------------
+    char homedir[MAX_PATH];
+
+    GuiFileDialogState fileDialogState;
+    Texture2D logoTexture;
+
+    int screenWidth = 400;
+    int screenHeight = 560;
+    bool exitWindow = false;
+
+    char fileNameToLoad[512] = { 0 };
+
+
+void UpdateDrawFrame(void)
+{
+    // Update
+    //----------------------------------------------------------------------------------
+    exitWindow = WindowShouldClose();
+
+    if (fileDialogState.SelectFilePressed)
+    {
+        if (IsFileExtension(fileDialogState.fileNameText, ".c32"))
+        {
+            strcpy(fileNameToLoad, TextFormat("%s/%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
+            run_result = vm_load_script(&chip32_ctx, fileNameToLoad);
+            get_parent_dir(fileNameToLoad, root_dir);
+            printf("Root directory: %s\n", root_dir);
+        }
+
+        fileDialogState.SelectFilePressed = false;
+    }
+
+    // VM next instruction
+    if (run_result == VM_OK)
+    {
+        run_result = chip32_step(&chip32_ctx);
+    }
+
+    if (gMusicLoaded)
+    {
+        UpdateMusicStream(gMusic);
+        if (!IsMusicStreamPlaying(gMusic))
+        {
+            StopMusicStream(gMusic);
+            UnloadMusicStream(gMusic);
+            gMusicLoaded = false;
+            run_result = VM_OK; // continue VM execution
+        }
+    }
+
+    //----------------------------------------------------------------------------------
+
+    // Draw
+    //----------------------------------------------------------------------------------
+    BeginDrawing();
+
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+
+    
+
+    DrawTextureEx(logoTexture,  (Vector2){ (float)10, (float)450 }, 0, 0.15, WHITE);
+
+    // Image de l'histoire
+    DrawRectangle(40, 25, 320, 240, WHITE);
+    DrawTexture(texture, 220, 25, WHITE);
+
+    GuiSetIconScale(3);
+
+    const int yBottomScreen = 275;
+
+
+
+
+    // ICON_ARROW_LEFT
+    if (GuiButton((Rectangle){ 40, yBottomScreen, 60, 60 }, "#114#"))
+    {
+        if (run_result == VM_WAIT_EVENT)
+        {
+            chip32_ctx.registers[R0] = EV_BUTTON_LEFT;
+            run_result = VM_OK;
+        }
+    }
+
+    // ICON_OK_TICK
+    if (GuiButton((Rectangle){ 40 + 65, yBottomScreen, 60, 60 }, "#112#"))
+    {
+        if (run_result == VM_WAIT_EVENT)
+        {
+            chip32_ctx.registers[R0] = EV_BUTTON_OK;
+            run_result = VM_OK;
+        }
+    }
+
+    // ICON_ARROW_RIGHT
+    if (GuiButton((Rectangle){ 40 + 2*65, yBottomScreen, 60, 60 }, "#115#"))
+    {
+        if (run_result == VM_WAIT_EVENT)
+        {
+            chip32_ctx.registers[R0] = EV_BUTTON_RIGHT;
+            run_result = VM_OK;
+        }
+    }
+
+
+        // ICON_PLAYER_PAUSE
+    if (GuiButton((Rectangle){ 180 + 65, 450, 60, 60 }, "#132#"))
+    {
+
+    }
+
+    // ICON_HOUSE
+    if (GuiButton((Rectangle){ 180 + 2*65, 450, 60, 60 }, "#185#"))
+    {
+
+    }
+
+    // raygui: controls drawing
+    //----------------------------------------------------------------------------------
+
+    if (fileDialogState.windowActive) GuiLock();
+
+    GuiUnlock();
+
+    // GUI: Dialog Window
+    //--------------------------------------------------------------------------------
+    GuiSetIconScale(1);
+    GuiFileDialog(&fileDialogState);
+    //--------------------------------------------------------------------------------
+
+
+    //----------------------------------------------------------------------------------
+
+    EndDrawing();
+    //----------------------------------------------------------------------------------
+}
+
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main()
 {
-    // VM Stuff
-    //---------------------------------------------------------------------------------------
-    uint8_t rom_data[16*1024];
-    uint8_t ram_data[16*1024];
-    chip32_ctx_t chip32_ctx;
 
     chip32_ctx.stack_size = 512;
 
@@ -187,23 +333,17 @@ int main()
 
     chip32_ctx.syscall = story_player_syscall;
 
-    chip32_result_t run_result = VM_FINISHED;
-
-    // Directories
-    //---------------------------------------------------------------------------------------
-    char homedir[MAX_PATH];
 
     get_home_path(homedir);
 
     // Initialization
     //---------------------------------------------------------------------------------------
-    int screenWidth = 800;
-    int screenHeight = 560;
+
 
     InitWindow(screenWidth, screenHeight, "OpenStoryTeller - Player");
     SetExitKey(0);
 
-    Font fontTtf = LoadFontEx("Inter-Regular.ttf", 14, 0, 0);
+    Font fontTtf = LoadFontEx("assets/Inter-Regular.ttf", 14, 0, 0);
 
     GuiSetStyle(DEFAULT, BACKGROUND_COLOR, 0x133D42ff);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
@@ -219,142 +359,30 @@ int main()
     GuiSetFont(fontTtf);
 
     // Custom file dialog
-    GuiFileDialogState fileDialogState = InitGuiFileDialog(GetWorkingDirectory());
+    fileDialogState = InitGuiFileDialog(GetWorkingDirectory());
     strcpy(fileDialogState.filterExt, ".c32");
     strcpy(fileDialogState.dirPathText, homedir);
-    Texture2D logoTexture = LoadTexture("logo-color2.png");
 
-    bool exitWindow = false;
-
-    char fileNameToLoad[512] = { 0 };
+    logoTexture = LoadTexture("assets/logo-color.png");
+   
+      
 
     InitAudioDevice();
     UnloadMusicStream(gMusic);
 
-    SetTargetFPS(60);
-    //--------------------------------------------------------------------------------------
 
-    // Main game loop
-    while (!exitWindow)    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        exitWindow = WindowShouldClose();
+#if defined(PLATFORM_WEB)
+	emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
+#else
+	SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+	//--------------------------------------------------------------------------------------
 
-        if (fileDialogState.SelectFilePressed)
-        {
-            if (IsFileExtension(fileDialogState.fileNameText, ".c32"))
-            {
-                strcpy(fileNameToLoad, TextFormat("%s/%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
-                run_result = vm_load_script(&chip32_ctx, fileNameToLoad);
-                get_parent_dir(fileNameToLoad, root_dir);
-                printf("Root directory: %s\n", root_dir);
-            }
-
-            fileDialogState.SelectFilePressed = false;
-        }
-
-        // VM next instruction
-        if (run_result == VM_OK)
-        {
-            run_result = chip32_step(&chip32_ctx);
-        }
-
-        if (gMusicLoaded)
-        {
-            UpdateMusicStream(gMusic);
-            if (!IsMusicStreamPlaying(gMusic))
-            {
-                StopMusicStream(gMusic);
-                UnloadMusicStream(gMusic);
-                gMusicLoaded = false;
-                run_result = VM_OK; // continue VM execution
-            }
-        }
-
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-        ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-
-
-        DrawTextureEx(logoTexture,  (Vector2){ (float)10, (float)10 }, 0, 0.15, WHITE);
-
-        // Image de l'histoire
-        DrawRectangle(220, 25, 320, 240, WHITE);
-        DrawTexture(texture, 220, 25, WHITE);
-
-        GuiSetIconScale(3);
-
-        if (GuiButton((Rectangle){ 20, 140, 60, 60 }, "#05#"))
-        {
-            fileDialogState.windowActive = true;
-        }
-
-        // ICON_PLAYER_PAUSE
-        if (GuiButton((Rectangle){ 20 + 65, 140, 60, 60 }, "#132#"))
-        {
-
-        }
-
-        // ICON_HOUSE
-        if (GuiButton((Rectangle){ 20 + 2*65, 140, 60, 60 }, "#185#"))
-        {
-
-        }
-
-        // ICON_ARROW_LEFT
-        if (GuiButton((Rectangle){ 20, 205, 60, 60 }, "#114#"))
-        {
-            if (run_result == VM_WAIT_EVENT)
-            {
-                chip32_ctx.registers[R0] = EV_BUTTON_LEFT;
-                run_result = VM_OK;
-            }
-        }
-
-        // ICON_OK_TICK
-        if (GuiButton((Rectangle){ 20 + 65, 205, 60, 60 }, "#112#"))
-        {
-            if (run_result == VM_WAIT_EVENT)
-            {
-                chip32_ctx.registers[R0] = EV_BUTTON_OK;
-                run_result = VM_OK;
-            }
-        }
-
-        // ICON_ARROW_RIGHT
-        if (GuiButton((Rectangle){ 20 + 2*65, 205, 60, 60 }, "#115#"))
-        {
-            if (run_result == VM_WAIT_EVENT)
-            {
-                chip32_ctx.registers[R0] = EV_BUTTON_RIGHT;
-                run_result = VM_OK;
-            }
-        }
-
-        // raygui: controls drawing
-        //----------------------------------------------------------------------------------
-
-        if (fileDialogState.windowActive) GuiLock();
-
-        GuiUnlock();
-
-        // GUI: Dialog Window
-        //--------------------------------------------------------------------------------
-        GuiSetIconScale(1);
-        GuiFileDialog(&fileDialogState);
-        //--------------------------------------------------------------------------------
-
-
-        //----------------------------------------------------------------------------------
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
-    }
+	// Main game loop
+	while (!WindowShouldClose()) // Detect window close button or ESC key
+	{
+		UpdateDrawFrame();
+	}
+#endif
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
