@@ -30,7 +30,7 @@ MainWindow::MainWindow()
     , m_nodeEditorWindow(*this)
     , m_libraryWindow(*this, m_libraryManager)
     , m_player(*this)
-
+    , m_webServer(m_libraryManager)
 {
     // VM Initialize
     m_chip32_ctx.stack_size = 512;

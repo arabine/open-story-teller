@@ -1,0 +1,54 @@
+/* Extra styles to make the demo look nicer.
+ * Feel free to look around! */
+
+main {
+    margin: 4px auto;
+    max-width: 800px;
+    color: #222;
+}
+
+@media only screen and (max-width: 824px) {
+    main {
+        margin: 4px 12px;
+        width: calc(100% - 24px);
+    }
+    iframe {
+        width: 90vw;
+        height: 56vw;
+    }
+    .preWrapper {
+        width: 100%;
+    }
+    pre {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+input,
+textarea {
+    width: 100%;
+}
+
+h2 {
+    margin-top: 32px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #222;
+}
+
+h2:first-child {
+    margin-top: 8px;
+}
+
+h3 {
+    margin-top: 28px;
+    font-weight: normal;
+}
+
+a {
+    font-weight: bold;
+}
+
+input {
+    border: 0;
+}

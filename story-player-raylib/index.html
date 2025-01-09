@@ -11,29 +11,44 @@
 
     <title>OpenStoryTeller Web Player</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="main.css">
+
+    <script type="importmap">
+        {
+          "imports": {
+            "preact": "https://esm.sh/preact@10.23.1",
+            "preact/hooks": "https://esm.sh/preact@10.23.1/hooks",
+            "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact"
+          }
+        }
+      </script>
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
     <style>
-        /* body { 
-            margin: 0px;
-            text-align: center;
-        } */
-        canvas.emscripten { border: 0px none; background-color: black; display: inline; }
+        body {
+            line-height: 1;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
 
+        canvas.emscripten { border: 0px none; background-color: black; display: inline; }
         #canvas-container {
             width: 100%;
             text-align:center;
         }
-
     </style>
     </head>
-    <body>
-        <main class="container-fluid">
-            <vertical-menu></vertical-menu>
+    <body style="min-width: min-content;">
+        <main>
+            <div id="app"></div>
 
-            <div id="canvas-container">
+            <div id="canvas-container" class="block fixed">
                 <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
             </div>
             <p id="output" />
@@ -64,7 +79,6 @@
             };
         </script>
         <script async type="text/javascript" src="bin/story-player.js"></script>
-        <script src="vertical-menu.js" type="module"></script>
- 
+        <script src="app.js" type="module"></script>
     </body>
 </html>
