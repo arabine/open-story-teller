@@ -8,6 +8,9 @@ class ApiClient {
     }
 
     async request(endpoint, method = 'GET', data = null, headers = {}) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+    
         const config = {
             method,
             headers: {
@@ -20,17 +23,18 @@ class ApiClient {
             config.body = JSON.stringify(data);
         }
 
-        try {
-            const response = await fetch(`${this.baseURL}${endpoint}`, config);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Something went wrong');
+
+        const promise = fetch(`${this.baseURL}${endpoint}`, config).then(async (response) => {
+
+        const data = await response.json();
+            if (response.ok) {
+            return data;
+            } else {
+            return Promise.reject(data);
             }
-            return await response.json();
-        } catch (error) {
-            console.error('API request error:', error);
-            throw error;
-        }
+        });
+        return promise.finally(() => clearTimeout(timeout));
+        
     }
 
     get(endpoint, headers = {}) {

@@ -56,9 +56,7 @@ function TopMenu() {
         </style>
         <div class="flexRow">
             <${MessageComponent} show=${error} message=${message} />
-            <div class="block accent" onClick="${handleClick}">
-                Paramètres
-            </div>
+            <div class="block accent  btn" onClick="${handleClick}">Paramètres</div>
         </div>
     `;
 }

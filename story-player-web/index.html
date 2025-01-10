@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="title" content="OpenStoryTeller Web Player">
+    <meta name="description" content="OpenStoryTeller Web Player">
+    <meta name="keywords" content="story, player, teller">
+
+    <title>OpenStoryTeller Web Player</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="main.css">
+
+    <script type="importmap">
+        {
+          "imports": {
+            "preact": "https://esm.sh/preact@10.23.1",
+            "preact/hooks": "https://esm.sh/preact@10.23.1/hooks",
+            "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact"
+          }
+        }
+      </script>
+    <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
+    <style>
+        body {
+            line-height: 1;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+    </style>
+    </head>
+    <body style="min-width: min-content;">
+        <div id="app"></div>
+ 
+        <script src="storyvm.js"></script>
+        <script src="app.js" type="module"></script>
+    </body>
+</html>

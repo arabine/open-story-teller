@@ -199,7 +199,6 @@ body {
   border-radius: 3px;
   padding: 4px 8px;
   background: var(--block-background-color);
-  font-weight: bold;
   cursor: pointer;
   box-sizing: border-box;
 
@@ -281,6 +280,10 @@ body {
 
 .block.fixed {
   cursor: initial !important;
+}
+
+.block.btn {
+  font-weight: bold;
 }
 
 /* FIXED STYLES */
