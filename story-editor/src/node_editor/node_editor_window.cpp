@@ -37,14 +37,14 @@ NodeEditorWindow::~NodeEditorWindow()
     m_story.reset();
 }
 
-static const std::string gMainUuid = "490745ab-df4d-476d-ae27-027e94b8ee0a";
+
 
 void NodeEditorWindow::Initialize()
 {
     m_pages.clear();
     m_callStack.clear();
 
-    m_currentPage = std::make_shared<NodeEditorPage>(gMainUuid, "Main");
+    m_currentPage = std::make_shared<NodeEditorPage>(m_story->MainUuid(), "Main");
     m_pages.push_back(m_currentPage);
     m_callStack.push_back(m_currentPage);
   

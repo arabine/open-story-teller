@@ -210,7 +210,7 @@ $MyArray            DV8    10 ; array of 10 bytes
     StoryProject proj(m_log);
     ResourceManager res(m_log);
 
-    std::shared_ptr<StoryPage> page = proj.CreatePage("main");
+    std::shared_ptr<StoryPage> page = proj.CreatePage(proj.MainUuid());
 
 
         proj.New(uuid, outputDir);
@@ -396,7 +396,7 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
         StoryProject proj(m_log);
         ResourceManager res(m_log);
 
-        std::shared_ptr<StoryPage> page = proj.CreatePage("main");
+        std::shared_ptr<StoryPage> page = proj.CreatePage(proj.MainUuid());
 
         if (j.contains("title"))
         {
@@ -428,7 +428,7 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
 
             for (const auto & n : j["stageNodes"])
             {
-                auto node = proj.CreateNode("main", "media-node");
+                auto node = proj.CreateNode(proj.MainUuid(), "media-node");
 
                 if (node)
                 {

@@ -66,6 +66,11 @@ public:
 
     StoryNode *m_tree;
 */
+
+    std::string MainUuid() const {
+        return "490745ab-df4d-476d-ae27-027e94b8ee0a";
+    }
+
     void New(const std::string &uuid, const std::string &library_path);
     std::filesystem::path BinaryFileName() const;
     bool GenerateScript(std::string &codeStr);

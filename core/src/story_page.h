@@ -104,7 +104,7 @@ public:
     }
 
     int OutputsCount(const std::string &nodeId) const
-{
+    {
         int count = 0;
         for (const auto & l : m_links)
         { 

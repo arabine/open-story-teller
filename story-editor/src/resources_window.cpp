@@ -29,7 +29,7 @@ void ResourcesWindow::ChooseFile()
         m_showImportDialog = false;
         // open Dialog Simple
         IGFD::FileDialogConfig config;
-        config.path = ".";
+        config.path = m_story.BuildFullAssetsPath("");
         config.countSelectionMax = 1;
         config.sidePaneWidth = 350.0f;
         config.flags = ImGuiFileDialogFlags_Modal;
@@ -50,7 +50,18 @@ void ResourcesWindow::ChooseFile()
 
             std::filesystem::path p(filePathName);
             std::filesystem::path p2 = m_story.BuildFullAssetsPath( p.filename().generic_string());
-            std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
+
+            bool allowCopy = true;
+            // On ne copie pas le fichier sur lui-même
+            if (std::filesystem::exists(p) && std::filesystem::exists(p2))
+            {
+                allowCopy = !std::filesystem::equivalent(p, p2);
+            }
+
+            if (allowCopy)
+            {
+                std::filesystem::copy(p, p2, std::filesystem::copy_options::overwrite_existing);
+            }
 
             auto res = std::make_shared<Resource>();
 

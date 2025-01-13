@@ -41,7 +41,7 @@ private:
 
     bool m_loaded{false};
 
-    // "main" is the entry point editor context. You always need to create one.
+    // "MainUuid" is the entry point editor context. You always need to create one.
     // Then each function can have its own editor context, for example if you want to create multiple graphs.
     // the key is main, or the UUID of the function
     std::list<std::shared_ptr<NodeEditorPage>> m_pages;

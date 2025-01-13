@@ -72,6 +72,8 @@ void StoryProject::New(const std::string &uuid, const std::string &library_path)
 
     std::filesystem::create_directories(m_assetsPath);
 
+    CreatePage(MainUuid());
+
     m_initialized = true;
 }
 
@@ -422,7 +424,7 @@ bool StoryProject::Load(ResourceManager &manager)
 
                 if (j.contains("pages"))
                 {
-                    ModelFromJson(j["pages"]);
+                    ModelFromJson(j);
                     m_initialized = true;
                 }
             }
@@ -431,6 +433,11 @@ bool StoryProject::Load(ResourceManager &manager)
     catch(nlohmann::json::exception &e)
     {
         std::cout << e.what() << std::endl;
+    }
+
+    if (m_pages.size() == 0)
+    {
+        CreatePage(MainUuid());
     }
 
     return m_initialized;
