@@ -1,11 +1,6 @@
 /* Extra styles to make the demo look nicer.
  * Feel free to look around! */
 
-main {
-    margin: 4px auto;
-    max-width: 800px;
-    color: #222;
-}
 
 @media only screen and (max-width: 824px) {
     main {
@@ -52,3 +47,5 @@ a {
 input {
     border: 0;
 }
+
+
