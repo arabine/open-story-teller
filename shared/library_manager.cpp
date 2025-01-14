@@ -245,6 +245,8 @@ void LibraryManager::ParseCommercialStore(const std::string &jsonFileName)
         const auto& response = j["response"];
         m_storyDb.ClearCommercial();
 
+        std::cout << "Found " << response.size() << " commercial stories" << std::endl;
+
         for (auto it = response.begin(); it != response.end(); ++it)
         {
             const auto& pack = it.value();

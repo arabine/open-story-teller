@@ -136,7 +136,7 @@ void PackArchive::DecipherFiles(const std::string &directory, const std::string 
     }
 }
 
-std::vector<std::string> PackArchive::FilesToJson(const std::string &type, const uint8_t *data, uint32_t nb_elements)
+std::vector<std::string> PackArchive::FilesInMemory(const std::string &type, const uint8_t *data, uint32_t nb_elements)
 {
     char res_file[13]; // 12 + \0
     std::vector<std::string> resList;
@@ -150,111 +150,75 @@ std::vector<std::string> PackArchive::FilesToJson(const std::string &type, const
         SysLib::ReplaceCharacter(res_file_string, "\\", "/");
 
         resList.push_back(res_file_string);
-
-        m_resources[type + std::to_string(i)] = res_file_string;
     }
     return resList;
 }
 
-void PackArchive::ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir)
+void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string &basePath)
 {
-    auto uuid =  Uuid().String();
-    std::string basePath = outputDir + "/" + uuid;
-
-    Unzip(packFileName, basePath);
-    LoadNiFile(packFileName);
-
-    std::string path = basePath + "/" + mPackName + "/rf";
-    for (const auto & entry : std::filesystem::directory_iterator(path))
-    {
-        if (entry.is_directory())
-        {
-            std::cout << entry.path() << std::endl;
-            DecipherFiles(entry.path().generic_string(), ".bmp");
-        }
-    }
-
-    path = basePath + "/" + mPackName + "/sf";
-    for (const auto & entry : std::filesystem::directory_iterator(path))
-    {
-        if (entry.is_directory())
-        {
-            std::cout << entry.path() << std::endl;
-            DecipherFiles(entry.path().generic_string(), ".mp3");
-        }
-    }
-
-    nlohmann::json j;
-
-    std::ofstream chip32("pack.chip32");
-
-
-/*
-$imageBird          DC8  "example.bmp", 8  ; data
-$someConstant       DC32  12456789
-
-; DSxx to declare a variable in RAM, followed by the number of elements
-$RamData1           DV32    1 ; one 32-bit integer
-$MyArray            DV8    10 ; array of 10 bytes
-
-; label definition
-.entry:   ;; comment here should work
-*/
-
+    ResourceManager res(m_log);
 
     // RI file is not ciphered
     uint8_t data[512];
     uint32_t size = ni_get_ri_block(data);
-  //  WriteDataOnDisk(mPackName + "/ri", data, size);
 
-    StoryProject proj(m_log);
-    ResourceManager res(m_log);
+    auto page = proj.GetPage(proj.MainUuid());
 
-    std::shared_ptr<StoryPage> page = proj.CreatePage(proj.MainUuid());
-
-
-        proj.New(uuid, outputDir);
-        proj.SetName(j["title"].get<std::string>());
-
-    nlohmann::json jsonImages;
+    // Images resources
     {
-
-        std::vector<std::string> lst = FilesToJson("ri", data, mNiFile.image_assets_count);
+       std::vector<std::string> lst = FilesInMemory("ri", data, mNiFile.image_assets_count);
 
         for (auto &l : lst)
         {
-            nlohmann::json obj;
-            obj["file"] = l;
-            obj["description"] = "";
-            obj["format"] = "bmp";
-            jsonImages.push_back(obj);
+            // Le path est de la forme "000/AE123245" où 000 est un répertoire
+
+            auto rData = std::make_shared<Resource>();
+
+            // origin
+            auto from =  std::filesystem::path(basePath) / mPackName / "rf" / l;
+            from += ".bmp";
+
+            // destination
+            auto filename =  SysLib::GetFileName(l) + ".bmp";
+            auto to = proj.AssetsPath() / filename;
+
+            rData->file =  filename;
+            rData->type = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoType);
+            rData->format = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoFormat);
+            res.Add(rData);
+
+            std::filesystem::copy(from, to, std::filesystem::copy_options::overwrite_existing);
         }
     }
-    j["images"] = jsonImages;
 
     size = ni_get_si_block(data);
-  //  WriteDataOnDisk(mPackName + "/si", data, size);
 
-
-    nlohmann::json jsonSounds;
+    // Sound files
     {
-        nlohmann::json obj;
-        std::vector<std::string> lst = FilesToJson("si", data, mNiFile.sound_assets_count);
+        std::vector<std::string> lst = FilesInMemory("si", data, mNiFile.sound_assets_count);
 
         for (auto &l : lst)
         {
-            nlohmann::json obj;
-            obj["file"] = l;
-            obj["description"] = "";
-            obj["format"] = "mp3";
-            jsonSounds.push_back(obj);
+            auto rData = std::make_shared<Resource>();
+
+            // origin
+            auto from =  std::filesystem::path(basePath) / mPackName / "sf" / l;
+            from += ".mp3";
+
+            // destination
+            auto filename =  SysLib::GetFileName(l) + ".mp3";
+            auto to = proj.AssetsPath() / filename;
+
+            rData->file =  filename;
+            rData->type = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoType);
+            rData->format = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoFormat);
+            res.Add(rData);
+
+            std::filesystem::copy(from, to, std::filesystem::copy_options::overwrite_existing);
         }
     }
-    j["sounds"] = jsonSounds;
 
     size = ni_get_li_block(data);
-  //  WriteDataOnDisk(mPackName + "/li", data, size);
-
 
     std::vector<uint32_t> transitions;
     // each entry of the transitions array is a 32-bit integer
@@ -264,86 +228,88 @@ $MyArray            DV8    10 ; array of 10 bytes
         i += 4;
     }
 
-    // Transform into JSON
-    node_info_t node;
-    nlohmann::json jsonNodes;
+    node_info_t node_info;
+
+    // key: node index, value: node uuidV4
+    std::map<int, std::string> nodeIds;
+
+    //  key: node index, value: list of transitions
+    std::map<int, std::vector<uint32_t>> nodeTransitions;
+
     for (int i = 0; i < mNiFile.node_size; i++)
     {
-        nlohmann::json jNode;
-        ni_get_node_info(i, &node);
+        ni_get_node_info(i, &node_info);
 
-        jNode["id"] = i;
-        jNode["image"] = static_cast<int>(node.current->image_asset_index_in_ri);
-        jNode["sound"] = static_cast<int>(node.current->sound_asset_index_in_si);
-        jNode["auto_jump"] = node.current->auto_play == 1 ? true : false;
+        auto node = proj.CreateNode(proj.MainUuid(), "media-node");
 
-        nlohmann::json jumpArray;
-
-        for (int jIndex = 0; jIndex < node.current->ok_transition_number_of_options; jIndex++)
+        if (node)
         {
-            jumpArray.push_back(transitions[node.current->ok_transition_action_node_index_in_li + jIndex]);
-        }
+            // On sauvegarde la relation entre l'index du noeud et son UUID
+            nodeIds[i] = node->GetId();
 
-        jNode["jumps"] = jumpArray;
+            node->SetPosition(80 * i, 80 * i);
+        
+            nlohmann::json internalData;
+            auto img = SysLib::GetFileName(node_info.ri_file);
+            auto snd = SysLib::GetFileName(node_info.si_file);
+            internalData["image"] = img.size() > 0 ? img + ".bmp" : "";
+            internalData["sound"] = snd.size() > 0 ? snd + ".mp3" : "";
 
-        // Autre cas
-        if (node.current->ok_transition_number_of_options >= 5)
-        {
-            // For now, consider that this is a bad format
-            // In the future, consider using ok_transition_selected_option_index when ok_transition_number_of_options == 10
+            node->SetInternalData(internalData);
 
-            // 00 00 00 00   ==> ok transition à zéro
-            // 0A 00 00 00   ==> nombre spécial, ou vraiment l'offset dans le fichier LI ?
-            // 01 00 00 00   ==> l'index dans le fichier LI à l'offset (disons, le premier élément)
+            std::vector<uint32_t> jumpArray;
 
-
-            std::cout << "!!!!!!!!!!!!!!!!!!" << std::endl;
-        }
-
-        chip32 << ".node" << std::to_string(i) << ":\r\n";
-        if (node.current->image_asset_index_in_ri != 0xFFFFFFFF)
-        {
-            // Image index is in register R0
-            chip32 << "\tmov " << "r0, " << "$ri" << std::to_string(node.current->image_asset_index_in_ri) << "\r\n";
-            // print image syscall
-            chip32 << "\tsyscall 1\r\n";
-        }
-
-        if (node.current->sound_asset_index_in_si != 0xFFFFFFFF)
-        {
-            // Image index is in register R0
-            chip32 << "\tmov " << "r0, " << "$si" << std::to_string(node.current->sound_asset_index_in_si) << "\r\n";
-            // print image syscall
-            chip32 << "\tsyscall 2\r\n";
-        }
-
-        chip32 << "$li" << std::to_string(i) << " DC8 ";
-        size = ni_get_li_block(data);
-        for (int tr = 0; tr < node.current->ok_transition_number_of_options; tr++)
-        {
-            uint32_t val = leu32_get(&data[(node.current->ok_transition_action_node_index_in_li + tr) * 4]);
-            chip32 << std::to_string(val);
-
-            if (tr < (node.current->ok_transition_number_of_options - 1))
+            // Autre cas
+            if (node_info.current->ok_transition_number_of_options == 10)
             {
-                chip32 << ", ";
+                // For now, consider that this is a bad format
+                // In the future, consider using ok_transition_selected_option_index when ok_transition_number_of_options == 10
+
+                // 00 00 00 00   ==> ok transition à zéro
+                // 0A 00 00 00   ==> nombre spécial, ou vraiment l'offset dans le fichier LI ?
+                // 01 00 00 00   ==> l'index dans le fichier LI à l'offset (disons, le premier élément)
+
+
+                jumpArray.push_back(transitions[node_info.current->ok_transition_action_node_index_in_li]);
             }
+            else
+            {
+                // Vraies transitions
+                 for (int jIndex = 0; jIndex < node_info.current->ok_transition_number_of_options; jIndex++)
+                {
+                    jumpArray.push_back(transitions[node_info.current->ok_transition_action_node_index_in_li + jIndex]);
+                }
+            }
+
+            nodeTransitions[i] = jumpArray;
         }
-        chip32 << "\r\n";
-
-        chip32 << "\tsyscall 3\r\n"; // wait select
-
-        // TODO: tester le retour d'un wait event
-
-        jsonNodes.push_back(jNode);
+        else
+        {
+            std::cout << "Node not created" << std::endl;
+            m_log.Log("Node not created");
+        }
     }
-    j["nodes"] = jsonNodes;
-    j["code"] = mPackName;
-    j["name"] = "";
-    j["type"] = "lunii";
 
+    // Create links, parse again the nodes
+    for (int i = 0; i < mNiFile.node_size; i++)
+    {
 
+        for (auto &j : nodeTransitions[i])
+        {
+            auto c = std::make_shared<Connection>();
+
+            c->outNodeId = nodeIds[i];
+            c->outPortIndex = 0;
+            c->inNodeId = nodeIds[j];
+            c->inPortIndex = 0;
+
+            page->AddLink(c);
+        }
+    }
+
+    proj.Save(res);
 }
+
 
 bool PackArchive::LoadNiFile(const std::string &filePath)
 {
@@ -411,12 +377,11 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
                 {
                     if (std::filesystem::is_regular_file(entry.path()))
                     {
-                        // Si c'est un sous-répertoire, récursivement scanner le contenu
                         auto rData = std::make_shared<Resource>();
 
                         rData->file =  entry.path().filename().generic_string();
-                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), 1);
-                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), 0);
+                        rData->type = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), ResourceManager::InfoType);
+                        rData->format = ResourceManager::ExtentionInfo(entry.path().extension().generic_string(), ResourceManager::InfoFormat);
                         res.Add(rData);
                     }
                 }

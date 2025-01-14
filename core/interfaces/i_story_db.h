@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <ranges>
 
 class IStoryDb
 {
@@ -18,6 +20,8 @@ public:
     };
 
     virtual ~IStoryDb() {}
+
+    using ViewType = std::ranges::ref_view<std::vector<IStoryDb::Info>>;
 
 
     virtual bool FindStory(const std::string &uuid, Info &info) = 0;

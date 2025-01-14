@@ -34,10 +34,18 @@ include(cmake/CPM.cmake)
 # =========================================================================================================================
 # MBedTLS
 # =========================================================================================================================
-CPMAddPackage("gh:Mbed-TLS/mbedtls#v3.6.2")
+CPMAddPackage(
+    NAME mbedtls    
+    GITHUB_REPOSITORY Mbed-TLS/mbedtls
+    VERSION 3.6.2
+    OPTIONS
+        "USE_STATIC_MBEDTLS_LIBRARY ON"
+        "ENABLE_PROGRAMS OFF"
+        "ENABLE_TESTING OFF"
+)
 
 find_package(MbedTLS REQUIRED)
-include_directories(${MbedTLS_INCLUDE_DIR})
+include_directories(${mbedtls_INCLUDE_DIR})
 # set(MBEDTLS_STATIC_LIBRARY ON)
 
 # =========================================================================================================================
@@ -336,7 +344,7 @@ if(UNIX)
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
         libcurl_static
-        MbedTLS::mbedtls
+        mbedtls
         civetweb-cpp
         pthread
         OpenGL::GL

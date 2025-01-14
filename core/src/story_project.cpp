@@ -169,6 +169,20 @@ void StoryProject::DeleteNode(const std::string_view &page_uuid, const std::stri
     }
 }
 
+std::shared_ptr<StoryPage> StoryProject::GetPage(const std::string &uuid)
+{
+    for (const auto & p : m_pages)
+    {
+        if (p->Uuid() == uuid)
+        {
+            return p;
+        }
+    }
+
+    return nullptr;
+
+}
+
 void StoryProject::DeleteLink(const std::string_view &page_uuid, std::shared_ptr<Connection> c)
 {
 

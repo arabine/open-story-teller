@@ -803,11 +803,11 @@ void MainWindow::ImportProject(const std::string &fileName, int format)
     }
     else 
     {
-        archive.ImportCommercialFormat(fileName, m_libraryManager.LibraryPath());
+        archive.ImportCommercialFormat(fileName, m_libraryManager.LibraryPath(), m_libraryManager.CommercialDbView());
     }
 
 }
-
+ 
 void MainWindow::RefreshProjectInformation()
 {
     std::string fullText = "Story Editor " + LibraryManager::GetVersion();

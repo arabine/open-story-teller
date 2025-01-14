@@ -114,6 +114,7 @@ public:
 
     void SetTitleImage(const std::string &titleImage);
     void SetTitleSound(const std::string &titleSound);
+    void SetDescription(const std::string &description) { m_description = description; }
 
     std::string GetTitleImage() const { return m_titleImage; }
     std::string GetTitleSound() const { return m_titleSound; }
@@ -130,6 +131,8 @@ public:
 
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);
+    std::shared_ptr<StoryPage> GetPage(const std::string &uuid);
+
     std::shared_ptr<BaseNode> CreateNode(const std::string_view &page, const std::string &type);
     void AddConnection(const std::string_view &page, std::shared_ptr<Connection> c);
     void DeleteNode(const std::string_view &page, const std::string &id);

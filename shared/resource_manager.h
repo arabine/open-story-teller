@@ -20,7 +20,12 @@ struct Media {
 
 class ResourceManager
 {
-public:   
+public:
+    enum KindOfInfo {
+        InfoFormat = 0, // mp3, jpg ...
+        InfoType = 1, // image or sound
+    };
+
     ResourceManager(ILogger &log)
         : m_log(log)
         , m_images(filter("image"))

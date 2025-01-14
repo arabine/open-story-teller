@@ -1,12 +1,17 @@
 #ifndef PACK_ARCHIVE_H
 #define PACK_ARCHIVE_H
 
+#include <ranges>
 #include <string>
-#include "zip.h"
 #include <vector>
+
+#include "zip.h"
 #include "ni_parser.h"
 #include "json.hpp"
+#include "uuid.h"
 #include "i_logger.h"
+#include "i_story_db.h"
+#include "story_project.h"
 
 class PackArchive
 {
@@ -17,7 +22,59 @@ public:
     std::string OpenImage(const std::string &fileName);
 
     bool ImportStudioFormat(const std::string &fileName, const std::string &outputDir);
-    void ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir);
+
+    template<typename Range>
+    // requires std::ranges::range<Range>
+    void ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir, Range&& range)
+    {
+        auto uuid =  Uuid().String();
+        std::string basePath = outputDir + "/" + uuid;
+
+        Unzip(packFileName, basePath);
+        LoadNiFile(packFileName);
+
+        StoryProject proj(m_log);
+        proj.New(uuid, outputDir);
+
+        auto packUuidv4 = normalizeUUID(mPackName);
+        for (auto &info : range)
+        {
+            std::cout << info.uuid << std::endl;
+            if (info.uuid == packUuidv4)
+            {
+                m_log.Log("Found commercial story: " + info.title);
+                proj.SetName(info.title);
+                proj.SetDescription(info.description);
+
+                // FIXME: download image and sound
+                proj.SetTitleImage(info.image_url);
+                proj.SetTitleSound(info.sound);
+                break;
+            }
+        }
+
+        std::string path = basePath + "/" + mPackName + "/rf";
+        for (const auto & entry : std::filesystem::directory_iterator(path))
+        {
+            if (entry.is_directory())
+            {
+                std::cout << entry.path() << std::endl;
+                DecipherFiles(entry.path().generic_string(), ".bmp");
+            }
+        }
+
+        path = basePath + "/" + mPackName + "/sf";
+        for (const auto & entry : std::filesystem::directory_iterator(path))
+        {
+            if (entry.is_directory())
+            {
+                std::cout << entry.path() << std::endl;
+                DecipherFiles(entry.path().generic_string(), ".mp3");
+            }
+        }
+
+        ConvertCommercialFormat(proj, basePath);
+    }
 
     std::string CurrentImage();
     std::string CurrentSound();
@@ -46,16 +103,36 @@ private:
     node_info_t mCurrentNode;
     ni_file_t mNiFile;
 
-    // key: resource tag
-    // value: resource file name
-    std::map<std::string, std::string> m_resources;
+    void ConvertCommercialFormat(StoryProject &proj, const std::string &basePath);
 
     bool ParseNIFile(const std::string &root);
 
+    // Convertit un UUID de type "3ADE540306254FFFA22B9025AC3678D9"
+    // en standard : 3ade5403-0625-4fff-a22b-9025ac3678d9
+    std::string normalizeUUID(const std::string& uuid) {
+        // Check if the input length is correct for a UUID without dashes
+        if (uuid.length() != 32) {
+            throw std::invalid_argument("Invalid UUID length");
+        }
+
+        // Convert to lowercase
+        std::string lowerUuid = uuid;
+        std::transform(lowerUuid.begin(), lowerUuid.end(), lowerUuid.begin(), ::tolower);
+
+        // Insert dashes at appropriate positions
+        std::ostringstream oss;
+        oss << lowerUuid.substr(0, 8) << '-'
+            << lowerUuid.substr(8, 4) << '-'
+            << lowerUuid.substr(12, 4) << '-'
+            << lowerUuid.substr(16, 4) << '-'
+            << lowerUuid.substr(20);
+
+        return oss.str();
+    }
 
     void DecipherFileOnDisk(const std::string &fileName);
     void DecipherFiles(const std::string &directory, const std::string &suffix);
-    std::vector<std::string> FilesToJson(const std::string &type, const uint8_t *data, uint32_t nb_elements);
+    std::vector<std::string> FilesInMemory(const std::string &type, const uint8_t *data, uint32_t nb_elements);
 };
 
 #endif // PACK_ARCHIVE_H
