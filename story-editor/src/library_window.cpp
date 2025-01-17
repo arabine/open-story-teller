@@ -138,7 +138,7 @@ void LibraryWindow::Initialize()
         std::cout << "Commercial store file already exists, skipping download" << std::endl;
         ParseCommercialStoreDataCallback(true, m_commercialStoreFile);
     } 
-    else
+    else 
     {
         m_downloadQueue.push({
             "dl_commercial",
@@ -469,12 +469,14 @@ void LibraryWindow::Draw()
                     IGFD::FileDialogConfig config;
                     config.path = m_libraryManager.LibraryPath();
                     config.countSelectionMax = 1;
-                    config.sidePane = std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-                    config.sidePaneWidth = 350.0f;
+                 //   config.sidePane = std::bind(&InfosPane, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+                 //   config.sidePaneWidth = 350.0f;
                     config.flags = ImGuiFileDialogFlags_Modal;
+                    const char *filters = "Commercial stories (*.pk ni){.pk, ((ni))}, Community stories (*.zip *.json){.zip,.json}";
+
                     ImGuiFileDialog::Instance()->OpenDialog("ImportStoryDlgKey", 
                         "Import story", 
-                        ".zip, .json, .pk",
+                        filters,
                         config
                     );
                 }
@@ -649,11 +651,16 @@ void LibraryWindow::Draw()
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {
-            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-            std::string filter = ImGuiFileDialog::Instance()->GetCurrentFilter();
-            // Import "Studio" or "Commercial" format
-            m_storyManager.ImportProject(filePathName, formatFilter);
+            std::map<std::string, std::string> sel = ImGuiFileDialog::Instance()->GetSelection();
+            
+            if (sel.size() > 0)
+            {
+                std::string fileName = sel.begin()->first;
+                std::string filePathName = sel.begin()->second;
+
+                // Import "Studio" or "Commercial" format
+                m_storyManager.ImportProject(filePathName, formatFilter);
+            }
         }
         // close
         ImGuiFileDialog::Instance()->Close();

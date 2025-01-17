@@ -8,12 +8,15 @@
 extern "C" {
 #endif
 
+
+#define XI_BLOCK_SIZE   (8*1024)
+
 typedef struct {
     uint32_t image_asset_index_in_ri;
     uint32_t sound_asset_index_in_si;
-    uint32_t ok_transition_action_node_index_in_li;
-    uint32_t ok_transition_number_of_options;
-    uint32_t ok_transition_selected_option_index;
+    uint32_t ok_btn_node_idx_in_li;
+    uint32_t ok_btn_size_or_base_idx;
+    uint32_t ok_btn_offset_from_base;
     uint32_t home_transition_action_node_index_in_li;
     uint32_t home_transition_number_of_options;
     uint32_t home_transition_selected_option_index;
@@ -47,7 +50,12 @@ typedef struct
 uint32_t ni_get_number_of_images();
 void ni_get_image(char buffer[13], uint32_t index);
 uint32_t ni_get_node_index_in_li(uint32_t index_in_li, uint32_t selected);
+
+// Block size at least 512 bytes be careful
 void ni_decode_block512(uint8_t *data);
+
+// block of any size
+void ni_decode_block(uint8_t *data, uint32_t size);
 bool ni_get_node_info(uint32_t index, node_info_t *node);
 
 bool ni_parser(ni_file_t *ni_file, const uint8_t *data);

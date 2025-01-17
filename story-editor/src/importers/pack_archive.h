@@ -4,6 +4,7 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "zip.h"
 #include "ni_parser.h"
@@ -12,35 +13,92 @@
 #include "i_logger.h"
 #include "i_story_db.h"
 #include "story_project.h"
+#include "sys_lib.h"
 
 class PackArchive
 {
 public:
     PackArchive(ILogger &log);
 
-    bool LoadNiFile(const std::string &filePath);
     std::string OpenImage(const std::string &fileName);
 
     bool ImportStudioFormat(const std::string &fileName, const std::string &outputDir);
 
     template<typename Range>
     // requires std::ranges::range<Range>
-    void ImportCommercialFormat(const std::string &packFileName, const std::string &outputDir, Range&& range)
+    void ImportCommercialFormat(const std::string &packFileName, const std::string &libraryBaseDir, Range&& range)
     {
         auto uuid =  Uuid().String();
-        std::string basePath = outputDir + "/" + uuid;
+        std::string outputBaseDir = libraryBaseDir + "/" + uuid;
 
-        Unzip(packFileName, basePath);
-        LoadNiFile(packFileName);
+        auto ext = SysLib::GetFileExtension(packFileName);
+
+        std::filesystem::path importBaseDir;
+
+        // Selon l'importation, l'UUID peut être partiel (à partir d'une carte SD) ou complet (pour un .pk)
+        std::string packUuidv4;
+
+        if (ext == "pk")
+        {
+            // Unzip all before analyze the pack
+            Unzip(packFileName, outputBaseDir);
+
+            // Le pack Lunii contient un répertoire contenant l'UUID sans tirets, upper case
+            packUuidv4 = SysLib::GetFileName(packFileName);
+            SysLib::EraseString(packUuidv4, "." + ext); // on retire l'extension du pack
+            importBaseDir =  std::filesystem::path(outputBaseDir) / SysLib::ToUpper(packUuidv4);
+        }
+        else
+        {
+            // Ici on a choisi le fichier ni, donc on prend juste le répertoire parent
+            importBaseDir = SysLib::GetDirectory(packFileName);
+            std::string packDirNameOnly = SysLib::GetFileName(importBaseDir);
+
+            // Ici on va copier le répertoire dans un dossier de travail pour éviter de corrompre le 
+            // répertoire d'origine (vu qu'on decipher tout)
+            const auto copyOptions = std::filesystem::copy_options::recursive
+                | std::filesystem::copy_options::update_existing
+                | std::filesystem::copy_options::overwrite_existing
+                ;
+
+            std::string workingDir = std::filesystem::path(outputBaseDir) / packDirNameOnly;
+            std::filesystem::create_directories(workingDir);
+            std::filesystem::copy(importBaseDir, workingDir, copyOptions);
+                    
+            importBaseDir = workingDir; // on travaille là maintenant
+            packUuidv4 = SysLib::ToLower(packDirNameOnly); // le répertoire parent est l'UUID mais partiel !! (la fin d'un full UUID)
+        }
+        
+        if (ParseRootFiles(importBaseDir))
+        {
+            m_log.Log("Parse NI file success");
+            ni_dump(&mNiFile);
+        }
+        else
+        {
+            m_log.Log("Parse NI file error", true);
+        }
 
         StoryProject proj(m_log);
-        proj.New(uuid, outputDir);
-
-        auto packUuidv4 = normalizeUUID(mPackName);
+        proj.New(uuid, libraryBaseDir);
+        
         for (auto &info : range)
         {
-            std::cout << info.uuid << std::endl;
-            if (info.uuid == packUuidv4)
+            bool foundStory = false;
+
+            // full UUIDv4 size
+            if (packUuidv4.size() == 32)
+            {
+                packUuidv4 = normalizeUUID(packUuidv4);
+                foundStory = (info.uuid == packUuidv4);
+            }
+            else
+            {
+                // Partial UUIDv4, uniquement les 8 derniers caractères
+                foundStory = info.uuid.ends_with(packUuidv4);
+            }
+
+            if (foundStory)
             {
                 m_log.Log("Found commercial story: " + info.title);
                 proj.SetName(info.title);
@@ -53,8 +111,7 @@ public:
             }
         }
 
-        std::string path = basePath + "/" + mPackName + "/rf";
-        for (const auto & entry : std::filesystem::directory_iterator(path))
+        for (const auto & entry : std::filesystem::directory_iterator(importBaseDir / "rf"))
         {
             if (entry.is_directory())
             {
@@ -63,8 +120,7 @@ public:
             }
         }
 
-        path = basePath + "/" + mPackName + "/sf";
-        for (const auto & entry : std::filesystem::directory_iterator(path))
+        for (const auto & entry : std::filesystem::directory_iterator(importBaseDir / "sf"))
         {
             if (entry.is_directory())
             {
@@ -73,21 +129,9 @@ public:
             }
         }
 
-        ConvertCommercialFormat(proj, basePath);
+        ConvertCommercialFormat(proj, importBaseDir);
     }
 
-    std::string CurrentImage();
-    std::string CurrentSound();
-    std::string CurrentSoundName();
-    bool AutoPlay();
-    void OkButton();
-    bool HasImage();
-    std::vector<std::string> GetImages();
-    std::string GetImage(const std::string &fileName);
-    bool IsRoot() const;
-    bool IsWheelEnabled() const;
-    void Next();
-    void Previous();
     void Unzip(const std::string &filePath, const std::string &parent_dest_dir);
     
     bool ConvertJsonStudioToOst(const std::string &basePath, const std::string &uuid, const std::string &outputDir);
@@ -96,16 +140,11 @@ public:
 private:
     ILogger &m_log;
     Zip mZip;
-    std::string mPackName;
-    uint32_t mCurrentNodeId = 0;
-    uint32_t mNodeIdForChoice = 0;
-    node_info_t mNodeForChoice;
-    node_info_t mCurrentNode;
     ni_file_t mNiFile;
 
-    void ConvertCommercialFormat(StoryProject &proj, const std::string &basePath);
+    void ConvertCommercialFormat(StoryProject &proj, const std::filesystem::path &importBaseDir);
 
-    bool ParseNIFile(const std::string &root);
+    bool ParseRootFiles(const std::filesystem::path &root);
 
     // Convertit un UUID de type "3ADE540306254FFFA22B9025AC3678D9"
     // en standard : 3ade5403-0625-4fff-a22b-9025ac3678d9

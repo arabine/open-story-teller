@@ -104,7 +104,9 @@
         "cfenv": "cpp",
         "source_location": "cpp",
         "stdfloat": "cpp",
-        "text_encoding": "cpp"
+        "text_encoding": "cpp",
+        "serializers.h": "c",
+        "ni_parser.h": "c"
     }
 
 }

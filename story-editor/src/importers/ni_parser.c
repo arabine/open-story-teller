@@ -8,13 +8,14 @@
 #define MAX_NB_NODES 1000
 static ni_node_t gNodes[MAX_NB_NODES];
 
+
 static struct {
     uint32_t ri_size;
     uint32_t si_size;
     uint32_t li_size;
-    uint8_t gRiBlock[512];
-    uint8_t gSiBlock[512];
-    uint8_t gLiBlock[512];
+    uint8_t gRiBlock[XI_BLOCK_SIZE];
+    uint8_t gSiBlock[XI_BLOCK_SIZE];
+    uint8_t gLiBlock[XI_BLOCK_SIZE];
 } pack;
 
 #define DELTA 0x9e3779b9
@@ -42,15 +43,6 @@ static void btea_decode(uint32_t *v, uint32_t n, const uint32_t *key)
 
 static const uint32_t key[4] = {0x91bd7a0a, 0xa75440a9, 0xbbd49d6c, 0xe0dcc0e3};
 
-
-void ni_set_ri_block(const uint8_t *data, uint32_t size)
-{
-    memcpy(pack.gRiBlock, data, size);
-    pack.ri_size = size;
-    uint32_t n = size / 4;
-    btea_decode((uint32_t*)pack.gRiBlock, n, key);
-}
-
 uint32_t ni_get_ri_block(uint8_t *data)
 {
     memcpy(data, pack.gRiBlock, pack.ri_size);
@@ -69,20 +61,38 @@ uint32_t ni_get_li_block(uint8_t *data)
     return pack.li_size;
 }
 
+void ni_set_ri_block(const uint8_t *data, uint32_t size)
+{
+    memcpy(pack.gRiBlock, data, size);
+    pack.ri_size = size;
+    ni_decode_block(pack.gRiBlock, size);
+}
+
 void ni_set_si_block(const uint8_t *data, uint32_t size)
 {
     memcpy(pack.gSiBlock, data, size);
     pack.si_size = size;
-    uint32_t n = size / 4;
-    btea_decode((uint32_t*)pack.gSiBlock, n, key);
+    ni_decode_block(pack.gSiBlock, size);
 }
 
 void ni_set_li_block(const uint8_t *data, uint32_t size)
 {
     memcpy(pack.gLiBlock, data, size);
     pack.li_size = size;
-    uint32_t n = size / 4;
-    btea_decode((uint32_t*) pack.gLiBlock, n, key);
+    ni_decode_block(pack.gLiBlock, size);
+}
+
+void ni_decode_block(uint8_t *data, uint32_t size)
+{
+    if (size < 512)
+    {
+        uint32_t n = size / 4;
+        btea_decode((uint32_t*) data, n, key);
+    }
+    else
+    {
+        btea_decode((uint32_t*) data, 128, key);
+    }
 }
 
 void ni_decode_block512(uint8_t *data)
@@ -115,14 +125,22 @@ bool ni_get_node_info(uint32_t index, node_info_t *node)
     {
         node->current = &gNodes[index];
         // Copy sound file name
-        uint32_t offset = node->current->sound_asset_index_in_si * 12;
-        memcpy(node->si_file, &pack.gSiBlock[offset], 12);
-        node->si_file[12] = '\0';
+        if (node->current->sound_asset_index_in_si != 0xFFFFFFFF)
+        {
+            uint32_t offset = node->current->sound_asset_index_in_si * 12;
+            memcpy(node->si_file, &pack.gSiBlock[offset], 12);
+            node->si_file[12] = '\0';
+        }
+        else 
+        {
+            // pas de son pour ce noeud
+            node->si_file[0] = '\0';
+        }
 
         // Copy image file name
         if (node->current->image_asset_index_in_ri != 0xFFFFFFFF)
         {
-            offset = node->current->image_asset_index_in_ri * 12;
+            uint32_t offset = node->current->image_asset_index_in_ri * 12;
             memcpy(node->ri_file, &pack.gRiBlock[offset], 12);
             node->ri_file[12] = '\0';
         }
@@ -168,11 +186,11 @@ void ni_parse_nodes(ni_file_t *ni_file, const uint8_t *data)
             ptr += 4;
             n->sound_asset_index_in_si = leu32_get(ptr);
             ptr += 4;
-            n->ok_transition_action_node_index_in_li = leu32_get(ptr);
+            n->ok_btn_node_idx_in_li = leu32_get(ptr);
             ptr += 4;
-            n->ok_transition_number_of_options = leu32_get(ptr);           
+            n->ok_btn_size_or_base_idx = leu32_get(ptr);           
             ptr += 4;
-            n->ok_transition_selected_option_index = leu32_get(ptr);
+            n->ok_btn_offset_from_base = leu32_get(ptr);
             ptr += 4;
             n->home_transition_action_node_index_in_li = leu32_get(ptr);
             ptr += 4;

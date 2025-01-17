@@ -37,6 +37,7 @@ your use of the corresponding standard functions.
 #include "IconsMaterialDesignIcons.h"
 #include "IconsFontAwesome5_c.h"
 
+#include "serializers.h"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -48,41 +49,312 @@ static SDL_Renderer* renderer{nullptr};
 
 
 #include "stb_image.h"
+#include "sys_lib.h"
+
+
+typedef struct {
+   uint16_t type;                 /* Magic identifier            */
+   uint32_t size;                       /* File size in bytes          */
+   uint16_t reserved1;
+   uint16_t reserved2;
+   uint32_t offset;                     /* Offset to image data, bytes */
+} bmp_header_t;
+
+typedef struct {
+   uint32_t size;               /* Header size in bytes      */
+   uint32_t width;
+   uint32_t height;                /* Width and height of image */
+   uint16_t planes;       /* Number of colour planes   */
+   uint16_t bits;         /* Bits per pixel            */
+   uint32_t compression;        /* Compression type          */
+   uint32_t imagesize;          /* Image size in bytes       */
+   uint32_t xresolution;
+   uint32_t yresolution;     /* Pixels per meter          */
+   uint32_t ncolours;           /* Number of colours         */
+   uint32_t importantcolours;   /* Important colours         */
+   uint32_t rgb;
+   uint32_t rgb2;
+} bmp_infoheader_t;
+
+static const uint32_t HEADER_SIZE = 14;
+static const uint32_t INFO_HEADER_SIZE = 40;
+
+
+uint8_t parse_bmp(const uint8_t *data, bmp_header_t *header, bmp_infoheader_t *info_header)
+{
+    uint8_t isBmp = 0;
+
+
+    // Header is 14 bytes length
+    isBmp = (data[0] == 'B') && (data[1] == 'M') ? 1 : 0;
+    header->size = leu32_get(data + 2);
+    header->offset = leu32_get(data + 10);
+
+    isBmp = isBmp & 1;
+    info_header->size = leu32_get(data + HEADER_SIZE);
+    info_header->width = leu32_get(data + HEADER_SIZE + 4);
+    info_header->height = leu32_get(data + HEADER_SIZE + 8);
+    info_header->planes = leu16_get(data + HEADER_SIZE + 12);
+    info_header->bits = leu16_get(data + HEADER_SIZE + 14);
+    info_header->compression = leu32_get(data + HEADER_SIZE + 16);
+    info_header->imagesize = leu32_get(data + HEADER_SIZE + 20);
+    info_header->xresolution = leu32_get(data + HEADER_SIZE + 24);
+    info_header->yresolution = leu32_get(data + HEADER_SIZE + 28);
+    info_header->ncolours = leu32_get(data + HEADER_SIZE + 32);
+    info_header->importantcolours = leu32_get(data + HEADER_SIZE + 36);
+    info_header->rgb = leu32_get(data + HEADER_SIZE + 40);
+    info_header->rgb2 = leu32_get(data + HEADER_SIZE + 44);
+
+    return isBmp;
+}
+
+
+// Code de décompression
+void Decompress(uint8_t *bmpImage, uint32_t fileSize, SDL_Texture *texture)
+{
+    uint32_t width = 320;
+    uint32_t height = 240;
+
+    bmp_header_t header;
+    bmp_infoheader_t info_header;
+    parse_bmp(bmpImage, &header, &info_header);
+
+    uint8_t *compressed = &bmpImage[header.offset];
+    uint32_t compressedSize = fileSize - header.offset;
+
+    uint32_t paletteSize = header.offset - (HEADER_SIZE + INFO_HEADER_SIZE);
+
+    printf("File size (from header):%d\r\n", (uint32_t)header.size);
+    printf("File size (from data):%d\r\n", (uint32_t)fileSize);
+    printf("Data offset:%d\r\n", (uint32_t)header.offset);
+    printf("Image size:%d\r\n", (uint32_t)info_header.size);
+    printf("width:%d\r\n", (uint32_t)info_header.width);
+    printf("height:%d\r\n", (uint32_t)info_header.height);
+    printf("Planes:%d\r\n", (uint32_t)info_header.planes);
+    printf("Bits:%d\r\n", (uint32_t)info_header.bits);
+    printf("Compression:%d\r\n", (uint32_t)info_header.compression); // 2 - 4 bit run length encoding
+    printf("Image size:%d\r\n", (uint32_t)info_header.imagesize);
+    printf("X resolution:%d\r\n", (uint32_t)info_header.xresolution);
+    printf("Y resolution:%d\r\n", (uint32_t)info_header.yresolution);
+    printf("Colors:%d\r\n", (uint32_t)info_header.ncolours);
+    printf("Important colors:%d\r\n", (uint32_t)info_header.importantcolours);
+    printf("RGB :%d\r\n", (uint32_t)info_header.rgb);
+    printf("RGB2 :%d\r\n", (uint32_t)info_header.rgb2);
+
+    uint8_t *palette = &bmpImage[HEADER_SIZE + INFO_HEADER_SIZE]; // 16 * 4 bytes = 64
+
+    // buffer de sortie, bitmap décompressé
+    uint8_t decompressed[320 * 240];
+    memset(decompressed, 0, 320*240);
+
+  //  btea((uint32_t*) bmpImage, -128, key);
+
+    uint32_t pixel = 0; // specify the pixel offset
+    uint32_t i = 0;
+    do
+    {
+        uint8_t rleCmd = compressed[i];
+        if (rleCmd > 0)
+        {
+            uint8_t val = compressed[i + 1];
+            // repeat number of pixels
+            for (uint32_t j = 0; j < rleCmd; j++)
+            {
+                if ((j & 1) == 0)
+                {
+                    decompressed[pixel] = (val & 0xF0) >>4;
+                }
+                else
+                {
+                    decompressed[pixel] = (val & 0x0F);
+                }
+                pixel++;
+            }
+            i += 2; // jump pair instruction
+        }
+        else
+        {
+            uint8_t second = compressed[i + 1];
+            if (second == 0)
+            {
+                if (pixel % width)
+                {
+                    // end of line
+                    uint32_t lines = pixel / width;
+                    uint32_t remaining = width - (pixel - (lines * width));
+
+                    pixel += remaining;
+                }
+                i += 2;
+            }
+            else if (second == 1)
+            {
+                std::cout << "End of bitmap" << std::endl;
+                goto end;
+            }
+            else if (second == 2)
+            {
+                // delta N pixels and M lines
+                pixel += compressed[i + 2] + compressed[i + 3] * width;
+                i += 4;
+            }
+            else
+            {
+                // absolute mode
+                uint8_t *ptr = &compressed[i + 2];
+                // repeat number of pixels
+                for (uint32_t j = 0; j < second; j++)
+                {
+                    if ((j & 1) == 0)
+                    {
+                        decompressed[pixel] = (*ptr & 0xF0) >> 4;
+                    }
+                    else
+                    {
+                        decompressed[pixel] = (*ptr & 0x0F);
+                        ptr++;
+                    }
+                    pixel++;
+                }
+                i += 2 + (second / 2);
+
+                // padded in word boundary, jump if necessary
+                if ((second / 2) % 2)
+                {
+                    i++;
+                }
+            }
+        }
+
+        if (pixel > (width * height))
+        {
+            std::cout << "Error!" << std::endl;
+        }
+    }
+    while( i < compressedSize);
+
+end:
+     void *pixels;
+    int pitch;
+    SDL_LockTexture(texture, NULL, &pixels, &pitch);
+
+    // Définir la texture comme cible de rendu
+    SDL_SetRenderTarget(renderer, texture);
+
+
+    uint32_t x = 0, y = 0;
+    for (uint32_t i = 0; i < pixel; i++)
+    {
+        uint8_t val = decompressed[i];
+        if (val > 15)
+        {
+            std::cout << "Error!" << std::endl;
+        }
+
+        uint8_t *palettePtr = &palette[val * 4];
+        // Définir la couleur de rendu
+        SDL_SetRenderDrawColor(renderer, palettePtr[0], palettePtr[1], palettePtr[2], 255);
+
+        int flippedY = (height - 1) - y;
+        // Dessiner un point à la position (x, y)
+        SDL_RenderPoint(renderer, x, flippedY);
+
+        x++;
+        if (x >= width)
+        {
+            x = 0;
+            y++;
+        }
+    }
+
+    SDL_SetRenderTarget(renderer, NULL);
+    SDL_UnlockTexture(texture);
+
+  
+
+//    std::ofstream outfile ("new.txt", std::ofstream::binary);
+//    outfile.write (reinterpret_cast<const char *>(decompressed), pixel / 2 );
+//    outfile.close();
+
+}
 
 
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 {
-
     SDL_Surface *surface, *temp;
+    bool useSdlImage = true;
 
-    surface = IMG_Load(filename);
-    if (!surface) {
-        SDL_Log("Couldn't load %s: %s\n", filename, SDL_GetError());
+    if (SysLib::GetFileExtension(filename) == "bmp")
+    {
+        // BMP
+        bmp_header_t header;
+        bmp_infoheader_t info_header;
+        uint8_t *data = nullptr;
+        size_t size = 0;
+
+
+        FILE *fil;
+        uint32_t offset;
+        fil = fopen(filename, "r");
+
+        // Lire tout le ficher
+        fseek(fil, 0, SEEK_END);
+        size = ftell(fil);
+        fseek(fil, 0, SEEK_SET);
+
+        uint8_t *bmpImage = (uint8_t *)malloc(size);
+        fread(bmpImage, 1, size, fil);
+
+        parse_bmp(bmpImage, &header, &info_header);
+
+        if (info_header.bits == 4)
+        {
+            auto tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, info_header.width, info_header.height);
+            Decompress(bmpImage, size, tex);
+            useSdlImage = false;
+
+            img.texture = tex;
+            img.w = info_header.width;
+            img.h = info_header.height;
+        }
+
+        free(bmpImage);
+    }
+
+    if (useSdlImage)
+    {
+
+        surface = IMG_Load(filename);
+        if (!surface)
+        {
+            SDL_Log("Couldn't load %s: %s\n", filename, SDL_GetError());
+            return false;
+        }
+
+        /* Use the tonemap operator to convert to SDR output */
+        // const char *tonemap = NULL;
+        // SDL_SetStringProperty(SDL_GetSurfaceProperties(surface), SDL_PROP_SURFACE_TONEMAP_OPERATOR_STRING, tonemap);
+        temp = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
+        SDL_DestroySurface(surface);
+        if (!temp)
+        {
+            SDL_Log("Couldn't convert surface: %s\n", SDL_GetError());
+            return false;
+        }
+
+        img.texture = SDL_CreateTextureFromSurface(renderer, temp);
+        SDL_DestroySurface(temp);
+        if (!img.texture) {
+            SDL_Log("Couldn't create texture: %s\n", SDL_GetError());
         return false;
-    }
+        }
 
-    /* Use the tonemap operator to convert to SDR output */
-    const char *tonemap = NULL;
-    SDL_SetStringProperty(SDL_GetSurfaceProperties(surface), SDL_PROP_SURFACE_TONEMAP_OPERATOR_STRING, tonemap);
-    temp = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
-    SDL_DestroySurface(surface);
-    if (!temp) {
-        SDL_Log("Couldn't convert surface: %s\n", SDL_GetError());
-        return false;
+        float w, h = 0;
+        SDL_GetTextureSize(static_cast<SDL_Texture*>(img.texture), &w, &h);
+        img.w = (int)w;
+        img.h = (int)h;
     }
-
-    img.texture = SDL_CreateTextureFromSurface(renderer, temp);
-    SDL_DestroySurface(temp);
-    if (!img.texture) {
-        SDL_Log("Couldn't create texture: %s\n", SDL_GetError());
-       return false;
-    }
-
-    float w, h = 0;
-    SDL_GetTextureSize(static_cast<SDL_Texture*>(img.texture), &w, &h);
-    img.w = (int)w;
-    img.h = (int)h;
 
     return true;
 }

@@ -2,6 +2,8 @@
 #include "sys_lib.h"
 #include <algorithm>
 #include <regex>
+#include <filesystem>
+#include <fstream>
 
 void SysLib::EraseString(std::string &theString, const std::string &toErase)
 {
@@ -20,6 +22,29 @@ std::string SysLib::ToUpper(const std::string &input)
     return str;
 }
 
+std::string SysLib::ToLower(const std::string &input)
+{
+    std::string str = input;
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
+}
+
+std::string  SysLib::ReadFile(const std::string &filename)
+{
+    // Open the stream to 'lock' the file.
+    std::ifstream f(filename, std::ios::in | std::ios::binary);
+
+    // Obtain the size of the file.
+    const auto sz = std::filesystem::file_size(filename);
+
+    // Create a buffer.
+    std::string result(sz, '\0');
+
+    // Read the whole file into the buffer.
+    f.read(result.data(), sz);
+
+    return result;
+}
 
 std::string SysLib::GetFileExtension(const std::string &fileName)
 {
@@ -48,6 +73,18 @@ std::string SysLib::GetFileName(const std::string &path)
     }
     else
     {
+        return "";
+    }
+}
+
+std::string SysLib::GetDirectory(const std::string &filePath)
+{
+    try {
+        std::filesystem::path absPath = std::filesystem::absolute(filePath);
+        std::filesystem::path dirPath = absPath.parent_path(); // Récupère le chemin sans le nom du fichier
+        return dirPath.string(); // Convertit le chemin en chaîne de caractères
+    } catch (const std::filesystem::filesystem_error& e) {
+        // std::cerr << "Erreur: " << e.what() << std::endl;
         return "";
     }
 }

@@ -128,7 +128,7 @@ private:
 
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;
-    virtual void ImportProject(const std::string &fileName, int format);
+    virtual void ImportProject(const std::string &filePathName, int format);
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string_view fileName) const override;
     virtual std::pair<FilterIterator, FilterIterator> Images() override;

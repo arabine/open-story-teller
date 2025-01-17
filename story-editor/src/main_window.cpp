@@ -7,6 +7,7 @@
 
 #include "pack_archive.h"
 #include "uuid.h"
+#include "sys_lib.h"
 
 #ifdef USE_WINDOWS_OS
 #include <winsock2.h>
@@ -47,6 +48,12 @@ MainWindow::MainWindow()
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
 
     CloseProject();
+
+    // define style for all directories
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", ImVec4(0.5f, 1.0f, 0.9f, 0.9f), ICON_MDI_FOLDER);
+    // define style for all files
+    ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeFile, "", ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ICON_MDI_FILE);
+
 }
 
 MainWindow::~MainWindow()
@@ -793,19 +800,27 @@ void MainWindow::OpenProject(const std::string &uuid)
 }
 
 
-void MainWindow::ImportProject(const std::string &fileName, int format)
+void MainWindow::ImportProject(const std::string &filePathName, int format)
 {
+    (void) format;
     PackArchive archive(*this);
 
-    if (format == 0)
-    {
-        archive.ImportStudioFormat(fileName, m_libraryManager.LibraryPath());
-    }
-    else 
-    {
-        archive.ImportCommercialFormat(fileName, m_libraryManager.LibraryPath(), m_libraryManager.CommercialDbView());
-    }
+    // On va déterminer le type de fichier selon l'extension
+    auto ext = SysLib::GetFileExtension(filePathName);
+    auto filename = SysLib::GetFileName(filePathName);
 
+    if ((ext == "pk") || (filename == "ni"))
+    {
+        archive.ImportCommercialFormat(filePathName, m_libraryManager.LibraryPath(), m_libraryManager.CommercialDbView());
+    }
+    else if ((ext == "json") || (ext == "zip"))
+    {
+        archive.ImportStudioFormat(filePathName, m_libraryManager.LibraryPath());
+    }
+    else
+    {
+        Log("Unknown file format: " + filePathName);
+    }
 }
  
 void MainWindow::RefreshProjectInformation()

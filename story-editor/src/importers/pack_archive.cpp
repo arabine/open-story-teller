@@ -21,21 +21,6 @@ PackArchive::PackArchive(ILogger &log)
 
 }
 
-std::vector<std::string> PackArchive::GetImages()
-{
-    std::vector<std::string> imgList;
-
-    for (uint32_t i = 0; i < ni_get_number_of_images(); i++)
-    {
-        char buffer[13];
-        ni_get_image(buffer, i);
-        imgList.push_back(buffer);
-    }
-
-    return imgList;
-}
-
-
 void PackArchive::Unzip(const std::string &filePath, const std::string &parent_dest_dir)
 {
     // std::string fileName = GetFileName(filePath);
@@ -63,10 +48,6 @@ void PackArchive::Unzip(const std::string &filePath, const std::string &parent_d
     (void) Zip::Unzip(filePath, parent_dest_dir, "");
 }
 
-static bool endsWith(const std::string& str, const std::string& suffix)
-{
-    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
-}
 
 bool StringToFile(const std::string &filePath, const std::string &data)
 {
@@ -154,12 +135,12 @@ std::vector<std::string> PackArchive::FilesInMemory(const std::string &type, con
     return resList;
 }
 
-void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string &basePath)
+void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesystem::path &importBaseDir)
 {
     ResourceManager res(m_log);
 
     // RI file is not ciphered
-    uint8_t data[512];
+    uint8_t data[XI_BLOCK_SIZE];
     uint32_t size = ni_get_ri_block(data);
 
     auto page = proj.GetPage(proj.MainUuid());
@@ -175,7 +156,7 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
             auto rData = std::make_shared<Resource>();
 
             // origin
-            auto from =  std::filesystem::path(basePath) / mPackName / "rf" / l;
+            auto from =  importBaseDir / "rf" / l;
             from += ".bmp";
 
             // destination
@@ -183,8 +164,8 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
             auto to = proj.AssetsPath() / filename;
 
             rData->file =  filename;
-            rData->type = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoType);
-            rData->format = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoFormat);
+            rData->type = ResourceManager::ExtentionInfo(".bmp", ResourceManager::InfoType);
+            rData->format = ResourceManager::ExtentionInfo(".bmp", ResourceManager::InfoFormat);
             res.Add(rData);
 
             std::filesystem::copy(from, to, std::filesystem::copy_options::overwrite_existing);
@@ -202,7 +183,7 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
             auto rData = std::make_shared<Resource>();
 
             // origin
-            auto from =  std::filesystem::path(basePath) / mPackName / "sf" / l;
+            auto from =  importBaseDir / "sf" / l;
             from += ".mp3";
 
             // destination
@@ -210,8 +191,8 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
             auto to = proj.AssetsPath() / filename;
 
             rData->file =  filename;
-            rData->type = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoType);
-            rData->format = ResourceManager::ExtentionInfo(rData->file, ResourceManager::InfoFormat);
+            rData->type = ResourceManager::ExtentionInfo(".mp3", ResourceManager::InfoType);
+            rData->format = ResourceManager::ExtentionInfo(".mp3", ResourceManager::InfoFormat);
             res.Add(rData);
 
             std::filesystem::copy(from, to, std::filesystem::copy_options::overwrite_existing);
@@ -233,8 +214,13 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
     // key: node index, value: node uuidV4
     std::map<int, std::string> nodeIds;
 
-    //  key: node index, value: list of transitions
-    std::map<int, std::vector<uint32_t>> nodeTransitions;
+    // key: index in transition table
+    // value: list of node ids in desination
+    std::map<int, std::vector<int>> referencedIndexes;
+
+    // Direct nodes (no choices)
+    // key: nodeID source, value: nodeID destination
+    std::map<int, int>  nodeLinks;
 
     for (int i = 0; i < mNiFile.node_size; i++)
     {
@@ -255,33 +241,51 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
             internalData["image"] = img.size() > 0 ? img + ".bmp" : "";
             internalData["sound"] = snd.size() > 0 ? snd + ".mp3" : "";
 
+         
+            std::cout << i << "\t==> Node\t" << img << "\t" << snd << std::endl;
+            std::cout << "\tOK node index in LI\t" << node_info.current->ok_btn_node_idx_in_li << std::endl;
+            std::cout << "\tOK number of options\t" << node_info.current->ok_btn_size_or_base_idx << std::endl;
+            std::cout << "\tOK selected option index\t" << node_info.current->ok_btn_offset_from_base << std::endl;
+
             node->SetInternalData(internalData);
 
             std::vector<uint32_t> jumpArray;
+            
 
-            // Autre cas
-            if (node_info.current->ok_transition_number_of_options == 10)
+
+
+            if (node_info.current->wheel)
             {
-                // For now, consider that this is a bad format
-                // In the future, consider using ok_transition_selected_option_index when ok_transition_number_of_options == 10
+                /*
+                Exemple d'un noeud de choix (wheel == true) avec trois noeuds :
+                node number                 13      17      21
+                ok_btn_node_idx_in_li       36      36      36
+                ok_btn_size_or_base_idx     18      18      18
+                ok_btn_offset_from_base     0       2       4
 
-                // 00 00 00 00   ==> ok transition à zéro
-                // 0A 00 00 00   ==> nombre spécial, ou vraiment l'offset dans le fichier LI ?
-                // 01 00 00 00   ==> l'index dans le fichier LI à l'offset (disons, le premier élément)
+                Dans ce cas: 
+                    - le 18 est l'index de base où sont situés les 3 choix
+                    - 36+0 est l'index où aller lors de l'appui sur OK pour le noeud 13
+                    - 36+2 est l'index où aller lors de l'appui sur OK pour le noeud 17
+                    - 36+4 est l'index où aller lors de l'appui sur OK pour le noeud 21
+                
+                */
 
-
-                jumpArray.push_back(transitions[node_info.current->ok_transition_action_node_index_in_li]);
+                // On ajouter ce noeud à la liste des références
+                // dans ce cas, le champs ok_btn_size_or_base_idx est interprété en tant que index
+                referencedIndexes[node_info.current->ok_btn_size_or_base_idx].push_back(i);
+                
+                // On va créer le lien entre notre noeud et le noeud indiqué dans la table de transition
+                nodeLinks[i] = transitions[node_info.current->ok_btn_size_or_base_idx + node_info.current->ok_btn_offset_from_base];
             }
             else
             {
-                // Vraies transitions
-                 for (int jIndex = 0; jIndex < node_info.current->ok_transition_number_of_options; jIndex++)
-                {
-                    jumpArray.push_back(transitions[node_info.current->ok_transition_action_node_index_in_li + jIndex]);
-                }
+                /*
+                 ici, pas de wheel de sélection, donc c'est un son joué et un lien direct
+                */   
+                nodeLinks[i] = transitions[node_info.current->ok_btn_size_or_base_idx + node_info.current->ok_btn_offset_from_base];
             }
 
-            nodeTransitions[i] = jumpArray;
         }
         else
         {
@@ -291,57 +295,24 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::string 
     }
 
     // Create links, parse again the nodes
-    for (int i = 0; i < mNiFile.node_size; i++)
-    {
+   // for (int i = 0; i < mNiFile.node_size; i++)
+    //{
+       //  std::cout << "Node id " << nodeIds[i] << " has " << nodeTransitions[i].size() << " transistions" << std::endl;
 
-        for (auto &j : nodeTransitions[i])
+        for (auto &j : nodeLinks)
         {
             auto c = std::make_shared<Connection>();
 
-            c->outNodeId = nodeIds[i];
+            c->outNodeId = nodeIds[j.first]; // source
             c->outPortIndex = 0;
-            c->inNodeId = nodeIds[j];
+            c->inNodeId = nodeIds[j.second]; // destination
             c->inPortIndex = 0;
 
             page->AddLink(c);
         }
-    }
+    //}
 
     proj.Save(res);
-}
-
-
-bool PackArchive::LoadNiFile(const std::string &filePath)
-{
-    bool success = false;
-    mZip.Close();
-    mCurrentNodeId = 0;
-
-    std::string fileName = SysLib::GetFileName(filePath);
-    std::string ext = SysLib::GetFileExtension(fileName);
-    SysLib::EraseString(fileName, "." + ext); // on retire l'extension du pack
-    mPackName = SysLib::ToUpper(fileName);
-
-    std::cout << "Pack name: " << mPackName << std::endl;
-
-    if (mZip.Open(filePath, true))
-    {
-        std::cout << "Number of files: " << mZip.NumberOfEntries() << std::endl;
-
-        if (ParseNIFile(mPackName))
-        {
-            success = true;
-            std::cout << "Parse NI file success\r\n"  << std::endl;
-            ni_dump(&mNiFile);
-
-            ni_get_node_info(mCurrentNodeId, &mCurrentNode);
-        }
-        else
-        {
-            std::cout << "Parse NI file error\r\n"  << std::endl;
-        }
-    }
-    return success;
 }
 
 std::string PackArchive::OpenImage(const std::string &fileName)
@@ -461,127 +432,15 @@ bool PackArchive::ImportStudioFormat(const std::string &fileName, const std::str
     return false;
 }
 
-std::string PackArchive::GetImage(const std::string &fileName)
-{
-    //"C8B39950DE174EAA8E852A07FC468267/rf/000/05FB5530"
-    std::string imagePath = mPackName + "/rf/" + fileName;
-    SysLib::ReplaceCharacter(imagePath, "\\", "/");
-
-    std::cout << "Loading " + imagePath << std::endl;
-    return OpenImage(imagePath);
-}
-
-std::string PackArchive::CurrentImage()
-{
-    return GetImage(std::string(mCurrentNode.ri_file));
-}
-
-std::string PackArchive::CurrentSound()
-{
-    //"C8B39950DE174EAA8E852A07FC468267/sf/000/05FB5530"
-    std::string soundPath = mPackName + "/sf/" + std::string(mCurrentNode.si_file);
-    SysLib::ReplaceCharacter(soundPath, "\\", "/");
-
-    std::cout << "Loading " + soundPath << std::endl;
-
-    std::string f;
-    if (mZip.GetFile(soundPath, f))
-    {
-        ni_decode_block512(reinterpret_cast<uint8_t *>(f.data()));
-        return f;
-    }
-    else
-    {
-        std::cout << "Cannot load file from ZIP" << std::endl;
-    }
-    return "";
-}
-
-std::string PackArchive::CurrentSoundName()
-{
-    return std::string(mCurrentNode.si_file);
-}
-
-bool PackArchive::AutoPlay()
-{
-    return mCurrentNode.current->auto_play;
-}
-
-bool PackArchive::IsRoot() const
-{
-    return mCurrentNodeId == 0;
-}
-
-bool PackArchive::IsWheelEnabled() const
-{
-    return mCurrentNode.current->wheel;
-}
-
-void PackArchive::Next()
-{
-    // L'index de circulation dans le tableau des transitions commence à 1 (pas à zéro ...)
-    uint32_t index = 1;
-    if (mCurrentNode.current->ok_transition_selected_option_index < mNodeForChoice.current->ok_transition_number_of_options)
-    {
-        index = mCurrentNode.current->ok_transition_selected_option_index + 1;
-    }
-    // sinon on revient à l'index 0 (début du tableau des transitions)
-
-    mCurrentNodeId = ni_get_node_index_in_li(mNodeForChoice.current->ok_transition_action_node_index_in_li, index - 1);
-    ni_get_node_info(mCurrentNodeId, &mCurrentNode);
-}
-
-void PackArchive::Previous()
-{
-    // L'index de circulation dans le tableau des transitions commence à 1 (pas à zéro ...)
-    uint32_t index = 1;
-    if (mCurrentNode.current->ok_transition_selected_option_index > 1)
-    {
-        index = mCurrentNode.current->ok_transition_selected_option_index - 1;
-    }
-    else
-    {
-        index = mNodeForChoice.current->ok_transition_number_of_options;
-    }
-
-    mCurrentNodeId = ni_get_node_index_in_li(mNodeForChoice.current->ok_transition_action_node_index_in_li, index - 1);
-    ni_get_node_info(mCurrentNodeId, &mCurrentNode);
-}
-
-void PackArchive::OkButton()
-{
-    if (mCurrentNode.current->home_transition_number_of_options > 0)
-    {
-        // On doit faire un choix!
-        // On sauvegarde ce noeud car il va servir pour naviguer dans les choix
-        mNodeIdForChoice = mCurrentNodeId;
-        ni_get_node_info(mNodeIdForChoice, &mNodeForChoice);
-    }
-    mCurrentNodeId = ni_get_node_index_in_li(mCurrentNode.current->ok_transition_action_node_index_in_li, mCurrentNode.current->ok_transition_selected_option_index);
-    ni_get_node_info(mCurrentNodeId, &mCurrentNode);
-}
-
-bool PackArchive::HasImage()
-{
-    return std::string(mCurrentNode.ri_file).size() > 1;
-}
-
-bool PackArchive::ParseNIFile(const std::string &root)
+bool PackArchive::ParseRootFiles(const std::filesystem::path &root)
 {
     bool success = true;
     std::string f;
-    if (mZip.GetFile(root + "/li", f))
-    {
-        ni_set_li_block(reinterpret_cast<const uint8_t *>(f.data()), f.size());
-    }
-    else
-    {
-        success = false;
-        std::cout << "[PACK_ARCHIVE] Cannot find LI file" << std::endl;
-    }
 
-    if (mZip.GetFile(root + "/ri", f))
+    f = SysLib::ReadFile(root / "ri");
+    if (f.size() > 0)
     {
+        // Deciphering is done in this function
         ni_set_ri_block(reinterpret_cast<const uint8_t *>(f.data()), f.size());
     }
     else
@@ -590,8 +449,10 @@ bool PackArchive::ParseNIFile(const std::string &root)
         std::cout << "[PACK_ARCHIVE] Cannot find RI file" << std::endl;
     }
 
-    if (mZip.GetFile(root + "/si", f))
+    f = SysLib::ReadFile(root / "si");
+    if (f.size() > 0)
     {
+        // Deciphering is done in this function
         ni_set_si_block(reinterpret_cast<const uint8_t *>(f.data()), f.size());
     }
     else
@@ -600,12 +461,26 @@ bool PackArchive::ParseNIFile(const std::string &root)
         std::cout << "[PACK_ARCHIVE] Cannot find SI file" << std::endl;
     }
 
-    if (mZip.GetFile(root + "/ni", f))
+    f = SysLib::ReadFile(root / "li");
+    if (f.size() > 0)
+    {
+        // Deciphering is done in this function
+        ni_set_li_block(reinterpret_cast<const uint8_t *>(f.data()), f.size());
+    }
+    else
+    {
+        success = false;
+        std::cout << "[PACK_ARCHIVE] Cannot find LI file" << std::endl;
+    }
+    
+    f = SysLib::ReadFile(root / "ni");
+    if (f.size() > 0)
     {
         success = success & ni_parser(&mNiFile, reinterpret_cast<const uint8_t *>(f.data()));
     }
     else
     {
+        success = false;
         std::cout << "[PACK_ARCHIVE] Cannot find NI file" << std::endl;
     }
     return success;
