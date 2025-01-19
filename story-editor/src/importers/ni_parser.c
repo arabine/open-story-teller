@@ -186,9 +186,9 @@ void ni_parse_nodes(ni_file_t *ni_file, const uint8_t *data)
             ptr += 4;
             n->sound_asset_index_in_si = leu32_get(ptr);
             ptr += 4;
-            n->ok_btn_node_idx_in_li = leu32_get(ptr);
+            n->ok_btn_base_idx = leu32_get(ptr);
             ptr += 4;
-            n->ok_btn_size_or_base_idx = leu32_get(ptr);           
+            n->ok_btn_base_nb_elements = leu32_get(ptr);           
             ptr += 4;
             n->ok_btn_offset_from_base = leu32_get(ptr);
             ptr += 4;

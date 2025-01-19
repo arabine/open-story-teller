@@ -14,8 +14,8 @@ extern "C" {
 typedef struct {
     uint32_t image_asset_index_in_ri;
     uint32_t sound_asset_index_in_si;
-    uint32_t ok_btn_node_idx_in_li;
-    uint32_t ok_btn_size_or_base_idx;
+    uint32_t ok_btn_base_idx;
+    uint32_t ok_btn_base_nb_elements;
     uint32_t ok_btn_offset_from_base;
     uint32_t home_transition_action_node_index_in_li;
     uint32_t home_transition_number_of_options;

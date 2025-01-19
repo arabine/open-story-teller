@@ -49,6 +49,7 @@ static const char *options[] = {
     "access_control_allow_origin", "*",
     "access_control_allow_methods", "GET, POST, PUT, DELETE, OPTIONS",
     "access_control_allow_headers", "Content-Type",
+    "enable_webdav", "yes",
     0
 };
 

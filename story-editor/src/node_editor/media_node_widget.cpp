@@ -25,9 +25,10 @@ void MediaNodeWidget::Draw()
 {
     BaseNodeWidget::FrameStart();
 
-
+/*
     static ImGuiTableFlags flags = ImGuiTableFlags_Borders |
                                    ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_SizingFixedFit;
+
 
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10.0f, 10.0f));
     if (ImGui::BeginTable("table1", 1, flags))
@@ -41,7 +42,27 @@ void MediaNodeWidget::Draw()
         ImGui::EndTable();
     }
     ImGui::PopStyleVar();
+*/
+    const char * text = "Media node";
+    // Obtenir la position courante du curseur
+    ImVec2 pos = ImGui::GetCursorScreenPos();
 
+    // Définir les dimensions du texte
+    ImVec2 text_size = ImGui::CalcTextSize(text);
+
+    // Ajouter un padding autour du texte
+    float padding = 5.0f;
+    ImVec2 rect_min = ImVec2(pos.x - padding, pos.y - padding);
+    ImVec2 rect_max = ImVec2(pos.x + text_size.x + padding, pos.y + text_size.y + padding);
+
+    // Définir la couleur du rectangle (bleu avec transparence)
+    ImU32 bg_color = ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.7f, 1.0f));
+
+    // Dessiner le rectangle de fond
+    ImGui::GetWindowDrawList()->AddRectFilled(rect_min, rect_max, bg_color);
+
+    // Afficher le texte
+    ImGui::TextUnformatted(text);
 
     if (m_image.Valid())
     {

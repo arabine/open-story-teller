@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include <filesystem>
+#include <unordered_set>
 
 
 #include "pack_archive.h"
@@ -218,11 +219,19 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesys
     // value: list of node ids in desination
     std::map<int, std::vector<int>> referencedIndexes;
 
+    // Groups:
+    // Un groupe est un synoynme de ok_btn_base_idx, un offset dans la table des transitions
+    // Chaque groupe a un nombre de noeuds max
+    std::map<int, int> groups;
+
+
+    std::unordered_set<int> wheels;
+
     // Direct nodes (no choices)
     // key: nodeID source, value: nodeID destination
-    std::map<int, int>  nodeLinks;
+  //  std::map<int, int>  nodeLinks;
 
-    for (int i = 0; i < mNiFile.node_size; i++)
+    for (int i = 0; i < mNiFile.stage_nodes_count; i++)
     {
         ni_get_node_info(i, &node_info);
 
@@ -231,6 +240,7 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesys
         if (node)
         {
             // On sauvegarde la relation entre l'index du noeud et son UUID
+            // On s'en servira plus tard pour effectuer les liens
             nodeIds[i] = node->GetId();
 
             node->SetPosition(80 * i, 80 * i);
@@ -243,48 +253,37 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesys
 
          
             std::cout << i << "\t==> Node\t" << img << "\t" << snd << std::endl;
-            std::cout << "\tOK node index in LI\t" << node_info.current->ok_btn_node_idx_in_li << std::endl;
-            std::cout << "\tOK number of options\t" << node_info.current->ok_btn_size_or_base_idx << std::endl;
+            std::cout << "\tOK node index in LI\t" << node_info.current->ok_btn_base_idx << std::endl;
+            std::cout << "\tOK number of options\t" << node_info.current->ok_btn_base_nb_elements << std::endl;
             std::cout << "\tOK selected option index\t" << node_info.current->ok_btn_offset_from_base << std::endl;
 
             node->SetInternalData(internalData);
 
-            std::vector<uint32_t> jumpArray;
-            
+            referencedIndexes[node_info.current->ok_btn_base_idx + node_info.current->ok_btn_offset_from_base].push_back(i);
 
-
-
+            // On appartient à un système de roue de sélection
+            // On va donc sauvegarder l'id du goue
             if (node_info.current->wheel)
             {
-                /*
-                Exemple d'un noeud de choix (wheel == true) avec trois noeuds :
-                node number                 13      17      21
-                ok_btn_node_idx_in_li       36      36      36
-                ok_btn_size_or_base_idx     18      18      18
-                ok_btn_offset_from_base     0       2       4
-
-                Dans ce cas: 
-                    - le 18 est l'index de base où sont situés les 3 choix
-                    - 36+0 est l'index où aller lors de l'appui sur OK pour le noeud 13
-                    - 36+2 est l'index où aller lors de l'appui sur OK pour le noeud 17
-                    - 36+4 est l'index où aller lors de l'appui sur OK pour le noeud 21
-                
-                */
-
-                // On ajouter ce noeud à la liste des références
-                // dans ce cas, le champs ok_btn_size_or_base_idx est interprété en tant que index
-                referencedIndexes[node_info.current->ok_btn_size_or_base_idx].push_back(i);
-                
-                // On va créer le lien entre notre noeud et le noeud indiqué dans la table de transition
-                nodeLinks[i] = transitions[node_info.current->ok_btn_size_or_base_idx + node_info.current->ok_btn_offset_from_base];
+                wheels.insert(i); // current ID is in a selection group
             }
-            else
-            {
-                /*
-                 ici, pas de wheel de sélection, donc c'est un son joué et un lien direct
-                */   
-                nodeLinks[i] = transitions[node_info.current->ok_btn_size_or_base_idx + node_info.current->ok_btn_offset_from_base];
-            }
+
+            groups[node_info.current->ok_btn_base_idx] = node_info.current->ok_btn_base_nb_elements;
+            
+            /*
+            Exemple d'un noeud de choix (wheel == true) avec trois noeuds :
+            node number                 13      17      21
+            ok_btn_base_idx       36      36      36
+            ok_btn_base_nb_elements     18      18      18
+            ok_btn_offset_from_base     0       2       4
+
+            Dans ce cas: 
+                - le 18 est l'index de base où sont situés les 3 choix
+                - 36+0 est l'index où aller lors de l'appui sur OK pour le noeud 13
+                - 36+2 est l'index où aller lors de l'appui sur OK pour le noeud 17
+                - 36+4 est l'index où aller lors de l'appui sur OK pour le noeud 21
+            
+            */
 
         }
         else
@@ -294,23 +293,60 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesys
         }
     }
 
-    // Create links, parse again the nodes
-   // for (int i = 0; i < mNiFile.node_size; i++)
-    //{
-       //  std::cout << "Node id " << nodeIds[i] << " has " << nodeTransitions[i].size() << " transistions" << std::endl;
+    auto addLink = [&](int src, int dst, int index = 0) {
+        std::cout << "Node " << src << " -> " << dst << std::endl;
 
-        for (auto &j : nodeLinks)
+        auto c = std::make_shared<Connection>();
+
+        c->outNodeId = nodeIds[src]; // source
+        c->outPortIndex = index;
+        c->inNodeId = nodeIds[dst]; // destination
+        c->inPortIndex = 0;
+
+        page->AddLink(c);
+    };
+
+    for (auto &ref : groups)
+    {
+        std::cout << "Group " << ref.first << " -> count:  " << ref.second << std::endl;
+
+        for (int n = 0; n < ref.second; n++)
         {
-            auto c = std::make_shared<Connection>();
+            // Get node referenced in the transition table
+            // It is the destination 
+            auto offset = ref.first + n;
+            auto dst = transitions[offset];
 
-            c->outNodeId = nodeIds[j.first]; // source
-            c->outPortIndex = 0;
-            c->inNodeId = nodeIds[j.second]; // destination
-            c->inPortIndex = 0;
+            if (wheels.contains(dst))
+            {
+                // Ce noeud de destination est une sélection
+                // On recherche le noeud parent et on crée un lien
+                // (ce noeud parent est le groupe en cours)
 
-            page->AddLink(c);
+                auto srcList = referencedIndexes[ref.first];
+                if (srcList.size() == 1)
+                {
+                    addLink(srcList[0], dst, n);
+                }
+                else
+                {
+                    std::cout << "Error: more than one source for a wheel" << std::endl;
+                }
+            } 
+            else if (referencedIndexes.count(offset))
+            {
+                auto srcList = referencedIndexes[offset];
+
+                for (auto &src : srcList)
+                {
+                    addLink(src, dst);
+                }
+            }
+            else {
+                std::cout << "???" << std::endl;
+            }
         }
-    //}
+    }
 
     proj.Save(res);
 }
