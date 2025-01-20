@@ -29,7 +29,7 @@ std::string SysLib::ToLower(const std::string &input)
     return str;
 }
 
-std::string  SysLib::ReadFile(const std::string &filename)
+std::string  SysLib::ReadFile(const std::filesystem::path &filename)
 {
     // Open the stream to 'lock' the file.
     std::ifstream f(filename, std::ios::in | std::ios::binary);

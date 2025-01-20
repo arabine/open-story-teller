@@ -84,6 +84,9 @@ static std::string getHome()
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
+#define NTDDI_VERSION 0x06000000
+
 // stringapiset.h depends on this
 #include <windows.h>
 // For SUCCEEDED macro
@@ -91,7 +94,7 @@ static std::string getHome()
 // For WideCharToMultiByte
 #include <stringapiset.h>
 
-#define _WIN32_WINNT 0x0600
+// #define _WIN32_WINNT 0x0600
 // For SHGetFolderPathW and various CSIDL "magic numbers"
 #include <shlobj.h>
 

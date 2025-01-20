@@ -34,17 +34,17 @@ void MediaNode::Initialize()
     m_sound = j["sound"].get<std::string>();
 }
 
-std::string MediaNode::GenerateConstants(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
+std::string MediaNode::GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns)
 {
     std::string s;
 
     if (m_image.size() > 0)
     {
-        s = Compiler::FileToConstant(m_image, Resource::ImageExtension(m_image, options.image_format));
+        s = Compiler::FileToConstant(m_image, Resource::ImageExtension(m_image, project.GetOptions().image_format), project);
     }
     if (m_sound.size() > 0)
     {
-        s += Compiler::FileToConstant(m_sound, Resource::SoundExtension(m_sound, options.sound_format));  // FIXME: Generate the extension setup in user option of output format
+        s += Compiler::FileToConstant(m_sound, Resource::SoundExtension(m_sound, project.GetOptions().sound_format), project);  // FIXME: Generate the extension setup in user option of output format
     }
 
     // Generate choice table if needed (out ports > 1)

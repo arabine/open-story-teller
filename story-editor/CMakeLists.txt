@@ -44,7 +44,6 @@ CPMAddPackage(
         "ENABLE_TESTING OFF"
 )
 
-find_package(MbedTLS REQUIRED)
 include_directories(${mbedtls_INCLUDE_DIR})
 # set(MBEDTLS_STATIC_LIBRARY ON)
 

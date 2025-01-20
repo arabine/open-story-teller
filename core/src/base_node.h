@@ -7,6 +7,7 @@
 
 #include "json.hpp"
 #include "i_story_page.h"
+#include "i_story_project.h"
 #include "story_options.h"
 
 class BaseNode
@@ -25,7 +26,7 @@ public:
 
     virtual void Initialize() = 0;
     virtual std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) = 0;
-    virtual std::string GenerateConstants(IStoryPage &page, const StoryOptions &options, int nb_out_conns) = 0;
+    virtual std::string GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns) = 0;
 
     void SetPosition(float x, float y);
 

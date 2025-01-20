@@ -106,7 +106,8 @@
         "stdfloat": "cpp",
         "text_encoding": "cpp",
         "serializers.h": "c",
-        "ni_parser.h": "c"
+        "ni_parser.h": "c",
+        "*.m": "cpp"
     }
 
 }

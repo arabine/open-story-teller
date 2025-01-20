@@ -41,4 +41,5 @@ jobs:
         - name: build
           working-directory: ./story-editor
           run : |
+              ./create_docker_image_win.sh
               ./build_win32.sh

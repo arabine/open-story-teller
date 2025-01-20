@@ -104,7 +104,7 @@ void MainWindow::Ok()
 
 void MainWindow::Stop()
 {
-    m_eventQueue.push({VmEventType::EvOkButton});
+    m_dbg.run_result = VM_FINISHED; // better than sending an event: avoid infinite loops in assembly
 }
 
 void MainWindow::Pause()
@@ -177,6 +177,9 @@ void MainWindow::ProcessStory()
     if (m_dbg.run_result == VM_READY)
         return;
 
+    if (m_dbg.run_result > VM_OK)
+        return;
+
     // 1. First, check events
     if (m_dbg.run_result == VM_WAIT_EVENT)
     {
@@ -186,7 +189,7 @@ void MainWindow::ProcessStory()
             if (event.type == VmEventType::EvStep)
             {
                 StepInstruction();
-                m_dbg.run_result = VM_OK;
+                m_dbg.run_result = VM_OK; // FIXME: bizarre d'écraser le code de retour...
             }
             else if (event.type == VmEventType::EvRun)
             {
@@ -258,6 +261,10 @@ void MainWindow::ProcessStory()
     if (m_dbg.run_result == VM_FINISHED)
     {
         m_dbg.free_run = false;
+    }
+    else if (m_dbg.run_result > VM_OK)
+    {
+        Log("VM critical error", true);
     }
 
     // In this case, we wait for single step debugger

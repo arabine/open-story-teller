@@ -113,7 +113,12 @@ chip32_result_t chip32_run(chip32_ctx_t *ctx)
     chip32_result_t result = VM_OK;
     while ((ctx->max_instr == 0) || (ctx->instrCount < ctx->max_instr))
     {
-        chip32_step(ctx);
+        result = chip32_step(ctx);
+
+        if (result > VM_OK)
+        {
+            break;
+        }
     }
     return result;
 }
@@ -193,7 +198,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[PC] = ctx->registers[reg] - 1;
 
         // Save Tx registers on stack
-        _CHECK_CAN_POP(10)
+        _CHECK_CAN_PUSH(10)
         for (int i = 0; i < 10; i++) {
             push(ctx, ctx->registers[T0 + i]);
         }
@@ -204,6 +209,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
 
+        _CHECK_CAN_POP(10)
         // restore Tx registers from stack
         for (int i = 0; i < 10; i++) {
             ctx->registers[T9 - i] = pop(ctx);

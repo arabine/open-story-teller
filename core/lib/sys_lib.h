@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 
 class SysLib
 {
@@ -15,5 +16,5 @@ public:
     static void EraseString(std::string &theString, const std::string &toErase);
     static std::string ToUpper(const std::string &input);
     static std::string ToLower(const std::string &input);
-    static std::string ReadFile(const std::string &filename);
+    static std::string ReadFile(const std::filesystem::path &filename);
 };

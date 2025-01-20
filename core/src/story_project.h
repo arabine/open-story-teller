@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+#include <unordered_set>
 #include "json.hpp"
 
 #include "json.hpp"
@@ -14,38 +15,6 @@
 #include "chip32_assembler.h"
 #include "story_page.h"
 #include "story_options.h"
-
-// FIXME : Structure très proche de la boiboite, à utiliser pour la conversion peut-être ...
-struct StoryNode
-{
-    bool auto_jump;
-    int sound;
-    int image;
-    int id;
-    std::vector<int> jumps;
-
-    std::vector<StoryNode *> children;
-
-    StoryNode& operator=(const StoryNode& other) {
-        this->auto_jump = other.auto_jump;
-        this->sound = other.sound;
-        this->image = other.image;
-        this->id = other.id;
-
-        this->jumps.clear();
-        this->jumps = other.jumps;
-        this->children = other.children;
-
-        return *this;
-    }
-
-//            "auto_jump": false,
-//            "id": 0,
-//            "image": 0,
-//            "jumps": [1],
-//            "sound": 0
-};
-
 
 
 struct StoryProject : public IStoryProject
@@ -58,14 +27,6 @@ public:
     bool *Selected() {
         return &m_selected;
     }
-/*
-    std::vector<StoryNode> m_nodes;
-
-    std::string m_type;
-    std::string m_code;
-
-    StoryNode *m_tree;
-*/
 
     std::string MainUuid() const {
         return "490745ab-df4d-476d-ae27-027e94b8ee0a";
@@ -128,6 +89,7 @@ public:
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
     virtual int OutputsCount(const std::string &nodeId) override;
     virtual StoryOptions GetOptions() override { return m_storyOptions; }
+    virtual bool UseResource(const std::string &label) override;
 
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);
@@ -157,6 +119,8 @@ private:
     std::string m_description;
     uint32_t m_version;
     bool m_selected{false};
+
+    std::unordered_set<std::string> m_usedLabels; // permet de ne pas générer un label qui existe déjà
 
     std::filesystem::path m_assetsPath;
 

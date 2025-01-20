@@ -4,7 +4,7 @@
 FROM ubuntu:22.04
 LABEL Description="Developer environment"
 
-ENV HOME /root
+ENV HOME=/root
 
 SHELL ["/bin/bash", "-c"]
 
@@ -29,21 +29,22 @@ RUN mkdir /workspace
 # Build OpenSSL for windows
 # Libraries are installed in /libs/
 # ========================================================================
+# Plus besoin: on utilise mBedTLS
 
-ENV OPENSSL_VERSION="3.0.13"
+# ENV OPENSSL_VERSION="3.0.13"
 
-RUN mkdir -p /libs/openssl
+# RUN mkdir -p /libs/openssl
 
-RUN set -x \
-    && wget --no-check-certificate -O /tmp/openssl-${OPENSSL_VERSION}.tar.gz "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" \
-    && tar -xvf /tmp/openssl-${OPENSSL_VERSION}.tar.gz -C /tmp/ \
-    && rm -rf /tmp/openssl-${OPENSSL_VERSION}.tar.gz \ 
-    && cd /tmp/openssl-${OPENSSL_VERSION} \
-    && ./Configure --cross-compile-prefix=x86_64-w64-mingw32- mingw64 --prefix=/libs/openssl \
-    && make \
-    && make install \
-    && cd .. \
-    && rm -rf openssl-${OPENSSL_VERSION}
+# RUN set -x \
+#     && wget --no-check-certificate -O /tmp/openssl-${OPENSSL_VERSION}.tar.gz "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" \
+#     && tar -xvf /tmp/openssl-${OPENSSL_VERSION}.tar.gz -C /tmp/ \
+#     && rm -rf /tmp/openssl-${OPENSSL_VERSION}.tar.gz \ 
+#     && cd /tmp/openssl-${OPENSSL_VERSION} \
+#     && ./Configure --cross-compile-prefix=x86_64-w64-mingw32- mingw64 --prefix=/libs/openssl \
+#     && make \
+#     && make install \
+#     && cd .. \
+#     && rm -rf openssl-${OPENSSL_VERSION}
  
- ENV PATH /libs/openssl/bin:$PATH
+#  ENV PATH=/libs/openssl/bin:$PATH
  

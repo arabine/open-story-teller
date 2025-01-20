@@ -52,7 +52,7 @@ public:
         {
             // Ici on a choisi le fichier ni, donc on prend juste le répertoire parent
             importBaseDir = SysLib::GetDirectory(packFileName);
-            std::string packDirNameOnly = SysLib::GetFileName(importBaseDir);
+            std::string packDirNameOnly = importBaseDir.filename().string();
 
             // Ici on va copier le répertoire dans un dossier de travail pour éviter de corrompre le 
             // répertoire d'origine (vu qu'on decipher tout)
@@ -61,7 +61,7 @@ public:
                 | std::filesystem::copy_options::overwrite_existing
                 ;
 
-            std::string workingDir = std::filesystem::path(outputBaseDir) / packDirNameOnly;
+            std::filesystem::path workingDir = std::filesystem::path(outputBaseDir) / packDirNameOnly;
             std::filesystem::create_directories(workingDir);
             std::filesystem::copy(importBaseDir, workingDir, copyOptions);
                     

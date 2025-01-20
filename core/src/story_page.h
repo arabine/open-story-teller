@@ -5,6 +5,7 @@
 #include <string>
 
 #include "i_story_page.h"
+#include "i_story_project.h"
 #include "base_node.h"
 #include "connection.h"
 
@@ -49,17 +50,17 @@ public:
         m_nodes.clear();
     }
 
-    void Build(std::stringstream &code, const StoryOptions &options)
+    void Build(std::stringstream &code, IStoryProject &project)
     {
         // First generate all constants
         for (const auto & n : m_nodes)
         {
-            code << n->GenerateConstants(*this, options, OutputsCount(n->GetId())) << "\n";
+            code << n->GenerateConstants(*this, project, OutputsCount(n->GetId())) << "\n";
         }
 
         for (const auto & n : m_nodes)
         {
-            code << n->Build(*this, options, OutputsCount(n->GetId())) << "\n";
+            code << n->Build(*this, project.GetOptions(), OutputsCount(n->GetId())) << "\n";
         }
     }
 

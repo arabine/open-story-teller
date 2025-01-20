@@ -124,6 +124,7 @@ void Decompress(uint8_t *bmpImage, uint32_t fileSize, SDL_Texture *texture)
 
     uint32_t paletteSize = header.offset - (HEADER_SIZE + INFO_HEADER_SIZE);
 
+#ifdef DEBUG_BITMAP
     printf("File size (from header):%d\r\n", (uint32_t)header.size);
     printf("File size (from data):%d\r\n", (uint32_t)fileSize);
     printf("Data offset:%d\r\n", (uint32_t)header.offset);
@@ -140,7 +141,7 @@ void Decompress(uint8_t *bmpImage, uint32_t fileSize, SDL_Texture *texture)
     printf("Important colors:%d\r\n", (uint32_t)info_header.importantcolours);
     printf("RGB :%d\r\n", (uint32_t)info_header.rgb);
     printf("RGB2 :%d\r\n", (uint32_t)info_header.rgb2);
-
+#endif
     uint8_t *palette = &bmpImage[HEADER_SIZE + INFO_HEADER_SIZE]; // 16 * 4 bytes = 64
 
     // buffer de sortie, bitmap décompressé
@@ -189,7 +190,7 @@ void Decompress(uint8_t *bmpImage, uint32_t fileSize, SDL_Texture *texture)
             }
             else if (second == 1)
             {
-                std::cout << "End of bitmap" << std::endl;
+                // std::cout << "End of bitmap" << std::endl;
                 goto end;
             }
             else if (second == 2)

@@ -340,6 +340,17 @@ int StoryProject::OutputsCount(const std::string &nodeId)
     return 0;
 }
 
+bool StoryProject::UseResource(const std::string &label)
+{
+    bool used = m_usedLabels.contains(label);
+
+    if (!used)
+    {
+        m_usedLabels.insert(label);
+    }
+    return used;
+}
+
 bool StoryProject::GenerateScript(std::string &codeStr)
 {
     std::stringstream code;
@@ -359,10 +370,13 @@ bool StoryProject::GenerateScript(std::string &codeStr)
 
     code << "\tjump    " << BaseNode::GetEntryLabel(firstNode) << "\r\n";
     
+    // Empty resources usage
+    m_usedLabels.clear();
+
     // On build toutes les pages
     for (const auto & p : m_pages)
     {
-        p->Build(code, m_storyOptions);
+        p->Build(code, *this);
     }
 
     codeStr = code.str();
@@ -485,40 +499,7 @@ void StoryProject::Save(ResourceManager &manager)
     std::ofstream o(m_project_file_path);
     o << std::setw(4) << j << std::endl;
 }
-/*
-void StoryProject::CreateTree()
-{
-    // Algorithm: level order traversal of N-ary tree
-    std::queue<StoryNode *> nlist;
 
-    m_tree = &m_nodes[0];
-    nlist.push(m_tree);
-
-    while (!nlist.empty())
-    {
-        StoryNode *p = nlist.front();
-        std::cout << "Node: " << p->id << std::endl;
-
-        for (size_t i = 0; i < p->jumps.size(); i++)
-        {
-            size_t jump = p->jumps[i];
-
-            if (jump < m_nodes.size())
-            {
-                StoryNode *child = &m_nodes[jump];
-                nlist.push(child);
-                p->children.push_back(child);
-            }
-            else
-            {
-                std::cout << "End node" << std::endl;
-            }
-        }
-
-        nlist.pop();
-    }
-}
-*/
 
 void StoryProject::Clear()
 {
