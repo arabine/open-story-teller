@@ -115,7 +115,7 @@ chip32_result_t chip32_run(chip32_ctx_t *ctx)
     {
         result = chip32_step(ctx);
 
-        if (result > VM_OK)
+        if ((result > VM_OK) || (result == VM_FINISHED))
         {
             break;
         }

@@ -174,29 +174,35 @@ void MainWindow::ProcessStory()
     if (m_dbg.run_result == VM_FINISHED)
         return;
 
-    if (m_dbg.run_result == VM_READY)
-        return;
-
+    // Error states
     if (m_dbg.run_result > VM_OK)
         return;
 
-    // 1. First, check events
-    if (m_dbg.run_result == VM_WAIT_EVENT)
+    // Check events
+
+    VmEvent event;
+    if (m_eventQueue.try_pop(event))
     {
-        VmEvent event;
-        if (m_eventQueue.try_pop(event))
+        if (event.type == VmEventType::EvStep)
         {
-            if (event.type == VmEventType::EvStep)
-            {
-                StepInstruction();
-                m_dbg.run_result = VM_OK; // FIXME: bizarre d'écraser le code de retour...
-            }
-            else if (event.type == VmEventType::EvRun)
-            {
-                m_dbg.free_run = true;
-                m_dbg.run_result = VM_OK;
-            }
-            else if (event.type == VmEventType::EvOkButton)
+            StepInstruction();
+            m_dbg.run_result = VM_OK; // FIXME: bizarre d'écraser le code de retour...
+        }
+        else if (event.type == VmEventType::EvRun)
+        {
+            m_dbg.free_run = true;
+            m_dbg.run_result = VM_OK;
+        }
+        else if (event.type == VmEventType::EvStop)
+        {
+            m_dbg.run_result = VM_FINISHED;
+        }
+
+        // Events managed only if the code is in wait event state
+        if (m_dbg.run_result == VM_WAIT_EVENT)
+        {
+
+            if (event.type == VmEventType::EvOkButton)
             {
                 if (m_dbg.IsValidEvent(EV_MASK_OK_BUTTON))
                 {
@@ -235,10 +241,6 @@ void MainWindow::ProcessStory()
                     m_chip32_ctx.registers[R0] = EV_MASK_HOME_BUTTON;
                     m_dbg.run_result = VM_OK;
                 }
-            }
-            else if (event.type == VmEventType::EvStop)
-            {
-                m_dbg.run_result = VM_FINISHED;
             }
         }
     }

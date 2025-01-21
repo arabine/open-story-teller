@@ -25,13 +25,21 @@ THE SOFTWARE.
 #include <iostream>
 #include "catch.hpp"
 #include "chip32_assembler.h"
-#include "chip32.h"
+#include "chip32_vm.h"
 
 /*
 Purpose: test all opcodes
 */
 
 void hexdump(void *ptr, int buflen);
+
+static uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
+{
+    uint8_t retCode = SYSCALL_RET_OK;
+
+    return retCode;
+}
+
 
 class VmTestContext
 {
@@ -47,27 +55,28 @@ public:
         REQUIRE( assembler.BuildBinary(program, result) == true );
         result.Print();
 
-        // ---------  EXECUTE BINARY  ---------
-        virtual_mem_t rom = {
-            .mem = program.data(),
-            .size = 8*1024,
-            .addr = 18 * 1024
-        };
-        virtual_mem_t ram = {
-            .mem = data,
-            .size = sizeof(data),
-            .addr = 56*1024
-        };
+        chip32_ctx.stack_size = 512;
 
-        chip32_initialize(&rom, &ram, 256);
-        chip32_result_t runResult = chip32_run(program.size(), 1000);
+        chip32_ctx.rom.mem = program.data();
+        chip32_ctx.rom.addr = 18*1024;
+        chip32_ctx.rom.size = program.size();
+
+        chip32_ctx.ram.mem = data;
+        chip32_ctx.ram.addr = 56 *1024,
+        chip32_ctx.ram.size = sizeof(data);
+
+        chip32_ctx.syscall = story_player_syscall;
+
+        chip32_initialize(&chip32_ctx);
+        chip32_result_t runResult = chip32_run(&chip32_ctx);
         REQUIRE( runResult == VM_FINISHED );
     }
 
     uint8_t data[8*1024];
     std::vector<uint8_t> program;
-    Chip32Assembler assembler;
-    AssemblyResult result;
+    Chip32::Assembler assembler;
+    Chip32::Result result;
+    chip32_ctx_t chip32_ctx;
 };
 
 
@@ -80,7 +89,7 @@ TEST_CASE_METHOD(VmTestContext, "MUL", "[vm]") {
     )";
     Execute(test1);
 
-    uint32_t result = chip32_get_register(R0);
+    uint32_t result = chip32_ctx.registers[R0];
     REQUIRE (result == 37 * 0x695);
 }
 
@@ -93,6 +102,6 @@ TEST_CASE_METHOD(VmTestContext, "DIV", "[vm]") {
     )";
     Execute(test1);
 
-    uint32_t result = chip32_get_register(R0);
+    uint32_t result = chip32_ctx.registers[R0];
     REQUIRE (result == (int)(37/8));
 }

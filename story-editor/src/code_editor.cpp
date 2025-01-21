@@ -5,22 +5,40 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <gui.h>
 #include "imgui.h"
 
 
 void CodeEditor::TextViewDraw()
 {
+    const ImVec2 childSize = ImVec2(0, 0);
+    // Début de la scrollview (Child)
+    ImGui::BeginChild("Table ScrollView", childSize, true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-    ImGui::BeginChild("TextView", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-
-    static ImGuiTableFlags flags1 = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
+    static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit
+     | ImGuiTableFlags_BordersV 
+     | ImGuiTableFlags_BordersOuterH 
+     | ImGuiTableFlags_RowBg 
+     | ImGuiTableFlags_ContextMenuInBody;
+        
     static ImU32 cell_bg_color = ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.7f, 0.65f));
 
-    if (ImGui::BeginTable("AssemblyCode", 3, flags1))
+
+    // Hauteur de chaque ligne
+    float lineHeight = ImGui::GetTextLineHeightWithSpacing(); // Hauteur d'une ligne avec l'espacement
+
+    if (ImGui::BeginTable("AssemblyCode", 3, tableFlags))
     {            
-        int i = 0;
+        int i = 1;
         std::string line;
         std::istringstream is(m_text);
+
+            // Calcul de la position Y pour centrer la ligne cible
+        float scrollY = m_currentLine * lineHeight - ImGui::GetWindowHeight() * 0.5f + lineHeight * 0.5f;
+
+        // Début de la scrollview
+        ImGui::SetScrollY(scrollY);
+
         while (std::getline(is, line)) 
         {
             ImGui::TableNextRow();
@@ -38,6 +56,7 @@ void CodeEditor::TextViewDraw()
                 {
                     m_breakpoints.insert(i);
                 }
+                m_storyManager.ToggleBreakpoint(i);
             }
             
             if (m_breakpoints.contains(i)) {
@@ -46,16 +65,16 @@ void CodeEditor::TextViewDraw()
             }
             ImGui::TableNextColumn();
 
-            if (m_highlights.count(i) > 0)
+            if (m_currentLine == i)
             {
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, cell_bg_color);
             }
 
             // Colonne des numéros de ligne
-            ImGui::Text("%d", static_cast<int>(i + 1));
+            ImGui::Text("%d", static_cast<int>(i));
             ImGui::TableNextColumn();
 
-            if (m_highlights.count(i) > 0)
+            if (m_currentLine == i)
             {
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, cell_bg_color);
             }
@@ -67,7 +86,7 @@ void CodeEditor::TextViewDraw()
         ImGui::EndTable();
     }
 
-    ImGui::EndChild();
+   ImGui::EndChild();
 }
 
 
@@ -76,7 +95,7 @@ CodeEditor::CodeEditor(IStoryManager &project)
     , m_storyManager(project)
 {
     // mEditor.SetReadOnly(false);
-    SetFlags(ImGuiWindowFlags_MenuBar);
+    // SetFlags(ImGuiWindowFlags_MenuBar);
 }
 
 void CodeEditor::Initialize()
@@ -139,85 +158,23 @@ void CodeEditor::Draw()
     // auto cpos = mEditor.GetCursorPosition();
 
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-    /*
-    if (ImGui::BeginMenuBar())
-    {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("Save"))
-            {
-                // auto textToSave = mEditor.GetText();
-                /// save text....
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Edit"))
-        {
-            // bool ro = mEditor.IsReadOnly();
-            // if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
-            //     mEditor.SetReadOnly(ro);
-            ImGui::Separator();
 
-            if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && mEditor.CanUndo()))
-                mEditor.Undo();
-            if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && mEditor.CanRedo()))
-                mEditor.Redo();
 
-            ImGui::Separator();
+    // if (ImGui::SmallButton("Toggle breakpoint")) {
+        
+    //     if (m_breakPoints.contains(cpos.mLine + 1))
+    //     {
+    //         m_breakPoints.erase(cpos.mLine + 1);
+    //     }
+    //     else
+    //     {
+    //         m_breakPoints.insert(cpos.mLine + 1);
+    //     }
+    //     mEditor.SetBreakpoints(m_breakPoints);
 
-            if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, mEditor.HasSelection()))
-                mEditor.Copy();
-            if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !ro && mEditor.HasSelection()))
-                mEditor.Cut();
-            if (ImGui::MenuItem("Delete", "Del", nullptr, !ro && mEditor.HasSelection()))
-                mEditor.Delete();
-            if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText() != nullptr))
-                mEditor.Paste();
-                
-
-            ImGui::Separator();
-
-            // if (ImGui::MenuItem("Select all", nullptr, nullptr))
-            //     mEditor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates(mEditor.GetTotalLines(), 0));
-
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("View"))
-        {
-            if (ImGui::MenuItem("Dark palette"))
-                mEditor.SetPalette(TextEditor::GetDarkPalette());
-            if (ImGui::MenuItem("Light palette"))
-                mEditor.SetPalette(TextEditor::GetLightPalette());
-            if (ImGui::MenuItem("Retro blue palette"))
-                mEditor.SetPalette(TextEditor::GetRetroBluePalette());
-            ImGui::EndMenu();
-        }
-    
-        ImGui::EndMenuBar();
-    }
-    */
-
-    // ImGui::Text("%6d/%-6d %6d lines  | %s | %s ", cpos.mLine + 1, cpos.mColumn + 1, mEditor.GetTotalLines(),
-    //     mEditor.IsOverwrite() ? "Ovr" : "Ins",
-    //     mEditor.CanUndo() ? "*" : " ");
-
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Toggle breakpoint")) {
-        /*
-        if (m_breakPoints.contains(cpos.mLine + 1))
-        {
-            m_breakPoints.erase(cpos.mLine + 1);
-        }
-        else
-        {
-            m_breakPoints.insert(cpos.mLine + 1);
-        }
-        mEditor.SetBreakpoints(m_breakPoints);
-
-        m_storyManager.ToggleBreakpoint(cpos.mLine + 1);
-        */
-    }
+    //     m_storyManager.ToggleBreakpoint(cpos.mLine + 1);
+        
+    // }
     ImGui::SameLine();
     if (ImGui::SmallButton(ICON_MDI_SKIP_NEXT "##step_instruction")) {
         m_storyManager.Step();
@@ -226,6 +183,11 @@ void CodeEditor::Draw()
     ImGui::SameLine();
     if (ImGui::SmallButton(ICON_MDI_PLAY "##run")) {
         m_storyManager.Run();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::SmallButton(ICON_MDI_CONTENT_COPY "##copytocplipboard")) {
+      Gui::CopyToClipboard(m_text);
     }
 
     TextViewDraw();

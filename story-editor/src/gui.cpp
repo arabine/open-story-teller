@@ -280,6 +280,7 @@ end:
 }
 
 
+
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, Gui::Image &img)
 {
@@ -375,6 +376,14 @@ Gui::Gui()
 
 static ImFont* normalFont;
 // static ImFont* bigFont;
+
+
+
+void Gui::CopyToClipboard(const std::string &text)
+{
+    SDL_SetClipboardText(text.c_str());
+}
+
 
 void Gui::PushBigFont()
 {

@@ -48,12 +48,13 @@ $MyArray            DV8    10 ; array of 10 bytes
 ; We create a stupid loop just for RAM variable testing
 
     lcons r0, 4 ; prepare loop: 4 iterations
-    store $RamData1, r0 ; save R0 in RAM
+    lcons r2, $RamData1 ; save in R2 a ram address
+    store @r2, r0, 4 ; save R0 in RAM
     lcons r1, 1
 .loop:
-    load r0, $RamData1  ; load this variable
+    load r0, @r2, 4  ; load this variable
     sub r0, r1
-    store $RamData1, r0 ; save R0 in RAM
+    store @r2, r0, 4 ; save R0 in RAM
     skipz r0   ; skip loop if R0 == 0
     jump .loop
 
@@ -65,32 +66,45 @@ mov R0,R2  ; copy R2 into R0 (NO blank space between , and R2)
 )";
 
 
+static uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
+{
+    uint8_t retCode = SYSCALL_RET_OK;
+
+    return retCode;
+}
+
 TEST_CASE( "Check various indentations and typos" ) {
 
     std::vector<uint8_t> program;
-    Chip32Assembler assembler;
-    AssemblyResult result;
+    Chip32::Assembler assembler;
+    Chip32::Result result;
     uint8_t data[8*1024];
 
-    REQUIRE( assembler.Parse(test1) == true );
+    bool parseResult = assembler.Parse(test1);
+
+    std::cout << assembler.GetLastError().ToString();
+
+    REQUIRE( parseResult == true );
 
     REQUIRE( assembler.BuildBinary(program, result) == true);
     result.Print();
     hexdump(program.data(), program.size());
 
-    // ---------  EXECUTE BINARY  ---------
-    virtual_mem_t rom = {
-        .mem = program.data(),
-        .size = 8*1024,
-        .addr = 0
-    };
-    virtual_mem_t ram = {
-        .mem = data,
-        .size = sizeof(data),
-        .addr = 40 *1024
-    };
+    static chip32_ctx_t chip32_ctx;
 
-    chip32_initialize(&rom, &ram, 256);
-    chip32_result_t runResult = chip32_run(program.size(), 1000);
+    chip32_ctx.stack_size = 512;
+
+    chip32_ctx.rom.mem = program.data();
+    chip32_ctx.rom.addr = 0;
+    chip32_ctx.rom.size = program.size();
+
+    chip32_ctx.ram.mem = data;
+    chip32_ctx.ram.addr = 40 *1024,
+    chip32_ctx.ram.size = sizeof(data);
+
+    chip32_ctx.syscall = story_player_syscall;
+
+    chip32_initialize(&chip32_ctx);
+    chip32_result_t runResult = chip32_run(&chip32_ctx);
     REQUIRE( runResult == VM_FINISHED );
 }

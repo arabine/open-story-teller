@@ -49,6 +49,7 @@ public:
 
     static void PushBigFont();
     static void PopBigFont();
+    static void CopyToClipboard(const std::string &text);
 
 private:
     std::string m_executablePath;

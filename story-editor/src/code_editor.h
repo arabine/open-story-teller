@@ -21,15 +21,17 @@ public:
 
     void HighlightLine(int line)
     {
+        m_currentLine = line;
         // mEditor.SetExecutionMarker(line);
-        m_highlights[line] = ImVec4(0.5f, 0.5f, 1.0f, 0.5f);
+        // m_highlights[line] = ImVec4(0.5f, 0.5f, 1.0f, 0.5f);
     }
 private:
     IStoryManager &m_storyManager;
 
     std::string m_text;
     std::unordered_set<int> m_breakpoints;
-    std::map<int, ImVec4> m_highlights;
+    // std::map<int, ImVec4> m_highlights;
+    int m_currentLine{-1};
     // TextEditor mEditor;
     // TextEditor::Breakpoints m_breakPoints;
     // TextEditor::ErrorMarkers m_markers;
