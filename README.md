@@ -1,6 +1,11 @@
 # Open Story Teller (OST)
 
-[![continous_build](https://github.com/arabine/open-story-teller/actions/workflows/build.yml/badge.svg)](https://github.com/arabine/open-story-teller/actions/workflows/build.yml)
+
+|  Job | Status  |
+|---|---|
+| Story Editor  |  [![continous_build](https://github.com/arabine/open-story-teller/actions/workflows/story_editor.yml/badge.svg)](https://github.com/arabine/open-story-teller/actions/workflows/story_editor.yml) |
+
+
 
 Open Story Teller is an Open Source project to provide guidelines and software to build your own story teller box (electronics, mechanical).
 

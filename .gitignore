@@ -74,11 +74,6 @@ software/.cache/
 
 story-editor/.idea/
 
-story-editor/buildxcode/
-
-story-editor/cmake-build-debug/
-
-story-editor/build-win32/
 
 build-story-editor-Desktop_Qt_GCC_64bit-Debug/
 
@@ -105,3 +100,10 @@ story-player-raylib/bin/story-player.js
 story-player-raylib/bin/story-player.wasm
 
 core/chip32/tests/build
+story-editor/build-linux
+story-editor/buildxcode/
+story-editor/build-win32/
+story-editor/cmake-build-debug/
+story-editor/.flatpak-builder
+story-editor/flatpak_build/
+story-editor/AppDir/

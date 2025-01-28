@@ -49,6 +49,11 @@ add_subdirectory(libs/ImGuiFileDialog)
 # SDL3 MIXER
 # =========================================================================================================================
 
+set(CIVETWEB_BUILD_TESTING OFF)
+set(CIVETWEB_ENABLE_SERVER_EXECUTABLE OFF)
+set(CIVETWEB_ENABLE_CXX ON)
+set(CIVETWEB_ENABLE_WEBSOCKETS ON)
+set(CIVETWEB_ENABLE_ASAN OFF)
 add_subdirectory(externals/civetweb EXCLUDE_FROM_ALL)
 add_subdirectory(externals/curl EXCLUDE_FROM_ALL)
 
@@ -242,7 +247,7 @@ if(UNIX)
         SDL3_mixer::SDL3_mixer
         SDL3::SDL3
         CURL::libcurl
-        civetweb::civetweb-cpp
+        civetweb-cpp
         pthread
         OpenGL::GL
         dl
