@@ -21,81 +21,11 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
-# set(OPENSSL_ROOT_DIR /libs/openssl)
-# find_package(OpenSSL REQUIRED)
-
 set(IMGUI_VERSION 1.91.6)
 
 include(FetchContent)
-
-include(cmake/CPM.cmake)
-
-
-# =========================================================================================================================
-# MBedTLS
-# =========================================================================================================================
-CPMAddPackage(
-    NAME mbedtls    
-    GITHUB_REPOSITORY Mbed-TLS/mbedtls
-    VERSION 3.6.2
-    OPTIONS
-        "USE_STATIC_MBEDTLS_LIBRARY ON"
-        "ENABLE_PROGRAMS OFF"
-        "ENABLE_TESTING OFF"
-)
-
-include_directories(${mbedtls_INCLUDE_DIR})
-# set(MBEDTLS_STATIC_LIBRARY ON)
-
-# =========================================================================================================================
-# CibetWeb
-# =========================================================================================================================
-CPMAddPackage(
-    NAME civetweb
-    GITHUB_REPOSITORY  civetweb/civetweb
-    VERSION 1.16
-    OPTIONS 
-        "CIVETWEB_BUILD_TESTING OFF"
-        "CIVETWEB_ENABLE_SERVER_EXECUTABLE OFF"
-        "CIVETWEB_ENABLE_CXX ON"
-        "CIVETWEB_ENABLE_WEBSOCKETS ON"
-        "CIVETWEB_ENABLE_ASAN OFF"
-)
- 
-find_package(civetweb REQUIRED)
-include_directories(${civetweb_SOURCE_DIR}/include)
-
-# =========================================================================================================================
-# CURL
-# =========================================================================================================================
-
-
-# Définit les options de cURL pour utiliser mBedTLS
-
-set(CURL_USE_OPENSSL OFF  CACHE BOOL "Disable OpenSSL." FORCE)
-set(CURL_USE_MBEDTLS ON  CACHE BOOL "Use MBED TLS." FORCE)
-set(CURL_USE_LIBSSH2 OFF  CACHE BOOL "Disable SSH." FORCE)
-set(MBEDTLS_INCLUDE_DIRS ${mbedtls_SOURCE_DIR}/include)
-set(MBEDTLS_LIBRARY ${mbedtls_BINARY_DIR}/libmbedtls.a)
-set(MBEDX509_LIBRARY ${mbedtls_BINARY_DIR}/libmbedx509.a)
-set(MBEDCRYPTO_LIBRARY ${mbedtls_BINARY_DIR}/libmbedcrypto.a)
-
-# Télécharge et configure cURL
-FetchContent_Declare(
-  curl
-  GIT_REPOSITORY https://github.com/curl/curl.git
-  GIT_TAG        curl-8_7_1
-  GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE
-)
-
-set(BUILD_CURL_EXE FALSE)
-set(BUILD_STATIC_LIBS TRUE)
-FetchContent_MakeAvailable(curl)
-
-# Assurez-vous que votre projet trouve les headers de mBedTLS et cURL
-include_directories(${mbedtls_SOURCE_DIR}/include)
-include_directories(${curl_SOURCE_DIR}/include)
+# Adhere to GNU filesystem layout conventions
+include(GNUInstallDirs)
 
 
 # =========================================================================================================================
@@ -114,69 +44,36 @@ add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/C
 add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
-# =========================================================================================================================
-# SDL3
-# =========================================================================================================================
-FetchContent_Declare(
-    sdl3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG 78cc5c173404488d80751af226d1eaf67033bcc4   # === preview-3.1.6
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-)
-
-set(BUILD_SHARED_LIBS TRUE)
-set(SDL_STATIC TRUE)
-FetchContent_MakeAvailable(sdl3)
-include_directories(${sdl3_SOURCE_DIR}/include)
-# add_subdirectory(${sdl3_SOURCE_DIR}) 
 
 # =========================================================================================================================
 # SDL3 MIXER
 # =========================================================================================================================
 
-CPMAddPackage(
-   NAME sdl3_mixer
-   URL https://github.com/libsdl-org/SDL_mixer/archive/d4eba31e4ac23a81fffad02e91b17dcb2449a2cb.tar.gz
+add_subdirectory(externals/civetweb EXCLUDE_FROM_ALL)
+add_subdirectory(externals/curl EXCLUDE_FROM_ALL)
 
-    OPTIONS 
-        "BUILD_SHARED_LIBS TRUE"
-        "SDL_PULSEAUDIO_SHARED TRUE"
-        "SDL_PIPEWIRE_SHARED TRUE" 
-)
+# Configure SDL by calling its CMake file.
+# we use EXCLUDE_FROM_ALL so that its install targets and configs don't
+# pollute upwards into our configuration.
+add_subdirectory(externals/SDL EXCLUDE_FROM_ALL)
 
-# FetchContent_Declare(
-#     sdl3_mixer
-#     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-#     GIT_TAG d4eba31e4ac23a81fffad02e91b17dcb2449a2cb
-#     # GIT_SHALLOW TRUE # Ne pas activer shallow sinon le tag n'est pas trouvé
-#     # GIT_PROGRESS TRUE
-#     GIT_SUBMODULES ""
-# )
+# SDL_mixer (used for playing audio)
+set(SDLMIXER_MIDI_NATIVE OFF)     # disable formats we don't use to make the build faster and smaller. Also some of these don't work on all platforms so you'll need to do some experimentation.
+set(SDLMIXER_GME OFF)
+set(SDLMIXER_WAVPACK OFF)     
+set(SDLMIXER_MOD OFF)
+set(SDLMIXER_OPUS OFF)
+set(SDLMIXER_VENDORED ON)   # tell SDL_mixer to build its own dependencies
+add_subdirectory(externals/SDL_mixer EXCLUDE_FROM_ALL)
 
-# set(BUILD_SHARED_LIBS TRUE)
-# set(SDL_PULSEAUDIO_SHARED TRUE)
-# set(SDL_PIPEWIRE_SHARED TRUE)
-# FetchContent_MakeAvailable(sdl3_mixer)
-# include_directories(${sdl3_mixer_SOURCE_DIR}/include)
+# SDL_image (used for loading various image formats)
+set(SDLIMAGE_VENDORED OFF)
+set(SDLIMAGE_AVIF OFF)	# disable formats we don't use to make the build faster and smaller.
+set(SDLIMAGE_BMP ON)
+set(SDLIMAGE_JPEG ON)
+set(SDLIMAGE_WEBP ON)
+add_subdirectory(externals/SDL_image EXCLUDE_FROM_ALL)
 
-
-# =========================================================================================================================
-# SDL3-Image
-# =========================================================================================================================
-FetchContent_Declare(
-    sdl_image
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-    GIT_TAG bcc97c044266080256ef6ed0d690859677212b2b
-    GIT_PROGRESS TRUE
-    # GIT_SHALLOW TRUE # Ne pas activer shallow sinon le tag n'est pas trouvé
-) 
-
-
-set(SDL3IMAGE_INSTALL OFF)
-set(BUILD_SHARED_LIBS TRUE)
-FetchContent_MakeAvailable(sdl_image)
-include_directories(${sdl_image_SOURCE_DIR}/include)
 
 # =========================================================================================================================
 # Project sources
@@ -185,28 +82,25 @@ set(SRCS
 
     src/main.cpp
 
-    src/window_base.cpp
-    src/console_window.cpp
-    src/emulator_window.cpp
-    src/main_window.cpp
-    src/library_window.cpp
-    src/platform_folders.cpp
-
-
+    src/windows/window_base.cpp
+    src/windows/console_window.cpp
+    src/windows/emulator_window.cpp
+    src/windows/main_window.cpp
+    src/windows/library_window.cpp
+    src/windows/resources_window.cpp
+    src/windows/properties_window.cpp
+    src/windows/debugger_window.cpp
+    src/windows/cpu_window.cpp
+    src/windows/variables_window.cpp
+    
     src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.cpp
     src/node_editor/node_editor_window.cpp
     src/node_editor/function_node_widget.cpp
-
-    src/resources_window.cpp
-    src/properties_window.cpp
-    src/cpu_window.cpp
+    src/node_editor/variable_node_widget.cpp
+   
     src/gui.cpp
-
-    src/code_editor.cpp
     src/media_converter.cpp
-    src/miniz.c
-    src/zip.cpp
     src/web_server.cpp
 
     src/importers/pack_archive.cpp
@@ -226,28 +120,35 @@ set(SRCS
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
 
-    ../firmware/chip32/chip32_assembler.cpp
-    ../firmware/chip32/chip32_vm.c
-
     ../shared/audio_player.cpp
     ../shared/stb_vorbis.c
     ../shared/resource_manager.cpp
     ../shared/library_manager.cpp
     ../shared/downloader.cpp
     ../shared/story_db.cpp
+    ../shared/miniz.c
+    ../shared/zip.cpp
+    ../shared/platform_folders.cpp
+    ../shared/raudio.c
+
 
     # Core engine files
-    
-    ../core/src/compiler.cpp
-    ../core/src/story_project.cpp
-    ../core/src/story_page.cpp
-    ../core/src/base_node.cpp
-    ../core/src/media_node.cpp
-    ../core/src/function_node.cpp
-    ../core/src/connection.cpp
+    ../core/story-manager/src/compiler.cpp
+    ../core/story-manager/src/story_project.cpp
+    ../core/story-manager/src/story_page.cpp
+    ../core/story-manager/src/base_node.cpp
+    ../core/story-manager/src/media_node.cpp
+    ../core/story-manager/src/compare_node.cpp
+    ../core/story-manager/src/branch_node.cpp
+    ../core/story-manager/src/variable_node.cpp
+    ../core/story-manager/src/function_node.cpp
+    ../core/story-manager/src/connection.cpp
+    ../core/story-manager/lib/sys_lib.cpp
+    ../core/story-manager/lib/resource.cpp
 
-    ../core/lib/sys_lib.cpp
-    ../core/lib/resource.cpp
+
+    ../core/chip32/chip32_assembler.cpp
+    ../core/chip32/chip32_vm.c
 )
 
 if(WIN32)
@@ -271,30 +172,34 @@ endif()
 
 target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ${imgui_SOURCE_DIR}
-    ${sdl2_SOURCE_DIR}/include
-
-    # ${te_SOURCE_DIR}
-    
     ${imgui_SOURCE_DIR}/backends
+
     libs/ImGuiFileDialog
     libs/imgui-node-editor
+    libs
 
-    ${curl_INCLUDE_DIR}
-
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/importers
-    ${CMAKE_SOURCE_DIR}/src/node_editor
-    ${CMAKE_SOURCE_DIR}/src/node_engine
+    src
+    src/importers
+    src/node_editor
+    src/windows
 
     ../firmware/library
-    ../firmware/chip32
+    ../core/chip32
     ../shared
-    ../core/src
-    ../core/lib
-    ../core/interfaces
+    ../core/story-manager/src
+    ../core/story-manager/lib
+    ../core/story-manager/interfaces
 )
 
-add_definitions(-DIMGUI_USE_WCHAR32 -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DVERSION_MINOR=${PROJECT_VERSION_MINOR} -DVERSION_PATCH=${PROJECT_VERSION_PATCH})
+add_definitions(
+    -DIMGUI_USE_WCHAR32 
+    -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} 
+    -DVERSION_MINOR=${PROJECT_VERSION_MINOR} 
+    -DVERSION_PATCH=${PROJECT_VERSION_PATCH}
+
+    -DRAUDIO_STANDALONE
+    -DSUPPORT_MODULE_RAUDIO
+)
 add_link_options(-static-libgcc -static-libstdc++)
 
 if (APPLE)
@@ -318,15 +223,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 endif()
 
-# target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC cimg_display=0)
-
-# target_compile_definitions(${STORY_EDITOR_PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
 target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC 
     ${sdl3_BINARY_DIR}
-    ${curl_BINARY_DIR}
+    ${libcurl_BINARY_DIR}
     ${mbedtls_BINARY_DIR}
-    # ${CivetWeb_BINARY_DIR}
 )
 
 # On est obligé de passer par une variable pour injecter 
@@ -337,14 +238,11 @@ set(SDL_MIXER_BIN_DIR ${sdl3_mixer_BINARY_DIR})
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
-
-        
-        SDL3::SDL3
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
-        libcurl_static
-        mbedtls
-        civetweb-cpp
+        SDL3::SDL3
+        CURL::libcurl
+        civetweb::civetweb-cpp
         pthread
         OpenGL::GL
         dl
@@ -353,34 +251,33 @@ if(UNIX)
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}
         OpenGL::GL
-        SDL3::SDL3
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
+        SDL3::SDL3
         libcurl_static
         ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
     )
 endif()
 
-# =========================================================================================================================
-# CPACK INSTALLER
-# =========================================================================================================================
-install(TARGETS ${STORY_EDITOR_PROJECT} RUNTIME DESTINATION ".")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/OUTPUT" CACHE PATH "Directory for sbnw installation" FORCE)
 
-# Personnaliser les options d'installation
-set(CPACK_PACKAGE_NAME "Open-Story-Editor")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Anthony Rabine")
-set(CPACK_PACKAGE_DESCRIPTION "Open Story Teller - Node based editor")
-set(CPACK_PACKAGE_VENDOR "D8S")
-set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+# set_target_properties(${STORY_EDITOR_PROJECT}
+#     PROPERTIES
+#         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/lib
+#         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/bin
+# )
+
+
+# =========================================================================================================================
+# DIRECTORY INSTALLER
+# =========================================================================================================================
 
 # install(DIRECTORY "${PROJECT_SOURCE_DIR}/assets/" DESTINATION "assets")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/fonts/" DESTINATION "fonts")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/scripts/" DESTINATION "scripts")
-install_files("." FILES "${CMAKE_SOURCE_DIR}/LICENSE")
-install_files("." FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini")
+install(FILES "${CMAKE_SOURCE_DIR}/LICENSE" DESTINATION ".")
+install(FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini" DESTINATION "bin")
+install(TARGETS ${STORY_EDITOR_PROJECT} BUNDLE DESTINATION bin)
 
 if(WIN32)
     install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
@@ -396,9 +293,13 @@ endif()
 
 if(LINUX)
 
-    install_files("." FILES "${SDL_BIN_DIR}/libSDL3.so")
-    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/libSDL3_image.so")
-    install_files("." FILES "${SDL_MIXER_BIN_DIR}/libSDL3_mixer.so")
+    install(DIRECTORY "${SDL_BIN_DIR}/" DESTINATION lib FILES_MATCHING REGEX "libSDL3.so(\\..*)?$")
+    install(DIRECTORY "${SDL_IMAGE_BIN_DIR}/" DESTINATION lib FILES_MATCHING REGEX "libSDL3_image.so(\\..*)?$")
+    install(DIRECTORY "${SDL_MIXER_BIN_DIR}/" DESTINATION lib FILES_MATCHING REGEX "libSDL3_mixer.so(\\..*)?$")
+
+    # install_files("." FILES "${SDL_BIN_DIR}/libSDL3.so")
+    # install_files("." FILES "${SDL_IMAGE_BIN_DIR}/libSDL3_image.so")
+    # install_files("." FILES "${SDL_MIXER_BIN_DIR}/libSDL3_mixer.so")
 endif()
 
 if (APPLE)
@@ -407,4 +308,3 @@ if (APPLE)
     install_files("." FILES "${SDL_BIN_DIR}/libSDL2-2.0.0.dylib")
 endif()
 
-include(CPack)

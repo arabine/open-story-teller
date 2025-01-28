@@ -43,6 +43,9 @@ private:
 
     void AudioThread();
 
+    int StartAudio(const std::string &filename);
+    void StopAudio();
+
 };
 
 

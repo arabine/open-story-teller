@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=StoryEditor
+Name=OpenStoryEditor
 Comment=A tool to create stories with graphical nodes (OpenStoryTeller project)
 Exec=story-editor
-Icon=story-editor-logo
+Icon=eu.d8s.OpenStoryEditor.png
 Categories=Graphics;2DGraphics;
 

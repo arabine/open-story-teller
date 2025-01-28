@@ -459,7 +459,7 @@ bool Assembler::Parse(const std::string &data)
             else // RAM DATA, only one argument is used: the size of the array
             {
                 instr.addr = ram_addr;
-                instr.dataLen = static_cast<uint16_t>(strtol(lineParts[2].c_str(),  NULL, 0));
+                instr.dataLen = static_cast<uint16_t>(strtol(lineParts[2].c_str(),  NULL, 0)) * instr.dataTypeSize/8;
                 ram_addr += instr.dataLen;
                 m_labels[opcode] = instr;
                 m_instructions.push_back(instr);

@@ -25,24 +25,6 @@ void MediaNodeWidget::Draw()
 {
     BaseNodeWidget::FrameStart();
 
-/*
-    static ImGuiTableFlags flags = ImGuiTableFlags_Borders |
-                                   ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_SizingFixedFit;
-
-
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10.0f, 10.0f));
-    if (ImGui::BeginTable("table1", 1, flags))
-    {
-        ImGui::TableNextRow();
-        ImU32 bg_color = ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.7f, 1.0f));
-        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
-        ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted("Media node");
-
-        ImGui::EndTable();
-    }
-    ImGui::PopStyleVar();
-*/
     const char * text = "Media node";
     // Obtenir la position courante du curseur
     ImVec2 pos = ImGui::GetCursorScreenPos();

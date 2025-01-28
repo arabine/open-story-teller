@@ -9,6 +9,7 @@
 #include "json.hpp"
 #include "media_node.h"
 #include "function_node.h"
+#include "variable_node.h"
 #include "sys_lib.h"
 
 StoryProject::StoryProject(ILogger &log)
@@ -16,6 +17,7 @@ StoryProject::StoryProject(ILogger &log)
 {
     registerNode<MediaNode>("media-node");
     registerNode<FunctionNode>("function-node");
+    registerNode<VariableNode>("variable-node");
 }
 
 StoryProject::~StoryProject()
@@ -219,6 +221,24 @@ std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::share
     }
 
     return std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator>();
+}
+
+void StoryProject::ScanVariable(const std::function<void(Variable& element)>& operation)
+{
+    for (auto &v : m_variables)
+    {
+        operation(v);
+    }
+}
+
+void StoryProject::AddVariable() 
+{
+    m_variables.push_back(Variable("var_" + std::to_string(m_variables.size()), "int32_t", 0, 8));
+}
+
+void StoryProject::DeleteVariable(int i)
+{
+    m_variables.erase(m_variables.begin() + i);
 }
 
 bool StoryProject::ModelFromJson(const nlohmann::json &model)

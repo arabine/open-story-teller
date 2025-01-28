@@ -1,0 +1,140 @@
+	jump    .nodeEntry920e33a5-99c2-429c-9214-3776f169051d
+$cover.png DC8 "cover.png", 8
+$quelle_destination.mp3 DC8 "quelle_destination.mp3", 8
+$mediaChoice920e33a5-99c2-429c-9214-3776f169051d DC32, 2, .nodeEntryea561fb0-994b-4777-80f3-58860eda97d6, .nodeEntry45fb3875-38aa-4683-abba-06868c8e109c
+
+$saturne.png DC8 "saturne.png", 8
+$saturne.mp3 DC8 "saturne.mp3", 8
+$mediaChoice45fb3875-38aa-4683-abba-06868c8e109c DC32, 1, .nodeEntry42abccda-d683-409d-aed9-7727df3d6974
+
+$mars.png DC8 "mars.png", 8
+$mars.mp3 DC8 "mars.mp3", 8
+$mediaChoiceea561fb0-994b-4777-80f3-58860eda97d6 DC32, 1, .nodeEntryca6a2e13-f4f0-4d1e-a64c-11acacfb97c0
+
+$sature_story.mp3 DC8 "sature_story.mp3", 8
+$mediaChoice42abccda-d683-409d-aed9-7727df3d6974 DC32, 0, 
+$mars_story.mp3 DC8 "mars_story.mp3", 8
+$mediaChoiceca6a2e13-f4f0-4d1e-a64c-11acacfb97c0 DC32, 0, 
+; ---------------------------- Default node Type: Choice
+.nodeEntry920e33a5-99c2-429c-9214-3776f169051d:
+lcons r0, $cover.png
+lcons r1, $quelle_destination.mp3
+syscall 1
+lcons r0, 0b10000000000
+syscall 2
+lcons r0, $mediaChoice920e33a5-99c2-429c-9214-3776f169051d
+jump .media ; no return possible, so a jump is enough
+; ---------------------------- Default node Type: Transition
+.nodeEntry45fb3875-38aa-4683-abba-06868c8e109c:
+lcons r0, $saturne.png
+lcons r1, $saturne.mp3
+syscall 1
+lcons r0, .nodeEntry42abccda-d683-409d-aed9-7727df3d6974
+ret
+
+; ---------------------------- Default node Type: Transition
+.nodeEntryea561fb0-994b-4777-80f3-58860eda97d6:
+lcons r0, $mars.png
+lcons r1, $mars.mp3
+syscall 1
+lcons r0, .nodeEntryca6a2e13-f4f0-4d1e-a64c-11acacfb97c0
+ret
+
+; ---------------------------- Default node Type: End
+.nodeEntry42abccda-d683-409d-aed9-7727df3d6974:
+lcons r0, 0
+lcons r1, $sature_story.mp3
+syscall 1
+ret
+
+; ---------------------------- Default node Type: End
+.nodeEntryca6a2e13-f4f0-4d1e-a64c-11acacfb97c0:
+lcons r0, 0
+lcons r1, $mars_story.mp3
+syscall 1
+ret
+
+; Generic media choice manager
+.media:
+    ; Les adresses des différents medias sont dans la stack
+; Arguments:
+    ; r0: address d'une structure de type "media choice"
+; Local:
+    ; t0: current media address
+    ; t1: increment 4
+    ; t3: address of the first element in the choice array
+    ; t4: address of the last element in the choice array
+    ; t5: where to jump when OK button is pressed
+    
+    mov t3, r0  ; copie de R0 pour travailler dessus
+    mov t2, r0  ; sauvegarde de R0
+    load r0, @t3, 4 ; Le premier élément est le nombre de choix possibles, ex: r0 = 12
+    lcons t1, 4
+    mul r0, t1  ; on calcule l'offset: r0 = nb_elements * 4 = 48
+    mov t4, t3  ; t4 = t3
+    add t4, r0  ; t4 pointe maintenant sur le dernier élément de la structure
+    add t3, t1  ; t3 pointe maintenant sur le premier élément
+    mov t0, t3      ; on commence sur le premier élément
+    
+.media_loop:
+
+    ; --------- We call a media transition node
+    load r0, @t0, 4 ; Get the address located at memory T0
+    call r0 ; call subroutine   
+    ; Return argument in R0: the address of the node to call whe OK is pressed
+    mov t5, r0  ; save it
+    
+    ; wait for event
+    lcons r0, 0b100111 ; mask for OK, previous and next buttons, home button
+    syscall 2
+    ; Event is stored in R0
+
+    ; -----  Test if event is OK button
+    lcons r1, 1 ; mask for OK button
+    and r1, r0 ; r1 = r1 AND r0
+    skipz r1 ; not OK, skip jump
+    jump .media_wait_event
+    
+    ; test previous event
+    lcons r1, 2 ; mask for previous button
+    and r1, r0 ; r1 = r1 AND r0
+    skipz r1 ; not OK, skip jump
+    jump .media_previous
+
+    lcons r1, 0b100000 ; mask for home button
+    and r1, r0 ; r1 = r1 AND r0
+    skipz r1 ; not Home, skip jump
+    jump .media_exit
+
+    ; all other events mean: next node
+    eq  r0, t0, t4   ;  t4 est le dernier élément
+    skipz r0   ;  zéro, on peut incrémenter l'adresse
+    jump .media_set_first
+    add  t0, t1 ; t0 += 4
+    jump .media_loop
+ 
+ .media_set_first:  ; on reboucle sur le premier élément de la structure
+    mov t0, t3
+    jump .media_loop
+
+.media_previous:
+    eq r0, t0, t3   ; on teste si on est au premier élément
+    skipz r0   ;  zéro, on peut décrémenter l'adresse
+    jump .media_set_last
+    sub  t0, t1 ; t0 += 4
+    jump .media_loop
+ 
+ .media_set_last:  ; on reboucle sur le dernier élément de la structure
+    mov t0, t4
+    jump .media_loop
+
+.media_wait_event:
+    call t5 ; jump to the node
+    lcons r0, 0b10000100001 ; mask for end of audio, Ok, and home buttons
+    syscall 2 ; wait for event (OK, home or end of audio), return to choice loop
+    jump .media_loop
+
+.media_exit:
+    lcons r0, 1 ; Home button pressed, send signal to exit story
+    syscall 3 ; exit story, we should never return from this call
+    halt ; just in case

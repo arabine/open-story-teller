@@ -10,6 +10,7 @@
 #include "resource.h"
 #include "connection.h"
 #include "base_node.h"
+#include "variable.h"
 
 template <typename T>
 struct Callback;
@@ -49,9 +50,15 @@ public:
     // Node interaction
     virtual void BuildNodes(bool compileonly) = 0;
     virtual void BuildCode(bool compileonly) = 0;
+    virtual void SetExternalSourceFile(const std::string &filename) = 0;
     virtual void LoadBinaryStory(const std::string &filename) = 0;
     virtual void ToggleBreakpoint(int line) = 0;
     virtual uint32_t GetRegister(int reg) = 0;
+
+    // Variables management
+    virtual void ScanVariable(const std::function<void(Variable& element)>& operation) = 0;
+    virtual void AddVariable() = 0;
+    virtual void DeleteVariable(int i) = 0;
  
     virtual void Play() = 0;
     virtual void Step() = 0;

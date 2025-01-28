@@ -11,6 +11,7 @@
 
 #include "media_node_widget.h"
 #include "function_node_widget.h"
+#include "variable_node_widget.h"
 #include "gui.h"
 #include "uuid.h"
 
@@ -29,6 +30,7 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
 
     registerNode<MediaNodeWidget>("media-node");
     registerNode<FunctionNodeWidget>("function-node");
+    registerNode<VariableNodeWidget>("variable-node");
 }
 
 NodeEditorWindow::~NodeEditorWindow()

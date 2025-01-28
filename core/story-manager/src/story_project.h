@@ -15,7 +15,7 @@
 #include "chip32_assembler.h"
 #include "story_page.h"
 #include "story_options.h"
-
+#include "variable.h"
 
 struct StoryProject : public IStoryProject
 {
@@ -102,6 +102,11 @@ public:
     std::pair<std::list<std::shared_ptr<BaseNode>>::iterator, std::list<std::shared_ptr<BaseNode>>::iterator> Nodes(const std::string_view &page_uuid);
     std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator> Links(const std::string_view &page_uuid);
 
+
+    void ScanVariable(const std::function<void(Variable& element)>& operation);
+    void AddVariable();
+    void DeleteVariable(int i);
+
     std::vector<std::string> GetNodeTypes() const { 
         std::vector<std::string> l;
         for(auto const& imap: m_registry) l.push_back(imap.first);
@@ -128,6 +133,8 @@ private:
     std::vector<uint8_t> m_program;
 
     std::list<std::shared_ptr<StoryPage>> m_pages;
+
+    std::vector<Variable> m_variables;
 
     StoryOptions m_storyOptions;
 

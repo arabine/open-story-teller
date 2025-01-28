@@ -75,7 +75,7 @@ extern "C"
 
     typedef struct
     {
-        uint8_t head;
+        uint32_t head; // fix: allow alignment of 32-bit addresses
 
         uint8_t magic[4];
         uint8_t width[4];  // big-endian width

@@ -1,0 +1,36 @@
+; jump over the data, to our entry label
+    jump         .entry
+
+$imageBird          DC8  "example.bmp", 8  ; data
+$someConstant       DC32  12456789
+
+; DSxx to declare a variable in RAM, followed by the number of elements
+$RamData1           DV32    1 ; one 32-bit integer
+$RamData2           DV32    1 ; one 32-bit integer
+$MyArray            DV8    10 ; array of 10 bytes
+
+; label definition
+.entry:   ;; comment here should work
+; We create a stupid loop just for RAM variable testing
+
+    ; Fill the second ram data with pattern, to be sure that there is no memory corrumptions
+    lcons r0, 0xFFFFFFFF
+    lcons r2, $RamData2
+    store @r2, r0, 4 ; save R0 in RAM
+
+    lcons r0, 4 ; prepare loop: 4 iterations
+    lcons r2, $RamData1 ; save in R2 a ram address
+    store @r2, r0, 4 ; save R0 in RAM
+    lcons r1, 1
+.loop:
+    load r0, @r2, 4  ; load this variable
+    sub r0, r1
+    store @r2, r0, 4 ; save R0 in RAM
+    skipz r0   ; skip loop if R0 == 0
+    jump .loop
+
+
+    mov      r0, r2  ; copy R2 into R0 (blank space between , and R2)
+mov R0,R2  ; copy R2 into R0 (NO blank space between , and R2)
+
+    halt

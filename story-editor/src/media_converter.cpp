@@ -17,30 +17,60 @@
 #define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
 
-#define QOI_IMPLEMENTATION
-#include "qoi.h"
+#include <filesystem>
+#include <vector>
+#include <cstddef>
+#include <fstream>
+#include <iostream>
+#include <cstdlib>
+#include <memory>
+#include <variant>
+#include <string>
+#include <string_view>
+#include "qoixx.hpp"
+
+struct QoiDescription {
+	unsigned int width;
+	unsigned int height;
+	unsigned char channels;
+	unsigned char colorspace;
+    void * pixels;
+};
+
+static inline void save_file(const std::filesystem::path& path, const std::vector<std::byte>& bytes){
+  std::ofstream ofs{path, std::ios::binary};
+  ofs.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+}
+
+using image = std::variant<QoiDescription, std::pair<std::vector<std::byte>, qoixx::qoi::desc>>;
 
 
-static int qoi_encode_and_write(const char *filename, const void *data, const qoi_desc *desc) {
-	FILE *f = fopen(filename, "wb");
-	int size;
-	void *encoded;
+template<typename... Fs>
+struct overloaded : Fs...{
+  using Fs::operator()...;
+};
+template<typename... Fs> overloaded(Fs...) -> overloaded<Fs...>;
 
-	if (!f) {
-		return 0;
-	}
-
-	encoded = qoi_encode(data, desc, &size);
-	if (!encoded) {
-		fclose(f);
-		return 0;
-	}
-
-	fwrite(encoded, 1, size, f);
-	fclose(f);
-
-	free(encoded);
-	return size;
+static inline void write_qoi(const std::filesystem::path& file_path, const image& image){
+  auto [ptr, size, desc] = std::visit(overloaded(
+    [](const QoiDescription& image){
+      return std::make_tuple(
+        reinterpret_cast<const std::byte*>(image.pixels),
+        static_cast<std::size_t>(image.width) * image.height * image.channels,
+        qoixx::qoi::desc{
+          .width = static_cast<std::uint32_t>(image.width),
+          .height = static_cast<std::uint32_t>(image.height),
+          .channels = static_cast<std::uint8_t>(image.channels),
+          .colorspace = qoixx::qoi::colorspace::srgb
+        }
+      );
+    },
+    [](const std::pair<std::vector<std::byte>, qoixx::qoi::desc>& image){
+      return std::make_tuple(image.first.data(), image.first.size(), image.second);
+    }
+  ), image);
+  const auto encoded = qoixx::qoi::encode<std::vector<std::byte>>(ptr, size, desc);
+  save_file(file_path, encoded);
 }
 
 MediaConverter::MediaConverter()
@@ -69,25 +99,27 @@ int MediaConverter::ImageToQoi(const std::string &inputFileName, const std::stri
 
     if (pixels != NULL)
     {
-        qoi_desc desc;
+        QoiDescription desc;
         desc.channels = channels;
-        desc.colorspace = QOI_SRGB;
+        desc.colorspace = 0; // #define QOI_SRGB   0
         desc.width = w;
         desc.height = h;
+        desc.pixels = pixels;
 
-
-        int encoded = qoi_encode_and_write(outputFileName.c_str(), pixels, &desc);
+        write_qoi(outputFileName.c_str(), desc);
         free(pixels);
-
+/*
         if (!encoded)
         {
             return cErrorCannotWriteOrEncodeOutputFile;
         }
+        */
     }
     else
     {
         return cErrorCannotDecodeInputFile;
     }
+
 
     return cSuccess;
 }

@@ -1,5 +1,5 @@
 {
-    "version": 10,
+    "version": 3,
     "cmakeMinimumRequired": {
       "major": 3,
       "minor": 23,
@@ -13,7 +13,7 @@
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build",
         "environment": {
-          "CPM_SOURCE_CACHE": "$env{HOME}/.cache/CPM"
+
         }
       },
       {

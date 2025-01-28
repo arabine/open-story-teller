@@ -1,0 +1,15 @@
+[submodule "story-editor/externals/SDL_mixer"]
+	path = story-editor/externals/SDL_mixer
+	url = https://github.com/libsdl-org/SDL_mixer
+[submodule "story-editor/externals/SDL"]
+	path = story-editor/externals/SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "story-editor/externals/SDL_image"]
+	path = story-editor/externals/SDL_image
+	url = https://github.com/libsdl-org/SDL_image
+[submodule "story-editor/externals/civetweb"]
+	path = story-editor/externals/civetweb
+	url = https://github.com/civetweb/civetweb
+[submodule "story-editor/externals/curl"]
+	path = story-editor/externals/curl
+	url = https://github.com/curl/curl
