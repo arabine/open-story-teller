@@ -12,26 +12,12 @@ jobs:
         - uses: actions/checkout@v4
           with:
             submodules: recursive
-        - name: Install packages
-          run : |
-              sudo apt-get update -qq
-              sudo apt-get install build-essential
-              sudo apt-get install cmake
-              sudo apt install mesa-common-dev libgl1-mesa-dev libgles2-mesa-dev
         - name: build
-          working-directory: ./story-editor
+          working-directory: ./story-editor/delivery
           run : |
-              mkdir build
-              cd build
-              cmake -DCMAKE_BUILD_TYPE=Release ..
-              make
-              ls
-        - name: package_setup
-          working-directory: ./story-editor/build
-          run : |
-              cpack
-              cpack -G DEB
-              ls
+              ./linux_01_docker_build_image.sh
+              ./linux_02_docker_launch_build.sh
+              ./linux_02_docker_launch_package.sh
   build_win32:
       runs-on: ubuntu-latest
       steps:
@@ -39,7 +25,8 @@ jobs:
           with:
             submodules: recursive
         - name: build
-          working-directory: ./story-editor
+          working-directory: ./story-editor/delivery
           run : |
-              ./create_docker_image_win.sh
-              ./build_win32.sh
+              ./mingw64_01_docker_build_image.sh
+              ./mingw64_02_docker_launch_build.sh
+

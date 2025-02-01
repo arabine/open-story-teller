@@ -49,8 +49,8 @@ EOL
 chmod +x ${APP_DIR}/AppRun
 
 # Ajouter une icône (optionnel, remplacer par une vraie icône si disponible)
-cp story-editor-logo-256x256.png "${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
-cp story-editor-logo-256x256.png "${APP_DIR}/${APP_NAME}.png"
+cp delivery/story-editor-logo-256x256.png "${APP_DIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
+cp delivery/story-editor-logo-256x256.png "${APP_DIR}/${APP_NAME}.png"
 cp "${APP_DIR}/${APP_NAME}.desktop" "${APP_DIR}/usr/share/applications/${APP_NAME}.desktop"
 
 # Étape 2 : Télécharger l'outil AppImage

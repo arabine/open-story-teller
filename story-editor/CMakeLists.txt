@@ -26,7 +26,7 @@ set(IMGUI_VERSION 1.91.6)
 include(FetchContent)
 # Adhere to GNU filesystem layout conventions
 include(GNUInstallDirs)
-
+# set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 # =========================================================================================================================
 # IMGUI and plugins
@@ -46,15 +46,29 @@ add_subdirectory(libs/ImGuiFileDialog)
 
 
 # =========================================================================================================================
-# SDL3 MIXER
+# CIVETWEB
 # =========================================================================================================================
-
-set(CIVETWEB_BUILD_TESTING OFF)
-set(CIVETWEB_ENABLE_SERVER_EXECUTABLE OFF)
-set(CIVETWEB_ENABLE_CXX ON)
-set(CIVETWEB_ENABLE_WEBSOCKETS ON)
-set(CIVETWEB_ENABLE_ASAN OFF)
+set(CIVETWEB_BUILD_TESTING OFF CACHE INTERNAL "" FORCE)
+set(CIVETWEB_ENABLE_SERVER_EXECUTABLE OFF CACHE INTERNAL "" FORCE)
+set(CIVETWEB_ENABLE_CXX ON CACHE INTERNAL "" FORCE)
+set(CIVETWEB_ENABLE_WEBSOCKETS ON CACHE INTERNAL "" FORCE)
+set(CIVETWEB_ENABLE_ASAN OFF CACHE INTERNAL "" FORCE)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(externals/civetweb EXCLUDE_FROM_ALL)
+include_directories(externals/civetweb/include)
+
+
+# set(CURL_USE_OPENSSL OFF  CACHE BOOL "Disable OpenSSL." FORCE)
+# set(CURL_USE_MBEDTLS ON  CACHE BOOL "Use MBED TLS." FORCE)
+# set(MBEDTLS_INCLUDE_DIRS ${mbedtls_SOURCE_DIR}/include)
+# set(MBEDTLS_LIBRARY ${mbedtls_BINARY_DIR}/libmbedtls.a)
+# set(MBEDX509_LIBRARY ${mbedtls_BINARY_DIR}/libmbedx509.a)
+# set(MBEDCRYPTO_LIBRARY ${mbedtls_BINARY_DIR}/libmbedcrypto.a)
+
+set(CURL_USE_LIBSSH2 OFF  CACHE BOOL "Disable SSH." FORCE)
+set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable PSL" FORCE) # PSL not working for cross builds (ie, mingw32), or needs to cross-build one
+set(BUILD_CURL_EXE FALSE)
+set(BUILD_STATIC_LIBS TRUE)
 add_subdirectory(externals/curl EXCLUDE_FROM_ALL)
 
 # Configure SDL by calling its CMake file.
@@ -126,7 +140,6 @@ set(SRCS
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
 
     ../shared/audio_player.cpp
-    ../shared/stb_vorbis.c
     ../shared/resource_manager.cpp
     ../shared/library_manager.cpp
     ../shared/downloader.cpp
@@ -134,7 +147,6 @@ set(SRCS
     ../shared/miniz.c
     ../shared/zip.cpp
     ../shared/platform_folders.cpp
-    ../shared/raudio.c
 
 
     # Core engine files
@@ -229,20 +241,15 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 endif()
 
 
-target_link_directories(${STORY_EDITOR_PROJECT} PUBLIC 
-    ${sdl3_BINARY_DIR}
-    ${libcurl_BINARY_DIR}
-    ${mbedtls_BINARY_DIR}
-)
-
 # On est obligé de passer par une variable pour injecter 
 # certaines informations à CPACK
-set(SDL_BIN_DIR ${sdl3_BINARY_DIR})
-set(SDL_IMAGE_BIN_DIR ${sdl_image_BINARY_DIR})
-set(SDL_MIXER_BIN_DIR ${sdl3_mixer_BINARY_DIR})
+set(SDL_BIN_DIR ${CMAKE_BINARY_DIR}/externals/SDL)
+set(SDL_IMAGE_BIN_DIR ${CMAKE_BINARY_DIR}/externals/SDL_image)
+set(SDL_MIXER_BIN_DIR ${CMAKE_BINARY_DIR}/externals/SDL_mixer)
 
 if(UNIX)
     target_link_libraries(${STORY_EDITOR_PROJECT}
+        
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
         SDL3::SDL3
@@ -258,6 +265,7 @@ elseif(WIN32)
         OpenGL::GL
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
+        civetweb-cpp
         SDL3::SDL3
         libcurl_static
         ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
@@ -281,13 +289,15 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/OUTPUT" CACHE PATH "Directory for 
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/fonts/" DESTINATION "fonts")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/scripts/" DESTINATION "scripts")
 install(FILES "${CMAKE_SOURCE_DIR}/LICENSE" DESTINATION ".")
-install(FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini" DESTINATION "bin")
-install(TARGETS ${STORY_EDITOR_PROJECT} BUNDLE DESTINATION bin)
+install(FILES "${CMAKE_SOURCE_DIR}/tools/imgui.ini" DESTINATION ".")
+install(TARGETS ${STORY_EDITOR_PROJECT} BUNDLE DESTINATION ".")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 
 if(WIN32)
     install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
-    install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.dll")
-    install_files("." FILES "${SDL_MIXER_BIN_DIR}/SDL3_mixer.dll")
+    # install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.dll")
+    # install_files("." FILES "${SDL_MIXER_BIN_DIR}/SDL3_mixer.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libstdc++-6.dll")
     install_files("." FILES "/usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libgcc_s_seh-1.dll")
@@ -313,3 +323,4 @@ if (APPLE)
     install_files("." FILES "${SDL_BIN_DIR}/libSDL2-2.0.0.dylib")
 endif()
 
+include(CPack)
