@@ -295,7 +295,7 @@ install(TARGETS ${STORY_EDITOR_PROJECT} BUNDLE DESTINATION ".")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 
 if(WIN32)
-    install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
+    # install_files("." FILES "${SDL_BIN_DIR}/SDL3.dll")
     # install_files("." FILES "${SDL_IMAGE_BIN_DIR}/SDL3_image.dll")
     # install_files("." FILES "${SDL_MIXER_BIN_DIR}/SDL3_mixer.dll")
     install_files("." FILES "/usr/lib/gcc/x86_64-w64-mingw32/10-posix/libstdc++-6.dll")
