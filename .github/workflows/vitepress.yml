@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy-Documentation
 on:
   workflow_dispatch: {}
   push:
@@ -28,9 +28,9 @@ jobs:
         run: npm run docs:build
         working-directory: docs
       - uses: actions/configure-pages@v2
-      - uses: actions/upload-pages-artifact@v1
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
