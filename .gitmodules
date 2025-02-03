@@ -13,3 +13,6 @@
 [submodule "story-editor/externals/curl"]
 	path = story-editor/externals/curl
 	url = https://github.com/curl/curl
+[submodule "story-editor/externals/mbedtls"]
+	path = story-editor/externals/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls/
