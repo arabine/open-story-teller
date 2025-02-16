@@ -1,4 +1,4 @@
-name: build-story-editor
+name: Build-StoryEditor
 
 on:
   workflow_dispatch: {}
@@ -17,7 +17,7 @@ jobs:
           run : |
               ./linux_01_docker_build_image.sh
               ./linux_02_docker_launch_build.sh
-              ./linux_02_docker_launch_package.sh
+              ./linux_03_docker_launch_package.sh
   build_win32:
       runs-on: ubuntu-latest
       steps:

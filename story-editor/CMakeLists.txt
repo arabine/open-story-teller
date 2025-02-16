@@ -61,9 +61,9 @@ include_directories(externals/civetweb/include)
 # =========================================================================================================================
 # MBEDTLS
 # =========================================================================================================================
-set(USE_STATIC_MBEDTLS_LIBRARY ON)
-set(ENABLE_PROGRAMS OFF)
-set(ENABLE_TESTING OFF)
+set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE INTERNAL "" FORCE)
+set(ENABLE_PROGRAMS OFF CACHE INTERNAL "" FORCE)
+set(ENABLE_TESTING OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(externals/mbedtls EXCLUDE_FROM_ALL)
 
 
@@ -285,6 +285,9 @@ if(UNIX)
     )
 elseif(WIN32)
     target_link_libraries(${STORY_EDITOR_PROJECT}
+
+    PUBLIC 
+    
         OpenGL::GL
         SDL3_image::SDL3_image
         SDL3_mixer::SDL3_mixer
