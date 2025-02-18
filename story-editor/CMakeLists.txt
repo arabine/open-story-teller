@@ -72,7 +72,7 @@ add_subdirectory(externals/mbedtls EXCLUDE_FROM_ALL)
 # =========================================================================================================================
 set(CURL_USE_OPENSSL OFF  CACHE BOOL "Disable OpenSSL." FORCE)
 set(CURL_USE_MBEDTLS ON  CACHE BOOL "Use MBED TLS." FORCE)
-set(MBEDTLS_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/externals/mbedtls/include)
+set(MBEDTLS_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/externals/mbedtls/include)
 set(MBEDTLS_LIBRARY ${CMAKE_BINARY_DIR}/externals/mbedtls/library/libmbedtls.a)
 set(MBEDX509_LIBRARY ${CMAKE_BINARY_DIR}/externals/mbedtls/library/libmbedx509.a)
 set(MBEDCRYPTO_LIBRARY ${CMAKE_BINARY_DIR}/externals/mbedtls/library/libmbedcrypto.a)
@@ -80,8 +80,8 @@ set(MBEDCRYPTO_LIBRARY ${CMAKE_BINARY_DIR}/externals/mbedtls/library/libmbedcryp
  
 set(CURL_USE_LIBSSH2 OFF  CACHE BOOL "Disable SSH." FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable PSL" FORCE) # PSL not working for cross builds (ie, mingw32), or needs to cross-build one
-set(BUILD_CURL_EXE FALSE)
-set(BUILD_STATIC_LIBS TRUE)
+set(BUILD_CURL_EXE OFF CACHE BOOL "Disable EXE" FORCE)
+set(BUILD_STATIC_LIBS ON CACHE BOOL "ENable static libs" FORCE)
 add_subdirectory(externals/curl EXCLUDE_FROM_ALL)
 
 
@@ -295,7 +295,7 @@ elseif(WIN32)
         SDL3::SDL3
         libcurl_static
         MbedTLS::mbedtls
-        MbedTLS::tfpsacrypto
+        # MbedTLS::tfpsacrypto
         MbedTLS::mbedx509
         ws2_32.lib psapi.lib setupapi.lib cfgmgr32.lib advapi32.lib
     )
