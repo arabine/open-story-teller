@@ -54,7 +54,7 @@ static const uint32_t NbRegs = sizeof(AllRegs) / sizeof(AllRegs[0]);
 
 // Keep same order than the opcodes list!!
 static const std::string Mnemonics[] = {
-    "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "sub", "mul", "div",
+    "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "addi", "sub", "subi", "mul", "div",
     "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "jumpr", "skipz", "skipnz",
     "eq", "gt", "lt"
 };
@@ -104,38 +104,8 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
     m_lastError.message = error; \
     return false; } \
 
-std::vector<std::string> Split(std::string line)
-{
-    std::vector<std::string> result;
-    std::istringstream iss(line);
-    std::string token;
 
-    while (std::getline(iss, token, ' ')) {
-        // Vérifier si le jeton contient une virgule
-        size_t comma_pos = token.find(",");
-        if (comma_pos != std::string::npos) {
-            // Diviser le jeton en deux parties séparées par la virgule
-            std::string first_token = token.substr(0, comma_pos);
-            std::string second_token = token.substr(comma_pos + 1);
-            // Ajouter chaque partie au vecteur de résultats
-            if (!first_token.empty()) {
-                result.push_back(first_token);
-            }
-            if (!second_token.empty()) {
-                result.push_back(second_token);
-            }
-        } else {
-            // Ajouter le jeton entier au vecteur de résultats
-            if (!token.empty()) {
-                result.push_back(token);
-            }
-        }
-    }
-
-    return result;
-}
-
-uint32_t convertStringToLong(const std::string& str) {
+static uint32_t convertStringToLong(const std::string& str) {
     char* end;
     if (str.compare(0, 2, "0x") == 0 || str.compare(0, 2, "0X") == 0) {
         return static_cast<uint32_t>(strtol(str.c_str(), &end, 16));
@@ -161,6 +131,38 @@ bool Assembler::GetRegister(const std::string &regName, uint8_t &reg)
         }
     }
     return false;
+}
+
+std::vector<std::string> Assembler::Split(const std::string &line)
+{
+    std::vector<std::string> result;
+    std::string current;
+    bool inQuotes = false;
+
+    for (char c : line) {
+        if (c == '"') {
+            // Si on rencontre un guillemet, on change l'état
+            inQuotes = !inQuotes;
+            current += c;
+        }
+        else if ((c == ' ' || c == ',') && !inQuotes) {
+            // Si on rencontre un espace ou une virgule en dehors des guillemets
+            if (!current.empty()) {
+                result.push_back(current);
+                current.clear();
+            }
+        } else {
+            // Sinon, on ajoute le caractère au "current"
+            current += c;
+        }
+    }
+
+    // Ajout du dernier morceau, s'il existe
+    if (!current.empty()) {
+        result.push_back(current);
+    }
+
+    return result;
 }
 
 bool Assembler::GetRegisterName(uint8_t reg, std::string &regName)
@@ -227,6 +229,19 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         instr.compiledArgs.push_back(ra);
         instr.compiledArgs.push_back(rb);
         break;
+    case OP_ADDI:
+    case OP_SUBI:
+    {
+        GET_REG(instr.args[0], ra);
+        instr.compiledArgs.push_back(ra);
+
+        uint32_t op = convertStringToLong(instr.args[1]);
+        if (op > 255) {
+            return false;
+        }
+        leu32_put(instr.compiledArgs, op);
+        break;
+    }
     case OP_JUMP:
         // Reserve 2 bytes for address, it will be filled at the end
         instr.useLabel = true;
@@ -243,14 +258,37 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
         break;
     case OP_LOAD:
-        CHIP32_CHECK(instr, instr.args[1].at(0) == '@', "Missing @ sign before register")
-        instr.args[1].erase(0, 1);
-        GET_REG(instr.args[0], ra);
-        GET_REG(instr.args[1], rb);
-        instr.compiledArgs.push_back(ra);
-        instr.compiledArgs.push_back(rb);
-        instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+    {
+        // We allow two forms of writing:
+        // - load r0, @R1, 4        ; the address is located in a register
+        // - load r0, $variable, 4  ; we use the variable address to get the value
+        // 
+        char prefix = instr.args[1].at(0);
+
+        // Register based
+        if (prefix == '@')
+        {
+
+            instr.args[1].erase(0, 1);
+            GET_REG(instr.args[0], ra);
+            GET_REG(instr.args[1], rb);
+            instr.compiledArgs.push_back(ra);
+            instr.compiledArgs.push_back(rb);
+            instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+        }
+        // Variable based
+        else if (prefix == '$')
+        {
+            instr.useLabel = true;
+            leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
+        }
+        else
+        {
+            CHIP32_CHECK(instr, false, "Load source address must be @reg or $variable");
+        }
+
         break;
+    }
     case OP_CMP_EQ:
     case OP_CMP_GT:
     case OP_CMP_LT:
@@ -415,7 +453,7 @@ bool Assembler::Parse(const std::string &data)
 
             if (nbArgsSuccess)
             {
-                CHIP32_CHECK(instr, CompileMnemonicArguments(instr) == true, "Compile failure");
+                CHIP32_CHECK(instr, CompileMnemonicArguments(instr) == true, "Compile failure, mnemonic or arguments");
                 instr.addr = code_addr;
                 code_addr += 1 + instr.compiledArgs.size();
                 m_instructions.push_back(instr);
@@ -478,16 +516,20 @@ bool Assembler::Parse(const std::string &data)
     {
         if (instr.useLabel && (instr.args.size() > 0))
         {
-            // label is the first argument for jump, second position for LCONS
-            uint16_t argsIndex = instr.code.opcode == OP_LCONS ? 1 : 0;
+            // label is the first argument for jump, second position for LCONS and LOAD
+            uint16_t argsIndex = 1;
+            if (instr.code.opcode == OP_JUMP) {
+                argsIndex = 0;
+            }
             std::string label = instr.args[argsIndex];
             CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " + label);
             uint16_t addr = m_labels[label].addr;
             std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
             instr.compiledArgs[argsIndex] = addr & 0xFF;
             instr.compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
-            if (instr.code.opcode == OP_LCONS) {
+            if ((instr.code.opcode == OP_LCONS) || (instr.code.opcode == OP_LOAD)) {
                 // We precise if the address is from RAM or ROM
+                // For that, the MSB is set to 1 (for RAM)
                 instr.compiledArgs[argsIndex+3] = m_labels[label].isRamData ? 0x80 : 0;
             }
         }

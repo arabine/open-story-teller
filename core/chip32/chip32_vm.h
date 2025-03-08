@@ -59,31 +59,33 @@ typedef enum
 
     // arithmetic:
     OP_ADD = 9,  ///<  sum and store in first reg, e.g.: add r0, r2
-    OP_SUB = 10,  ///<  subtract and store in first reg, e.g.: sub r0, r2
-    OP_MUL = 11,  ///<  multiply and store in first reg, e.g.: mul r0, r2
-    OP_DIV = 12,  ///<  divide and store in first reg, remain in second, e.g.: div r0, r2
+    OP_ADDI = 10, ///< Add immediate value (8 bits max), e.g.: addi r4, 2  ; r4 = r4 + 2
+    OP_SUB = 11,  ///<  subtract and store in first reg, e.g.: sub r0, r2
+    OP_SUBI = 12,   ///< substract immediate value (8 bits max), e.g.: subi r2, 8   ; r2 = r2 - 8
+    OP_MUL = 13,  ///<  multiply and store in first reg, e.g.: mul r0, r2
+    OP_DIV = 14,  ///<  divide and store in first reg, remain in second, e.g.: div r0, r2
 
-    OP_SHL = 13,  ///<  logical shift left, e.g.: shl r0, r1
-    OP_SHR = 14,  ///<  logical shift right, e.g.: shr r0, r1
-    OP_ISHR = 15, ///<  arithmetic shift right (for signed values), e.g.: ishr r0, r1
+    OP_SHL = 15,  ///<  logical shift left, e.g.: shl r0, r1
+    OP_SHR = 16,  ///<  logical shift right, e.g.: shr r0, r1
+    OP_ISHR = 17, ///<  arithmetic shift right (for signed values), e.g.: ishr r0, r1
 
-    OP_AND = 16,  ///<  and two registers and store result in the first one, e.g.: and r0, r1
-    OP_OR = 17,   ///<  or two registers and store result in the first one, e.g.: or r0, r1
-    OP_XOR = 18,  ///<  xor two registers and store result in the first one, e.g.: xor r0, r1
-    OP_NOT = 19,  ///<  not a register and store result, e.g.: not r0
+    OP_AND = 18,  ///<  and two registers and store result in the first one, e.g.: and r0, r1
+    OP_OR = 19,   ///<  or two registers and store result in the first one, e.g.: or r0, r1
+    OP_XOR = 20,  ///<  xor two registers and store result in the first one, e.g.: xor r0, r1
+    OP_NOT = 21,  ///<  not a register and store result, e.g.: not r0
 
     // branching/functions
-    OP_CALL = 20, ///<  set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
-    OP_RET = 21,  ///<  return to the address of last callee (RA), e.g.: ret
-    OP_JUMP = 22, ///<   jump to address (can use label or address), e.g.: jump .my_label
-    OP_JUMPR = 23, ///<   jump to address contained in a register, e.g.: jumpr t9
-    OP_SKIPZ = 24,  ///<  skip next instruction if zero, e.g.: skipz r0
-    OP_SKIPNZ = 25, ///<  skip next instruction if not zero, e.g.: skipnz r2
+    OP_CALL = 22, ///<  set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
+    OP_RET = 23,  ///<  return to the address of last callee (RA), e.g.: ret
+    OP_JUMP = 24, ///<   jump to address (can use label or address), e.g.: jump .my_label
+    OP_JUMPR = 25, ///<   jump to address contained in a register, e.g.: jumpr t9
+    OP_SKIPZ = 26,  ///<  skip next instruction if zero, e.g.: skipz r0
+    OP_SKIPNZ = 27, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
     // Comparison
-    OP_CMP_EQ = 26,  ///< compare two registers for equality, result in first e.g.: cmp_eq r4, r0, r1 (r4 = (r0 == r1 ? 1 : 0)
-    OP_CMP_GT = 27,  ///< compare if first register is greater than the second, result in first e.g.: cmp_gt r4, r0, r1
-    OP_CMP_LT = 28,  ///< compare if first register is less than the second, result in first e.g.: cmp_lt r4, r0, r1
+    OP_CMP_EQ = 28,  ///< compare two registers for equality, result in first e.g.: cmp_eq r4, r0, r1 (r4 = (r0 == r1 ? 1 : 0)
+    OP_CMP_GT = 29,  ///< compare if first register is greater than the second, result in first e.g.: cmp_gt r4, r0, r1
+    OP_CMP_LT = 30,  ///< compare if first register is less than the second, result in first e.g.: cmp_lt r4, r0, r1
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;
@@ -91,7 +93,7 @@ typedef enum
 
 /*
 
-| name  | number | type                             | preserved |
+| name  | number | type                             | preserved on function call |
 |-------|--------|----------------------------------|-----------|
 | r0-r9 | 0-9    | general-purpose                  | N         |
 | t0-t9 | 10-19  | temporary registers              | Y         |
@@ -157,7 +159,8 @@ typedef struct {
 
 #define OPCODES_LIST { { OP_NOP, 0, 0 }, { OP_HALT, 0, 0 }, { OP_SYSCALL, 1, 1 }, { OP_LCONS, 2, 5 }, \
 { OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, \
-{ OP_STORE, 3, 3 }, { OP_LOAD, 3, 3 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
+{ OP_STORE, 3, 3 }, { OP_LOAD, 3, 3 }, \
+{ OP_ADD, 2, 2 }, { OP_ADDI, 2, 2 }, { OP_SUB, 2, 2 }, { OP_SUBI, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
 { OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 1 }, { OP_RET, 0, 0 }, \
 { OP_JUMP, 1, 2 }, { OP_JUMPR, 1, 1 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 }, \

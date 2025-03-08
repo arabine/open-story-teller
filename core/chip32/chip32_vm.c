@@ -65,14 +65,14 @@ static inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
 #define _CHECK_REGISTER_VALID(r) \
     if (r >= REGISTER_COUNT)     \
         return VM_ERR_INVALID_REGISTER;
+
 #define _CHECK_CAN_PUSH(n)                                              \
-    if (ctx->registers[SP] - (n * sizeof(uint32_t)) > ctx->ram.addr) \
+    if (ctx->registers[SP] - (n * sizeof(uint32_t)) < 0) \
         return VM_ERR_STACK_OVERFLOW;
+
 #define _CHECK_CAN_POP(n)                                               \
-    if (ctx->registers[SP] + (n * sizeof(uint32_t)) > (ctx->ram.addr + ctx->ram.size)) \
-        return VM_ERR_STACK_UNDERFLOW;                      \
-    if (ctx->registers[SP] < ctx->prog_size)                          \
-        return VM_ERR_STACK_OVERFLOW;
+    if ((ctx->registers[SP] + (n * sizeof(uint32_t))) > (ctx->ram.size)) \
+        return VM_ERR_STACK_UNDERFLOW;
 #else
 #define _CHECK_ROM_ADDR_VALID(a)
 #define _CHECK_BYTES_AVAIL(n)
@@ -266,6 +266,14 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[reg1] = ctx->registers[reg1] + ctx->registers[reg2];
         break;
     }
+    case OP_ADDI:
+    {
+        const uint8_t reg1 = _NEXT_BYTE;
+        const uint8_t val = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg1)
+        ctx->registers[reg1] = ctx->registers[reg1] + val;
+        break;
+    }
     case OP_SUB:
     {
         const uint8_t reg1 = _NEXT_BYTE;
@@ -273,6 +281,14 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         _CHECK_REGISTER_VALID(reg1)
         _CHECK_REGISTER_VALID(reg2)
         ctx->registers[reg1] = ctx->registers[reg1] - ctx->registers[reg2];
+        break;
+    }
+    case OP_SUBI:
+    {
+        const uint8_t reg1 = _NEXT_BYTE;
+        const uint8_t val = _NEXT_BYTE;
+        _CHECK_REGISTER_VALID(reg1)
+        ctx->registers[reg1] = ctx->registers[reg1] - val;
         break;
     }
     case OP_MUL:

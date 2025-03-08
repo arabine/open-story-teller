@@ -89,8 +89,13 @@ public:
 
     struct Error {
         std::string message;
-        int line;
-        std::string ToString() const { return "Error line " + std::to_string(line) + ", " + message; }
+        int line{-1};
+        std::string ToString() const {
+            if (line < 0)
+                return "No error";
+            else
+                return "Error line " + std::to_string(line) + ", " + message; 
+        }
     };
 
     // Separated parser to allow only code check
@@ -102,6 +107,8 @@ public:
         m_labels.clear();
         m_instructions.clear();
     }
+
+    static std::vector<std::string> Split(const std::string &line);
 
     std::vector<Instr>::const_iterator Begin() { return m_instructions.begin(); }
     std::vector<Instr>::const_iterator End() { return m_instructions.end(); }
