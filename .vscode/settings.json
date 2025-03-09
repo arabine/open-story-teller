@@ -1,10 +1,11 @@
 {
 
     "cmake.sourceDirectory": [
+        "${workspaceFolder}/core/chip32/tests",
+        "${workspaceFolder}/core/story-manager/tests",
         "${workspaceFolder}/story-editor",
         "${workspaceFolder}/story-player-raylib",
-        "${workspaceFolder}/software",
-        "${workspaceFolder}/core/chip32/tests"
+        "${workspaceFolder}/software"
     ],
     "files.associations": {
         "*.css": "tailwindcss",

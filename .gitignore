@@ -5,8 +5,6 @@ www-docs/node_modules/
 
 *.lock
 
-build-story-editor-Desktop_Qt_6_4_1_GCC_64bit-Debug/
-
 docs/resources/
 
 docs/node_modules/
@@ -21,23 +19,11 @@ hardware/kicad/ost-pico-addon/fp-info-cache
 
 *.png~
 
-build-story-editor-Desktop_Qt_6_5_1_GCC_64bit-Debug/
-
-build-story-editor-Desktop_Qt_6_5_1_MinGW_64_bit-Debug/
-
-build-story-editor-Desktop_Qt_6_5_1_MinGW_64_bit-Release/
-
-build-story-editor-Desktop_Qt_6_5_1_MSVC2019_64bit-Debug/
 
 release/
 
 story-editor/windows-setup/Output/
 
-build-story-editor-Desktop_Qt_6_5_1_GCC_64bit-Release/
-
-build-story-player-Desktop_Qt_6_5_1_GCC_64bit-Debug/
-
-build-story-player-Desktop_Qt_GCC_64bit-Debug/
 
 *.user
 
@@ -47,20 +33,12 @@ software/.vscode/.cortex-debug.registers.state.json
 
 story-player/build/
 
-story-editor/tools/build-audio-System_Qt5_15_8-Debug/
+
 
 software/.vscode/.cortex-debug.peripherals.state.json
 story-editor/build
 
-build-story-editor-v2-System_Qt5_15_8-Debug/
 
-story-editor-v2/src/CMakeSettings.json
-
-story-editor-v2/imgui.ini
-
-story-editor-v2/src/.vscode/
-
-build-story-editor-v2-Desktop-Debug/
 
 build-story-editor-Desktop-Debug/
 
@@ -75,7 +53,6 @@ software/.cache/
 story-editor/.idea/
 
 
-build-story-editor-Desktop_Qt_GCC_64bit-Debug/
 
 firmware/build/
 
@@ -107,3 +84,5 @@ story-editor/cmake-build-debug/
 story-editor/.flatpak-builder
 story-editor/flatpak_build/
 story-editor/AppDir/
+
+core/story-manager/tests/build
