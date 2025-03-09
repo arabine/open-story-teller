@@ -5,9 +5,9 @@
 
 
 VariableNode::VariableNode(const std::string &type)
-    : BaseNode(type, "Function Node")
+    : BaseNode(type, "Variable Node")
 {
-    nlohmann::json j{ {"function", ""} };
+    nlohmann::json j{ {"name", "i"}, {"value", 3} };
     SetInternalData(j);
 }
 

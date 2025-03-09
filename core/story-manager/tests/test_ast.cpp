@@ -53,6 +53,7 @@ TEST_CASE( "Check various indentations and typos" ) {
     std::vector<std::shared_ptr<Connection>> connections;
 
     auto cn1 = std::make_shared<Connection>();
+    cn1->
 
     // // Création des nœuds
     // std::vector<Node> nodes = {
