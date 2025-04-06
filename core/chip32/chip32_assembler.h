@@ -119,6 +119,19 @@ public:
 
     Error GetLastError() { return m_lastError; }
 
+    bool GetMain(Instr &instr) const {
+
+        // Find the main label
+        bool success = m_labels.count(".main") == 1;
+
+        if (success)
+        {
+            instr = m_labels.at(".main");
+        }
+
+        return success;
+    }
+
 private:
     bool CompileMnemonicArguments(Instr &instr);
 

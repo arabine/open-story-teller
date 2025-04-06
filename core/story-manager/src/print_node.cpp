@@ -6,9 +6,9 @@
 
 
 PrintNode::PrintNode(const std::string &type)
-    : BaseNode(type, "Print Node")
+    : ExecutionNode(type, "Print Node")
 {
-
+    m_label = GenerateRandomString(10, BaseNode::CHARSET_ALPHABET_LOWER | BaseNode::CHARSET_ALPHABET_UPPER );// Should be enough to avoid collision?
 }
 
 
@@ -19,35 +19,39 @@ void PrintNode::Initialize()
 
 std::string PrintNode::GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns)
 {
-    std::string s;
-
-   
-
-    return s;
+    std::stringstream ss;
+    ss  << "$" << m_label << " DC8, "  << m_text << "\n";
+    return ss.str();
 }
 
 std::string PrintNode::Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
 {
+    return "";
+}
+
+std::string PrintNode::GenerateConstants() const
+{
+    std::stringstream ss;
+    ss  << "$" << m_label << " DC8, \""  << m_text << "\"\n";
+    return ss.str();
+}
+
+std::string PrintNode::GenerateAssembly() const
+{
+
     std::stringstream ss;
 
-    std::list<std::shared_ptr<Connection>> conns;
-    page.GetNodeConnections(conns, GetId());
-    int i = 0;
-    std::list<std::shared_ptr<Connection>>::iterator c = conns.begin();
+    ss  << ExecutionNode::GenerateAssembly()
+        << "  push r0\n"
+        << "  push r1\n"
+        << "  lcons r0, $" << m_label << "\n"
+        << "  lcons r1, 0 ; number of arguments\n"  // FIXME: handle arguments
+        << "  syscall 4\n"
+        << "  pop r1\n"
+        << "  pop r0\n";
 
-    if (conns.size() == 2)
-    {
-        ss << R"(; ---------------------------- )"
-        << GetTitle()
-        << " Type: Branch"
-        << "\n";
-
-        ss << "eq  r0, r0, r1\n"
-           << "skipz r0\n"
-           << "jump " << BaseNode::GetEntryLabel((*c)->inNodeId);
-        ++c;
-        ss << "jump " << BaseNode::GetEntryLabel((*c)->inNodeId);
-    }
-    return ss.str();
+//        << ""mov r2, %2 // arguments are in r2, r3, r4 etc.
+    
+      return ss.str();
 }
 

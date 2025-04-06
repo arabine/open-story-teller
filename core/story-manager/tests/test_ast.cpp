@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include "branch_node.h"
 #include "print_node.h"
 #include "variable_node.h"
+#include "chip32_machine.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -41,19 +42,22 @@ TEST_CASE( "Check various indentations and typos" ) {
 
     Compiler compiler;
 
-    auto printNode = std::make_shared<PrintNode>();
-    auto branchNode = std::make_shared<BranchNode>();
+    auto printNode = std::make_shared<PrintNode>("print-node");
+
+    printNode->SetText("Hello from OST");
+
+  //  auto branchNode = std::make_shared<BranchNode>("branch-node");
 
 
     std::vector<std::shared_ptr<BaseNode>> nodes;
 
     nodes.push_back(printNode);
-    nodes.push_back(branchNode);
+  //  nodes.push_back(branchNode);
 
     std::vector<std::shared_ptr<Connection>> connections;
 
     auto cn1 = std::make_shared<Connection>();
-    cn1->
+  
 
     // // Création des nœuds
     // std::vector<Node> nodes = {
@@ -74,10 +78,18 @@ TEST_CASE( "Check various indentations and typos" ) {
 
 
     // Construction de l'AST
-    AST ast = buildAST(nodes, connections);
+    compiler.buildAST(nodes, connections);
+    compiler.displayNodeSchema();
+
+    compiler.generateAssembly();
+
+    std::cout << compiler.GetCode() << std::endl;
 
 
+    Chip32::Machine machine;
 
-    REQUIRE( parseResult == true );
+    machine.QuickExecute(compiler.GetCode());
+
+  //  REQUIRE( parseResult == true );
 
 }

@@ -97,6 +97,34 @@
             
         },
         {
+            "name": "Debug Compiler AST Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/core/story-manager/tests/build/compiler_test", // Remplacez par le chemin de votre exécutable
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/core/story-manager/tests/build",
+            "environment": [],
+            "externalConsole": false,
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb"
+              },
+              "osx": {
+                "MIMode": "lldb",
+                "miDebuggerPath": "/Users/user936511/.vscode/extensions/ms-vscode.cpptools-1.18.5-darwin-arm64/debugAdapters/lldb-mi/bin/lldb-mi"
+              },
+            
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+            
+        },
+        {
             "name": "Black Magic Probe",
             "cwd": "${workspaceRoot}",
             "executable": "${workspaceRoot}/software/build/RaspberryPico/open-story-teller.elf",
