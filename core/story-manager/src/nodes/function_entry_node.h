@@ -6,8 +6,8 @@
 class FunctionEntryNode : public ExecutionNode
 {
 public:
-    FunctionEntryNode(const std::string &type, const std::string &typeName)
-        : ExecutionNode(type, typeName) {}
+    FunctionEntryNode(const std::string &type)
+        : ExecutionNode(type, "Function Entry Node") {}
 
     void Initialize() override {
         // Initialisation spécifique pour FunctionEntryNode

@@ -22,6 +22,11 @@ public:
     void SetText(const std::string &text) {
         m_text = text;
     }
+
+    std::string GetText() const {
+        return m_text;
+    }
+
 private:
     std::string m_label;
     std::string m_text; // Text to print

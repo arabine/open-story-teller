@@ -8,11 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(${PROJECT_NAME} 
     main.cpp 
     test_ast.cpp 
-    ../src/base_node.cpp
-    ../src/branch_node.cpp
-    ../src/print_node.cpp
-    ../src/variable_node.cpp
-    ../src/connection.cpp
+
+
+    ../src/nodes/base_node.cpp
+    ../src/nodes/branch_node.cpp
+    ../src/nodes/print_node.cpp
+    ../src/nodes/variable_node.cpp
+    ../src/nodes/connection.cpp
 
     ../../chip32/chip32_assembler.cpp 
     ../../chip32/chip32_vm.c
@@ -24,4 +26,6 @@ target_include_directories(${PROJECT_NAME}  PRIVATE
     ../interfaces 
     ../lib 
     ../../../shared
+    ../src/nodes
+    ../src/compiler
 )

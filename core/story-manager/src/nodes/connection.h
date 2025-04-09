@@ -5,6 +5,13 @@
 
 struct Connection
 {
+
+    enum Type
+    {
+        EXECUTION_LINKJ,
+        DATA_LINK
+    };
+
     Connection()
         : outPortIndex(0)
         , inPortIndex(0)
@@ -16,6 +23,7 @@ struct Connection
 
     }
 
+    Connection::Type type{Connection::EXECUTION_LINKJ};
     std::string outNodeId;
     unsigned int outPortIndex{0};
     std::string inNodeId;

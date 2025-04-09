@@ -13,28 +13,48 @@
 class BaseNode
 {
 public:
+    struct Port
+    {
+        enum Type {
+            EXECUTION_PORT,
+            DATA_PORT
+        };
+
+        Port::Type type{EXECUTION_PORT};
+        std::string label;
+    };
+
     struct NodePosition
     {
         float x;
         float y;
     };
 
-
-/*
-
- "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "0123456789"
-        "!@#$%^&*()_+-=[]{}|;:,.<>?";
-*/
-
     enum RandomFlags
     {
-        CHARSET_ALPHABET_LOWER = 0x1,
-        CHARSET_ALPHABET_UPPER = 0x2,
-        CHARSET_NUMBERS = 0x4,
-        CHARSET_SIGNS = 0x8,
+        CHARSET_ALPHABET_LOWER = 0x1, // "abcdefghijklmnopqrstuvwxyz"
+        CHARSET_ALPHABET_UPPER = 0x2, // "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        CHARSET_NUMBERS = 0x4, // "0123456789"
+        CHARSET_SIGNS = 0x8, // "!@#$%^&*()_+-=[]{}|;:,.<>?";
         ALL_CHARSETS = CHARSET_ALPHABET_LOWER | CHARSET_ALPHABET_UPPER |CHARSET_NUMBERS | CHARSET_SIGNS
+    };
+
+    struct ConstantValue
+    {
+        enum Type {
+            TYPE_STRING,
+            TYPE_INT,
+        };
+        std::string stringVal;
+        int intVal{0};
+        ConstantValue::Type type{TYPE_INT};
+    };
+
+    struct Constant
+    {
+        std::string label;
+        int elementSize; // in bits: 8, 16 or 32
+        std::vector<ConstantValue> values;
     };
 
     BaseNode(const std::string &type, const std::string &typeName);
@@ -86,12 +106,30 @@ public:
 
     static std::string GenerateRandomString(size_t length, uint32_t flags = RandomFlags::ALL_CHARSETS);
 
+    void ClearPorts() {
+        m_inputPorts.clear();
+        m_outputPorts.clear();
+    }
+
+    // Port management
+    void AddInputPort(Port::Type type, const std::string& label) {
+        m_inputPorts.push_back({type, label});
+    }
+
+    void AddOutputPort(Port::Type type, const std::string& label) {
+        m_outputPorts.push_back({type, label});
+    }
+    
+
 private:
     std::string m_title{"Default title"};
     std::string m_type;
     std::string m_typeName;
     std::string m_uuid;
     NodePosition m_pos;
+
+    std::vector<Port> m_inputPorts;
+    std::vector<Port> m_outputPorts;
 
     nlohmann::json m_internal_data{{}};
 };
