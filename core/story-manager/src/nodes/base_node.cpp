@@ -2,15 +2,17 @@
 #include "uuid.h"
 #include <iostream>
 
-BaseNode::BaseNode(const std::string &type, const std::string &typeName)
+BaseNode::BaseNode(const std::string &type, const std::string &typeName, Behavior behavior)
+    : m_behavior(behavior)
 {
     m_type = type;
-    m_typeName = typeName;
+    m_typeName = typeName; 
     m_uuid = Uuid().String();
 
     nlohmann::json obj{};
     m_internal_data = obj;
 }
+
 
 BaseNode::~BaseNode()
 {

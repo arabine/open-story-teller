@@ -32,6 +32,14 @@ public:
     // Data outputs: output_port_index -> vector of (target node, target port)
     std::unordered_map<unsigned int, std::vector<DataTarget>> dataOutputs;
 
+    bool IsExecutionNode() const {
+        return node->GetBehavior() == BaseNode::Behavior::BEHAVIOR_EXECUTION;
+    }
+
+    bool IsDataNode() const {
+        return node->GetBehavior() == BaseNode::Behavior::BEHAVIOR_DATA;
+    }
+
     // Helper methods
     bool HasDataInput(unsigned int portIndex) const {
         return dataInputs.find(portIndex) != dataInputs.end();
@@ -130,6 +138,7 @@ public:
 
 struct PathTree {
     std::shared_ptr<ASTNode> root;
+    std::shared_ptr<ASTNode> lastNode;           // Dernier nœud du PathTree
     std::vector<std::shared_ptr<Connection>> connections;
     bool isExecutionPath;  // true for main flow, false for input paths
 };
@@ -171,19 +180,28 @@ public:
                 }
             }
             // Nodes that have data outputs but no data inputs are data path roots
-            if (hasIncomingData.find(node->GetId()) == hasIncomingData.end()) {
+            if ((hasIncomingData.find(node->GetId()) == hasIncomingData.end()) ||
+                AreAllInputsVariables(node, nodeMap))
+            {
                 // Check if the node has any outgoing data connections
                 bool hasDataOutput = false;
-                for (const auto& conn : m_connections) {
+                for (const auto& conn : m_connections)
+                {
                     if (conn->type == Connection::DATA_LINK && 
                         conn->outNodeId == node->GetId()) {
                         hasDataOutput = true;
                         break;
                     }
                 }
-                if (hasDataOutput) {
+
+                if (hasDataOutput && !(dynamic_cast<VariableNode*>(node.get())))
+                {
                     dataRoots.push_back(node);
                 }
+
+                // if (hasDataOutput) {
+                //     dataRoots.push_back(node);
+                // }
             }
         }
 
@@ -213,6 +231,23 @@ public:
 private:
     const std::vector<std::shared_ptr<BaseNode>>& m_nodes;
     const std::vector<std::shared_ptr<Connection>>& m_connections;
+
+
+    bool AreAllInputsVariables(const std::shared_ptr<BaseNode>& node, const std::unordered_map<std::string, std::shared_ptr<BaseNode>>& nodeMap) const
+    {
+        for (const auto& conn : m_connections)
+        {
+            if (conn->type == Connection::DATA_LINK && conn->inNodeId == node->GetId())
+            {
+                auto sourceNode = nodeMap.find(conn->outNodeId);
+                if (sourceNode != nodeMap.end() && !dynamic_cast<VariableNode*>(sourceNode->second.get()))
+                {
+                    return false;
+                }
+            }
+        }
+    return true;
+    }
 
     void BuildExecutionPath(PathTree& tree, 
                           const std::unordered_map<std::string, 
@@ -250,6 +285,8 @@ private:
         queue.push(tree.root);
         std::unordered_set<std::string> visited;
 
+        std::shared_ptr<ASTNode> currentLastNode = nullptr;
+
         while (!queue.empty()) {
             auto current = queue.front();
             queue.pop();
@@ -257,6 +294,8 @@ private:
             if (visited.find(current->node->GetId()) != visited.end()) {
                 continue;
             }
+
+            currentLastNode = current; // Met à jour le dernier nœud visité
             visited.insert(current->node->GetId());
 
             // Find data connections from this node
@@ -266,14 +305,24 @@ private:
                     auto targetNode = nodeMap.find(conn->inNodeId);
                     if (targetNode != nodeMap.end()) {
                         auto childNode = std::make_shared<ASTNode>(targetNode->second);
-                        current->dataOutputs[conn->outPortIndex].push_back(
-                            {childNode, conn->inPortIndex});
+
+                        // Add childNode as a children only if it is not an execution node
+                        // Otherwise, the assembly code will be generated twice
+                        if (childNode->IsDataNode())
+                        {
+                            current->dataOutputs[conn->outPortIndex].push_back({childNode, conn->inPortIndex});
+                        }
                         queue.push(childNode);
                         tree.connections.push_back(conn);
                     }
                 }
             }
         }
+
+        // On garde la trace du dernier nœud visité
+        // De cette façon on va pouvoir savoir à quel nœud on doit se connecter
+        // pour la génération de code
+        tree.lastNode = currentLastNode;
     }
 
     void BuildDataInputs(std::shared_ptr<ASTNode> node,

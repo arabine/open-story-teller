@@ -38,7 +38,7 @@ public:
 
     OperatorNode(const std::string& type = "operator-node",
                  const std::string& typeName = "Operator")
-        : BaseNode(type, typeName)
+        : BaseNode(type, typeName, BaseNode::Behavior::BEHAVIOR_DATA)
         , m_operationType(OperationType::ADD)
     {
         Initialize();

@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include "print_node.h"
 #include "variable_node.h"
 #include "function_entry_node.h"
+#include "operator_node.h"
 #include "chip32_machine.h"
 
 #include <stdarg.h>
@@ -41,7 +42,7 @@ THE SOFTWARE.
 #include "ast_builder.h"
 #include "assembly_generator.h"
 #include "flow_generator.h"
-
+#include "assembly_generator_chip32.h"
 /*
 void ProcessASTTree(const ASTBuilder::PathTree& tree, int depth = 0) {
   std::queue<std::pair<std::shared_ptr<ASTNode>, int>> queue;
@@ -97,7 +98,19 @@ TEST_CASE( "Check various indentations and typos" ) {
 
     auto functionEntryNode = std::make_shared<FunctionEntryNode>("function-entry-node");
 
-    auto variableNode = std::make_shared<VariableNode>("variable-node");
+    auto variableNode1 = std::make_shared<VariableNode>("variable-node");
+    variableNode1->SetValue(5);
+    variableNode1->SetValueType(VariableNode::ValueType::INTEGER);
+    variableNode1->SetVariableName("X");
+
+    auto variableNode2 = std::make_shared<VariableNode>("variable-node");
+    variableNode2->SetValue(10);
+    variableNode2->SetValueType(VariableNode::ValueType::INTEGER);
+    variableNode2->SetVariableName("Y");
+
+
+    auto testNode = std::make_shared<OperatorNode>();
+    testNode->SetOperationType(OperatorNode::OperationType::GREATER_THAN);
 
 
     std::vector<std::shared_ptr<BaseNode>> nodes;
@@ -106,12 +119,16 @@ TEST_CASE( "Check various indentations and typos" ) {
     nodes.push_back(printNodeTrue);
     nodes.push_back(printNodeFalse);
     nodes.push_back(branchNode);
-    nodes.push_back(variableNode);
+    nodes.push_back(variableNode1);
+    nodes.push_back(variableNode2);
+    nodes.push_back(testNode);
 
     auto cn1 = std::make_shared<Connection>();
     auto cn2 = std::make_shared<Connection>();
     auto cn3 = std::make_shared<Connection>();
     auto cn4 = std::make_shared<Connection>();
+    auto cn5 = std::make_shared<Connection>();
+    auto cn6 = std::make_shared<Connection>();
 
     std::vector<std::shared_ptr<Connection>> connections;
 
@@ -119,6 +136,8 @@ TEST_CASE( "Check various indentations and typos" ) {
     connections.push_back(cn2);
     connections.push_back(cn3);
     connections.push_back(cn4);
+    connections.push_back(cn5);
+    connections.push_back(cn6);
   
 
     // Branch  True -> print Ok
@@ -142,12 +161,26 @@ TEST_CASE( "Check various indentations and typos" ) {
     cn3->outNodeId = functionEntryNode->GetId();
     cn3->outPortIndex = 0;
     
-    // Variable branch -> Branch node (condition input)
+    // Compare test output -> Branch node (condition input)
     cn4->inNodeId = branchNode->GetId();
     cn4->inPortIndex = 1;
-    cn4->outNodeId = variableNode->GetId();
+    cn4->outNodeId = testNode->GetId();
     cn4->outPortIndex = 0;
     cn4->type = Connection::DATA_LINK;
+
+    // Variable 1 -> Compare test node input 1
+    cn5->inNodeId = testNode->GetId();
+    cn5->inPortIndex = 0;
+    cn5->outNodeId = variableNode1->GetId();
+    cn5->outPortIndex = 0;
+    cn5->type = Connection::DATA_LINK;
+
+    // Variable 1 -> Compare test node input 1
+    cn6->inNodeId = testNode->GetId();
+    cn6->inPortIndex = 1;
+    cn6->outNodeId = variableNode2->GetId();
+    cn6->outPortIndex = 0;
+    cn6->type = Connection::DATA_LINK;
 
 
     // // Création des nœuds
@@ -188,7 +221,7 @@ TEST_CASE( "Check various indentations and typos" ) {
     );
 
     // Create generator
-    AssemblyGenerator generator(context);
+    AssemblyGeneratorChip32 generator(context);
 
 
     ASTBuilder builder(nodes, connections);
@@ -206,20 +239,16 @@ TEST_CASE( "Check various indentations and typos" ) {
 
     // Generate flow in the console
     VisualFlowGenerator flowGenerator(context);
-    std::string flow = flowGenerator.GenerateAssembly(pathTrees);
-
     FlowVisualizer::PrintHeader("arabine", "2025-04-08 12:03:01");
+    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTrees);
+
+    
     std::cout << "\nGenerated flow:\n" << flow << std::endl;
 
     // Generate assembly
-    std::string assembly = generator.GenerateAssembly(pathTrees);
+    std::string assembly = generator.GenerateAssembly(nodes, pathTrees);
 
-
-    
-
-    
-    
-
+    std::cout << "\nGenerated assembly:\n" << assembly << std::endl;
     
     // compiler.generateAssembly();
 

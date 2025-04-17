@@ -13,7 +13,7 @@ public:
         std::cout << "AST Flow Visualization\n";
         std::cout << "User: " << user << "\n";
         std::cout << "Time: " << timestamp << "\n";
-        std::cout << "==========================================================\n\n";
+        std::cout << "==========================================================\n\n" << std::endl;
     }
 
     static void PrintNodeExecution(const std::string& nodeName, int depth = 0) {
@@ -55,81 +55,117 @@ public:
 
     }
 
-    protected:
-        void GenerateNodeCode(std::shared_ptr<ASTNode> node, bool isDataPath = false) override {
-            if (!node) return;
+protected:
 
-            FlowVisualizer::PrintNodeExecution(node->node->GetTypeName(), m_depth);
+    virtual void AddComment(const std::string& comment) {
+       
+    }
 
-            if (node->IsType<FunctionEntryNode>()) {
-                m_depth++;
-                for (auto& child : node->children) {
-                    GenerateNodeCode(child);
-                }
-                m_depth--;
-            }
-            else if (node->IsType<BranchNode>()) {
-                m_depth++;
-                // Get condition value
-                auto conditionNode = node->GetDataInput(0);
-                int conditionValue = EvaluateCondition(conditionNode);
-                
-                FlowVisualizer::PrintBranchDecision(conditionValue > 7, 
-                    std::to_string(conditionValue), m_depth);
 
-                // Execute appropriate path
-                if (conditionValue > 7) {
-                    GenerateNodeCode(node->GetChild(0));  // True path
-                } else {
-                    GenerateNodeCode(node->GetChild(1));  // False path
-                }
-                m_depth--;
+
+    virtual void GenerateExit()  {
+       
+    }
+
+    void GenerateNodeCode(std::shared_ptr<ASTNode> node, bool isDataPath = false) override
+    {
+        if (!node) return;
+
+        FlowVisualizer::PrintNodeExecution(node->node->GetTypeName(), m_depth);
+
+        if (node->IsType<FunctionEntryNode>()) {
+            m_depth++;
+            for (auto& child : node->children) {
+                GenerateNodeCode(child);
             }
-            else if (node->IsType<PrintNode>()) {
-                auto* printNode = node->GetAs<PrintNode>();
-                FlowVisualizer::PrintNodeExecution("Print: " + printNode->GetText(), m_depth);
-            }
-            else if (node->IsType<OperatorNode>()) {
-                m_depth++;
-                auto* opNode = node->GetAs<OperatorNode>();
-                
-                // Evaluate operands
-                int value1 = EvaluateOperand(node->GetDataInput(0));
-                int value2 = EvaluateOperand(node->GetDataInput(1));
-                
-                FlowVisualizer::PrintDataFlow("Operand 1", "ADD", 
-                    std::to_string(value1), m_depth);
-                FlowVisualizer::PrintDataFlow("Operand 2", "ADD", 
-                    std::to_string(value2), m_depth);
-                
-                int result = value1 + value2;
-                FlowVisualizer::PrintDataFlow("ADD", "Result", 
-                    std::to_string(result), m_depth);
-                m_depth--;
-            }
+            m_depth--;
         }
-
-    private:
-        int m_depth = 0;
-
-        int EvaluateOperand(std::shared_ptr<ASTNode> node) {
-            if (!node) return 0;
+        else if (node->IsType<BranchNode>()) {
+            m_depth++;
+            // Get condition value
+            auto conditionNode = node->GetDataInput(0);
+            int conditionValue = EvaluateCondition(conditionNode);
             
-            if (node->IsType<VariableNode>()) {
-                auto* varNode = node->GetAs<VariableNode>();
-                return varNode->GetValue<int>();
+            FlowVisualizer::PrintBranchDecision(conditionValue > 7, 
+                std::to_string(conditionValue), m_depth);
+
+            // Execute appropriate path
+            if (conditionValue > 7) {
+                GenerateNodeCode(node->GetChild(0));  // True path
+            } else {
+                GenerateNodeCode(node->GetChild(1));  // False path
             }
-            return 0;
+            m_depth--;
+        }
+        else if (node->IsType<PrintNode>()) {
+            auto* printNode = node->GetAs<PrintNode>();
+            FlowVisualizer::PrintNodeExecution("Print: " + printNode->GetText(), m_depth);
+        }
+        else if (node->IsType<OperatorNode>()) {
+            m_depth++;
+            auto* opNode = node->GetAs<OperatorNode>();
+            
+            // Evaluate operands
+            int value1 = EvaluateOperand(node->GetDataInput(0));
+            int value2 = EvaluateOperand(node->GetDataInput(1));
+            
+            FlowVisualizer::PrintDataFlow("Operand 1", "ADD", 
+                std::to_string(value1), m_depth);
+            FlowVisualizer::PrintDataFlow("Operand 2", "ADD", 
+                std::to_string(value2), m_depth);
+            
+            int result = value1 + value2;
+            FlowVisualizer::PrintDataFlow("ADD", "Result", 
+                std::to_string(result), m_depth);
+
+                for (const auto& [port, outputs] : node->dataOutputs) {
+                    for (const auto& target : outputs) {
+                        GenerateNodeCode(target.node, true);
+                    }
+                }
+                
+            m_depth--;
+        }
+        else if (node->IsType<VariableNode>()) {
+            m_depth++;
+            auto* varNode = node->GetAs<VariableNode>();
+            // FlowVisualizer::PrintNodeExecution("Variable: " + varNode->GetVariableName(), m_depth);
+
+            // If we're processing a data path, traverse data outputs
+            if (isDataPath) {
+                for (const auto& [port, outputs] : node->dataOutputs) {
+                    for (const auto& target : outputs) {
+                        GenerateNodeCode(target.node, true);
+                    }
+                }
+            }
+            m_depth--;
         }
 
-        int EvaluateCondition(std::shared_ptr<ASTNode> node) {
-            if (!node) return 0;
-            
-            if (node->IsType<OperatorNode>()) {
-                auto input0 = node->GetDataInput(0);
-                auto input1 = node->GetDataInput(1);
-                return EvaluateOperand(input0) + EvaluateOperand(input1);
-            }
-            return 0;
+        
+    }
+
+private:
+    int m_depth = 0;
+
+    int EvaluateOperand(std::shared_ptr<ASTNode> node) {
+        if (!node) return 0;
+        
+        if (node->IsType<VariableNode>()) {
+            auto* varNode = node->GetAs<VariableNode>();
+            return varNode->GetValue<int>();
         }
-    };
+        return 0;
+    }
+
+    int EvaluateCondition(std::shared_ptr<ASTNode> node) {
+        if (!node) return 0;
+        
+        if (node->IsType<OperatorNode>()) {
+            auto input0 = node->GetDataInput(0);
+            auto input1 = node->GetDataInput(1);
+            return EvaluateOperand(input0) + EvaluateOperand(input1);
+        }
+        return 0;
+    }
+};

@@ -13,6 +13,12 @@
 class BaseNode
 {
 public:
+    enum Behavior
+    {
+        BEHAVIOR_EXECUTION,
+        BEHAVIOR_DATA,
+    };
+
     struct Port
     {
         enum Type {
@@ -57,7 +63,7 @@ public:
         std::vector<ConstantValue> values;
     };
 
-    BaseNode(const std::string &type, const std::string &typeName);
+    BaseNode(const std::string &type, const std::string &typeName, Behavior behavior = BEHAVIOR_EXECUTION);
     virtual ~BaseNode();
 
     static std::string GetEntryLabel(const std::string &id);
@@ -121,12 +127,20 @@ public:
     }
     
 
+    void SetBehavior(Behavior behavior) {
+        m_behavior = behavior;
+    }
+    Behavior GetBehavior() const {
+        return m_behavior;
+    }
+
 private:
     std::string m_title{"Default title"};
     std::string m_type;
     std::string m_typeName;
     std::string m_uuid;
     NodePosition m_pos;
+    Behavior m_behavior{BEHAVIOR_EXECUTION};
 
     std::vector<Port> m_inputPorts;
     std::vector<Port> m_outputPorts;
