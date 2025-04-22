@@ -58,10 +58,10 @@ public:
         //     code << n->GenerateConstants(*this, project, OutputsCount(n->GetId())) << "\n";
         // }
 
-        for (const auto & n : m_nodes)
-        {
-            code << n->Build(*this, project.GetOptions(), OutputsCount(n->GetId())) << "\n";
-        }
+        // for (const auto & n : m_nodes)
+        // {
+        //     code << n->Build(*this, project.GetOptions(), OutputsCount(n->GetId())) << "\n";
+        // }
     }
 
     virtual void GetNodeConnections(std::list<std::shared_ptr<Connection>> &c, const std::string &nodeId) override

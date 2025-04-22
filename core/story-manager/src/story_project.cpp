@@ -7,7 +7,7 @@
 
 #include "story_project.h"
 #include "json.hpp"
-#include "media_node.h"
+// #include "media_node.h"
 #include "function_node.h"
 #include "variable_node.h"
 #include "sys_lib.h"
@@ -15,7 +15,7 @@
 StoryProject::StoryProject(ILogger &log)
     : m_log(log)
 {
-    registerNode<MediaNode>("media-node");
+    // registerNode<MediaNode>("media-node");
     registerNode<FunctionNode>("function-node");
     registerNode<VariableNode>("variable-node");
 }
@@ -223,7 +223,7 @@ std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::share
     return std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator>();
 }
 
-void StoryProject::ScanVariable(const std::function<void(Variable& element)>& operation)
+void StoryProject::ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation)
 {
     for (auto &v : m_variables)
     {
@@ -233,7 +233,13 @@ void StoryProject::ScanVariable(const std::function<void(Variable& element)>& op
 
 void StoryProject::AddVariable() 
 {
-    m_variables.push_back(Variable("var_" + std::to_string(m_variables.size()), "int32_t", 0, 8));
+    auto v = std::make_shared<Variable>("var_" + std::to_string(m_variables.size()));
+
+    v->SetValue(0);
+    v->SetValueType(Variable::ValueType::INTEGER);
+    v->SetConstant(false);
+    
+    m_variables.push_back(v);
 }
 
 void StoryProject::DeleteVariable(int i)

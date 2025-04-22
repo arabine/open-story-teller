@@ -130,7 +130,7 @@ set(SRCS
     src/windows/cpu_window.cpp
     src/windows/variables_window.cpp
     
-    src/node_editor/media_node_widget.cpp
+    # src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.cpp
     src/node_editor/node_editor_window.cpp
     src/node_editor/function_node_widget.cpp
@@ -168,16 +168,17 @@ set(SRCS
 
 
     # Core engine files
-    ../core/story-manager/src/compiler.cpp
     ../core/story-manager/src/story_project.cpp
     ../core/story-manager/src/story_page.cpp
-    ../core/story-manager/src/base_node.cpp
-    ../core/story-manager/src/media_node.cpp
-    ../core/story-manager/src/compare_node.cpp
-    ../core/story-manager/src/branch_node.cpp
-    ../core/story-manager/src/variable_node.cpp
-    ../core/story-manager/src/function_node.cpp
-    ../core/story-manager/src/connection.cpp
+
+
+    ../core/story-manager/src/nodes/base_node.cpp
+    ../core/story-manager/src/nodes/compare_node.cpp
+    ../core/story-manager/src/nodes/branch_node.cpp
+    ../core/story-manager/src/nodes/variable_node.cpp
+    ../core/story-manager/src/nodes/function_node.cpp
+    ../core/story-manager/src/nodes/connection.cpp
+
     ../core/story-manager/lib/sys_lib.cpp
     ../core/story-manager/lib/resource.cpp
 
@@ -222,6 +223,8 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../core/chip32
     ../shared
     ../core/story-manager/src
+    ../core/story-manager/src/nodes
+    ../core/story-manager/src/compiler
     ../core/story-manager/lib
     ../core/story-manager/interfaces
 )

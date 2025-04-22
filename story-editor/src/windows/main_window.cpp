@@ -1096,7 +1096,7 @@ uint32_t MainWindow::GetRegister(int reg)
     return regVal;
 }
 
-void MainWindow::ScanVariable(const std::function<void(Variable& element)>& operation)
+void MainWindow::ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation)
 {
     if (m_story)
     {

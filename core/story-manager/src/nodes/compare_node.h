@@ -12,7 +12,6 @@ public:
     CompareNode(const std::string &type);
 
     virtual void Initialize() override;
-    virtual std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) override;
 
 
 private:

@@ -26,6 +26,8 @@ public:
         ALL_CHARSETS = CHARSET_ALPHABET_LOWER | CHARSET_ALPHABET_UPPER |CHARSET_NUMBERS | CHARSET_SIGNS
     };
 
+    static const int NameMaxSize = 32; // Max size for the variable name
+
     Variable() {
         m_uuid = Uuid().String();
         m_label = Variable::GenerateRandomString(10, Variable::CHARSET_ALPHABET_LOWER | Variable::CHARSET_ALPHABET_UPPER );
@@ -99,6 +101,10 @@ public:
         m_valueType = ValueType::BOOL;
     }
 
+    void SetScalePower(int scalePower) {
+        m_scalePower = scalePower;
+    }
+
     // Getters
     std::string GetVariableName() const { 
         return m_variableName; 
@@ -125,10 +131,43 @@ public:
         }
     }
 
+    std::string GetStringValue() const {
+        return GetValue<std::string>();
+    }
+
+    int GetIntegerValue() const {
+        return GetValue<int>();
+    }
+
+    float GetFloatValue() const {
+        return GetValue<float>();
+    }
+
+    bool GetBoolValue() const {
+        return GetValue<bool>();
+    }
+
     using VariableValue = std::variant<int, float, bool, std::string>;
 
     std::string GetUuid() const { 
         return m_uuid; 
+    }
+
+    bool IsString() const {
+        return m_valueType == ValueType::STRING;
+    }
+    bool IsInteger() const {
+        return m_valueType == ValueType::INTEGER;
+    }
+    bool IsFloat() const {
+        return m_valueType == ValueType::FLOAT;
+    }
+    bool IsBool() const {
+        return m_valueType == ValueType::BOOL;
+    }
+
+    int GetScalePower() const {
+        return m_scalePower;
     }
 
     static std::string GenerateRandomString(size_t length, uint32_t flags) 

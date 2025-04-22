@@ -28,7 +28,7 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
     , m_manager(manager)
 {
 
-    registerNode<MediaNodeWidget>("media-node");
+    // registerNode<MediaNodeWidget>("media-node");
     registerNode<FunctionNodeWidget>("function-node");
     registerNode<VariableNodeWidget>("variable-node");
 }

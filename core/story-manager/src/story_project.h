@@ -103,7 +103,7 @@ public:
     std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator> Links(const std::string_view &page_uuid);
 
 
-    void ScanVariable(const std::function<void(Variable& element)>& operation);
+    void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation);
     void AddVariable();
     void DeleteVariable(int i);
 
@@ -134,7 +134,7 @@ private:
 
     std::list<std::shared_ptr<StoryPage>> m_pages;
 
-    std::vector<Variable> m_variables;
+    std::vector<std::shared_ptr<Variable>> m_variables;
 
     StoryOptions m_storyOptions;
 

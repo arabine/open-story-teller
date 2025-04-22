@@ -56,7 +56,7 @@ public:
     virtual uint32_t GetRegister(int reg) = 0;
 
     // Variables management
-    virtual void ScanVariable(const std::function<void(Variable& element)>& operation) = 0;
+    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) = 0;
     virtual void AddVariable() = 0;
     virtual void DeleteVariable(int i) = 0;
  

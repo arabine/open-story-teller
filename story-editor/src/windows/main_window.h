@@ -153,7 +153,7 @@ private:
     virtual uint32_t GetRegister(int reg) override;
 
     // Variable
-    virtual void ScanVariable(const std::function<void(Variable& element)>& operation) override;
+    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) override;
     virtual void AddVariable() override;
     virtual void DeleteVariable(int i);
 

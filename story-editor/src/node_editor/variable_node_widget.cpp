@@ -32,15 +32,16 @@ void VariableNodeWidget::DrawProperties()
     if (ImGui::BeginCombo("Variables list", m_selectedVariable.c_str(), flags))
     {
         int i = 0;
-        m_manager.ScanVariable([&i, this] (Variable &var) {
+        m_manager.ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
 
             // ImGui::PushID(static_cast<int>(i)); // Assure l'unicité des widgets
 
             const bool is_selected = (m_selectedIndex == i);
-            if (ImGui::Selectable(var.name.c_str(), is_selected))
+            std::string l = var->GetVariableName();
+            if (ImGui::Selectable(l.c_str(), is_selected))
             {
                 m_selectedIndex = i;
-                m_selectedVariable = var.name;
+                m_selectedVariable = l;
             }
 
             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)

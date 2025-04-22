@@ -42,47 +42,52 @@ void VariablesWindow::ShowRAMEditor()
     ImGui::Separator();
     int i = 0;
 
-    m_story.ScanVariable([&i, this] (Variable &var) {
+    m_story.ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
 
         ImGui::PushID(static_cast<int>(i)); // Assure l'unicité des widgets
-        if (ImGui::TreeNode((var.name + "###variable").c_str()))
+        std::string l = var->GetVariableName();
+        if (ImGui::TreeNode((l + "###variable").c_str()))
         {
             // Modifier le nom de la variable
             static char buffer[Variable::NameMaxSize];
-            std::strncpy(buffer, var.name.c_str(), sizeof(buffer));
+            std::strncpy(buffer, l.c_str(), sizeof(buffer));
             buffer[sizeof(buffer) - 1] = '\0'; // Assure la terminaison
             if (ImGui::InputText("Name", buffer, sizeof(buffer))) {
-                var.name = buffer;
+                var->SetVariableName(buffer);
             }
 
              // Choisir le type de la variable
             const char* types[] = {"Integer", "String"};
-            static int selectedType = (var.type == "Integer") ? 0 : 1;
+            static int selectedType = var->IsInteger() ? 0 : 1; // 0 for Integer, 1 for String
             if (ImGui::Combo("Type", &selectedType, types, IM_ARRAYSIZE(types))) {
-                var.type = types[selectedType];
+                var->SetValueType(selectedType == 0 ? Variable::ValueType::INTEGER : Variable::ValueType::STRING);
             }
 
-            if (var.type == "Integer")
+            if (var->IsInteger())
             {
                 // Modifier l'échelle
-                ImGui::InputInt("Scale Power (10^x)", &var.scalePower);
+                int scalePower = var->GetScalePower();
+                if (ImGui::InputInt("Scale Power (10^x)", &scalePower))
+                {
+                    var->SetScalePower(scalePower);
+                }
 
                 // Modifier la valeur entière
-                int intValue = static_cast<int>(var.value);
+                int intValue = static_cast<int>(var->GetIntegerValue());
                 if (ImGui::InputInt("Integer Value", &intValue)) {
-                    var.value = static_cast<int64_t>(intValue);
+                    var->SetIntegerValue(static_cast<int64_t>(intValue));
                 }
 
                 // Afficher la valeur flottante calculée
-                float floatValue = ScaledToFloat(var.value, var.scalePower);
+                float floatValue = ScaledToFloat(var->GetIntegerValue(), var->GetScalePower());
                 ImGui::Text("Float Value: %.6f", floatValue);
             }
             else
             {
-                std::strncpy(buffer, var.valueText.c_str(), sizeof(buffer));
+                std::strncpy(buffer, var->GetStringValue().c_str(), sizeof(buffer));
                 if (ImGui::InputText("Text value", buffer, sizeof(buffer)))
                 {
-                    var.valueText = buffer;
+                    var->SetTextValue(buffer);
                 }
             }
 

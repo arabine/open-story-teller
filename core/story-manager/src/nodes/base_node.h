@@ -69,7 +69,6 @@ public:
     static std::string GetEntryLabel(const std::string &id);
 
     virtual void Initialize() = 0;
-    virtual std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) = 0;
 
     void SetPosition(float x, float y);
 

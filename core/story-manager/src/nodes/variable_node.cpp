@@ -27,8 +27,5 @@ void VariableNode::Initialize()
     // m_sound = j["sound"].get<std::string>();
 }
 
-std::string VariableNode::Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
-{
-    return std::string();
-}
+
 
