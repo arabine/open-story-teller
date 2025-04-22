@@ -2,7 +2,6 @@
 #include "story_project.h"
 #include "connection.h"
 #include "sys_lib.h"
-#include "compiler.h"
 
 
 CompareNode::CompareNode(const std::string &type)
@@ -17,14 +16,7 @@ void CompareNode::Initialize()
 
 }
 
-std::string CompareNode::GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns)
-{
-    std::string s;
 
-   
-
-    return s;
-}
 
 std::string CompareNode::Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
 {

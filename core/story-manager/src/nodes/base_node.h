@@ -9,6 +9,14 @@
 #include "i_story_page.h"
 #include "i_story_project.h"
 #include "story_options.h"
+#include "variable.h"
+
+class IVariableVisitor {
+
+public: 
+    virtual void Visit(const std::shared_ptr<Variable> v) = 0;
+
+};
 
 class BaseNode
 {
@@ -70,10 +78,6 @@ public:
 
     virtual void Initialize() = 0;
     virtual std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) = 0;
-    virtual std::string GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns) = 0;
-
-    virtual std::string GenerateConstants() const { return ""; }
-    virtual std::string GenerateAssembly() const = 0;
 
     void SetPosition(float x, float y);
 
@@ -95,6 +99,15 @@ public:
     std::string GetTypeName() const
     {
         return m_typeName;
+    }
+
+
+    void SetWeight(int w) {
+        m_weight = w;
+    }
+
+    int GetWeight() const {
+        return m_weight;
     }
 
     void SetId(const std::string &id) { m_uuid = id; }
@@ -134,12 +147,21 @@ public:
         return m_behavior;
     }
 
+    void Accept(IVariableVisitor &visitor);
+
+
+protected:
+    // Easy access the variables for children nodes
+    // Key is the variable name, or whatever the node use to identify the variable
+    std::map<std::string, std::shared_ptr<Variable>> m_variables; 
+
 private:
     std::string m_title{"Default title"};
     std::string m_type;
     std::string m_typeName;
     std::string m_uuid;
     NodePosition m_pos;
+    int m_weight{0};
     Behavior m_behavior{BEHAVIOR_EXECUTION};
 
     std::vector<Port> m_inputPorts;

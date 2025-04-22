@@ -62,6 +62,10 @@ protected:
     }
 
 
+    virtual void Visit(const std::shared_ptr<Variable> v) {
+
+    }
+
 
     virtual void GenerateExit()  {
        
@@ -84,7 +88,7 @@ protected:
             m_depth++;
             // Get condition value
             auto conditionNode = node->GetDataInput(0);
-            int conditionValue = EvaluateCondition(conditionNode);
+            int conditionValue = 0;
             
             FlowVisualizer::PrintBranchDecision(conditionValue > 7, 
                 std::to_string(conditionValue), m_depth);
@@ -105,18 +109,16 @@ protected:
             m_depth++;
             auto* opNode = node->GetAs<OperatorNode>();
             
-            // Evaluate operands
-            int value1 = EvaluateOperand(node->GetDataInput(0));
-            int value2 = EvaluateOperand(node->GetDataInput(1));
+
             
-            FlowVisualizer::PrintDataFlow("Operand 1", "ADD", 
-                std::to_string(value1), m_depth);
-            FlowVisualizer::PrintDataFlow("Operand 2", "ADD", 
-                std::to_string(value2), m_depth);
+            FlowVisualizer::PrintDataFlow("Operand 1", opNode->GetOperatorSymbol(), 
+                std::to_string(0), m_depth);
+            FlowVisualizer::PrintDataFlow("Operand 2", opNode->GetOperatorSymbol(), 
+                std::to_string(0), m_depth);
             
-            int result = value1 + value2;
-            FlowVisualizer::PrintDataFlow("ADD", "Result", 
-                std::to_string(result), m_depth);
+
+            FlowVisualizer::PrintDataFlow(opNode->GetOperatorSymbol(), "Result", 
+                std::to_string(0), m_depth);
 
                 for (const auto& [port, outputs] : node->dataOutputs) {
                     for (const auto& target : outputs) {
@@ -148,24 +150,4 @@ protected:
 private:
     int m_depth = 0;
 
-    int EvaluateOperand(std::shared_ptr<ASTNode> node) {
-        if (!node) return 0;
-        
-        if (node->IsType<VariableNode>()) {
-            auto* varNode = node->GetAs<VariableNode>();
-            return varNode->GetValue<int>();
-        }
-        return 0;
-    }
-
-    int EvaluateCondition(std::shared_ptr<ASTNode> node) {
-        if (!node) return 0;
-        
-        if (node->IsType<OperatorNode>()) {
-            auto input0 = node->GetDataInput(0);
-            auto input1 = node->GetDataInput(1);
-            return EvaluateOperand(input0) + EvaluateOperand(input1);
-        }
-        return 0;
-    }
 };

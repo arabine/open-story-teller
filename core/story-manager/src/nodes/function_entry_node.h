@@ -1,13 +1,16 @@
 #pragma once
 
-#include "execution_node.h"
+#include "base_node.h"
 
 
-class FunctionEntryNode : public ExecutionNode
+class FunctionEntryNode : public BaseNode
 {
 public:
     FunctionEntryNode(const std::string &type)
-        : ExecutionNode(type, "Function Entry Node") {}
+        : BaseNode(type, "Function Entry Node")
+    {
+        SetWeight(100);
+    }
 
     void Initialize() override {
         // Initialisation spécifique pour FunctionEntryNode
@@ -17,11 +20,6 @@ public:
     std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) override {
         // Logique de construction pour FunctionEntryNode
         return GetMyEntryLabel() + ":\n";
-    }
-
-    std::string GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns) override {
-        // Génération des constantes pour FunctionEntryNode
-        return "FunctionEntryNode Constants";
     }
 
     // Ajoutez des méthodes spécifiques pour gérer l'entrée de la fonction

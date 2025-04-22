@@ -2,7 +2,6 @@
 #include "story_project.h"
 #include "connection.h"
 #include "sys_lib.h"
-#include "compiler.h"
 
 
 BranchNode::BranchNode(const std::string &type)
@@ -17,14 +16,7 @@ void BranchNode::Initialize()
 
 }
 
-std::string BranchNode::GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns)
-{
-    std::string s;
 
-   
-
-    return s;
-}
 
 std::string BranchNode::Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
 {

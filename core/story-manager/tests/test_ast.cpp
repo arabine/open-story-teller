@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include "function_entry_node.h"
 #include "operator_node.h"
 #include "chip32_machine.h"
+#include "variable.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -43,47 +44,7 @@ THE SOFTWARE.
 #include "assembly_generator.h"
 #include "flow_generator.h"
 #include "assembly_generator_chip32.h"
-/*
-void ProcessASTTree(const ASTBuilder::PathTree& tree, int depth = 0) {
-  std::queue<std::pair<std::shared_ptr<ASTNode>, int>> queue;
-  queue.push({tree.root, depth});
-  std::unordered_set<std::string> visited;
 
-  while (!queue.empty()) {
-      auto [node, currentDepth] = queue.front();
-      queue.pop();
-
-      if (visited.find(node->node->GetId()) != visited.end()) {
-          continue;
-      }
-      visited.insert(node->node->GetId());
-
-      std::string indent(currentDepth * 2, ' ');
-      std::cout << indent << "Node: " << node->node->GetTypeName() 
-               << " (ID: " << node->node->GetId() << ")" << std::endl;
-
-      // Print data inputs
-      for (const auto& [portIndex, inputNode] : node->dataInputs) {
-          std::cout << indent << "  Input at port " << portIndex 
-                   << " from: " << inputNode->node->GetTypeName() << std::endl;
-      }
-
-      // Print data outputs
-      for (const auto& [portIndex, outputs] : node->dataOutputs) {
-          for (const auto& [targetNode, targetPort] : outputs) {
-              std::cout << indent << "  Output from port " << portIndex 
-                       << " to: " << targetNode->node->GetTypeName() 
-                       << " port " << targetPort << std::endl;
-          }
-      }
-
-      // Add children to queue
-      for (const auto& child : node->children) {
-          queue.push({child, currentDepth + 1});
-      }
-  }
-}
-*/
 TEST_CASE( "Check various indentations and typos" ) {
 
     Compiler compiler;
@@ -98,20 +59,50 @@ TEST_CASE( "Check various indentations and typos" ) {
 
     auto functionEntryNode = std::make_shared<FunctionEntryNode>("function-entry-node");
 
-    auto variableNode1 = std::make_shared<VariableNode>("variable-node");
-    variableNode1->SetValue(5);
-    variableNode1->SetValueType(VariableNode::ValueType::INTEGER);
-    variableNode1->SetVariableName("X");
 
-    auto variableNode2 = std::make_shared<VariableNode>("variable-node");
-    variableNode2->SetValue(10);
-    variableNode2->SetValueType(VariableNode::ValueType::INTEGER);
-    variableNode2->SetVariableName("Y");
+    std::vector<std::shared_ptr<Variable>> variables;
+    auto var1 = std::make_shared<Variable>("X");
+    var1->SetValue(5);
+    var1->SetValueType(Variable::ValueType::INTEGER);
 
+    auto var2 = std::make_shared<Variable>("Y");
+    var2->SetValue(10);
+    var2->SetValueType(Variable::ValueType::INTEGER);
+
+    auto var3 = std::make_shared<Variable>("A");
+    var3->SetValue(7);
+    var3->SetValueType(Variable::ValueType::INTEGER);
+
+    auto var4 = std::make_shared<Variable>("B");
+    var4->SetValue(2);
+    var4->SetValueType(Variable::ValueType::INTEGER);
+
+
+    variables.push_back(var1);
+    variables.push_back(var2);
+    variables.push_back(var3);
+    variables.push_back(var4);
+
+    auto variableNodeX = std::make_shared<VariableNode>("variable-node");
+    variableNodeX->SetVariableUuid(var1->GetUuid());
+
+    auto variableNodeY = std::make_shared<VariableNode>("variable-node");
+    variableNodeY->SetVariableUuid(var2->GetUuid());
+
+    auto variableNodeA = std::make_shared<VariableNode>("variable-node");
+    variableNodeA->SetVariableUuid(var3->GetUuid());
+
+    auto variableNodeB = std::make_shared<VariableNode>("variable-node");
+    variableNodeB->SetVariableUuid(var4->GetUuid());
 
     auto testNode = std::make_shared<OperatorNode>();
     testNode->SetOperationType(OperatorNode::OperationType::GREATER_THAN);
 
+    auto addNode = std::make_shared<OperatorNode>();
+    addNode->SetOperationType(OperatorNode::OperationType::ADD);
+
+    auto subNode = std::make_shared<OperatorNode>();
+    subNode->SetOperationType(OperatorNode::OperationType::SUBTRACT);
 
     std::vector<std::shared_ptr<BaseNode>> nodes;
 
@@ -119,9 +110,13 @@ TEST_CASE( "Check various indentations and typos" ) {
     nodes.push_back(printNodeTrue);
     nodes.push_back(printNodeFalse);
     nodes.push_back(branchNode);
-    nodes.push_back(variableNode1);
-    nodes.push_back(variableNode2);
+    nodes.push_back(variableNodeX);
+    nodes.push_back(variableNodeY);
+    nodes.push_back(variableNodeA);
+    nodes.push_back(variableNodeB);
     nodes.push_back(testNode);
+    nodes.push_back(addNode);
+    nodes.push_back(subNode);
 
     auto cn1 = std::make_shared<Connection>();
     auto cn2 = std::make_shared<Connection>();
@@ -129,6 +124,10 @@ TEST_CASE( "Check various indentations and typos" ) {
     auto cn4 = std::make_shared<Connection>();
     auto cn5 = std::make_shared<Connection>();
     auto cn6 = std::make_shared<Connection>();
+    auto cn7 = std::make_shared<Connection>();
+    auto cn8 = std::make_shared<Connection>();
+    auto cn9 = std::make_shared<Connection>();
+    auto cn10 = std::make_shared<Connection>();
 
     std::vector<std::shared_ptr<Connection>> connections;
 
@@ -138,7 +137,10 @@ TEST_CASE( "Check various indentations and typos" ) {
     connections.push_back(cn4);
     connections.push_back(cn5);
     connections.push_back(cn6);
-  
+    connections.push_back(cn7);
+    connections.push_back(cn8);
+    connections.push_back(cn9);
+    connections.push_back(cn10);
 
     // Branch  True -> print Ok
     //         False -> print Ko  
@@ -168,47 +170,47 @@ TEST_CASE( "Check various indentations and typos" ) {
     cn4->outPortIndex = 0;
     cn4->type = Connection::DATA_LINK;
 
-    // Variable 1 -> Compare test node input 1
+    // + output 1 -> Compare test node input 1
     cn5->inNodeId = testNode->GetId();
     cn5->inPortIndex = 0;
-    cn5->outNodeId = variableNode1->GetId();
+    cn5->outNodeId = addNode->GetId();
     cn5->outPortIndex = 0;
     cn5->type = Connection::DATA_LINK;
 
-    // Variable 1 -> Compare test node input 1
+    // - output  -> Compare test node input 1
     cn6->inNodeId = testNode->GetId();
     cn6->inPortIndex = 1;
-    cn6->outNodeId = variableNode2->GetId();
+    cn6->outNodeId = subNode->GetId();
     cn6->outPortIndex = 0;
     cn6->type = Connection::DATA_LINK;
 
+    // ADD NODE INPUTS
 
-    // // Création des nœuds
-    // std::vector<Node> nodes = {
-    //     Node(Node::Type::VARIABLE, "i", "node_i"),
-    //     Node(Node::Type::CONSTANT, 10, "node_10"),
-    //     Node(Node::Type::SUBTRACT, "node_subtract"),
-    //     Node(Node::Type::CONSTANT, 1, "node_1"),
-    //     Node(Node::Type::ADD, "node_add"),
-    //     Node(Node::Type::ASSIGN, "i", "node_assign"),
-    //     Node(Node::Type::VARIABLE, "conditionVar", "node_condVar"),
-    //     Node(Node::Type::CONSTANT, 2, "node_2"),
-    //     Node(Node::Type::MULTIPLY, "node_multiply"),
-    //     Node(Node::Type::ASSIGN, "i", "node_assign_multiply"),
-    //     Node(Node::Type::BRANCH, "node_branch"),
-    //     Node(Node::Type::LOOP, "node_loop")
-    // };
+    cn7->inNodeId = addNode->GetId();
+    cn7->inPortIndex = 0;
+    cn7->outNodeId = variableNodeX->GetId();
+    cn7->outPortIndex = 0;
+    cn7->type = Connection::DATA_LINK;
 
-    // try 
-    // {
-    //   // Construction de l'AST
-    //   compiler.buildAST(nodes, connections);
-    //   compiler.printAST();
+    cn8->inNodeId = addNode->GetId();
+    cn8->inPortIndex = 1;
+    cn8->outNodeId = variableNodeY->GetId();
+    cn8->outPortIndex = 0;
+    cn8->type = Connection::DATA_LINK;
 
-    // } catch(const std::exception &e)
-    // {
-    //   std::cout << e.what() << std::endl;
-    // }
+    // SUBTRACT NODE INPUTS
+
+    cn9->inNodeId = subNode->GetId();
+    cn9->inPortIndex = 0;
+    cn9->outNodeId = variableNodeA->GetId();
+    cn9->outPortIndex = 0;
+    cn9->type = Connection::DATA_LINK;
+
+    cn10->inNodeId = subNode->GetId();
+    cn10->inPortIndex = 1;
+    cn10->outNodeId = variableNodeB->GetId();
+    cn10->outPortIndex = 0;
+    cn10->type = Connection::DATA_LINK;
 
 
      // Create generator context with current time and user
@@ -227,34 +229,19 @@ TEST_CASE( "Check various indentations and typos" ) {
     ASTBuilder builder(nodes, connections);
     auto pathTrees = builder.BuildAST();
 
-    /*
-    // Process each path tree
-    for (const auto& tree : pathTrees) {
-        std::cout << (tree.isExecutionPath ? "Execution" : "Data") 
-                 << " Path Tree:" << std::endl;
-        ProcessASTTree(tree);
-        std::cout << std::endl;
-    }
-        */
-
     // Generate flow in the console
     VisualFlowGenerator flowGenerator(context);
     FlowVisualizer::PrintHeader("arabine", "2025-04-08 12:03:01");
-    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTrees);
+    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTrees, variables);
 
     
     std::cout << "\nGenerated flow:\n" << flow << std::endl;
 
     // Generate assembly
-    std::string assembly = generator.GenerateAssembly(nodes, pathTrees);
+    std::string assembly = generator.GenerateAssembly(nodes, pathTrees, variables);
 
     std::cout << "\nGenerated assembly:\n" << assembly << std::endl;
     
-    // compiler.generateAssembly();
-
-    // std::cout << compiler.GetCode() << std::endl;
-
-
     // Chip32::Machine machine;
 
     // machine.QuickExecute(compiler.GetCode());

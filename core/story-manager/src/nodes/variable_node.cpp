@@ -32,12 +32,3 @@ std::string VariableNode::Build(IStoryPage &page, const StoryOptions &options, i
     return std::string();
 }
 
-std::string VariableNode::GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns)
-{
-    std::string s;
-
-
-
-    return s;
-}
-

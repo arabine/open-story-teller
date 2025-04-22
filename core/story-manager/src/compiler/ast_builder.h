@@ -107,6 +107,14 @@ public:
         return dynamic_cast<T*>(node.get());
     }
 
+    std::string GetId() const {
+        return node->GetId();
+    }
+
+    int GetWeight() const {
+        return node->GetWeight();
+    }
+
     // Debug information
     std::string GetDebugString() const {
         std::string result = "Node: " + node->GetTypeName() + " (ID: " + node->GetId() + ")\n";
@@ -150,87 +158,132 @@ public:
                const std::vector<std::shared_ptr<Connection>>& connections)
         : m_nodes(nodes), m_connections(connections) {}
 
-    std::vector<PathTree> BuildAST() {
+    std::vector<std::shared_ptr<ASTNode>> BuildAST()
+    {
         // Create node map for quick lookups
-        std::unordered_map<std::string, std::shared_ptr<BaseNode>> nodeMap;
+        std::unordered_map<std::string, std::shared_ptr<ASTNode>> nodeMap;
         for (const auto& node : m_nodes) {
-            nodeMap[node->GetId()] = node;
+            nodeMap[node->GetId()] = std::make_shared<ASTNode>(node);
         }
 
-        // Find all root nodes (nodes without incoming execution connections)
-        std::unordered_set<std::string> hasIncomingExec;
-        std::unordered_set<std::string> hasIncomingData;
 
+        // Build adjacency list for the nodes from the connections
         for (const auto& conn : m_connections) {
-            if (conn->type == Connection::EXECUTION_LINKJ) {
-                hasIncomingExec.insert(conn->inNodeId);
-            } else {
-                hasIncomingData.insert(conn->inNodeId);
+
+            // Don't add the variables nodes, as they are input data nodes.
+            auto rawNode = nodeMap[conn->outNodeId].get()->node;
+
+            if (dynamic_cast<VariableNode*>(rawNode.get())) {
+                continue;
             }
+            m_adjList[conn->outNodeId].push_back(conn->inNodeId);
         }
 
-        // Collect root nodes
-        std::vector<std::shared_ptr<BaseNode>> execRoots;
-        std::vector<std::shared_ptr<BaseNode>> dataRoots;
+        std::vector<std::shared_ptr<ASTNode>> topologicalOrder = ApplyKahnAlgorithm(nodeMap);
 
-        for (const auto& node : m_nodes) {
-            if (hasIncomingExec.find(node->GetId()) == hasIncomingExec.end()) {
-                if (dynamic_cast<FunctionEntryNode*>(node.get())) {
-                    execRoots.push_back(node);
-                }
-            }
-            // Nodes that have data outputs but no data inputs are data path roots
-            if ((hasIncomingData.find(node->GetId()) == hasIncomingData.end()) ||
-                AreAllInputsVariables(node, nodeMap))
+        // Maintenant, on va ajouter les connexions de données
+        for (const auto& conn : m_connections)
+        {
+            auto outNode = nodeMap[conn->outNodeId];
+            auto inNode = nodeMap[conn->inNodeId];
+
+            // Keep variables nodes as data inputs
+            if (dynamic_cast<VariableNode*>(outNode->node.get()))
             {
-                // Check if the node has any outgoing data connections
-                bool hasDataOutput = false;
-                for (const auto& conn : m_connections)
-                {
-                    if (conn->type == Connection::DATA_LINK && 
-                        conn->outNodeId == node->GetId()) {
-                        hasDataOutput = true;
-                        break;
-                    }
-                }
-
-                if (hasDataOutput && !(dynamic_cast<VariableNode*>(node.get())))
-                {
-                    dataRoots.push_back(node);
-                }
-
-                // if (hasDataOutput) {
-                //     dataRoots.push_back(node);
-                // }
+                inNode->AddDataInput(conn->inPortIndex, outNode);
             }
         }
 
-        std::vector<PathTree> pathTrees;
+         return topologicalOrder;
 
-        // Build execution path trees
-        for (const auto& root : execRoots) {
-            PathTree tree;
-            tree.root = std::make_shared<ASTNode>(root);
-            tree.isExecutionPath = true;
-            BuildExecutionPath(tree, nodeMap);
-            pathTrees.push_back(tree);
-        }
-
-        // Build data path trees
-        for (const auto& root : dataRoots) {
-            PathTree tree;
-            tree.root = std::make_shared<ASTNode>(root);
-            tree.isExecutionPath = false;
-            BuildDataPath(tree, nodeMap);
-            pathTrees.push_back(tree);
-        }
-
-        return pathTrees;
     }
 
 private:
     const std::vector<std::shared_ptr<BaseNode>>& m_nodes;
     const std::vector<std::shared_ptr<Connection>>& m_connections;
+
+
+
+    std::vector<std::shared_ptr<ASTNode>> ApplyKahnAlgorithm(const std::unordered_map<std::string, std::shared_ptr<ASTNode>> &nodeMap)
+    {
+
+        // Pour le container de la queue, on utilise un comparateur pour trier les noeuds par poids
+        // Cela permet de prioriser les noeuds avec un poids plus faible
+        auto compare = [](const std::shared_ptr<ASTNode>& a, const std::shared_ptr<ASTNode>& b) {
+            return a->GetWeight() < b->GetWeight();
+        };
+        std::priority_queue<std::shared_ptr<ASTNode>, std::vector<std::shared_ptr<ASTNode>>, decltype(compare)> queue(compare);
+
+     //   std::queue<std::string> q;
+        std::unordered_map<std::string, int> inDegree;
+ 
+        std::vector<std::shared_ptr<ASTNode>> res;
+        int visitedCount = 0;
+
+        // Calculate indegree
+        for (auto p: m_adjList)
+        {
+            std::string u = p.first; 
+
+            // On  initialise à zéro si le node n'est pas dans la liste
+            if (inDegree.find(u) == inDegree.end())
+            {
+                inDegree[u] = 0;
+            }
+
+            for (auto v: p.second)
+            {
+                inDegree[v]++;
+            }
+        }
+
+        // insert vertices with 0 indegree in queue
+        for (auto i: inDegree)
+        {
+            if (i.second == 0)
+            {
+                queue.push(nodeMap.at(i.first));
+            }
+        }
+        
+        // Process the queue
+        while(!queue.empty())
+        {
+            auto x = queue.top();
+            queue.pop();
+            visitedCount++;
+
+            res.push_back(x);
+
+            // Reduce indegree of neighbours 
+            for (auto dest: m_adjList[x->GetId()])
+            {
+                inDegree[dest]--;
+                if (inDegree[dest] == 0)
+                {
+                    queue.push(nodeMap.at(dest));
+                }
+            }
+        }
+
+        if (visitedCount != nodeMap.size()) {
+            // cout << "There exists a cycle in the graph";
+          //  throw std::runtime_error("Graph has a cycle");
+        }
+
+        // Debug: print in the console all the nodes in topological order
+        std::cout << "Topological order: \n\n";
+        for (const auto& a : res)
+        {
+            std::cout << a->node->GetTypeName() << " (" << a->GetId() << ") \n";
+        }
+
+        return res;      
+    }
+
+
+    // Ids (UUID strings) of nodes
+    std::unordered_map<std::string, std::vector<std::string>> m_adjList; 
 
 
     bool AreAllInputsVariables(const std::shared_ptr<BaseNode>& node, const std::unordered_map<std::string, std::shared_ptr<BaseNode>>& nodeMap) const
@@ -246,97 +299,9 @@ private:
                 }
             }
         }
-    return true;
+        return true;
     }
 
-    void BuildExecutionPath(PathTree& tree, 
-                          const std::unordered_map<std::string, 
-                          std::shared_ptr<BaseNode>>& nodeMap) {
-        std::queue<std::shared_ptr<ASTNode>> queue;
-        queue.push(tree.root);
 
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
 
-            // Find execution connections from this node
-            for (const auto& conn : m_connections) {
-                if (conn->type == Connection::EXECUTION_LINKJ && 
-                    conn->outNodeId == current->node->GetId()) {
-                    auto targetNode = nodeMap.find(conn->inNodeId);
-                    if (targetNode != nodeMap.end()) {
-                        auto childNode = std::make_shared<ASTNode>(targetNode->second);
-                        current->children.push_back(childNode);
-                        queue.push(childNode);
-                        tree.connections.push_back(conn);
-
-                        // For each execution node, find its data inputs
-                        BuildDataInputs(childNode, nodeMap);
-                    }
-                }
-            }
-        }
-    }
-
-    void BuildDataPath(PathTree& tree,
-                      const std::unordered_map<std::string, 
-                      std::shared_ptr<BaseNode>>& nodeMap) {
-        std::queue<std::shared_ptr<ASTNode>> queue;
-        queue.push(tree.root);
-        std::unordered_set<std::string> visited;
-
-        std::shared_ptr<ASTNode> currentLastNode = nullptr;
-
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
-
-            if (visited.find(current->node->GetId()) != visited.end()) {
-                continue;
-            }
-
-            currentLastNode = current; // Met à jour le dernier nœud visité
-            visited.insert(current->node->GetId());
-
-            // Find data connections from this node
-            for (const auto& conn : m_connections) {
-                if (conn->type == Connection::DATA_LINK && 
-                    conn->outNodeId == current->node->GetId()) {
-                    auto targetNode = nodeMap.find(conn->inNodeId);
-                    if (targetNode != nodeMap.end()) {
-                        auto childNode = std::make_shared<ASTNode>(targetNode->second);
-
-                        // Add childNode as a children only if it is not an execution node
-                        // Otherwise, the assembly code will be generated twice
-                        if (childNode->IsDataNode())
-                        {
-                            current->dataOutputs[conn->outPortIndex].push_back({childNode, conn->inPortIndex});
-                        }
-                        queue.push(childNode);
-                        tree.connections.push_back(conn);
-                    }
-                }
-            }
-        }
-
-        // On garde la trace du dernier nœud visité
-        // De cette façon on va pouvoir savoir à quel nœud on doit se connecter
-        // pour la génération de code
-        tree.lastNode = currentLastNode;
-    }
-
-    void BuildDataInputs(std::shared_ptr<ASTNode> node,
-                        const std::unordered_map<std::string, 
-                        std::shared_ptr<BaseNode>>& nodeMap) {
-        for (const auto& conn : m_connections) {
-            if (conn->type == Connection::DATA_LINK && 
-                conn->inNodeId == node->node->GetId()) {
-                auto sourceNode = nodeMap.find(conn->outNodeId);
-                if (sourceNode != nodeMap.end()) {
-                    auto inputNode = std::make_shared<ASTNode>(sourceNode->second);
-                    node->dataInputs[conn->inPortIndex] = inputNode;
-                }
-            }
-        }
-    }
 };

@@ -128,3 +128,13 @@ float BaseNode::GetY() const
 {
     return m_pos.y;
 }
+
+void BaseNode::Accept(IVariableVisitor &visitor)
+{
+
+    for (auto &v : m_variables)
+    {
+        visitor.Visit(v.second);
+    }
+
+}

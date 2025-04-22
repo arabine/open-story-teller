@@ -18,11 +18,6 @@ public:
         return "FunctionExitNode Build";
     }
 
-    std::string GenerateConstants(IStoryPage &page, IStoryProject &project, int nb_out_conns) override {
-        // Génération des constantes pour FunctionExitNode
-        return "FunctionExitNode Constants";
-    }
-
     // Ajoutez des méthodes spécifiques pour gérer la sortie de la fonction
     void FinalizeFunctionExit() {
         // Logique pour finaliser la sortie de la fonction

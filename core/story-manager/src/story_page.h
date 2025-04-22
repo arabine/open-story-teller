@@ -52,11 +52,11 @@ public:
 
     void Build(std::stringstream &code, IStoryProject &project)
     {
-        // First generate all constants
-        for (const auto & n : m_nodes)
-        {
-            code << n->GenerateConstants(*this, project, OutputsCount(n->GetId())) << "\n";
-        }
+        // // First generate all constants
+        // for (const auto & n : m_nodes)
+        // {
+        //     code << n->GenerateConstants(*this, project, OutputsCount(n->GetId())) << "\n";
+        // }
 
         for (const auto & n : m_nodes)
         {

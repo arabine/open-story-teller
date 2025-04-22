@@ -2,7 +2,6 @@
 #include "story_project.h"
 #include "connection.h"
 #include "sys_lib.h"
-#include "compiler.h"
 
 static std::string ChoiceLabel(const std::string &id)
 {

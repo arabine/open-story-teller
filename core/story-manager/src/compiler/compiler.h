@@ -188,10 +188,10 @@ public:
             }
         };
 
-        // Generate all constants
-        for (const auto& astNode : m_ast.nodeMap) {
-            assemblyCode << astNode.second->node->GenerateConstants();
-        }
+        // // Generate all constants
+        // for (const auto& astNode : m_ast.nodeMap) {
+        //     assemblyCode << astNode.second->node->GenerateConstants();
+        // }
 
         // After the constants, the main entry point:
         assemblyCode << ".main:\n";

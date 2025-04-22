@@ -15,12 +15,10 @@
 #include "variable_node.h"
 #include "branch_node.h"
 #include "operator_node.h"
+#include "base_node.h"
 
 
-
-
-
-class AssemblyGenerator {
+class AssemblyGenerator : public IVariableVisitor {
 public:
     struct GeneratorContext {
         std::string timestamp;
@@ -58,9 +56,10 @@ public:
         m_currentSection = Section::NONE;
     }
 
-    std::string GenerateAssembly(std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<PathTree>& roots)
+    std::string GenerateAssembly(std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<PathTree>& roots, const std::vector<std::shared_ptr<Variable>> &variables)
     {
         m_roots = roots;
+        /*
         Reset();
         
         // Generate header comments
@@ -68,11 +67,31 @@ public:
 
         // Generate data section
         StartSection(Section::DATA);
-        GenerateDataSection(nodes, roots);
+        GenerateDataSection(nodes, roots, variables);
 
         // Generate text section
         StartSection(Section::TEXT);
         GenerateTextSection(roots);
+*/
+        return m_assembly.str();
+    }
+
+
+    std::string GenerateAssembly(std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<std::shared_ptr<ASTNode>>& order, const std::vector<std::shared_ptr<Variable>> &variables)
+    {
+     //   m_roots = roots;
+        Reset();
+        
+        // Generate header comments
+        GenerateHeader();
+
+        // Generate data section
+        StartSection(Section::DATA);
+        GenerateDataSection(nodes, variables);
+
+        // Generate text section
+        StartSection(Section::TEXT);
+        GenerateTextSection(order);
 
         return m_assembly.str();
     }
@@ -139,14 +158,19 @@ private:
         }
     }
 
-    void GenerateDataSection(const std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<PathTree>& trees) {
-
+    void GenerateDataSection(const std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<std::shared_ptr<Variable>> &variables)
+    {
 
         // Generate all constants
         for (const auto& n : nodes) {
-            m_assembly << n->GenerateConstants();
+            n->Accept(*this);
         }
+  
+        m_assembly << "\n\n";
 
+        // Generate all 
+
+/*
         // Generate string literals
         for (const auto& literal : m_stringLiterals) {
             std::string label = "str_" + std::to_string(m_labelCounter++);
@@ -158,11 +182,19 @@ private:
         for (const auto& t : trees) {
             CollectVariables(t.root);
         }
+
+        */
     }
 
-    void GenerateTextSection(const std::vector<PathTree>& trees) {
+    void GenerateTextSection(const std::vector<std::shared_ptr<ASTNode>>& orderedNodes) {
         // Program entry point
         m_assembly << ".main:\n";
+
+        for (const auto& node : orderedNodes) {
+            GenerateNodeCode(node);
+        }
+
+        /*
         
         // Process execution paths first
         for (const auto& tree : trees) {
@@ -177,6 +209,7 @@ private:
                 GenerateNodeCode(tree.root, true);
             }
         }
+            */
 
         // Program exit
         GenerateExit();
@@ -187,11 +220,13 @@ private:
 
         if (node->IsType<VariableNode>()) {
             auto* varNode = node->GetAs<VariableNode>();
-            std::string varName = varNode->GetVariableName();
+            /*
+            std::string varName = varNode->GetN();
             if (m_variableAddresses.find(varName) == m_variableAddresses.end()) {
                 m_variableAddresses[varName] = varName;
                 m_assembly << varName << ":\n" << varNode->GenerateAssembly();
             }
+                */
         }
 
         // Traverse children

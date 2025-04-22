@@ -105,56 +105,6 @@ public:
         return ss.str();
     }
 
-    std::string GenerateConstants(IStoryPage& page, IStoryProject& project, int nb_out_conns) override {
-        return ""; // Operators don't generate constants
-    }
-
-    std::string GenerateAssembly() const override {
-        std::stringstream ss;
-        
-        switch (m_operationType) {
-            case OperationType::ADD:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    add eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            case OperationType::SUBTRACT:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    sub eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            case OperationType::MULTIPLY:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    imul eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            case OperationType::DIVIDE:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    cdq\n"         // Sign extend eax into edx
-                   << "    idiv ebx\n"
-                   << "    push eax\n";   // Push quotient
-                break;
-            case OperationType::AND:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    and eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            case OperationType::OR:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    or eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            // Add other operators...
-        }
-
-        return ss.str();
-    }
 
 private:
     OperationType m_operationType;

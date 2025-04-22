@@ -36,7 +36,6 @@ Purpose: grammar, ram usage and macros, rom code generation
 void hexdump(void *ptr, int buflen);
 
 static const std::string test1 = R"(; jump over the data, to our entry label
-    jump         .entry
 
 $imageBird          DC8  "example.bmp", 8  ; data
 $someConstant       DC32  12456789
@@ -46,7 +45,7 @@ $RamData1           DV32    1 ; one 32-bit integer
 $MyArray            DV8    10 ; array of 10 bytes
 
 ; label definition
-.entry:   ;; comment here should work
+.main:   ;; comment here should work
 ; We create a stupid loop just for RAM variable testing
 
     lcons r0, 4 ; prepare loop: 4 iterations
@@ -183,14 +182,12 @@ static const std::string testPrintf = R"(
 ; ========================================================
 ; We test the printf system call
 ; ========================================================
-jump         .entry
-
 $printHello         DC8  "La réponse est %d"
 $answer             DC32  42
 
 $counter             DV32  10
 
-.entry:
+.main:
     
     ; prepapre loop
 
