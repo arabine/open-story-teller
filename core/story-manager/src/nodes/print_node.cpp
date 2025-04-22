@@ -2,16 +2,15 @@
 #include "story_project.h"
 #include "connection.h"
 #include "sys_lib.h"
-
+#include "variable.h"
 
 PrintNode::PrintNode(const std::string &type)
     : BaseNode(type, "Print Node")
 {
-    m_label = GenerateRandomString(10, BaseNode::CHARSET_ALPHABET_LOWER | BaseNode::CHARSET_ALPHABET_UPPER );// Should be enough to avoid collision?
-
     // Create empty variable in memory
     auto v = std::make_shared<Variable>(m_label);
     v->SetTextValue("");
+    m_label = v->GetLabel();
     m_variables[m_label] = v;
 }
 

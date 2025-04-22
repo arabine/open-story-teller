@@ -144,12 +144,6 @@ public:
     }
 };
 
-struct PathTree {
-    std::shared_ptr<ASTNode> root;
-    std::shared_ptr<ASTNode> lastNode;           // Dernier nœud du PathTree
-    std::vector<std::shared_ptr<Connection>> connections;
-    bool isExecutionPath;  // true for main flow, false for input paths
-};
 
 class ASTBuilder {
 public:
@@ -194,7 +188,10 @@ public:
             }
         }
 
-         return topologicalOrder;
+        // Build execution paths
+        BuildExecutionPath(topologicalOrder, nodeMap);
+
+        return topologicalOrder;
 
     }
 
@@ -202,7 +199,32 @@ private:
     const std::vector<std::shared_ptr<BaseNode>>& m_nodes;
     const std::vector<std::shared_ptr<Connection>>& m_connections;
 
+    void BuildExecutionPath(std::vector<std::shared_ptr<ASTNode>>& tree,
+                const std::unordered_map<std::string, std::shared_ptr<ASTNode>>& nodeMap)
+    {
+        std::queue<std::shared_ptr<ASTNode>> queue;
+        queue.push(tree.front());
 
+        while (!queue.empty()) {
+            auto current = queue.front();
+            queue.pop();
+
+            // Find execution connections from this node
+            for (const auto& conn : m_connections)
+            {
+                if (conn->outNodeId == current->node->GetId())
+                {
+                    auto targetNode = nodeMap.find(conn->inNodeId);
+                    if (targetNode != nodeMap.end())
+                    {
+                        auto childNode = targetNode->second;
+                        current->children.push_back(childNode);
+                        queue.push(childNode);
+                    }
+                }
+            }
+        }
+    }
 
     std::vector<std::shared_ptr<ASTNode>> ApplyKahnAlgorithm(const std::unordered_map<std::string, std::shared_ptr<ASTNode>> &nodeMap)
     {

@@ -56,30 +56,8 @@ public:
         m_currentSection = Section::NONE;
     }
 
-    std::string GenerateAssembly(std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<PathTree>& roots, const std::vector<std::shared_ptr<Variable>> &variables)
-    {
-        m_roots = roots;
-        /*
-        Reset();
-        
-        // Generate header comments
-        GenerateHeader();
-
-        // Generate data section
-        StartSection(Section::DATA);
-        GenerateDataSection(nodes, roots, variables);
-
-        // Generate text section
-        StartSection(Section::TEXT);
-        GenerateTextSection(roots);
-*/
-        return m_assembly.str();
-    }
-
-
     std::string GenerateAssembly(std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<std::shared_ptr<ASTNode>>& order, const std::vector<std::shared_ptr<Variable>> &variables)
     {
-     //   m_roots = roots;
         Reset();
         
         // Generate header comments
@@ -109,6 +87,8 @@ protected:
 
     virtual void GenerateExit()  = 0;
 
+    virtual void GenerateVariable(const std::shared_ptr<Variable> v) = 0;
+
 
     std::string AddStringLiteral(const std::string& text)
     {
@@ -131,7 +111,7 @@ protected:
     std::vector<std::string> m_stringLiterals;
     int m_depth{0};
     Section m_currentSection;
-    std::vector<PathTree> m_roots;
+
 
 private:
 
@@ -160,30 +140,18 @@ private:
 
     void GenerateDataSection(const std::vector<std::shared_ptr<BaseNode>> &nodes, const std::vector<std::shared_ptr<Variable>> &variables)
     {
-
         // Generate all constants
         for (const auto& n : nodes) {
             n->Accept(*this);
         }
+
+        // generate all variables in RAM
+        for (auto & v : variables)
+        {
+            GenerateVariable(v);
+        }
   
         m_assembly << "\n\n";
-
-        // Generate all 
-
-/*
-        // Generate string literals
-        for (const auto& literal : m_stringLiterals) {
-            std::string label = "str_" + std::to_string(m_labelCounter++);
-            m_assembly << label << " db '" << literal << "',0\n"
-                      << label << "_len equ $ - " << label << "\n";
-        }
-
-        // Generate variables
-        for (const auto& t : trees) {
-            CollectVariables(t.root);
-        }
-
-        */
     }
 
     void GenerateTextSection(const std::vector<std::shared_ptr<ASTNode>>& orderedNodes) {
@@ -194,28 +162,12 @@ private:
             GenerateNodeCode(node);
         }
 
-        /*
-        
-        // Process execution paths first
-        for (const auto& tree : trees) {
-            if (tree.isExecutionPath) {
-                GenerateNodeCode(tree.root);
-            }
-        }
-
-        // Process data paths
-        for (const auto& tree : trees) {
-            if (!tree.isExecutionPath) {
-                GenerateNodeCode(tree.root, true);
-            }
-        }
-            */
-
         // Program exit
         GenerateExit();
     }
 
-    void CollectVariables(std::shared_ptr<ASTNode> node) {
+    void CollectVariables(std::shared_ptr<ASTNode> node)
+    {
         if (!node) return;
 
         if (node->IsType<VariableNode>()) {

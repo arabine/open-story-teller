@@ -66,6 +66,9 @@ protected:
 
     }
 
+    virtual void GenerateVariable(const std::shared_ptr<Variable> v) {
+
+    }
 
     virtual void GenerateExit()  {
        

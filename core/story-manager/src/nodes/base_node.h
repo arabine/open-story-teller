@@ -44,14 +44,6 @@ public:
         float y;
     };
 
-    enum RandomFlags
-    {
-        CHARSET_ALPHABET_LOWER = 0x1, // "abcdefghijklmnopqrstuvwxyz"
-        CHARSET_ALPHABET_UPPER = 0x2, // "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        CHARSET_NUMBERS = 0x4, // "0123456789"
-        CHARSET_SIGNS = 0x8, // "!@#$%^&*()_+-=[]{}|;:,.<>?";
-        ALL_CHARSETS = CHARSET_ALPHABET_LOWER | CHARSET_ALPHABET_UPPER |CHARSET_NUMBERS | CHARSET_SIGNS
-    };
 
     struct ConstantValue
     {
@@ -122,8 +114,6 @@ public:
 
     void SetInternalData(const nlohmann::json &j);
     nlohmann::json GetInternalData() const;
-
-    static std::string GenerateRandomString(size_t length, uint32_t flags = RandomFlags::ALL_CHARSETS);
 
     void ClearPorts() {
         m_inputPorts.clear();

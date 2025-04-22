@@ -19,44 +19,6 @@ BaseNode::~BaseNode()
     std::cout << "Deleted base node" << std::endl;
 }
 
-std::string BaseNode::GenerateRandomString(size_t length, uint32_t flags) 
-{
-    std::string charset = "";
-
-    if (flags & CHARSET_ALPHABET_LOWER)
-    {
-        charset += "abcdefghijklmnopqrstuvwxyz";
-    }
-
-    if (flags & CHARSET_ALPHABET_UPPER)
-    {
-        charset += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    }
-
-    if (flags & CHARSET_NUMBERS)
-    {
-        charset += "0123456789";
-    }
-
-    if (flags & CHARSET_SIGNS)
-    {
-        charset += "!@#$%^&*()_+-=[]{}|;:,.<>?";
-    }
-
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<> distribution(0, charset.size() - 1);
-
-    std::string result;
-    result.reserve(length);
-
-    for (size_t i = 0; i < length; ++i) {
-        result += charset[distribution(generator)];
-    }
-
-    return result;
-}
-
 
 std::string BaseNode::GetEntryLabel(const std::string &id)
 {

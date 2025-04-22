@@ -17,20 +17,18 @@ public:
     virtual void Initialize() override;
     virtual std::string Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns) override;
 
-    virtual std::string GenerateAssembly() const { return ""; }
-
     void StoreInternalData();
 
-    void SetVariableUuid(const std::string &uuid) {
-        m_variableUuid = uuid;
+    void SetVariable(const std::shared_ptr<Variable> v) {
+        m_variable = v;
     }
 
-    std::string GetVariableUuid() const {
-        return m_variableUuid;
+    std::shared_ptr<Variable> GetVariable() const {
+        return m_variable;
     }
 
 private:
-    std::string m_variableUuid;
+std::shared_ptr<Variable> m_variable;
 
 };
 

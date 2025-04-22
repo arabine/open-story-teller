@@ -17,6 +17,25 @@ public:
         STRING
     };
 
+    enum RandomFlags
+    {
+        CHARSET_ALPHABET_LOWER = 0x1, // "abcdefghijklmnopqrstuvwxyz"
+        CHARSET_ALPHABET_UPPER = 0x2, // "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        CHARSET_NUMBERS = 0x4, // "0123456789"
+        CHARSET_SIGNS = 0x8, // "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        ALL_CHARSETS = CHARSET_ALPHABET_LOWER | CHARSET_ALPHABET_UPPER |CHARSET_NUMBERS | CHARSET_SIGNS
+    };
+
+    Variable() {
+        m_uuid = Uuid().String();
+        m_label = Variable::GenerateRandomString(10, Variable::CHARSET_ALPHABET_LOWER | Variable::CHARSET_ALPHABET_UPPER );
+    }
+
+    Variable (const std::string &name)
+        : Variable()
+    {
+        m_variableName = name;
+    }
 
     // Setters
 
@@ -93,6 +112,10 @@ public:
         return m_valueType; 
     }
 
+    std::string GetLabel() const { 
+        return m_label; 
+    }
+
     template<typename T>
     T GetValue() const {
         try {
@@ -108,22 +131,51 @@ public:
         return m_uuid; 
     }
 
-    Variable() {
-        m_uuid = Uuid().String();
-    }
-
-    Variable (const std::string &name)
-        : Variable()
+    static std::string GenerateRandomString(size_t length, uint32_t flags) 
     {
-        m_variableName = name;
+        std::string charset = "";
+
+        if (flags & CHARSET_ALPHABET_LOWER)
+        {
+            charset += "abcdefghijklmnopqrstuvwxyz";
+        }
+
+        if (flags & CHARSET_ALPHABET_UPPER)
+        {
+            charset += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        }
+
+        if (flags & CHARSET_NUMBERS)
+        {
+            charset += "0123456789";
+        }
+
+        if (flags & CHARSET_SIGNS)
+        {
+            charset += "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        }
+
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        std::uniform_int_distribution<> distribution(0, charset.size() - 1);
+
+        std::string result;
+        result.reserve(length);
+
+        for (size_t i = 0; i < length; ++i) {
+            result += charset[distribution(generator)];
+        }
+
+        return result;
     }
 
 private:
-    std::string m_variableName;
+    std::string m_variableName; // nom humain
     ValueType m_valueType;
     VariableValue m_value;
     bool m_isConstant;
-    std::string m_uuid;
+    std::string m_uuid; // pour identifier le variable dans le JSON du projet
+    std::string m_label; // pour la génération assembleur
     int m_scalePower;    // Nombre de bits pour la partie fractionnaire
 
 };

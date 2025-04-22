@@ -58,7 +58,7 @@ TEST_CASE( "Check various indentations and typos" ) {
     auto branchNode = std::make_shared<BranchNode>("branch-node");
 
     auto functionEntryNode = std::make_shared<FunctionEntryNode>("function-entry-node");
-
+ 
 
     std::vector<std::shared_ptr<Variable>> variables;
     auto var1 = std::make_shared<Variable>("X");
@@ -84,16 +84,16 @@ TEST_CASE( "Check various indentations and typos" ) {
     variables.push_back(var4);
 
     auto variableNodeX = std::make_shared<VariableNode>("variable-node");
-    variableNodeX->SetVariableUuid(var1->GetUuid());
+    variableNodeX->SetVariable(var1);
 
     auto variableNodeY = std::make_shared<VariableNode>("variable-node");
-    variableNodeY->SetVariableUuid(var2->GetUuid());
+    variableNodeY->SetVariable(var2);
 
     auto variableNodeA = std::make_shared<VariableNode>("variable-node");
-    variableNodeA->SetVariableUuid(var3->GetUuid());
+    variableNodeA->SetVariable(var3);
 
     auto variableNodeB = std::make_shared<VariableNode>("variable-node");
-    variableNodeB->SetVariableUuid(var4->GetUuid());
+    variableNodeB->SetVariable(var4);
 
     auto testNode = std::make_shared<OperatorNode>();
     testNode->SetOperationType(OperatorNode::OperationType::GREATER_THAN);
@@ -227,25 +227,24 @@ TEST_CASE( "Check various indentations and typos" ) {
 
 
     ASTBuilder builder(nodes, connections);
-    auto pathTrees = builder.BuildAST();
+    auto pathTree = builder.BuildAST();
 
     // Generate flow in the console
     VisualFlowGenerator flowGenerator(context);
     FlowVisualizer::PrintHeader("arabine", "2025-04-08 12:03:01");
-    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTrees, variables);
+    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTree, variables);
 
     
     std::cout << "\nGenerated flow:\n" << flow << std::endl;
 
     // Generate assembly
-    std::string assembly = generator.GenerateAssembly(nodes, pathTrees, variables);
+    std::string assembly = generator.GenerateAssembly(nodes, pathTree, variables);
 
     std::cout << "\nGenerated assembly:\n" << assembly << std::endl;
     
-    // Chip32::Machine machine;
+    Chip32::Machine machine;
 
-    // machine.QuickExecute(compiler.GetCode());
+    machine.QuickExecute(assembly);
 
-  //  REQUIRE( parseResult == true );
 
 }

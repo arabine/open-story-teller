@@ -21,49 +21,36 @@ public:
         if (m_context.debugOutput) {
             AddComment("Node: " + node->node->GetTypeName() + " (ID: " + node->node->GetId() + ")");
         }
-/*
-        if (isDataPath)
-        {
-            
-            
-            // else if (node->IsType<VariableNode>()) {
-            //     GenerateVariableNode(node);
-            // }
-        }
-        else
-        {
+        // Node label
+        m_assembly << node->node->GetMyEntryLabel() << ":\n";
 
-        */
-            if (node->IsType<OperatorNode>()) {
-                GenerateOperatorNode(node);
-            }
-            else if (node->IsType<FunctionEntryNode>()) {
-                GenerateFunctionEntry(node);
-            }
-            else if (node->IsType<BranchNode>()) {
-                GenerateBranchNode(node);
-            }
-            else if (node->IsType<PrintNode>()) {
-                GeneratePrintNode(node);
-            }
+        if (node->IsType<OperatorNode>()) {
+            GenerateOperatorNode(node);
+        }
+        else if (node->IsType<FunctionEntryNode>()) {
+            GenerateFunctionEntry(node);
+        }
+        else if (node->IsType<BranchNode>()) {
+            GenerateBranchNode(node);
+        }
+        else if (node->IsType<PrintNode>()) {
+            GeneratePrintNode(node);
+        }
+
+        // // If we're processing a data path, traverse data outputs
+        // if (isDataPath) {
+        //     for (const auto& [port, outputs] : node->dataOutputs) {
+        //         for (const auto& target : outputs) {
+        //             GenerateNodeCode(target.node, true);
+        //         }
+        //     }
         // }
-
-        // If we're processing a data path, traverse data outputs
-        if (isDataPath) {
-            for (const auto& [port, outputs] : node->dataOutputs) {
-                for (const auto& target : outputs) {
-                    GenerateNodeCode(target.node, true);
-                }
-            }
-        }
 
     }
 
     virtual void AddComment(const std::string& comment) {
         m_assembly << std::string(m_depth * 4, ' ') << "; " << comment << "\n";
     }
-
-
 
     virtual void GenerateExit()  {
         AddComment("Program exit");
@@ -74,55 +61,22 @@ private:
 
     void GenerateFunctionEntry(std::shared_ptr<ASTNode> node) {
         AddComment("Function Entry");
-        m_depth++;
-        
-        // for (auto& child : node->children) {
-        //     GenerateNodeCode(child);
-        // }
-        
-        m_depth--;
     }
 
     void GenerateBranchNode(std::shared_ptr<ASTNode> node)
     {
-        std::string labelTrue = GenerateUniqueLabel("true");
-        std::string labelFalse = GenerateUniqueLabel("false");
-        std::string labelEnd = GenerateUniqueLabel("end");
-
         AddComment("Branch condition evaluation");
         m_depth++;
 
-        // Generate condition code
-        // We search a path tree that have a last node equivalent to our node
-        // (this is the input of the condition)
-/*
-        auto lastNode = std::find_if(m_roots.begin(), m_roots.end(),
-            [&node](const PathTree& tree) {
-                return tree.lastNode && tree.lastNode->node->GetId() == node->node->GetId();
-            });
-
-        AddComment("Last node: " + lastNode->lastNode->node->GetTypeName() + " (ID: " + lastNode->lastNode->node->GetId() + ")");
-  */      
+        auto trueBranch = node->GetChild(0);
+        auto falseBranch = node->GetChild(1);
 
         // Compare result and jump
-        m_assembly << "    pop eax\n"
-                << "    cmp eax, 0\n"
-                << "    je " << labelFalse << "\n";
+        m_assembly << "    pop r0\n"
+                << "    skipz r0\n"
+                << "    jump " << trueBranch->node->GetMyEntryLabel() << "\n"
+                << "    jump " << falseBranch->node->GetMyEntryLabel() << "\n";
 
-        // True branch
-        m_assembly << labelTrue << ":\n";
-        if (node->GetChildCount() > 0) {
-            GenerateNodeCode(node->GetChild(0));
-        }
-        m_assembly << "    jmp " << labelEnd << "\n";
-
-        // False branch
-        m_assembly << labelFalse << ":\n";
-        if (node->GetChildCount() > 1) {
-            GenerateNodeCode(node->GetChild(1));
-        }
-
-        m_assembly << labelEnd << ":\n";
         m_depth--;
     }
 
@@ -152,96 +106,73 @@ private:
         AddComment("Operator: " + std::to_string(static_cast<int>(opNode->GetOperationType())));
         m_depth++;
 
-        // Generate code for variables
-        for (const auto& [port, inputNode] : node->dataInputs) {
+        // Generate code for variables usage
+        int reg = 0;
+        for (const auto& [port, inputNode] : node->dataInputs)
+        {
+            // Check if the input node is a variable
+            if (inputNode->IsType<VariableNode>())
+            {
+                auto* varNode = inputNode->GetAs<VariableNode>();
+                if (varNode) {
+                    auto var = varNode->GetVariable();
+                    // Generate code to load the variable value
+                    // FIXME: hardcoded 4 bytes, replace by actual real variable size
+                    m_assembly << "    load r" << reg  << ", $" << var->GetLabel() << ", 4" <<  "; Load variable " << var->GetVariableName() << "\n";
+                    m_assembly << "    push r" << reg << "\n";
+                    // Assuming we have a function to load the variable value
+                    // m_assembly << "    load r0, " << varNode->GetVariableName() << "\n";
+                }
+                reg++;
+            }
+
+
           // m_assembly << "    load r0, " << inputNode.node->GetId() << "\n";
         }
-        
-
+         
+ 
         // Generate operator code
         switch (opNode->GetOperationType()) {
             case OperatorNode::OperationType::ADD:
-                m_assembly << "    pop ebx\n"
-                        << "    pop eax\n"
-                        << "    add eax, ebx\n"
-                        << "    push eax\n";
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    add r0, r1\n"
+                        << "    push r0\n";
                 break;
             case OperatorNode::OperationType::SUBTRACT:
-                m_assembly << "    pop ebx\n"
-                        << "    pop eax\n"
-                        << "    sub eax, ebx\n"
-                        << "    push eax\n";
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    sub r0, r1\n"
+                        << "    push r0\n";
                 break;
             case OperatorNode::OperationType::MULTIPLY:
-                m_assembly << "    pop ebx\n"
-                        << "    pop eax\n"
-                        << "    imul eax, ebx\n"
-                        << "    push eax\n";
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    mul r0, r1\n"
+                        << "    push r0\n";
                 break;
             case OperatorNode::OperationType::DIVIDE:
-                m_assembly << "    pop ebx\n"
-                        << "    pop eax\n"
-                        << "    cdq\n"
-                        << "    idiv ebx\n"
-                        << "    push eax\n";
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    div r0, r1\n"
+                        << "    push r0\n";
                 break;
-            // Add other operators...
-
-/*
-
-
-    std::string GenerateAssembly() const override {
-        std::stringstream ss;
-        
-        switch (m_operationType) {
-            case OperationType::ADD:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    add eax, ebx\n"
-                   << "    push eax\n";
+            case OperatorNode::OperationType::AND:
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    and r0, r1\n"
+                        << "    push r0\n";
                 break;
-            case OperationType::SUBTRACT:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    sub eax, ebx\n"
-                   << "    push eax\n";
+            case OperatorNode::OperationType::GREATER_THAN:
+                m_assembly << "    pop r0\n"
+                        << "    pop r1\n"
+                        << "    gt r0, r0, r1\n"
+                        << "    push r0\n";
                 break;
-            case OperationType::MULTIPLY:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    imul eax, ebx\n"
-                   << "    push eax\n";
+            default:
+                // Make voluntary bad assembly
+                m_assembly << "------>>>> OPERATOR NOT IMPLEMENTED: " << opNode->GetOperatorSymbol() << "\n";
                 break;
-            case OperationType::DIVIDE:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    cdq\n"         // Sign extend eax into edx
-                   << "    idiv ebx\n"
-                   << "    push eax\n";   // Push quotient
-                break;
-            case OperationType::AND:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    and eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            case OperationType::OR:
-                ss << "    pop ebx\n"
-                   << "    pop eax\n"
-                   << "    or eax, ebx\n"
-                   << "    push eax\n";
-                break;
-            // Add other operators...
-        }
-
-        return ss.str();
-    }
-
-
-*/
-
-
-
         }
 
         m_depth--;
@@ -253,21 +184,42 @@ private:
         {
             if (v->GetValueType() == Variable::ValueType::STRING)
             {
-                m_assembly  << "$" << v->GetVariableName() << " DC8, \""  << v->GetValue<std::string>() << "\"\n";
+                m_assembly  << "$" << v->GetLabel() << " DC8, \""  << v->GetValue<std::string>() << "\" ; "  << v->GetVariableName() << "\n";
             }
             else if (v->GetValueType() == Variable::ValueType::INTEGER)
             {
-                m_assembly  << "$" << v->GetVariableName() << " DC32, "  << v->GetValue<int>() << "\n";
+                m_assembly  << "$" << v->GetLabel() << " DC32, "  << v->GetValue<int>() << " ; "  << v->GetVariableName() << "\n";
             }
             else if (v->GetValueType() == Variable::ValueType::FLOAT)
             {
-                m_assembly  << "$" << v->GetVariableName() << " DC32, "  << v->GetValue<float>() << "\n";
+                m_assembly  << "$" << v->GetLabel() << " DC32, "  << v->GetValue<float>() << " ; "  << v->GetVariableName() << "\n";
             }
             else if (v->GetValueType() == Variable::ValueType::BOOL)
             {
-                m_assembly  << "$" << v->GetVariableName() << " DCB, "  << (v->GetValue<bool>() ? "1" : "0") << "\n";
+                m_assembly  << "$" << v->GetLabel() << " DCB, "  << (v->GetValue<bool>() ? "1" : "0") << " ; "  << v->GetVariableName() << "\n";
             }
 
+        }
+    }
+
+
+    virtual void GenerateVariable(const std::shared_ptr<Variable> v) 
+    {
+        if (v->GetValueType() == Variable::ValueType::STRING)
+        {
+            m_assembly  << "$" << v->GetLabel() << " DV8, \""  << v->GetValue<std::string>() << "\" ; "  << v->GetVariableName() << "\n";
+        }
+        else if (v->GetValueType() == Variable::ValueType::INTEGER)
+        {
+            m_assembly  << "$" << v->GetLabel() << " DV32, "  << v->GetValue<int>() << " ; "  << v->GetVariableName() << "\n";
+        }
+        else if (v->GetValueType() == Variable::ValueType::FLOAT)
+        {
+            m_assembly  << "$" << v->GetLabel() << " DV32, "  << v->GetValue<float>() << " ; "  << v->GetVariableName() << "\n";
+        }
+        else if (v->GetValueType() == Variable::ValueType::BOOL)
+        {
+            m_assembly  << "$" << v->GetLabel() << " DVB, "  << (v->GetValue<bool>() ? "1" : "0") << " ; "  << v->GetVariableName() << "\n";
         }
     }
 /*
