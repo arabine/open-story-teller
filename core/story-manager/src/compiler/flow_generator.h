@@ -61,6 +61,10 @@ protected:
        
     }
 
+    virtual void GenerateMain() override {
+        // Program entry point
+        FlowVisualizer::PrintNodeExecution("Main Entry", m_depth);
+    }
 
     virtual void Visit(const std::shared_ptr<Variable> v) {
 

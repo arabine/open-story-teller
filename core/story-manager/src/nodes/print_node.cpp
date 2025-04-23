@@ -19,10 +19,3 @@ void PrintNode::Initialize()
 {
 
 }
-
-std::string PrintNode::Build(IStoryPage &page, const StoryOptions &options, int nb_out_conns)
-{
-    return "";
-}
-
-

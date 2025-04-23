@@ -11,6 +11,7 @@ VariableNodeWidget::VariableNodeWidget(IStoryManager &manager, std::shared_ptr<B
     : BaseNodeWidget(manager, node)
     , m_manager(manager)
 {
+    m_variableNode = std::dynamic_pointer_cast<VariableNode>(node);
     // Create defaut one input and one output
     //AddInput();
     AddOutputs(1);
@@ -42,6 +43,7 @@ void VariableNodeWidget::DrawProperties()
             {
                 m_selectedIndex = i;
                 m_selectedVariable = l;
+                m_variableNode->SetVariable(var);
             }
 
             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)

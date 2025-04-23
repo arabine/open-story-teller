@@ -12,7 +12,7 @@ FunctionNodeWidget::FunctionNodeWidget(IStoryManager &manager, std::shared_ptr<B
     , m_manager(manager)
 {
     // Create defaut one input and one output
-    AddInput();
+    AddInputs(1);
     AddOutputs(2);
     SetOutPinName(0, "Success");
     SetOutPinName(1, "Failure");

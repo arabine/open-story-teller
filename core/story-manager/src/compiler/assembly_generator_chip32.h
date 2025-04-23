@@ -37,27 +37,29 @@ public:
             GeneratePrintNode(node);
         }
 
-        // // If we're processing a data path, traverse data outputs
-        // if (isDataPath) {
-        //     for (const auto& [port, outputs] : node->dataOutputs) {
-        //         for (const auto& target : outputs) {
-        //             GenerateNodeCode(target.node, true);
-        //         }
-        //     }
-        // }
-
+        // // If there is no any children, put an halt
+        if (node->GetChildCount() == 0)
+        {
+            AddComment("Program exit");
+            m_assembly << "    halt\n";
+        }
     }
 
     virtual void AddComment(const std::string& comment) {
         m_assembly << std::string(m_depth * 4, ' ') << "; " << comment << "\n";
     }
 
-    virtual void GenerateExit()  {
+    virtual void GenerateExit() override {
         AddComment("Program exit");
         m_assembly << "    halt\n";
     }
 
 private:
+
+    virtual void GenerateMain() override  {
+        // Program entry point
+        m_assembly << ".main:\n";
+    }
 
     void GenerateFunctionEntry(std::shared_ptr<ASTNode> node) {
         AddComment("Function Entry");

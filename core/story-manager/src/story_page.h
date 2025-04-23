@@ -8,6 +8,7 @@
 #include "i_story_project.h"
 #include "base_node.h"
 #include "connection.h"
+#include "assembly_generator.h"
 
 class StoryPage : public IStoryPage
 {
@@ -50,18 +51,20 @@ public:
         m_nodes.clear();
     }
 
-    void Build(std::stringstream &code, IStoryProject &project)
+    void BuildNodesVariables(AssemblyGenerator &generator)
     {
-        // // First generate all constants
-        // for (const auto & n : m_nodes)
-        // {
-        //     code << n->GenerateConstants(*this, project, OutputsCount(n->GetId())) << "\n";
-        // }
+        std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
+        generator.GenerateNodesVariables(nodes);
+    }
 
-        // for (const auto & n : m_nodes)
-        // {
-        //     code << n->Build(*this, project.GetOptions(), OutputsCount(n->GetId())) << "\n";
-        // }
+    void BuildNodes(AssemblyGenerator &generator)
+    {
+        std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
+        std::vector<std::shared_ptr<Connection>> links(m_links.begin(), m_links.end());
+        ASTBuilder builder(nodes, links);
+        auto pathTree = builder.BuildAST();
+
+        generator.GenerateTextSection(pathTree);
     }
 
     virtual void GetNodeConnections(std::list<std::shared_ptr<Connection>> &c, const std::string &nodeId) override

@@ -19,9 +19,12 @@ BaseNodeWidget::~BaseNodeWidget()
     std::cout << " <-- Deleted node widget: " << (int)m_node->ID.Get() << std::endl;
 }
 
-void BaseNodeWidget::AddInput()
+void BaseNodeWidget::AddInputs(int num)
 {
-   m_node->Inputs.emplace_back(GetNextId(), "", PinType::Flow);
+    for (int i = 0; i < num; i++)
+    {
+        m_node->Inputs.emplace_back(GetNextId(), "", PinType::Flow);
+    }
 }
 
 void BaseNodeWidget::AddOutputs(int num)
@@ -29,6 +32,21 @@ void BaseNodeWidget::AddOutputs(int num)
    for (int i = 0; i < num; i++)
    {
         m_node->Outputs.emplace_back(GetNextId(), "", PinType::Flow);
+   }
+}
+
+void BaseNodeWidget::SetInputs(uint32_t num)
+{
+   if (num > Inputs())
+   {
+        AddInputs(num - Inputs());
+   }
+   else if (num < Inputs())
+   {
+        for (unsigned int i = 0; i < (Inputs() - num); i++)
+        {
+            m_node->Inputs.pop_back();
+        }
    }
 }
 
@@ -57,6 +75,15 @@ void BaseNodeWidget::Initialize()
 {
     m_firstFrame = true;
     
+}
+
+
+void BaseNodeWidget::SetInputPinName(int pinIndex, const std::string &name)
+{
+    if (pinIndex < m_node->Inputs.size())
+    {
+        m_node->Inputs[pinIndex].Name = name;
+    }
 }
 
 void BaseNodeWidget::SetOutPinName(int pinIndex, const std::string &name)

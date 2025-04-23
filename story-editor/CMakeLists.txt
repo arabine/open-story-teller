@@ -135,6 +135,8 @@ set(SRCS
     src/node_editor/node_editor_window.cpp
     src/node_editor/function_node_widget.cpp
     src/node_editor/variable_node_widget.cpp
+    src/node_editor/operator_node_widget.cpp
+    src/node_editor/print_node_widget.cpp
    
     src/gui.cpp
     src/media_converter.cpp
@@ -177,6 +179,7 @@ set(SRCS
     ../core/story-manager/src/nodes/branch_node.cpp
     ../core/story-manager/src/nodes/variable_node.cpp
     ../core/story-manager/src/nodes/function_node.cpp
+    ../core/story-manager/src/nodes/print_node.cpp
     ../core/story-manager/src/nodes/connection.cpp
 
     ../core/story-manager/lib/sys_lib.cpp

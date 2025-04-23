@@ -106,6 +106,7 @@ public:
     virtual void Draw() = 0;
     virtual void DrawProperties() = 0;
 
+    void SetInputPinName(int pinIndex, const std::string &name);
     void SetOutPinName(int pinIndex, const std::string &name);
 
     void FrameStart();
@@ -189,10 +190,10 @@ public:
         }
         return found;
     }
-
-
-    void AddInput();
+    
+    void AddInputs(int num = 1);
     void AddOutputs(int num = 1);
+    void SetInputs(uint32_t num);
     void SetOutputs(uint32_t num);
     void DeleteOutput();
 

@@ -4,6 +4,7 @@
 #include "base_node.h"
 #include "connection.h"
 #include "function_entry_node.h"
+#include "variable_node.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -24,13 +25,17 @@ public:
     std::shared_ptr<BaseNode> node;
 
     // Execution flow children (for EXECUTION_LINKJ connections)
-    std::vector<std::shared_ptr<ASTNode>> children;
+    std::vector<std::shared_ptr<ASTNode>> children;   
 
     // Data inputs: port_index -> source node
     std::unordered_map<unsigned int, std::shared_ptr<ASTNode>> dataInputs;
 
     // Data outputs: output_port_index -> vector of (target node, target port)
     std::unordered_map<unsigned int, std::vector<DataTarget>> dataOutputs;
+
+    bool HasChildren(std::shared_ptr<ASTNode> c) const {
+        return std::find(children.begin(), children.end(), c) != children.end();
+    }
 
     bool IsExecutionNode() const {
         return node->GetBehavior() == BaseNode::Behavior::BEHAVIOR_EXECUTION;
@@ -202,24 +207,33 @@ private:
     void BuildExecutionPath(std::vector<std::shared_ptr<ASTNode>>& tree,
                 const std::unordered_map<std::string, std::shared_ptr<ASTNode>>& nodeMap)
     {
-        std::queue<std::shared_ptr<ASTNode>> queue;
-        queue.push(tree.front());
+        // For each node in the tree, find its children based on the connections
+        for (const auto& node : tree)
+        {
+            std::queue<std::shared_ptr<ASTNode>> queue;
+            queue.push(node);
 
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
+            while (!queue.empty()) {
+                auto current = queue.front();
+                queue.pop();
 
-            // Find execution connections from this node
-            for (const auto& conn : m_connections)
-            {
-                if (conn->outNodeId == current->node->GetId())
+                // Find connections from this node
+                for (const auto& conn : m_connections)
                 {
-                    auto targetNode = nodeMap.find(conn->inNodeId);
-                    if (targetNode != nodeMap.end())
+                    if (conn->outNodeId == current->node->GetId())
                     {
-                        auto childNode = targetNode->second;
-                        current->children.push_back(childNode);
-                        queue.push(childNode);
+                        auto targetNode = nodeMap.find(conn->inNodeId);
+                        if (targetNode != nodeMap.end())
+                        {
+                            auto childNode = targetNode->second;
+
+                            // Si le noeud n'a pas déjà cet enfant, on l'ajoute
+                            if (!current->HasChildren(childNode))
+                            {
+                                current->children.push_back(childNode);
+                                queue.push(childNode); 
+                            }
+                        }
                     }
                 }
             }

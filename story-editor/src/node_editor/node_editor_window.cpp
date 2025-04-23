@@ -12,6 +12,8 @@
 #include "media_node_widget.h"
 #include "function_node_widget.h"
 #include "variable_node_widget.h"
+#include "operator_node_widget.h"
+#include "print_node_widget.h"
 #include "gui.h"
 #include "uuid.h"
 
@@ -29,10 +31,12 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
 {
 
     // registerNode<MediaNodeWidget>("media-node");
+    registerNode<OperatorNodeWidget>("operator-node");
     registerNode<FunctionNodeWidget>("function-node");
     registerNode<VariableNodeWidget>("variable-node");
+    registerNode<PrintNodeWidget>("print-node");
 }
-
+ 
 NodeEditorWindow::~NodeEditorWindow()
 {
     m_pages.clear();

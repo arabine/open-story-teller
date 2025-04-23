@@ -10,14 +10,19 @@
 // #include "media_node.h"
 #include "function_node.h"
 #include "variable_node.h"
+#include "operator_node.h"
+#include "print_node.h"
 #include "sys_lib.h"
+#include "assembly_generator_chip32.h"
 
 StoryProject::StoryProject(ILogger &log)
     : m_log(log)
 {
     // registerNode<MediaNode>("media-node");
+    registerNode<FunctionNode>("operator-node");
     registerNode<FunctionNode>("function-node");
     registerNode<VariableNode>("variable-node");
+    registerNode<PrintNode>("print-node");
 }
 
 StoryProject::~StoryProject()
@@ -380,42 +385,59 @@ bool StoryProject::UseResource(const std::string &label)
 bool StoryProject::GenerateScript(std::string &codeStr)
 {
     std::stringstream code;
-    std::stringstream chip32;
-    std::string firstNode;
-
-    for (const auto & p : m_pages)
-    {
-        firstNode = p->FindFirstNode();
-    }
-
-    if (firstNode == "")
-    {
-        m_log.Log("First node not found, there must be only one node with a free input.");
-        return false;
-    }
-
-    code << "\tjump    " << BaseNode::GetEntryLabel(firstNode) << "\r\n";
     
     // Empty resources usage
     m_usedLabels.clear();
 
-    // On build toutes les pages
+
+
+     // Create generator context with current time and user
+     AssemblyGenerator::GeneratorContext context(
+        "2025-04-08 12:09:01",  // Current UTC time
+        "story-editor",              // Current user
+        true,                   // Enable debug output
+        true,                   // Enable optimizations
+        1024                    // Stack size
+    );
+
+    // Create generator
+    AssemblyGeneratorChip32 generator(context);
+
+
+    generator.Reset();
+        
+    // Generate header comments
+    generator.GenerateHeader();
+
+    // Generate data section
+    generator.StartSection(AssemblyGenerator::Section::DATA);
     for (const auto & p : m_pages)
     {
-        p->Build(code, *this);
+        p->BuildNodesVariables(generator);
+    }
+    generator.GenerateGlobalVariables(m_variables);
+
+    // Generate text section
+    generator.StartSection(AssemblyGenerator::Section::TEXT);
+
+    for (const auto & p : m_pages)
+    {
+        p->BuildNodes(generator);
     }
 
-    codeStr = code.str();
+    generator.GenerateExit();
+
+    codeStr = generator.GetAssembly();
 
     // Add our utility functions
-    std::string buffer;
+    // std::string buffer;
 
-    std::ifstream f("scripts/media.chip32");
-    f.seekg(0, std::ios::end);
-    buffer.resize(f.tellg());
-    f.seekg(0);
-    f.read(buffer.data(), buffer.size());
-    codeStr += buffer;
+    // std::ifstream f("scripts/media.chip32");
+    // f.seekg(0, std::ios::end);
+    // buffer.resize(f.tellg());
+    // f.seekg(0);
+    // f.read(buffer.data(), buffer.size());
+    // codeStr += buffer;
 
     return true;
 }

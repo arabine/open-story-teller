@@ -27,7 +27,7 @@ public:
     }
 
 private:
-std::shared_ptr<Variable> m_variable;
+    std::shared_ptr<Variable> m_variable;
 
 };
 

@@ -216,7 +216,7 @@ TEST_CASE( "Check various indentations and typos" ) {
      // Create generator context with current time and user
      AssemblyGenerator::GeneratorContext context(
         "2025-04-08 12:09:01",  // Current UTC time
-        "arabine",              // Current user
+        "unit-test-ast",              // Current user
         true,                   // Enable debug output
         true,                   // Enable optimizations
         1024                    // Stack size
@@ -232,13 +232,28 @@ TEST_CASE( "Check various indentations and typos" ) {
     // Generate flow in the console
     VisualFlowGenerator flowGenerator(context);
     FlowVisualizer::PrintHeader("arabine", "2025-04-08 12:03:01");
-    std::string flow = flowGenerator.GenerateAssembly(nodes, pathTree, variables);
+    flowGenerator.GenerateTextSection(pathTree);
 
+    std::string flow = flowGenerator.GetAssembly();
     
     std::cout << "\nGenerated flow:\n" << flow << std::endl;
 
-    // Generate assembly
-    std::string assembly = generator.GenerateAssembly(nodes, pathTree, variables);
+    //------------------------------------ Generate assembly ------------------------------------
+
+    generator.Reset();
+        
+    // Generate header comments
+    generator.GenerateHeader();
+
+    // Generate data section
+    generator.StartSection(AssemblyGenerator::Section::DATA);
+    generator.GenerateNodesVariables(nodes);
+    generator.GenerateGlobalVariables(variables);
+    generator.StartSection(AssemblyGenerator::Section::TEXT);
+    generator.GenerateTextSection(pathTree);
+    generator.GenerateExit();
+
+    std::string assembly = generator.GetAssembly();
 
     std::cout << "\nGenerated assembly:\n" << assembly << std::endl;
     
