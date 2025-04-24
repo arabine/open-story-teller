@@ -10,6 +10,7 @@ PrintNode::PrintNode(const std::string &type)
     // Create empty variable in memory
     auto v = std::make_shared<Variable>(m_label);
     v->SetTextValue("");
+    v->SetConstant(true);
     m_label = v->GetLabel();
     m_variables[m_label] = v;
 }

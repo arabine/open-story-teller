@@ -188,7 +188,7 @@ private:
 
     void UpdateVmView();
     uint8_t Syscall(chip32_ctx_t *ctx, uint8_t code);
-    std::string GetFileNameFromMemory(uint32_t addr);
+    std::string GetStringFromMemory(uint32_t addr);
     void ProcessStory();
     void StepInstruction();
     void RefreshProjectInformation();

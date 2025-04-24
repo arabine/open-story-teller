@@ -64,7 +64,7 @@ MainWindow::~MainWindow()
 }
 
 
-std::string MainWindow::GetFileNameFromMemory(uint32_t addr)
+std::string MainWindow::GetStringFromMemory(uint32_t addr)
 {
     char strBuf[100];
     bool isRam = addr & 0x80000000;
@@ -76,6 +76,7 @@ std::string MainWindow::GetFileNameFromMemory(uint32_t addr)
     }
     return strBuf;
 }
+
 
 void MainWindow::Play()
 {
@@ -268,7 +269,36 @@ void MainWindow::ProcessStory()
     }
     else if (m_dbg.run_result > VM_OK)
     {
-        Log("VM critical error", true);
+        std::string error = "VM Error: ";
+        switch (m_dbg.run_result)
+        {
+            case VM_ERR_STACK_OVERFLOW:
+                error += "Stack overflow";
+                break;
+            case VM_ERR_STACK_UNDERFLOW:
+                error += "Stack underflow";
+                break;
+            case VM_ERR_INVALID_ADDRESS:
+                error += "Invalid address";
+                break;
+            case VM_ERR_UNSUPPORTED_OPCODE:
+                error += "Invalid address";
+                break;
+            case VM_ERR_UNKNOWN_OPCODE:
+                error += "Unknown opcode";
+                break;
+            case VM_ERR_UNHANDLED_INTERRUPT:
+                error += "Unhandled interrupt";
+                break;
+            case VM_ERR_INVALID_REGISTER:
+                error += "Invalid register";
+                break;
+            default:
+                error += "Unknown error";
+                break;
+        }
+        error += " (line: " + std::to_string(m_dbg.line) + ")";
+        Log(error, true);
     }
 
     // In this case, we wait for single step debugger
@@ -289,7 +319,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R0] != 0)
         {
             // image file name address is in R0
-            std::string imageFile = m_story->BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            std::string imageFile = m_story->BuildFullAssetsPath(GetStringFromMemory(m_chip32_ctx.registers[R0]));
             Log("Image: " + imageFile);
             m_emulatorWindow.SetImage(imageFile);
         }
@@ -301,7 +331,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R1] != 0)
         {
             // sound file name address is in R1
-            std::string soundFile = m_story->BuildFullAssetsPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            std::string soundFile = m_story->BuildFullAssetsPath(GetStringFromMemory(m_chip32_ctx.registers[R1]));
             Log("Sound: " + soundFile);
             m_player.Play(soundFile);
         }
@@ -325,7 +355,52 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         // if timeout is set to zero, wait for infinite and beyond
         retCode = SYSCALL_RET_WAIT_EV; // set the VM in pause
     }
+    else if (code == 3)
+    {
+        // FIXME
+    }
+    else         // Printf
+    if (code == 4)
+    {
+        // In R0: string with escaped characters
+        // R1: Number of arguments
+        // R2, R3 ... arguments
 
+        // Integers: stored in registers by values
+        // Strings: first character address in register
+
+        std::string text = GetStringFromMemory(ctx->registers[R0]);
+
+        int arg_count = ctx->registers[R1];
+        char working_buf[200] = {0};
+
+        switch(arg_count){
+            case 0: 
+                Log(text);
+                break;
+            case 1: 
+                snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2]);
+                Log(working_buf);
+                break;
+            case 2: 
+                snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3]);
+                Log(working_buf);
+                break;
+            case 3: 
+                snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3], ctx->registers[R4]);
+                Log(working_buf);
+                break;
+            default:
+                break;
+        }
+    
+    }
+    // WAIT (sleep)
+    else if (code == 5)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(ctx->registers[R0]));
+    }
+    
 
     return retCode;
 }

@@ -19,7 +19,7 @@ StoryProject::StoryProject(ILogger &log)
     : m_log(log)
 {
     // registerNode<MediaNode>("media-node");
-    registerNode<FunctionNode>("operator-node");
+    registerNode<OperatorNode>("operator-node");
     registerNode<FunctionNode>("function-node");
     registerNode<VariableNode>("variable-node");
     registerNode<PrintNode>("print-node");
@@ -384,6 +384,7 @@ bool StoryProject::UseResource(const std::string &label)
 
 bool StoryProject::GenerateScript(std::string &codeStr)
 {
+    bool retCode = true;
     std::stringstream code;
     
     // Empty resources usage
@@ -403,43 +404,40 @@ bool StoryProject::GenerateScript(std::string &codeStr)
     // Create generator
     AssemblyGeneratorChip32 generator(context);
 
-
-    generator.Reset();
-        
-    // Generate header comments
-    generator.GenerateHeader();
-
-    // Generate data section
-    generator.StartSection(AssemblyGenerator::Section::DATA);
-    for (const auto & p : m_pages)
+    try
     {
-        p->BuildNodesVariables(generator);
+        generator.Reset();
+            
+        // Generate header comments
+        generator.GenerateHeader();
+
+        // Generate text section
+        generator.StartSection(AssemblyGenerator::Section::TEXT);
+        for (const auto & p : m_pages)
+        {
+            p->BuildNodes(generator);
+        }
+
+        // Generate data section
+        generator.StartSection(AssemblyGenerator::Section::DATA);
+        for (const auto & p : m_pages)
+        {
+            p->BuildNodesVariables(generator);
+        }
+        generator.GenerateGlobalVariables(m_variables);
+
+        generator.GenerateExit();
+
     }
-    generator.GenerateGlobalVariables(m_variables);
-
-    // Generate text section
-    generator.StartSection(AssemblyGenerator::Section::TEXT);
-
-    for (const auto & p : m_pages)
+    catch (const std::exception &e)
     {
-        p->BuildNodes(generator);
+        m_log.Log(e.what(), true);
+        retCode = false;
     }
-
-    generator.GenerateExit();
 
     codeStr = generator.GetAssembly();
 
-    // Add our utility functions
-    // std::string buffer;
-
-    // std::ifstream f("scripts/media.chip32");
-    // f.seekg(0, std::ios::end);
-    // buffer.resize(f.tellg());
-    // f.seekg(0);
-    // f.read(buffer.data(), buffer.size());
-    // codeStr += buffer;
-
-    return true;
+    return retCode;
 }
 
 bool StoryProject::GenerateBinary(const std::string &code, Chip32::Assembler::Error &err)

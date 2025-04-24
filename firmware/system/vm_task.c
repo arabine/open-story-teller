@@ -87,7 +87,7 @@ uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R0] != 0)
         {
             // image file name address is in R0
-            // QString imageFile = m_model.BuildFullImagePath(GetFileNameFromMemory(m_chip32_ctx.registers[R0]));
+            // QString imageFile = m_model.BuildFullImagePath(GetStringFromMemory(m_chip32_ctx.registers[R0]));
             // m_ostHmiDock->SetImage(imageFile);
             get_file_from_memory(ImageFile, m_chip32_ctx.registers[R0]);
             fs_task_image_start(ImageFile);
@@ -96,7 +96,7 @@ uint8_t vm_syscall(chip32_ctx_t *ctx, uint8_t code)
         if (m_chip32_ctx.registers[R1] != 0)
         {
             // sound file name address is in R1
-            // QString soundFile = m_model.BuildFullSoundPath(GetFileNameFromMemory(m_chip32_ctx.registers[R1]));
+            // QString soundFile = m_model.BuildFullSoundPath(GetStringFromMemory(m_chip32_ctx.registers[R1]));
             // qDebug() << ", Sound: " << soundFile;
             // m_model.PlaySoundFile(soundFile);
             get_file_from_memory(SoundFile, m_chip32_ctx.registers[R1]);

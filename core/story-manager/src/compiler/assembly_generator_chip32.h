@@ -118,12 +118,18 @@ private:
                 auto* varNode = inputNode->GetAs<VariableNode>();
                 if (varNode) {
                     auto var = varNode->GetVariable();
-                    // Generate code to load the variable value
-                    // FIXME: hardcoded 4 bytes, replace by actual real variable size
-                    m_assembly << "    load r" << reg  << ", $" << var->GetLabel() << ", 4" <<  "; Load variable " << var->GetVariableName() << "\n";
-                    m_assembly << "    push r" << reg << "\n";
-                    // Assuming we have a function to load the variable value
-                    // m_assembly << "    load r0, " << varNode->GetVariableName() << "\n";
+
+                    if (var)
+                    {
+                        // Generate code to load the variable value
+                        // FIXME: hardcoded 4 bytes, replace by actual real variable size
+                        m_assembly << "    load r" << reg  << ", $" << var->GetLabel() << ", 4" <<  "; Load variable " << var->GetVariableName() << "\n";
+                        m_assembly << "    push r" << reg << "\n";
+                    }
+                    else 
+                    {
+                        throw std::runtime_error("ERROR! Variable not set in node: " + inputNode->node->GetId());
+                    }
                 }
                 reg++;
             }
