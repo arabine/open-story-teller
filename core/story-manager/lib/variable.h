@@ -208,6 +208,24 @@ public:
         return result;
     }
 
+    static std::string ValueTypeToString(ValueType type) {
+        switch (type) {
+            case ValueType::INTEGER: return "Integer";
+            case ValueType::FLOAT: return "Float";
+            case ValueType::BOOL: return "Bool";
+            case ValueType::STRING: return "String";
+            default: return "Unknown";
+        }
+    }
+
+    static ValueType StringToValueType(const std::string& type) {
+        if (type == "Integer") return ValueType::INTEGER;
+        if (type == "Float") return ValueType::FLOAT;
+        if (type == "Bool") return ValueType::BOOL;
+        if (type == "String") return ValueType::STRING;
+        throw std::runtime_error("[variable.h] StringToValueType(): Invalid value type string");
+    }
+
 private:
     std::string m_variableName; // nom humain
     ValueType m_valueType;

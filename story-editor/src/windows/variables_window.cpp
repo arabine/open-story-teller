@@ -15,8 +15,6 @@ VariablesWindow::VariablesWindow(IStoryManager &proj)
 void VariablesWindow::Initialize()
 {
 
-
-
 }
 
 

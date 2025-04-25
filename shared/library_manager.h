@@ -45,6 +45,7 @@ public:
     std::string GetStoreUrl() const { return m_storeUrl; }
 
     void AddStory(IStoryDb::Info &info, int origin);
+    void RemoveStory(const std::string &uuid);
 
     void ParseCommunityStore(const std::string &jsonFileName);
     void ParseCommercialStore(const std::string &jsonFileName);

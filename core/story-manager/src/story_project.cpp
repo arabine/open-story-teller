@@ -501,6 +501,40 @@ bool StoryProject::Load(ResourceManager &manager)
                     ModelFromJson(j);
                     m_initialized = true;
                 }
+
+                if (j.contains("variables"))
+                {
+                    nlohmann::json variablesData = j["variables"];
+
+                    for (const auto &obj : variablesData)
+                    {
+                        auto v = std::make_shared<Variable>(obj["label"].get<std::string>());
+                        v->SetUuid(obj["uuid"].get<std::string>());
+                        v->SetValueType(Variable::StringToValueType(obj["type"].get<std::string>()));
+                        v->SetScalePower(obj["scale"].get<int>());
+                        v->SetConstant(obj["constant"].get<bool>());
+                        v->SetVariableName(obj["name"].get<std::string>());
+
+                        if (v->IsFloat())
+                        {
+                            v->SetFloatValue(std::stof(obj["value"].get<std::string>()));
+                        }
+                        else if (v->IsInteger())
+                        {
+                            v->SetIntegerValue(std::stoi(obj["value"].get<std::string>()));
+                        }
+                        else if (v->IsString())
+                        {
+                            v->SetTextValue(obj["value"].get<std::string>());
+                        }
+                        else if (v->IsBool())
+                        {
+                            v->SetBoolValue(obj["value"].get<std::string>() == "true");
+                        }
+
+                        m_variables.push_back(v);
+                    }
+                }
             }
         }
     }
@@ -542,6 +576,40 @@ void StoryProject::Save(ResourceManager &manager)
     ModelToJson(model);
     j["pages"] = model;
 
+    nlohmann::json variablesData;
+    for (const auto &v : m_variables)
+    {
+        std::string value;
+
+        if (v->IsFloat())
+        {
+            value = std::to_string(v->GetFloatValue());
+        }
+        else if (v->IsInteger())
+        {
+            value = std::to_string(v->GetIntegerValue());
+        }
+        else if (v->IsString())
+        {
+            value = v->GetStringValue();
+        }
+        else if (v->IsBool())
+        {
+            value = v->GetBoolValue() ? "true" : "false";
+        }
+
+        nlohmann::json obj = {{"name", v->GetVariableName()},
+                              {"label", v->GetLabel()},
+                              {"uuid", v->GetUuid()},
+                              {"value", value},
+                              {"scale", v->GetScalePower()},
+                              {"constant", v->IsConstant()},
+                              {"type", Variable::ValueTypeToString(v->GetValueType())}};
+
+        variablesData.push_back(obj);
+    }
+    j["variables"] = variablesData;
+
     std::ofstream o(m_project_file_path);
     o << std::setw(4) << j << std::endl;
 }
@@ -553,6 +621,7 @@ void StoryProject::Clear()
     m_working_dir = "";
     m_project_file_path = "";
     m_initialized = false;
+    m_variables.clear();
 }
 
 

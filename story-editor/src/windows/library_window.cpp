@@ -481,6 +481,8 @@ void LibraryWindow::Draw()
                     );
                 }
 
+                std::string rmUuid;
+
                 if (ImGui::BeginTable("library_table", 3, tableFlags))
                 {
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
@@ -539,11 +541,16 @@ void LibraryWindow::Draw()
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Remove"))
                         {
-
+                            rmUuid = p->GetUuid();
                         }
                         ImGui::PopID();
                     }
                     ImGui::EndTable();
+
+                    if (!rmUuid.empty())
+                    {
+                        m_libraryManager.RemoveStory(rmUuid);
+                    }
                 }
                 ImGui::EndTabItem();
             }

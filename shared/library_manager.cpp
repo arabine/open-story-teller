@@ -104,6 +104,21 @@ std::shared_ptr<StoryProject> LibraryManager::GetStory(const std::string &uuid)
     return current;
 }
 
+void LibraryManager::RemoveStory(const std::string &uuid)
+{
+    for (const auto &s : m_projectsList)
+    {
+        if (s->GetUuid() == uuid)
+        {
+            // Just rename the project file, keep the whole directory
+            auto oldname = s->GetProjectFilePath();
+            std::filesystem::rename(oldname, oldname + "__removed");
+            break;
+        }
+    }
+    Scan();
+}
+
 std::string LibraryManager::IndexFileName() const
 {
     auto p = std::filesystem::path(m_library_path) / "index.ost";

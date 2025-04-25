@@ -924,11 +924,11 @@ void MainWindow::RefreshProjectInformation()
 
 void MainWindow::CloseProject()
 {
-    // if (m_story)
-    // {
-    //     m_story->Clear();
-    //     m_story.reset();
-    // }
+    if (m_story)
+    {
+        m_story->Clear();
+        m_story.reset();
+    }
 
     m_resources.Clear();
 
