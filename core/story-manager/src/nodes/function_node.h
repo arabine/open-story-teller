@@ -13,8 +13,6 @@ public:
 
     virtual void Initialize() override;
 
-    void StoreInternalData();
-
 private:
 
 };

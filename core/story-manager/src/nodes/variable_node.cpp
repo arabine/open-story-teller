@@ -7,24 +7,29 @@
 VariableNode::VariableNode(const std::string &type)
     : BaseNode(type, "Variable Node")
 {
-    nlohmann::json j{ {"name", "i"}, {"value", 3} };
-    SetInternalData(j);
-}
-
-void VariableNode::StoreInternalData()
-{
-    nlohmann::json j;
-    // j["image"] = m_image;
-    // j["sound"] = m_sound;
-
+    nlohmann::json j{ {"uuid", ""} };
     SetInternalData(j);
 }
 
 void VariableNode::Initialize()
 {
     nlohmann::json j = GetInternalData();
-    // m_image = j["image"].get<std::string>();
-    // m_sound = j["sound"].get<std::string>();
+
+    m_variableUuid = j["uuid"].get<std::string>();
+}
+
+void VariableNode::SetVariableUuid(const std::string &uuid)
+{
+    m_variableUuid = uuid;
+
+    nlohmann::json j;
+    j["uuid"] = m_variableUuid;
+    SetInternalData(j);
+}
+
+std::string VariableNode::GetVariableUuid() const
+{
+    return m_variableUuid;
 }
 
 

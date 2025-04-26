@@ -11,15 +11,6 @@ FunctionNode::FunctionNode(const std::string &type)
     SetInternalData(j);
 }
 
-void FunctionNode::StoreInternalData()
-{
-    nlohmann::json j;
-    // j["image"] = m_image;
-    // j["sound"] = m_sound;
-
-    SetInternalData(j);
-}
-
 void FunctionNode::Initialize()
 {
     nlohmann::json j = GetInternalData();

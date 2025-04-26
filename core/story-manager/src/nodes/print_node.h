@@ -13,18 +13,9 @@ public:
 
     virtual void Initialize() override;
 
-    void SetText(const std::string &text) {
-
-        m_variables.at(m_label)->SetValue<std::string>(text);
-    }
-
-    std::string GetLabel() const {
-        return m_label;
-    }
-
-    std::string GetText() const {
-        return m_variables.at(m_label)->GetValue<std::string>();
-    }
+    void SetText(const std::string &text);
+    std::string GetLabel() const;
+    std::string GetText() const;
 
 private:
     std::string m_label; // Label for the string literal

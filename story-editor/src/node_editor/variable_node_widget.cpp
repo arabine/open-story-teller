@@ -21,8 +21,16 @@ VariableNodeWidget::VariableNodeWidget(IStoryManager &manager, std::shared_ptr<B
 void VariableNodeWidget::Initialize()
 {
     BaseNodeWidget::Initialize();
-}
 
+    m_selectedVariableUuid = m_variableNode->GetVariableUuid();
+
+    m_manager.ScanVariable([this] (std::shared_ptr<Variable> var) {
+        if (var->GetUuid() == m_selectedVariableUuid)
+        {
+            m_selectedVariableName = var->GetVariableName();
+        }
+    });
+}
 
 
 void VariableNodeWidget::DrawProperties()
@@ -30,7 +38,7 @@ void VariableNodeWidget::DrawProperties()
     ImGui::AlignTextToFramePadding();
     static ImGuiComboFlags flags = 0;
 
-    if (ImGui::BeginCombo("Variables list", m_selectedVariable.c_str(), flags))
+    if (ImGui::BeginCombo("Variables list", m_selectedVariableName.c_str(), flags))
     {
         int i = 0;
         m_manager.ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
@@ -42,13 +50,15 @@ void VariableNodeWidget::DrawProperties()
             if (ImGui::Selectable(l.c_str(), is_selected))
             {
                 m_selectedIndex = i;
-                m_selectedVariable = l;
-                m_variableNode->SetVariable(var);
+                m_selectedVariableName = l;
+                m_variableNode->SetVariableUuid(var->GetUuid());
             }
 
             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
             if (is_selected)
                 ImGui::SetItemDefaultFocus();
+
+            i++;
         });
         ImGui::EndCombo();
     }
@@ -59,7 +69,7 @@ void VariableNodeWidget::Draw()
 {
     BaseNodeWidget::FrameStart();
 
-    ImGui::TextUnformatted(m_selectedVariable.c_str());
+    ImGui::TextUnformatted(m_selectedVariableName.c_str());
 
     DrawPins();
 

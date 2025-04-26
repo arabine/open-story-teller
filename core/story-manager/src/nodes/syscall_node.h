@@ -8,20 +8,16 @@
 #include "i_script_node.h"
 #include "i_story_project.h"
 
-class VariableNode : public BaseNode
+class SyscallNode : public BaseNode
 {
 public:
 
-    VariableNode(const std::string &type = "variable-node");
+    SyscallNode(const std::string &type = "syscall-node");
 
     virtual void Initialize() override;
 
-    void SetVariableUuid(const std::string &uuid);
-
-    std::string GetVariableUuid() const;
-
 private:
-    std::string m_variableUuid;
+
 
 };
 

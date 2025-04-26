@@ -394,6 +394,7 @@ bool StoryProject::GenerateScript(std::string &codeStr)
 
      // Create generator context with current time and user
      AssemblyGenerator::GeneratorContext context(
+        m_variables,
         "2025-04-08 12:09:01",  // Current UTC time
         "story-editor",              // Current user
         true,                   // Enable debug output
@@ -424,7 +425,7 @@ bool StoryProject::GenerateScript(std::string &codeStr)
         {
             p->BuildNodesVariables(generator);
         }
-        generator.GenerateGlobalVariables(m_variables);
+        generator.GenerateGlobalVariables();
 
         generator.GenerateExit();
 

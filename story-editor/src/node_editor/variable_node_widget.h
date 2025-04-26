@@ -27,5 +27,6 @@ private:
     IStoryManager &m_manager;
     std::shared_ptr<VariableNode> m_variableNode;
     int m_selectedIndex{-1};
-    std::string m_selectedVariable;
+    std::string m_selectedVariableUuid;
+    std::string m_selectedVariableName;
 };

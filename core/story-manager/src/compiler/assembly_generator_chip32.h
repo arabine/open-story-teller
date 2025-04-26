@@ -6,7 +6,7 @@
 class AssemblyGeneratorChip32 : public AssemblyGenerator
 {
 public:
-    AssemblyGeneratorChip32(const GeneratorContext& context = GeneratorContext())
+    AssemblyGeneratorChip32(const GeneratorContext& context)
         : AssemblyGenerator(context)
     {
 
@@ -117,8 +117,10 @@ private:
             {
                 auto* varNode = inputNode->GetAs<VariableNode>();
                 if (varNode) {
-                    auto var = varNode->GetVariable();
+                    std::string varUuid = varNode->GetVariableUuid();
 
+                    // Find variable in the context
+                    auto var = m_context.FindVariableByUuid(varUuid);
                     if (var)
                     {
                         // Generate code to load the variable value
@@ -230,18 +232,7 @@ private:
             m_assembly  << "$" << v->GetLabel() << " DVB, "  << (v->GetValue<bool>() ? "1" : "0") << " ; "  << v->GetVariableName() << "\n";
         }
     }
-/*
-    void GenerateVariableNode(std::shared_ptr<ASTNode> node) {
-        auto* varNode = node->GetAs<VariableNode>();
-        if (!varNode) return;
 
-        std::string varName = varNode->GetVariableName();
-        
-        AddComment("Load variable: " + varName);
-        m_assembly << "    mov eax, [" << m_variableAddresses[varName] << "]\n"
-                  << "    push eax\n";
-    }
-*/
 };
 
 
