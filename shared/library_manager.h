@@ -9,11 +9,12 @@
 #include "story_project.h"
 #include "i_logger.h"
 #include "story_db.h"
+#include "nodes_factory.h"
 
 class LibraryManager
 {
 public:
-    LibraryManager(ILogger &log);
+    LibraryManager(ILogger &log, NodesFactory &factory);
     ~LibraryManager();
 
     void Initialize(const std::string &library_path);
@@ -60,6 +61,8 @@ public:
 
 private:
     ILogger &m_log;
+    NodesFactory &m_nodesFactory;
+
     std::string m_library_path;
     std::list<std::shared_ptr<StoryProject>> m_projectsList;
     std::string m_storeUrl;

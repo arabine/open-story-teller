@@ -25,6 +25,7 @@
 #include "cpu_window.h"
 #include "story_machine.h"
 #include "web_server.h"
+#include "nodes_factory.h"
 
 struct DebugContext
 {
@@ -96,6 +97,8 @@ private:
     std::string m_externalSourceFileName; // path of an external script to be used as compilation input
 
     std::vector<std::string> m_recentProjects;
+
+    NodesFactory m_nodesFactory;
 
     ResourceManager m_resources;
 

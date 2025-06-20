@@ -12,17 +12,14 @@
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
+#include "syscall_node.h"
 #include "sys_lib.h"
 #include "assembly_generator_chip32.h"
 
 StoryProject::StoryProject(ILogger &log)
     : m_log(log)
 {
-    // registerNode<MediaNode>("media-node");
-    registerNode<OperatorNode>("operator-node");
-    registerNode<FunctionNode>("function-node");
-    registerNode<VariableNode>("variable-node");
-    registerNode<PrintNode>("print-node");
+
 }
 
 StoryProject::~StoryProject()
@@ -40,11 +37,11 @@ void StoryProject::SetPaths(const std::string &uuid, const std::string &library_
     std::cout << "Working dir is: " << m_working_dir << std::endl;
 }
 
-void StoryProject::CopyToDevice(const std::string &outputDir)
+void StoryProject::CopyToDevice(const std::string &outputDir, NodesFactory &factory)
 {
     ResourceManager manager(m_log);
     
-    Load(manager);  
+    Load(manager, factory);  
 
     // Output dir is the root. Build an assets directory to the device location
     std::filesystem::path destRootDir = std::filesystem::path(outputDir) / m_uuid;
@@ -132,28 +129,6 @@ std::shared_ptr<StoryPage> StoryProject::CreatePage(const std::string &uuid)
     return newPage;
 }
 
-std::shared_ptr<BaseNode> StoryProject::CreateNode(const std::string_view &page_uuid, const std::string &type)
-{
-    typename Registry::const_iterator i = m_registry.find(type);
-    if (i == m_registry.end()) {
-        throw std::invalid_argument(std::string(__PRETTY_FUNCTION__) +
-                                    ": key not registered");
-    }
-    else
-    {
-        auto n = i->second(type);
-
-        for (auto & p : m_pages)
-        {
-            if (p->Uuid() == page_uuid)
-            {
-                p->AddNode(n);
-            }
-        }
-        return n;
-    }
-}
-
 void StoryProject::AddConnection(const std::string_view &page_uuid, std::shared_ptr<Connection> c)
 {
     for (const auto & p : m_pages)
@@ -161,6 +136,17 @@ void StoryProject::AddConnection(const std::string_view &page_uuid, std::shared_
         if (p->Uuid() == page_uuid)
         {
             p->AddLink(c);
+        }
+    }
+}
+
+void StoryProject::AddNode(const std::string_view &page_uuid, std::shared_ptr<BaseNode> node)
+{
+    for (const auto & p : m_pages)
+    {
+        if (p->Uuid() == page_uuid)
+        {
+            p->AddNode(node);
         }
     }
 }
@@ -252,7 +238,7 @@ void StoryProject::DeleteVariable(int i)
     m_variables.erase(m_variables.begin() + i);
 }
 
-bool StoryProject::ModelFromJson(const nlohmann::json &model)
+bool StoryProject::ModelFromJson(const nlohmann::json &model, NodesFactory &factory)
 {
     bool success = false;
     try {
@@ -272,9 +258,10 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model)
             
                 std::string type = element["type"].get<std::string>();
 
-                auto n = CreateNode(p->Uuid(), type);
+                auto n = factory.CreateNode(type);
                 if (n)
                 {
+                    AddNode(p->Uuid(), n);
                     n->FromJson(element);
                     n->Initialize();
                 }
@@ -472,7 +459,7 @@ bool StoryProject::GenerateBinary(const std::string &code, Chip32::Assembler::Er
 
 
 
-bool StoryProject::Load(ResourceManager &manager)
+bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
 {
     try {
         std::ifstream f(m_project_file_path);
@@ -499,7 +486,7 @@ bool StoryProject::Load(ResourceManager &manager)
 
                 if (j.contains("pages"))
                 {
-                    ModelFromJson(j);
+                    ModelFromJson(j, factory);
                     m_initialized = true;
                 }
 

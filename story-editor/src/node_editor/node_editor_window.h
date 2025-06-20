@@ -11,6 +11,7 @@
 #include "json.hpp"
 #include "story_project.h"
 #include "node_editor_page.h"
+#include "nodes_factory.h"
 
 namespace ed = ax::NodeEditor;
 
@@ -25,7 +26,7 @@ namespace ed = ax::NodeEditor;
 class NodeEditorWindow  : public WindowBase
 {
 public:   
-    NodeEditorWindow(IStoryManager &manager);
+    NodeEditorWindow(IStoryManager &manager, NodesFactory &factory);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
@@ -38,6 +39,7 @@ public:
 
 private:
     IStoryManager &m_manager;
+    NodesFactory &m_nodesFactory;
 
     bool m_loaded{false};
 

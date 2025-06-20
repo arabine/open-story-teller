@@ -14,6 +14,7 @@
 #include "variable_node_widget.h"
 #include "operator_node_widget.h"
 #include "print_node_widget.h"
+#include "syscall_node_widget.h"
 #include "gui.h"
 #include "uuid.h"
 
@@ -25,9 +26,10 @@ if (!(x)) { \
 #include "json.hpp"
 
 
-NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
+NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory)
     : WindowBase("Node editor")
     , m_manager(manager)
+    , m_nodesFactory(factory)
 {
 
     // registerNode<MediaNodeWidget>("media-node");
@@ -35,6 +37,7 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager)
     registerNode<FunctionNodeWidget>("function-node");
     registerNode<VariableNodeWidget>("variable-node");
     registerNode<PrintNodeWidget>("print-node");
+    registerNode<SyscallNodeWidget>("syscall-node");
 }
  
 NodeEditorWindow::~NodeEditorWindow()
@@ -333,15 +336,16 @@ void NodeEditorWindow::Draw()
         {
             auto newNodePostion = openPopupPosition;
             std::shared_ptr<BaseNode> base;
-            auto nodeTypes = m_story->GetNodeTypes();
+            auto nodeTypes = m_nodesFactory.GetNodeTypes();
 
             for (auto &type : nodeTypes)
             {
                 if (ImGui::MenuItem(type.c_str()))
                 {
-                    base = m_story->CreateNode(m_currentPage->Uuid(), type);
+                    base = m_nodesFactory.CreateNode(type);
                     if (base)
                     {
+                        m_story->AddNode(m_currentPage->Uuid(), base);
                         auto n = CreateNodeWidget(type, m_manager, base);
                         if (n)
                         {
@@ -378,7 +382,7 @@ void NodeEditorWindow::ToolbarUI()
     auto& io = ImGui::GetIO();
     ImVec2 window_pos = ImGui::GetWindowPos();
     ImVec2 window_size = ImGui::GetWindowSize();
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
     // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     // {
     //     const ImGuiViewport* viewport = ImGui::GetWindowViewport();

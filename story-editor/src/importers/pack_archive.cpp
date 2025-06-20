@@ -16,8 +16,9 @@
 #include "uuid.h"
 #include "sys_lib.h"
 
-PackArchive::PackArchive(ILogger &log)
+PackArchive::PackArchive(ILogger &log, NodesFactory &factory)
     : m_log(log)
+    , m_nodesFactory(factory)
 {
 
 }
@@ -235,10 +236,11 @@ void PackArchive::ConvertCommercialFormat(StoryProject &proj, const std::filesys
     {
         ni_get_node_info(i, &node_info);
 
-        auto node = proj.CreateNode(proj.MainUuid(), "media-node");
+        auto node = m_nodesFactory.CreateNode("media-node");
 
         if (node)
         {
+            proj.AddNode(proj.MainUuid(), node);
             // On sauvegarde la relation entre l'index du noeud et son UUID
             // On s'en servira plus tard pour effectuer les liens
             nodeIds[i] = node->GetId();
@@ -400,10 +402,11 @@ bool PackArchive::ConvertJsonStudioToOst(const std::string &basePath, const std:
 
             for (const auto & n : j["stageNodes"])
             {
-                auto node = proj.CreateNode(proj.MainUuid(), "media-node");
+                auto node = m_nodesFactory.CreateNode("media-node");
 
                 if (node)
                 {
+                    page->AddNode(node);
                     auto node_uuid = n["uuid"].get<std::string>();
                     node->SetId(node_uuid);
                     node->SetPosition(n["position"]["x"].get<float>(), n["position"]["y"].get<float>());

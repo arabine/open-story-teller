@@ -8,8 +8,9 @@
 #include "uuid.h"
 
 
-LibraryManager::LibraryManager(ILogger &log)
+LibraryManager::LibraryManager(ILogger &log, NodesFactory &factory)
     : m_log(log)
+    , m_nodesFactory(factory)
 {
 
 }
@@ -187,7 +188,7 @@ void LibraryManager::CopyToDevice(const std::string &outputDir)
                 if (p->IsSelected())
                 {
                     std::cout << "Copying " << p->GetName() << std::endl;
-                    p->CopyToDevice(outputDir);
+                    p->CopyToDevice(outputDir, m_nodesFactory);
                 }
             }
         }); 

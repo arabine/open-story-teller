@@ -7,7 +7,7 @@
 SyscallNode::SyscallNode(const std::string &type)
     : BaseNode(type, "Syscall Node")
 {
-    nlohmann::json j{ {"uuid", ""} };
+    nlohmann::json j{ {"syscall_number", m_syscallNumber} };
     SetInternalData(j);
 }
 
@@ -15,8 +15,24 @@ void SyscallNode::Initialize()
 {
     nlohmann::json j = GetInternalData();
 
-    // m_variableUuid = j["uuid"].get<std::string>();
+    m_syscallNumber = j["syscall_number"].get<int>();
 }
 
+int SyscallNode::GetArgumentsSize() const
+{
+    int size = 0;
+
+    switch (m_syscallNumber)
+    {
+    case SYSCALL_PLAY_MEDIA:
+        size = 2;
+        break;    
+    default:
+        break;
+    }
+
+
+    return size;
+}
 
 

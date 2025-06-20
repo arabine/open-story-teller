@@ -14,11 +14,12 @@
 #include "i_story_db.h"
 #include "story_project.h"
 #include "sys_lib.h"
+#include "nodes_factory.h"
 
 class PackArchive
 {
 public:
-    PackArchive(ILogger &log);
+    PackArchive(ILogger &log, NodesFactory &factory);
 
     std::string OpenImage(const std::string &fileName);
 
@@ -139,6 +140,7 @@ public:
     std::string HexDump(const char *desc, const void *addr, int len);
 private:
     ILogger &m_log;
+    NodesFactory &m_nodesFactory;
     Zip mZip;
     ni_file_t mNiFile;
 

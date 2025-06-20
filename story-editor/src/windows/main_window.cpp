@@ -24,12 +24,12 @@
 
 MainWindow::MainWindow()
     : m_resources(*this)
-    , m_libraryManager(*this)
+    , m_libraryManager(*this, m_nodesFactory)
     , m_emulatorWindow(*this)
     , m_debuggerWindow(*this)
     , m_cpuWindow(*this)
     , m_resourcesWindow(*this)
-    , m_nodeEditorWindow(*this)
+    , m_nodeEditorWindow(*this, m_nodesFactory)
     , m_libraryWindow(*this, m_libraryManager)
     , m_variablesWindow(*this)
     , m_player(*this)
@@ -444,7 +444,7 @@ float MainWindow::DrawMainMenuBar()
         if (ImGui::BeginMenu("File"))
         {
 
-            if (ImGui::MenuItem("New project"))
+            if (ImGui::MenuItem("New story project"))
             {
                 CloseProject();
 
@@ -457,6 +457,11 @@ float MainWindow::DrawMainMenuBar()
                     OpenProject(m_story->GetUuid());
                 }
             }
+            if (ImGui::MenuItem("New module"))
+            {
+                showNewProject = true;
+            }
+
 /*
             if (ImGui::BeginMenu("Open Recent"))
             {
@@ -851,7 +856,7 @@ void MainWindow::OpenProject(const std::string &uuid)
     {
         Log("Cannot find story: " + uuid);
     }
-    else if (m_story->Load(m_resources))
+    else if (m_story->Load(m_resources, m_nodesFactory))
     {
         Log("Open project success");
         m_nodeEditorWindow.Load(m_story);
@@ -890,7 +895,7 @@ void MainWindow::OpenProject(const std::string &uuid)
 void MainWindow::ImportProject(const std::string &filePathName, int format)
 {
     (void) format;
-    PackArchive archive(*this);
+    PackArchive archive(*this, m_nodesFactory);
 
     // On va déterminer le type de fichier selon l'extension
     auto ext = SysLib::GetFileExtension(filePathName);

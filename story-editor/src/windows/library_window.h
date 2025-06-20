@@ -6,6 +6,7 @@
 #include "i_story_manager.h"
 #include "thread_safe_queue.h"
 #include "downloader.h"
+#include "nodes_factory.h"
 
 #include <curl/curl.h>
 

@@ -8,6 +8,13 @@
 class IStoryProject
 {
 public:
+
+    enum ProjectType
+    {
+        PROJECT_TYPE_STORY = 0,
+        PROJECT_TYPE_MODULE = 1,
+    };
+
     virtual ~IStoryProject() {};
 
     virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) = 0;

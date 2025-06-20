@@ -137,7 +137,8 @@ set(SRCS
     src/node_editor/variable_node_widget.cpp
     src/node_editor/operator_node_widget.cpp
     src/node_editor/print_node_widget.cpp
-   
+    src/node_editor/syscall_node_widget.cpp
+    
     src/gui.cpp
     src/media_converter.cpp
     src/web_server.cpp
@@ -180,6 +181,7 @@ set(SRCS
     ../core/story-manager/src/nodes/variable_node.cpp
     ../core/story-manager/src/nodes/function_node.cpp
     ../core/story-manager/src/nodes/print_node.cpp
+    ../core/story-manager/src/nodes/syscall_node.cpp
     ../core/story-manager/src/nodes/connection.cpp
 
     ../core/story-manager/lib/sys_lib.cpp
@@ -188,6 +190,43 @@ set(SRCS
 
     ../core/chip32/chip32_assembler.cpp
     ../core/chip32/chip32_vm.c
+
+
+    # Add lua source code files
+    libs/lua/src/lapi.c
+    libs/lua/src/lcode.c
+    libs/lua/src/lctype.c
+    libs/lua/src/ldebug.c
+    libs/lua/src/ldo.c
+    libs/lua/src/ldump.c
+    libs/lua/src/lfunc.c
+    libs/lua/src/lgc.c
+    libs/lua/src/llex.c
+    libs/lua/src/lmem.c
+    libs/lua/src/lobject.c
+    libs/lua/src/lparser.c
+    libs/lua/src/lstate.c
+    libs/lua/src/lstring.c
+    libs/lua/src/ltable.c
+    libs/lua/src/ltm.c
+    libs/lua/src/lundump.c
+    libs/lua/src/lvm.c
+    libs/lua/src/lzio.c
+    libs/lua/src/lopcodes.c
+    # Add lua source libs files
+    libs/lua/src/lauxlib.c
+    libs/lua/src/lbaselib.c
+    libs/lua/src/lcorolib.c
+    libs/lua/src/ldblib.c
+    libs/lua/src/liolib.c
+    libs/lua/src/lmathlib.c
+    libs/lua/src/loadlib.c
+    libs/lua/src/loslib.c
+    libs/lua/src/lstrlib.c
+    libs/lua/src/ltablib.c
+    libs/lua/src/lutf8lib.c
+    libs/lua/src/linit.c
+   
 )
 
 if(WIN32)
@@ -216,6 +255,7 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     libs/ImGuiFileDialog
     libs/imgui-node-editor
     libs
+    libs/lua/src
 
     src
     src/importers

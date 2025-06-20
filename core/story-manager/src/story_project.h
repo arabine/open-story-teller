@@ -16,6 +16,7 @@
 #include "story_page.h"
 #include "story_options.h"
 #include "variable.h"
+#include "nodes_factory.h"
 
 struct StoryProject : public IStoryProject
 {
@@ -36,14 +37,14 @@ public:
     std::filesystem::path BinaryFileName() const;
     bool GenerateScript(std::string &codeStr);
     bool GenerateBinary(const std::string &code, Chip32::Assembler::Error &err);
-    bool Load(ResourceManager &manager);
+    bool Load(ResourceManager &manager, NodesFactory &factory);
     void Save(ResourceManager &manager);
     void SaveBinary();
     void SetPaths(const std::string &uuid, const std::string &library_path);
-    void CopyToDevice(const std::string &outputDir);
+    void CopyToDevice(const std::string &outputDir, NodesFactory &factory);
 
     void ModelToJson(nlohmann::json &model);
-    bool ModelFromJson(const nlohmann::json &model);
+    bool ModelFromJson(const nlohmann::json &model, NodesFactory &factory);
 
     bool CopyProgramTo(uint8_t *memory, uint32_t size);
 
@@ -94,8 +95,8 @@ public:
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);
     std::shared_ptr<StoryPage> GetPage(const std::string &uuid);
+    void AddNode(const std::string_view &page, std::shared_ptr<BaseNode> node);
 
-    std::shared_ptr<BaseNode> CreateNode(const std::string_view &page, const std::string &type);
     void AddConnection(const std::string_view &page, std::shared_ptr<Connection> c);
     void DeleteNode(const std::string_view &page, const std::string &id);
     void DeleteLink(const std::string_view &page, std::shared_ptr<Connection> c);
@@ -106,12 +107,6 @@ public:
     void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation);
     void AddVariable();
     void DeleteVariable(int i);
-
-    std::vector<std::string> GetNodeTypes() const { 
-        std::vector<std::string> l;
-        for(auto const& imap: m_registry) l.push_back(imap.first);
-        return l;
-    }
     
 private:
     ILogger &m_log;
@@ -124,6 +119,7 @@ private:
     std::string m_description;
     uint32_t m_version;
     bool m_selected{false};
+    IStoryProject::ProjectType m_type{IStoryProject::PROJECT_TYPE_STORY};
 
     std::unordered_set<std::string> m_usedLabels; // permet de ne pas générer un label qui existe déjà
 
@@ -142,23 +138,6 @@ private:
 
     std::filesystem::path m_working_dir; /// Temporary folder based on the uuid, where the archive is unzipped
     std::filesystem::path m_project_file_path; /// JSON project file
-
-    template<class NodeType>
-    struct Factory {
-        static std::shared_ptr<BaseNode> create_func(const std::string &type) {
-            return std::make_shared<NodeType>(type);
-        }
-    };
-
-    typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
-    typedef std::map<std::string, GenericCreator> Registry;
-    Registry m_registry;
-
-    template<class Derived>
-    void registerNode(const std::string& key) {
-        m_registry.insert(typename Registry::value_type(key, Factory<Derived>::create_func));
-    }
-
 };
 
 #endif // STORY_PROJECT_H

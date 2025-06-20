@@ -14,6 +14,7 @@ add_executable(${PROJECT_NAME}
     ../src/nodes/branch_node.cpp
     ../src/nodes/print_node.cpp
     ../src/nodes/variable_node.cpp
+    ../src/nodes/syscall_node.cpp
     ../src/nodes/connection.cpp
 
     ../../chip32/chip32_assembler.cpp 
