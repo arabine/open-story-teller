@@ -4,8 +4,8 @@ project(storyvm LANGUAGES CXX C)
 add_library(storyvm
   SHARED
   ./storyvm.cpp
-  ../../firmware/chip32/chip32_vm.c
+  ../../core/chip32/chip32_vm.c
 )
 
-include_directories(../../firmware/chip32 ../../shared)
+include_directories(../../core/chip32 ../../shared)
 

@@ -86,3 +86,4 @@ story-editor/flatpak_build/
 story-editor/AppDir/
 
 core/story-manager/tests/build
+story-player/android/build/reports/problems/problems-report.html
