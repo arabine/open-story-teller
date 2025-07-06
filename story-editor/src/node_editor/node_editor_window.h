@@ -25,8 +25,9 @@ namespace ed = ax::NodeEditor;
 
 class NodeEditorWindow  : public WindowBase
 {
-public:   
-    NodeEditorWindow(IStoryManager &manager, NodesFactory &factory);
+public:
+
+    NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryManager::ProjectType type = IStoryManager::ProjectType::PROJECT_TYPE_STORY);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
@@ -40,6 +41,7 @@ public:
 private:
     IStoryManager &m_manager;
     NodesFactory &m_nodesFactory;
+    IStoryManager::ProjectType m_editorType{IStoryManager::ProjectType::PROJECT_TYPE_STORY};
 
     bool m_loaded{false};
 

@@ -9,7 +9,7 @@ class IStoryProject
 {
 public:
 
-    enum ProjectType
+    enum Type
     {
         PROJECT_TYPE_STORY = 0,
         PROJECT_TYPE_MODULE = 1,

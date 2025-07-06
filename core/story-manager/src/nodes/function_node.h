@@ -13,7 +13,11 @@ public:
 
     virtual void Initialize() override;
 
-private:
+    void SetContent(nlohmann::json &content) {
+        m_content = content;
+    }
 
+private:
+    nlohmann::json m_content;
 };
 

@@ -116,6 +116,8 @@ private:
 
     NodeEditorWindow m_nodeEditorWindow;
 
+    NodeEditorWindow m_moduleEditorWindow;
+
     PropertiesWindow m_PropertiesWindow;
 
     LibraryWindow m_libraryWindow;
@@ -134,7 +136,12 @@ private:
     WebServer m_webServer;
 
     // From IStoryManager (proxy to StoryProject class)
-    virtual void OpenProject(const std::string &uuid) override;
+    virtual void OpenProject(const std::string &uuid, IStoryManager::ProjectType type) override;
+    
+    void SaveProject(IStoryManager::ProjectType type);
+    void CloseProject(IStoryManager::ProjectType type);
+    
+    // From IStoryManager (proxy to StoryProject class)
     virtual void ImportProject(const std::string &filePathName, int format);
     virtual void PlaySoundFile(const std::string &fileName) override;;
     virtual std::string BuildFullAssetsPath(const std::string_view fileName) const override;
@@ -185,8 +192,6 @@ private:
     bool ShowQuitConfirm();
     void DrawToolBar(float topPadding);
 
-    void SaveProject();
-    void CloseProject();
     void DrawStatusBar();
 
     void UpdateVmView();

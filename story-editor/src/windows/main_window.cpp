@@ -30,6 +30,7 @@ MainWindow::MainWindow()
     , m_cpuWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this, m_nodesFactory)
+    , m_moduleEditorWindow(*this, m_nodesFactory, NodeEditorWindow::EditorType::NODE_EDITOR_MODULE)
     , m_libraryWindow(*this, m_libraryManager)
     , m_variablesWindow(*this)
     , m_player(*this)
@@ -582,6 +583,7 @@ bool MainWindow::Initialize()
         m_debuggerWindow.Initialize();
         m_emulatorWindow.Initialize();
         m_nodeEditorWindow.Initialize();
+        m_moduleEditorWindow.Initialize();
         m_PropertiesWindow.Initialize();
         m_libraryWindow.Initialize();
 
@@ -835,7 +837,7 @@ void MainWindow::ProjectPropertiesPopup()
     }
 }
 
-void MainWindow::SaveProject()
+void MainWindow::SaveProject(IStoryManager::ProjectType type)
 {
     nlohmann::json model;
     m_story->Save(m_resources);
@@ -844,7 +846,8 @@ void MainWindow::SaveProject()
 
 void MainWindow::OpenProject(const std::string &uuid)
 {
-    CloseProject();
+    CloseProject(IStoryManager::ProjectType::PROJECT_TYPE_STORY);
+
     m_story = m_libraryManager.GetStory(uuid);
 
     // DEBUG CODE !!!!!!!!!!!!!  Permet si décommenter de forcer l'import, permet de tester plus facilement l'algo en ouvrant le projet
@@ -875,6 +878,7 @@ void MainWindow::OpenProject(const std::string &uuid)
         }
 
         m_nodeEditorWindow.Enable();
+        
         m_emulatorWindow.Enable();
         m_consoleWindow.Enable();
         m_debuggerWindow.Enable();
@@ -887,6 +891,70 @@ void MainWindow::OpenProject(const std::string &uuid)
     {
         Log("Open project error");
     }
+
+    RefreshProjectInformation();
+}
+
+void MainWindow::OpenModule(const std::string &uuid)
+{
+    m_story = m_libraryManager.GetModule(uuid);
+    if (!m_story)
+    {
+        Log("Cannot find module: " + uuid);
+    }
+    else if (m_story->Load(m_resources, m_nodesFactory))
+    {
+        Log("Open module success");
+        m_moduleEditorWindow.Load(m_story);
+    }
+    else
+    {
+        Log("Open module error");
+    }
+
+
+    m_moduleEditorWindow.Enable();
+}
+
+
+
+void MainWindow::CloseProject(IStoryManager::ProjectType type)
+{
+    // FIXME: not sure but if present, we lost some information in the library manager
+
+    // if (m_story)
+    // {
+    //     m_story->Clear();
+    //     m_story.reset();
+    // }
+
+    m_resources.Clear();
+
+    if (type == IStoryManager::ProjectType::PROJECT_TYPE_STORY)
+    {
+        m_nodeEditorWindow.Initialize();
+        m_nodeEditorWindow.Disable();
+    }
+    else if (type == IStoryManager::ProjectType::PROJECT_TYPE_MODULE)
+    {
+        m_moduleEditorWindow.Initialize();
+        m_moduleEditorWindow.Disable();
+    }
+        
+    // FIXME: si un des deux types de projets est encore ouvert, on ne va pas fermer 
+    // le sautres fenêtres de preview
+    
+    m_emulatorWindow.ClearImage();
+    m_consoleWindow.ClearLog();
+    m_debuggerWindow.ClearErrors();
+    m_debuggerWindow.SetScript("");   
+    
+    m_emulatorWindow.Disable();
+    m_debuggerWindow.Disable();
+    m_resourcesWindow.Disable();
+    m_PropertiesWindow.Disable();
+    m_variablesWindow.Disable();
+    m_cpuWindow.Disable();
 
     RefreshProjectInformation();
 }
@@ -924,36 +992,6 @@ void MainWindow::RefreshProjectInformation()
         fullText += " - " + m_story->GetProjectFilePath();
     }
     m_gui.SetWindowTitle(fullText);
-}
-
-
-void MainWindow::CloseProject()
-{
-    // FIXME: not sure but if present, we lost some information in the library manager
-
-    // if (m_story)
-    // {
-    //     m_story->Clear();
-    //     m_story.reset();
-    // }
-
-    m_resources.Clear();
-
-    m_nodeEditorWindow.Initialize();
-    m_emulatorWindow.ClearImage();
-    m_consoleWindow.ClearLog();
-    m_debuggerWindow.ClearErrors();
-    m_debuggerWindow.SetScript("");
-
-    m_nodeEditorWindow.Disable();
-    m_emulatorWindow.Disable();
-    m_debuggerWindow.Disable();
-    m_resourcesWindow.Disable();
-    m_PropertiesWindow.Disable();
-    m_variablesWindow.Disable();
-    m_cpuWindow.Disable();
-
-    RefreshProjectInformation();
 }
 
 
@@ -1031,6 +1069,7 @@ void MainWindow::Loop()
             m_debuggerWindow.Draw();
             m_resourcesWindow.Draw();
             m_nodeEditorWindow.Draw();
+            m_moduleEditorWindow.Draw();
             m_variablesWindow.Draw();
             m_cpuWindow.Draw();
 

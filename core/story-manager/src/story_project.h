@@ -83,6 +83,8 @@ public:
 
     // Initialize with an existing project
     const bool IsInitialized() const { return m_initialized; }
+    const bool IsModule() const { return m_projectType == IStoryProject::PROJECT_TYPE_MODULE; }
+    const bool IsStory() const { return m_projectType == IStoryProject::PROJECT_TYPE_STORY; }
 
     bool ParseStoryInformation(nlohmann::json &j);
    
@@ -117,9 +119,11 @@ private:
     std::string m_titleImage;
     std::string m_titleSound;
     std::string m_description;
+
+    IStoryProject::Type m_projectType{IStoryProject::PROJECT_TYPE_STORY};
+
     uint32_t m_version;
     bool m_selected{false};
-    IStoryProject::ProjectType m_type{IStoryProject::PROJECT_TYPE_STORY};
 
     std::unordered_set<std::string> m_usedLabels; // permet de ne pas générer un label qui existe déjà
 

@@ -26,10 +26,11 @@ if (!(x)) { \
 #include "json.hpp"
 
 
-NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory)
-    : WindowBase("Node editor")
+NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryManager::ProjectType type)
+    : WindowBase(type == IStoryManager::ProjectType::PROJECT_TYPE_STORY ? "Story editor" : "Module editor")
     , m_manager(manager)
     , m_nodesFactory(factory)
+    , m_editorType(type)
 {
 
     // registerNode<MediaNodeWidget>("media-node");
@@ -379,26 +380,20 @@ void NodeEditorWindow::Draw()
 
 void NodeEditorWindow::ToolbarUI()
 {
-    auto& io = ImGui::GetIO();
-    ImVec2 window_pos = ImGui::GetWindowPos();
-    ImVec2 window_size = ImGui::GetWindowSize();
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
-    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    // {
-    //     const ImGuiViewport* viewport = ImGui::GetWindowViewport();
-    //     window_flags |= ImGuiWindowFlags_NoDocking;
-    //     io.ConfigViewportsNoDecoration = true;
-    //     ImGui::SetNextWindowViewport(viewport->ID);
-    // }
-    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-    // ImGui::PushStyleColor(ImGuiCol_Button, m_StyleColors[BluePrintStyleColor_ToolButton]);
-    // ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_StyleColors[BluePrintStyleColor_ToolButtonHovered]);
-    // ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_StyleColors[BluePrintStyleColor_ToolButtonActive]);
-    // ImGui::PushStyleColor(ImGuiCol_TexGlyphShadow, ImVec4(0.1, 0.1, 0.1, 0.8));
-    // ImGui::PushStyleVar(ImGuiStyleVar_TexGlyphShadowOffset, ImVec2(2.0, 2.0));
+    // auto& io = ImGui::GetIO();
+    // ImVec2 window_pos = ImGui::GetWindowPos();
+    // ImVec2 window_size = ImGui::GetWindowSize();
+    // ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
 
-    ImGui::Begin("TOOLBAR", NULL, window_flags);
-    // ImGui::PopStyleVar();
+    // ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+
+    // ImGui::Begin("TOOLBAR", NULL, window_flags);
+
+
+    ImGui::SetCursorPos(ImVec2(10, 40));
+    ImGui::BeginChild("ToolbarChild", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 1.5f), false, ImGuiWindowFlags_NoScrollbar);
+
+    ImGui::PushID(m_editorType);
 
     // Draw call stack, each function is a button
     for (auto page : m_callStack)
@@ -422,11 +417,17 @@ void NodeEditorWindow::ToolbarUI()
         ImGui::SameLine();
     }
 
-    ImGui::End();
-    // ImGui::PopStyleVar();
-    // ImGui::PopStyleColor(4);
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        io.ConfigViewportsNoDecoration = false;
-    }
+    ImGui::PopID();
+
+    // ImGui::End();
+    
+    ImGui::EndChild(); // Fin de la ChildWindow de la barre d'outils
+
+    ImGui::SetCursorPos(ImVec2(0, 0));
+
+
+    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    // {
+    //     io.ConfigViewportsNoDecoration = false;
+    // }
 }

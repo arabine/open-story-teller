@@ -104,6 +104,23 @@ bool StoryProject::ParseStoryInformation(nlohmann::json &j)
 
         m_name = projectData["name"].get<std::string>();
         m_uuid = projectData["uuid"].get<std::string>();
+        m_uuid = projectData["description"].get<std::string>();
+        std::string typeString = projectData["type"].get<std::string>();
+
+        if (typeString == "story")
+        {
+            m_projectType = IStoryProject::PROJECT_TYPE_STORY;
+        }
+        else if (typeString == "module")
+        {
+            m_projectType = IStoryProject::PROJECT_TYPE_MODULE;
+        }
+        else
+        {
+            m_log.Log("Unknown project type: " + typeString, true);
+            return false;
+        }
+
         m_titleImage = projectData.value("title_image", "");
         m_titleSound = projectData.value("title_sound", "");
 
