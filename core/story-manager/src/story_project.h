@@ -16,7 +16,8 @@
 #include "story_page.h"
 #include "story_options.h"
 #include "variable.h"
-#include "nodes_factory.h"
+
+class NodesFactory;
 
 struct StoryProject : public IStoryProject
 {
@@ -65,7 +66,7 @@ public:
 
     std::string GetProjectFilePath() const;
     std::string GetWorkingDir() const;
-    std::string GetName() const { return m_name; }
+    virtual std::string GetName() const override { return m_name; }
     std::string GetUuid() const { return m_uuid; }
     std::string GetDescription() const { return m_description; }
     uint32_t GetVersion() const { return m_version; }

@@ -12,10 +12,10 @@
 #include <imgui_node_editor.h>
 
 
-class FunctionNodeWidget : public BaseNodeWidget
+class ModuleNodeWidget : public BaseNodeWidget
 {
 public:
-    FunctionNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node);
+    ModuleNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node);
 
     void Draw() override;
 
@@ -25,5 +25,5 @@ public:
 private:
     IStoryManager &m_manager;
     std::string m_functionName;
-    std::string m_functionUuid; 
+
 };

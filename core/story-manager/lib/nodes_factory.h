@@ -7,7 +7,8 @@
 
 #include "json.hpp"
 // #include "media_node.h"
-#include "function_node.h"
+#include "call_function_node.h"
+#include "module_node.h"
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
@@ -15,10 +16,12 @@
 #include "story_project.h"
 
 static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
-static const std::string FunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
+static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
 static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
 static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
 static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
+static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
+
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
 
@@ -26,7 +29,6 @@ class NodesFactory
 {
 
 public:
-
     NodesFactory(ILogger &log) 
         : m_log(log)
         , m_rootPath("")
@@ -34,7 +36,7 @@ public:
         // Register node types
         // registerNode<MediaNode>("media-node");
         registerNode<OperatorNode>(OperatorNodeUuid, nullptr);
-        registerNode<FunctionNode>(FunctionNodeUuid, nullptr);
+        registerNode<CallFunctionNode>(CallFunctionNodeUuid, nullptr);
         registerNode<VariableNode>(VariableNodeUuid, nullptr);
         registerNode<PrintNode>(PrintNodeUuid, nullptr);
         registerNode<SyscallNode>(SyscallNodeUuid, nullptr);
@@ -60,6 +62,29 @@ public:
             auto n = i->second.second(type);
             return n;
         }
+    }
+
+    std::shared_ptr<StoryProject> GetModule(const std::string &name)
+    {
+        std::shared_ptr<StoryProject> module;
+
+        // Scan all function nodes and find the one with that name
+        for (auto n : m_registry)
+        {
+            if (n.first == ModuleNodeUuid)
+            {
+                if (n.second.first)
+                {
+                    // We have a module here, get the name
+                    if (n.second.first->GetName() == name)
+                    {
+                        module = n.second.first;
+                    }
+                }
+            }
+        }
+
+        return module;
     }
 
     void SetModulesRootDirectory(const std::string &rootPath) {
@@ -92,7 +117,7 @@ public:
 
                 if (p->IsModule())
                 {
-                    registerNode<FunctionNode>(FunctionNodeUuid, p);
+                    registerNode<ModuleNode>(ModuleNodeUuid, p);
                         // For now, function node use only primitives nodes
                     // FIXME: in the future, allow function node to use other function nodes
                     // Need a list of required nodes to be registered
@@ -118,12 +143,11 @@ private:
     };
 
     // UUID is the key, and the value is a function that creates the node
-    typedef std::map<std::string, std::pair<std::shared_ptr<IStoryProject>, GenericCreator>> Registry;
+    typedef std::map<std::string, std::pair<std::shared_ptr<StoryProject>, GenericCreator>> Registry;
     Registry m_registry;
 
     template<class Derived>
-    void registerNode(const std::string& uuid, std::shared_ptr<IStoryProject> moduleInfo = nullptr) {
-        info.creator = ;
-        m_registry.insert(typename Registry::value_type(uuid, std::make_pair<moduleInfo, Factory<Derived>::create_func>));
+    void registerNode(const std::string& uuid, std::shared_ptr<StoryProject> moduleInfo) {
+        m_registry.insert(std::make_pair(uuid, std::make_pair(moduleInfo, Factory<Derived>::create_func)));
     }
 };

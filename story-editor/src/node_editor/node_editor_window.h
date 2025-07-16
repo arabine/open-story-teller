@@ -8,6 +8,7 @@
 #include "base_node_widget.h"
 #include "window_base.h"
 #include "i_story_manager.h"
+#include "i_story_project.h"
 #include "json.hpp"
 #include "story_project.h"
 #include "node_editor_page.h"
@@ -27,7 +28,7 @@ class NodeEditorWindow  : public WindowBase
 {
 public:
 
-    NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryManager::ProjectType type = IStoryManager::ProjectType::PROJECT_TYPE_STORY);
+    NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryProject::Type type = IStoryProject::Type::PROJECT_TYPE_STORY);
     ~NodeEditorWindow();
     virtual void Draw() override;
 
@@ -41,7 +42,7 @@ public:
 private:
     IStoryManager &m_manager;
     NodesFactory &m_nodesFactory;
-    IStoryManager::ProjectType m_editorType{IStoryManager::ProjectType::PROJECT_TYPE_STORY};
+    IStoryProject::Type m_editorType{IStoryProject::Type::PROJECT_TYPE_STORY};
 
     bool m_loaded{false};
 

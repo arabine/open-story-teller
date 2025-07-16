@@ -84,7 +84,8 @@ public:
 private:
     enum VmEventType { EvNoEvent, EvStep, EvRun, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop, EvHomeButton};
 
-    std::shared_ptr<StoryProject> m_story;
+    std::shared_ptr<StoryProject> m_story; // Current story
+     std::shared_ptr<StoryProject> m_module; // Current module
 
     // VM
     uint8_t m_rom_data[16*1024];
@@ -136,10 +137,12 @@ private:
     WebServer m_webServer;
 
     // From IStoryManager (proxy to StoryProject class)
-    virtual void OpenProject(const std::string &uuid, IStoryManager::ProjectType type) override;
-    
-    void SaveProject(IStoryManager::ProjectType type);
-    void CloseProject(IStoryManager::ProjectType type);
+    virtual void OpenProject(const std::string &uuid) override;
+    void SaveProject();
+    void CloseProject();
+
+    void OpenModule(const std::string &uuid);    
+    void CloseModule();
     
     // From IStoryManager (proxy to StoryProject class)
     virtual void ImportProject(const std::string &filePathName, int format);

@@ -10,7 +10,8 @@
 #include "IconsFontAwesome5_c.h"
 
 #include "media_node_widget.h"
-#include "function_node_widget.h"
+#include "call_function_node_widget.h"
+#include "module_node_widget.h"
 #include "variable_node_widget.h"
 #include "operator_node_widget.h"
 #include "print_node_widget.h"
@@ -26,8 +27,8 @@ if (!(x)) { \
 #include "json.hpp"
 
 
-NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryManager::ProjectType type)
-    : WindowBase(type == IStoryManager::ProjectType::PROJECT_TYPE_STORY ? "Story editor" : "Module editor")
+NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryProject::Type type)
+    : WindowBase(type == IStoryProject::Type::PROJECT_TYPE_STORY ? "Story editor" : "Module editor")
     , m_manager(manager)
     , m_nodesFactory(factory)
     , m_editorType(type)
@@ -35,7 +36,8 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory
 
     // registerNode<MediaNodeWidget>("media-node");
     registerNode<OperatorNodeWidget>("operator-node");
-    registerNode<FunctionNodeWidget>("function-node");
+    registerNode<CallFunctionNodeWidget>("call-function-node");
+    registerNode<ModuleNodeWidget>("module-node");
     registerNode<VariableNodeWidget>("variable-node");
     registerNode<PrintNodeWidget>("print-node");
     registerNode<SyscallNodeWidget>("syscall-node");

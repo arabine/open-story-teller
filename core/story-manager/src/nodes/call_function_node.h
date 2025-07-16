@@ -6,16 +6,12 @@
 #include "i_script_node.h"
 #include "i_story_project.h"
 
-class FunctionNode : public BaseNode
+class CallFunctionNode : public BaseNode
 {
 public:
-    FunctionNode(const std::string &type);
+    CallFunctionNode(const std::string &type);
 
     virtual void Initialize() override;
-
-    void SetContent(nlohmann::json &content) {
-        m_content = content;
-    }
 
 private:
     nlohmann::json m_content;

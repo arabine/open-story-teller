@@ -24,13 +24,14 @@
 
 MainWindow::MainWindow()
     : m_resources(*this)
+    , m_nodesFactory(*this)
     , m_libraryManager(*this, m_nodesFactory)
     , m_emulatorWindow(*this)
     , m_debuggerWindow(*this)
     , m_cpuWindow(*this)
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this, m_nodesFactory)
-    , m_moduleEditorWindow(*this, m_nodesFactory, NodeEditorWindow::EditorType::NODE_EDITOR_MODULE)
+    , m_moduleEditorWindow(*this, m_nodesFactory, IStoryProject::Type::PROJECT_TYPE_MODULE)
     , m_libraryWindow(*this, m_libraryManager)
     , m_variablesWindow(*this)
     , m_player(*this)
@@ -604,7 +605,7 @@ bool MainWindow::ShowQuitConfirm()
    // ImGui::SetNextWindowSize(ImVec2(200, 150));
     if (ImGui::BeginPopupModal("QuitConfirm", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Voulez-vous vraiment quitter le logiciel ?");
+        ImGui::Text("Really qui without saving?");
         ImGui::Separator();
 
         if (ImGui::Button("OK", ImVec2(120, 0)))
@@ -837,7 +838,7 @@ void MainWindow::ProjectPropertiesPopup()
     }
 }
 
-void MainWindow::SaveProject(IStoryManager::ProjectType type)
+void MainWindow::SaveProject()
 {
     nlohmann::json model;
     m_story->Save(m_resources);
@@ -846,7 +847,7 @@ void MainWindow::SaveProject(IStoryManager::ProjectType type)
 
 void MainWindow::OpenProject(const std::string &uuid)
 {
-    CloseProject(IStoryManager::ProjectType::PROJECT_TYPE_STORY);
+    CloseProject();
 
     m_story = m_libraryManager.GetStory(uuid);
 
@@ -897,15 +898,15 @@ void MainWindow::OpenProject(const std::string &uuid)
 
 void MainWindow::OpenModule(const std::string &uuid)
 {
-    m_story = m_libraryManager.GetModule(uuid);
-    if (!m_story)
+    m_module = m_nodesFactory.GetModule(uuid);
+    if (!m_module)
     {
         Log("Cannot find module: " + uuid);
     }
-    else if (m_story->Load(m_resources, m_nodesFactory))
+    else if (m_module->Load(m_resources, m_nodesFactory))
     {
         Log("Open module success");
-        m_moduleEditorWindow.Load(m_story);
+        m_moduleEditorWindow.Load(m_module);
     }
     else
     {
@@ -918,7 +919,7 @@ void MainWindow::OpenModule(const std::string &uuid)
 
 
 
-void MainWindow::CloseProject(IStoryManager::ProjectType type)
+void MainWindow::CloseProject()
 {
     // FIXME: not sure but if present, we lost some information in the library manager
 
@@ -929,21 +930,9 @@ void MainWindow::CloseProject(IStoryManager::ProjectType type)
     // }
 
     m_resources.Clear();
+    m_nodeEditorWindow.Initialize();
+    m_nodeEditorWindow.Disable();
 
-    if (type == IStoryManager::ProjectType::PROJECT_TYPE_STORY)
-    {
-        m_nodeEditorWindow.Initialize();
-        m_nodeEditorWindow.Disable();
-    }
-    else if (type == IStoryManager::ProjectType::PROJECT_TYPE_MODULE)
-    {
-        m_moduleEditorWindow.Initialize();
-        m_moduleEditorWindow.Disable();
-    }
-        
-    // FIXME: si un des deux types de projets est encore ouvert, on ne va pas fermer 
-    // le sautres fenêtres de preview
-    
     m_emulatorWindow.ClearImage();
     m_consoleWindow.ClearLog();
     m_debuggerWindow.ClearErrors();
@@ -957,6 +946,14 @@ void MainWindow::CloseProject(IStoryManager::ProjectType type)
     m_cpuWindow.Disable();
 
     RefreshProjectInformation();
+}
+
+
+void MainWindow::CloseModule()
+{
+    m_moduleEditorWindow.Initialize();
+    m_moduleEditorWindow.Disable();
+
 }
 
 

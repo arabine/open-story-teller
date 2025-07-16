@@ -1,13 +1,13 @@
 
 #include <sstream>
-#include "function_node_widget.h"
+#include "module_node_widget.h"
 
 namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 #include "uuid.h"
 
-FunctionNodeWidget::FunctionNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node)
+ModuleNodeWidget::ModuleNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node)
     : BaseNodeWidget(manager, node)
     , m_manager(manager)
 {
@@ -16,18 +16,14 @@ FunctionNodeWidget::FunctionNodeWidget(IStoryManager &manager, std::shared_ptr<B
     AddOutputs(2);
     SetOutPinName(0, "Success");
     SetOutPinName(1, "Failure");
-    m_functionUuid = Uuid().String();
 }
 
-void FunctionNodeWidget::Draw()
+void ModuleNodeWidget::Draw()
 {
     BaseNodeWidget::FrameStart();
 
     ImGui::TextUnformatted(m_functionName.c_str());
-    if (ImGui::Button("> Open function"))
-    {
-        m_manager.OpenFunction(m_functionUuid, m_functionName);
-    }
+
 
     DrawPins();
 
@@ -35,13 +31,13 @@ void FunctionNodeWidget::Draw()
 
 }
 
-void FunctionNodeWidget::Initialize()
+void ModuleNodeWidget::Initialize()
 {
     BaseNodeWidget::Initialize();
     m_functionName = "Function";
 }
 
-void FunctionNodeWidget::DrawProperties()
+void ModuleNodeWidget::DrawProperties()
 {
     
     

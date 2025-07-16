@@ -1,17 +1,17 @@
-#include "function_node.h"
+#include "module_node.h"
 #include "story_project.h"
 #include "connection.h"
 #include "sys_lib.h"
 
 
-FunctionNode::FunctionNode(const std::string &type)
-    : BaseNode(type, "Function Node")
+ModuleNode::ModuleNode(const std::string &type)
+    : BaseNode(type, "Module Node")
 {
-    nlohmann::json j{ {"function", ""} };
+    nlohmann::json j{ {"module", ""} };
     SetInternalData(j);
 }
 
-void FunctionNode::Initialize()
+void ModuleNode::Initialize()
 {
     nlohmann::json j = GetInternalData();
     // m_image = j["image"].get<std::string>();

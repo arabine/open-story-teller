@@ -8,13 +8,13 @@
 #include "story_project.h"
 #include "json.hpp"
 // #include "media_node.h"
-#include "function_node.h"
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
 #include "syscall_node.h"
 #include "sys_lib.h"
 #include "assembly_generator_chip32.h"
+#include "nodes_factory.h"
 
 StoryProject::StoryProject(ILogger &log)
     : m_log(log)
