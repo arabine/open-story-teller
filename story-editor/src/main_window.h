@@ -8,7 +8,7 @@
 #include "console_window.h"
 #include "debugger_window.h"
 
-#include "emulator_window.h"
+#include "emulator_dock.h"
 #include "resources_window.h"
 #include "node_editor_window.h"
 #include "properties_window.h"
@@ -26,6 +26,9 @@
 #include "story_machine.h"
 #include "web_server.h"
 #include "nodes_factory.h"
+
+// Dialogs
+#include "about_dialog.h"
 
 struct DebugContext
 {
@@ -106,7 +109,7 @@ private:
     LibraryManager m_libraryManager;
 
     Gui m_gui;
-    EmulatorWindow m_emulatorWindow;
+    EmulatorDock m_emulatorWindow;
     ConsoleWindow m_consoleWindow;
     DebuggerWindow m_debuggerWindow;
     CpuWindow m_cpuWindow;
@@ -135,6 +138,9 @@ private:
     ThreadSafeQueue<VmEvent> m_eventQueue;
 
     WebServer m_webServer;
+
+    // Dialogs
+    AboutDialog m_aboutDialog;
 
     // From IStoryManager (proxy to StoryProject class)
     virtual void OpenProject(const std::string &uuid) override;

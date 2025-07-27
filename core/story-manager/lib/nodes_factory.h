@@ -21,7 +21,7 @@ static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78
 static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
 static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
 static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
-static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
+
 
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
@@ -48,12 +48,25 @@ public:
     struct NodeInfo {
         std::string uuid;
         std::string name;
+        std::string description;
     };
 
     // key: uuid, value: node name
     std::vector<NodeInfo> LitOfNodes() const { 
         std::vector<NodeInfo> l;
-        for(auto const& imap: m_registry) l.push_back(NodeInfo{imap.first, imap.second.first->GetName() });
+        for (auto const& imap : m_registry) {
+            l.push_back(NodeInfo{imap.first, imap.second.first->GetName(), imap.second.first->GetDescription() });
+        }
+        return l;
+    }
+
+    std::vector<NodeInfo> LitOfModules() const { 
+        std::vector<NodeInfo> l;
+        for (auto const& imap : m_registry) {
+            if (imap.second.first->IsModule()) {
+                l.push_back(NodeInfo{imap.first, imap.second.first->GetName(), imap.second.first->GetDescription() });
+            }
+        }
         return l;
     }
 
@@ -71,27 +84,23 @@ public:
         }
     }
 
-    std::shared_ptr<StoryProject> GetModule(const std::string &name)
+    std::shared_ptr<StoryProject> GetModule(const std::string &uuid)
     {
         std::shared_ptr<StoryProject> module;
 
         // Scan all function nodes and find the one with that name
         for (auto n : m_registry)
         {
-            if (n.first == ModuleNodeUuid)
+            if (n.first == uuid)
             {
                 if (n.second.first)
                 {
-                    // We have a module here, get the name
-                    if (n.second.first->GetName() == name)
+                    auto p = dynamic_cast<StoryProject*>(n.second.first.get());
+                    if (p == nullptr)
                     {
-                        auto p = dynamic_cast<StoryProject*>(n.second.first.get());
-                        if (p == nullptr)
-                        {
-                            throw std::runtime_error("Node is not a StoryProject");
-                        }
-                        module = p->shared_from_this();
+                        throw std::runtime_error("Node is not a StoryProject");
                     }
+                    module = p->shared_from_this();
                 }
             }
         }
@@ -103,15 +112,11 @@ public:
     {
         for (const auto &entry : m_registry)
         {
-            // Uniquement les modules custom (ici ModuleNodeUuid)
-            if (entry.first == ModuleNodeUuid)
+            // Only modules
+            auto module = std::dynamic_pointer_cast<StoryProject>(entry.second.first);
+            if (module)
             {
-                // Get the module from the registry
-                auto module = std::dynamic_pointer_cast<StoryProject>(entry.second.first);
-                if (module)
-                {
-                    module->Save(manager);
-                }
+                module->Save(manager);
             }
         }
     }
@@ -131,7 +136,7 @@ public:
         module->SetProjectType(IStoryProject::PROJECT_TYPE_MODULE);
         
         // Register as module node if not already in registry
-        registerNode<ModuleNode>(ModuleNodeUuid, module);
+        registerNode<ModuleNode>(module->GetUuid(), module);
 
         return module;
     }
@@ -166,7 +171,7 @@ public:
                         p->ParseStoryInformation(j);
                         if (p->IsModule())
                         {
-                            registerNode<ModuleNode>(ModuleNodeUuid, p);
+                            registerNode<ModuleNode>(p->GetUuid(), p);
                             // For now, function node use only primitives nodes 
                             // FIXME: in the future, allow function node to use other function nodes
                             // Need a list of required nodes to be registered

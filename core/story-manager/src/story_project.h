@@ -87,9 +87,9 @@ public:
     std::string GetTitleSound() const { return m_titleSound; }
 
     // Initialize with an existing project
-    const bool IsInitialized() const { return m_initialized; }
-    const bool IsModule() const { return m_projectType == IStoryProject::PROJECT_TYPE_MODULE; }
-    const bool IsStory() const { return m_projectType == IStoryProject::PROJECT_TYPE_STORY; }
+    bool IsInitialized() const { return m_initialized; }
+    bool IsModule() const override { return m_projectType == IStoryProject::PROJECT_TYPE_MODULE; }
+    bool IsStory() const { return m_projectType == IStoryProject::PROJECT_TYPE_STORY; }
     void SetProjectType(IStoryProject::Type type) { m_projectType = type; }
 
     bool ParseStoryInformation(nlohmann::json &j);

@@ -104,7 +104,7 @@ bool StoryProject::ParseStoryInformation(nlohmann::json &j)
 
         m_name = projectData["name"].get<std::string>();
         m_uuid = projectData["uuid"].get<std::string>();
-        m_uuid = projectData["description"].get<std::string>();
+        m_description = projectData["description"].get<std::string>();
         std::string typeString = projectData["type"].get<std::string>();
 
         if (typeString == "story")

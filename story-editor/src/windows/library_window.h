@@ -65,7 +65,7 @@ struct TransferProgress {
 class LibraryWindow : public WindowBase
 {
 public:
-    LibraryWindow(IStoryManager &project, LibraryManager &library);
+    LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory);
 
     void Initialize();
     virtual void Draw() override;
@@ -74,6 +74,7 @@ public:
 private:
     IStoryManager &m_storyManager;
     LibraryManager &m_libraryManager;
+    NodesFactory &m_nodesFactory;
 
     Downloader m_downloader;
     CURL *m_curl;

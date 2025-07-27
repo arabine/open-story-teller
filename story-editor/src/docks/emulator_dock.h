@@ -4,10 +4,10 @@
 #include "i_story_manager.h"
 #include "gui.h"
 
-class EmulatorWindow : public WindowBase
+class EmulatorDock : public WindowBase
 {
 public:
-    EmulatorWindow(IStoryManager &proj);
+    EmulatorDock(IStoryManager &proj);
 
     void Initialize();
     virtual void Draw() override;

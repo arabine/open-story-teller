@@ -39,6 +39,9 @@ public:
     virtual std::string BuildFullAssetsPath(const std::string_view fileName) const = 0;
     virtual void OpenFunction(const std::string &uuid, const std::string &name) = 0;
 
+    // Modules
+    virtual void OpenModule(const std::string &uuid) = 0;
+
     // Resources management
     virtual std::pair<FilterIterator, FilterIterator> Images() = 0;
     virtual std::pair<FilterIterator, FilterIterator> Sounds() = 0;

@@ -1,23 +1,23 @@
-#include "emulator_window.h"
+#include "emulator_dock.h"
 #include "gui.h"
 #include "ImGuiFileDialog.h"
 #include "IconsMaterialDesignIcons.h"
 
-EmulatorWindow::EmulatorWindow(IStoryManager &proj)
+EmulatorDock::EmulatorDock(IStoryManager &proj)
     : WindowBase("Emulator")
     , m_story(proj)
 {
 
 }
 
-void EmulatorWindow::Initialize()
+void EmulatorDock::Initialize()
 {
 
 
 
 }
 
-void EmulatorWindow::Draw()
+void EmulatorDock::Draw()
 {
 //    if (!IsVisible())
 //    {
@@ -170,12 +170,12 @@ void EmulatorWindow::Draw()
     WindowBase::EndDraw();
 }
 
-void EmulatorWindow::ClearImage()
+void EmulatorDock::ClearImage()
 {
     m_image.Clear();
 }
 
-void EmulatorWindow::SetImage(const std::string &image)
+void EmulatorDock::SetImage(const std::string &image)
 {
     m_imageFileName = image;
     m_image.Load(m_story.BuildFullAssetsPath(image));

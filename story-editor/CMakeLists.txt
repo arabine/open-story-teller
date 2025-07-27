@@ -118,17 +118,19 @@ add_subdirectory(externals/SDL_image EXCLUDE_FROM_ALL)
 set(SRCS
 
     src/main.cpp
+    src/main_window.cpp
 
     src/windows/window_base.cpp
     src/windows/console_window.cpp
-    src/windows/emulator_window.cpp
-    src/windows/main_window.cpp
     src/windows/library_window.cpp
     src/windows/resources_window.cpp
     src/windows/properties_window.cpp
     src/windows/debugger_window.cpp
     src/windows/cpu_window.cpp
     src/windows/variables_window.cpp
+
+    ## Docks
+    src/docks/emulator_dock.cpp
     
     # src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.cpp
@@ -263,6 +265,8 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     src/importers
     src/node_editor
     src/windows
+    src/docks
+    src/dialogs
 
     ../firmware/library
     ../core/chip32

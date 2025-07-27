@@ -50,10 +50,11 @@ void download_file(CURL *curl,
 }
 
 
-LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library)
+LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory)
     : WindowBase("Library Manager")
     , m_storyManager(project)
     , m_libraryManager(library)
+    , m_nodesFactory(nodesFactory)
 {
     m_downloadThread = std::thread( std::bind(&LibraryWindow::DownloadThread, this) );
 
@@ -648,8 +649,50 @@ void LibraryWindow::Draw()
                 ImGui::EndTabItem();
             }
 
+            // ============================================================================
+            // LOCAL MODULES LIST
+            // ============================================================================
+            if (ImGui::BeginTabItem("Local modules ##ModuleTabBar", nullptr, ImGuiTabItemFlags_None))
+            {
+
+                const auto &modules = m_nodesFactory.LitOfModules();
+
+                if (ImGui::BeginTable("modules_table", 3, tableFlags))
+                {
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed);
+
+                    ImGui::TableHeadersRow();
+
+                    for (const auto &module : modules)
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", module.name.c_str());
+
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", module.description.c_str());
+
+                        // Add a button to open the module
+                        ImGui::TableNextColumn();
+                        ImGui::PushID(module.uuid.c_str());
+                        if (ImGui::SmallButton("Open"))
+                        {
+                            // Open the module in the editor
+                            m_storyManager.OpenModule(module.uuid);
+                        }
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndTable();
+                }
+
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
         }
+
     }
 
 

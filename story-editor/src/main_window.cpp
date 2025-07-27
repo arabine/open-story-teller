@@ -32,7 +32,7 @@ MainWindow::MainWindow()
     , m_resourcesWindow(*this)
     , m_nodeEditorWindow(*this, m_nodesFactory)
     , m_moduleEditorWindow(*this, m_nodesFactory, IStoryProject::Type::PROJECT_TYPE_MODULE)
-    , m_libraryWindow(*this, m_libraryManager)
+    , m_libraryWindow(*this, m_libraryManager, m_nodesFactory)
     , m_variablesWindow(*this)
     , m_player(*this)
     , m_webServer(m_libraryManager)
@@ -435,7 +435,6 @@ void MainWindow::DrawStatusBar()
 
 float MainWindow::DrawMainMenuBar()
 {
-    bool showAboutPopup = false;
     bool showParameters = false;
     bool showNewProject = false;
     bool showOpenProject = false;
@@ -529,7 +528,7 @@ float MainWindow::DrawMainMenuBar()
         {
             if (ImGui::MenuItem("About"))
             {
-                showAboutPopup = true;
+                m_aboutDialog.Show();
             }
             ImGui::EndMenu();
         }
@@ -539,10 +538,7 @@ float MainWindow::DrawMainMenuBar()
         ImGui::EndMainMenuBar();
     }
 
-    if (showAboutPopup)
-    {
-        ImGui::OpenPopup("AboutPopup");
-    }
+    m_aboutDialog.Open();
 
     if (showParameters)
     {
@@ -554,34 +550,6 @@ float MainWindow::DrawMainMenuBar()
             std::size_t length = m_story->GetName().copy(m_project_name, sizeof(m_project_name));
             m_project_name[length] = '\0';
         }
-    }
-
-    // Always center this window when appearing
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    //ImVec2 parent_pos = ImGui::GetWindowPos();
-    //ImVec2 parent_size = ImGui::GetWindowSize();
-    //ImVec2 center(parent_pos.x + parent_size.x * 0.5f, parent_pos.y + parent_size.y * 0.5f);
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-    if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Story Editor - v%s", LibraryManager::GetVersion().c_str());
-        ImGui::Text("http://www.openstoryteller.org");
-        ImGui::Separator();
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Platform");
-
-        ImGui::Text("%s", SDL_GetPlatform());
-        ImGui::Text("CPU cores: %d", SDL_GetNumLogicalCPUCores());
-        ImGui::Text("RAM: %.2f GB", SDL_GetSystemRAM() / 1024.0f);
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::Separator();
-
-        ImGui::SameLine(300);
-        if (ImGui::Button("Close", ImVec2(100, 35)))
-        {
-           ImGui::CloseCurrentPopup();
-        }
-       ImGui::EndPopup();
     }
 
     return height;
@@ -1117,6 +1085,7 @@ void MainWindow::Loop()
             DrawToolBar(height);
         }
 
+        m_aboutDialog.Draw();
         ProjectPropertiesPopup();
 
         if (aboutToClose)
