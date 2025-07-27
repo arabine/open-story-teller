@@ -34,28 +34,47 @@ NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory
     , m_editorType(type)
 {
 
+// g OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
+// static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
+// static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
+// static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
+// static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
+// static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
+
+
     // registerNode<MediaNodeWidget>("media-node");
-    registerNode<OperatorNodeWidget>("operator-node");
-    registerNode<CallFunctionNodeWidget>("call-function-node");
-    registerNode<ModuleNodeWidget>("module-node");
-    registerNode<VariableNodeWidget>("variable-node");
-    registerNode<PrintNodeWidget>("print-node");
-    registerNode<SyscallNodeWidget>("syscall-node");
+    registerNode<OperatorNodeWidget>(OperatorNodeUuid);
+    registerNode<CallFunctionNodeWidget>(CallFunctionNodeUuid);
+    // registerNode<ModuleNodeWidget>("module-node");
+    registerNode<VariableNodeWidget>(VariableNodeUuid);
+    registerNode<PrintNodeWidget>(PrintNodeUuid);
+    registerNode<SyscallNodeWidget>(SyscallNodeUuid);
 }
  
 NodeEditorWindow::~NodeEditorWindow()
 {
-    m_pages.clear();
-    m_story.reset();
+    Clear();
 }
 
-
+void NodeEditorWindow::Clear()
+{
+    m_pages.clear();
+    m_story.reset();
+    m_callStack.clear();
+}
 
 void NodeEditorWindow::Initialize()
 {
-    m_pages.clear();
-    m_callStack.clear();
+    Clear();   
+}
 
+void NodeEditorWindow::InitializeProject()
+{
+    // Always ensure a main page exists (this matches StoryProject::New)
+    if (!m_story->GetPage(m_story->MainUuid()))
+    {
+        m_story->CreatePage(m_story->MainUuid());
+    }
     m_currentPage = std::make_shared<NodeEditorPage>(m_story->MainUuid(), "Main");
     m_pages.push_back(m_currentPage);
     m_callStack.push_back(m_currentPage);
@@ -108,7 +127,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
         try {
 
             BaseNodeWidget::InitId();
-            Initialize();
+            InitializeProject();
 
             auto [node_begin, node_end] = m_story->Nodes(m_currentPage->Uuid());
 
@@ -204,6 +223,11 @@ bool NodeEditorWindow::FillConnection(std::shared_ptr<Connection> c, ed::PinId p
 
 std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 {
+    if (!m_currentPage)
+    {
+        return nullptr; // No current page, nothing to select
+    }
+
     std::shared_ptr<BaseNodeWidget> selected;
 
     m_currentPage->Select();
@@ -226,154 +250,167 @@ void NodeEditorWindow::Draw()
 
     if (WindowBase::BeginDraw())
     {
-        m_currentPage->Select();
 
-        ToolbarUI();
-
-        ed::Begin(m_currentPage->Uuid().data(), ImVec2(0.0, 0.0f));
-
-
-        // Draw our nodes
-        m_currentPage->Draw();
-
-        // Handle creation action, returns true if editor want to create new object (node or link)
-        if (ed::BeginCreate())
+        if (m_currentPage)
         {
-            ed::PinId startId, endId;
-            if (ed::QueryNewLink(&startId, &endId))
+            m_currentPage->Select();
+
+            ToolbarUI();
+
+            ed::Begin(m_currentPage->Uuid().data(), ImVec2(0.0, 0.0f));
+
+            // Draw our nodes
+            m_currentPage->Draw();
+
+            // Handle creation action, returns true if editor want to create new object (node or link)
+            if (ed::BeginCreate())
             {
-               // QueryNewLink returns true if editor want to create new link between pins.
-               //
-               // Link can be created only for two valid pins, it is up to you to
-               // validate if connection make sense. Editor is happy to make any.
-               //
-               // Link always goes from input to output. User may choose to drag
-               // link from output pin or input pin. This determine which pin ids
-               // are valid and which are not:
-               //   * input valid, output invalid - user started to drag new ling from input pin
-               //   * input invalid, output valid - user started to drag new ling from output pin
-               //   * input valid, output valid   - user dragged link over other pin, can be validated
+                ed::PinId startId, endId;
+                if (ed::QueryNewLink(&startId, &endId))
+                {
+                // QueryNewLink returns true if editor want to create new link between pins.
+                //
+                // Link can be created only for two valid pins, it is up to you to
+                // validate if connection make sense. Editor is happy to make any.
+                //
+                // Link always goes from input to output. User may choose to drag
+                // link from output pin or input pin. This determine which pin ids
+                // are valid and which are not:
+                //   * input valid, output invalid - user started to drag new ling from input pin
+                //   * input invalid, output valid - user started to drag new ling from output pin
+                //   * input valid, output valid   - user dragged link over other pin, can be validated
 
-               if (startId && endId) // both are valid, let's accept link
-               {
-                   // ed::AcceptNewItem() return true when user release mouse button.
-                   if (ed::AcceptNewItem())
-                   {
-                        auto c = std::make_shared<Connection>();
+                if (startId && endId) // both are valid, let's accept link
+                {
+                    // ed::AcceptNewItem() return true when user release mouse button.
+                    if (ed::AcceptNewItem())
+                    {
+                            auto c = std::make_shared<Connection>();
 
-                        // On cherche à quel noeud appartien les pin (selon si le lien a été créé à partir d'une entrée ou d'une sortie)
-                        if (FillConnection(c, startId))
-                        {
-                            if (FillConnection(c, endId))
+                            // On cherche à quel noeud appartien les pin (selon si le lien a été créé à partir d'une entrée ou d'une sortie)
+                            if (FillConnection(c, startId))
                             {
-                                m_story->AddConnection(m_currentPage->Uuid(), c);
+                                if (FillConnection(c, endId))
+                                {
+                                    m_story->AddConnection(m_currentPage->Uuid(), c);
 
-                                CreateLink(c, startId, endId);
+                                    CreateLink(c, startId, endId);
 
-                                // Draw new link.
-                                ed::Link(m_currentPage->m_links.back()->ed_link->Id, startId, endId);
+                                    // Draw new link.
+                                    ed::Link(m_currentPage->m_links.back()->ed_link->Id, startId, endId);
+                                }
                             }
-                        }
-                   }
+                    }
 
-                   // You may choose to reject connection between these nodes
-                   // by calling ed::RejectNewItem(). This will allow editor to give
-                   // visual feedback by changing link thickness and color.
-               }
+                    // You may choose to reject connection between these nodes
+                    // by calling ed::RejectNewItem(). This will allow editor to give
+                    // visual feedback by changing link thickness and color.
+                }
+                }
+
+                ed::EndCreate(); // Wraps up object creation action handling.
             }
-
-            ed::EndCreate(); // Wraps up object creation action handling.
-        }
-        
+            
 
 
-        // Handle deletion action
-        if (ed::BeginDelete())
-        {
-            ed::NodeId nodeId = 0;
-            while (ed::QueryDeletedNode(&nodeId))
+            // Handle deletion action
+            if (ed::BeginDelete())
             {
+                ed::NodeId nodeId = 0;
+                while (ed::QueryDeletedNode(&nodeId))
+                {
+                    if (ed::AcceptDeletedItem())
+                    {
+                        std::shared_ptr<BaseNodeWidget> node;
+                        if (m_currentPage->GetNode(nodeId, node))
+                        {
+                            // First delete model, then current entry
+                            m_story->DeleteNode(m_currentPage->Uuid(), node->Base()->GetId());
+                            m_currentPage->DeleteNode(nodeId);
+                        }
+                    }
+                }
+
+                // There may be many links marked for deletion, let's loop over them.
+                ed::LinkId deletedLinkId;
+                while (ed::QueryDeletedLink(&deletedLinkId))
+                {
+                // If you agree that link can be deleted, accept deletion.
                 if (ed::AcceptDeletedItem())
                 {
-                    std::shared_ptr<BaseNodeWidget> node;
-                    if (m_currentPage->GetNode(nodeId, node))
-                    {
-                        // First delete model, then current entry
-                        m_story->DeleteNode(m_currentPage->Uuid(), node->Base()->GetId());
-                        m_currentPage->DeleteNode(nodeId);
-                    }
+                        std::shared_ptr<Connection> model;
+                        if (m_currentPage->GetModel(deletedLinkId, model))
+                        {
+                            m_story->DeleteLink(m_currentPage->Uuid(), model);
+                            m_currentPage->EraseLink(deletedLinkId);
+                        }
+                }
+
+                // You may reject link deletion by calling:
+                // ed::RejectDeletedItem();
                 }
             }
+            ed::EndDelete(); // Wrap up deletion action
 
-            // There may be many links marked for deletion, let's loop over them.
-            ed::LinkId deletedLinkId;
-            while (ed::QueryDeletedLink(&deletedLinkId))
+
+            auto openPopupPosition = ImGui::GetMousePos();
+            ed::Suspend();
+
+            if (ed::ShowBackgroundContextMenu())
             {
-               // If you agree that link can be deleted, accept deletion.
-               if (ed::AcceptDeletedItem())
-               {
-                    std::shared_ptr<Connection> model;
-                    if (m_currentPage->GetModel(deletedLinkId, model))
-                    {
-                        m_story->DeleteLink(m_currentPage->Uuid(), model);
-                        m_currentPage->EraseLink(deletedLinkId);
-                    }
-               }
-
-               // You may reject link deletion by calling:
-               // ed::RejectDeletedItem();
+                ImGui::OpenPopup("Create New Node");
             }
-        }
-        ed::EndDelete(); // Wrap up deletion action
 
-
-        auto openPopupPosition = ImGui::GetMousePos();
-        ed::Suspend();
-
-        if (ed::ShowBackgroundContextMenu())
-        {
-            ImGui::OpenPopup("Create New Node");
-        }
-
-        if (ImGui::BeginPopup("Create New Node"))
-        {
-            auto newNodePostion = openPopupPosition;
-            std::shared_ptr<BaseNode> base;
-            auto nodeTypes = m_nodesFactory.GetNodeTypes();
-
-            for (auto &type : nodeTypes)
+            if (ImGui::BeginPopup("Create New Node"))
             {
-                if (ImGui::MenuItem(type.c_str()))
+                auto newNodePostion = openPopupPosition;
+                std::shared_ptr<BaseNode> base;
+                auto nodeTypes = m_nodesFactory.LitOfNodes();
+
+                for (auto &type : nodeTypes)
                 {
-                    base = m_nodesFactory.CreateNode(type);
-                    if (base)
+                    if (ImGui::MenuItem(type.name.c_str()))
                     {
-                        m_story->AddNode(m_currentPage->Uuid(), base);
-                        auto n = CreateNodeWidget(type, m_manager, base);
-                        if (n)
+                        base = m_nodesFactory.CreateNode(type.uuid);
+                        if (base)
                         {
-                            n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
-                            n->Initialize();
-                            m_currentPage->AddNode(n);
+                            m_story->AddNode(m_currentPage->Uuid(), base);
+                            auto n = CreateNodeWidget(type.uuid, m_manager, base);
+                            if (n)
+                            {
+                                n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
+                                n->Initialize();
+                                m_currentPage->AddNode(n);
+                            }
                         }
                     }
                 }
+
+                ImGui::EndPopup();
             }
 
-            ImGui::EndPopup();
-        }
+            if (m_loaded)
+            {
+                ed::NavigateToContent();
+                m_loaded = false;
+            }
 
-        if (m_loaded)
+            ed::Resume();
+
+            
+            ed::End();
+            ed::SetCurrentEditor(nullptr);
+        }
+        else
         {
-            ed::NavigateToContent();
-            m_loaded = false;
+            // Set background color to light gray
+            // ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+
+            ImGui::Text("Please load or create a project.");
+
+            ImGui::PopStyleColor(1); // Pop both colors
         }
-
-        ed::Resume();
-
-        
-        ed::End();
-        ed::SetCurrentEditor(nullptr);
 
     }
 

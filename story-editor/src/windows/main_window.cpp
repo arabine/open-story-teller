@@ -52,6 +52,7 @@ MainWindow::MainWindow()
     m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
 
     CloseProject();
+    CloseModule();
 
     // define style for all directories
     ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", ImVec4(0.5f, 1.0f, 0.9f, 0.9f), ICON_MDI_FOLDER);
@@ -459,9 +460,18 @@ float MainWindow::DrawMainMenuBar()
                     OpenProject(m_story->GetUuid());
                 }
             }
+
             if (ImGui::MenuItem("New module"))
             {
+                // Current module project
+                CloseModule();
                 showNewProject = true;
+                NewModule();
+            }
+
+            if (ImGui::MenuItem("Save module"))
+            {
+                SaveModule();
             }
 
 /*
@@ -492,6 +502,8 @@ float MainWindow::DrawMainMenuBar()
                 SaveProject();
             }
 
+
+
             if (ImGui::MenuItem("Close project"))
             {
                 CloseProject();
@@ -500,6 +512,11 @@ float MainWindow::DrawMainMenuBar()
             if (ImGui::MenuItem("Project settings"))
             {
                 showParameters = true;
+            }
+
+            if (ImGui::MenuItem("Close module"))
+            {
+                CloseModule();
             }
 
             if (!init)
@@ -574,6 +591,8 @@ bool MainWindow::Initialize()
 {
     bool success = false;
     LoadParams();
+
+    m_nodesFactory.ScanModules();
 
     // GUI Init
     if (m_gui.Initialize())
@@ -896,6 +915,21 @@ void MainWindow::OpenProject(const std::string &uuid)
     RefreshProjectInformation();
 }
 
+void MainWindow::NewModule()
+{
+    auto module = m_nodesFactory.NewModule();
+    m_moduleEditorWindow.Load(module);
+
+    m_moduleEditorWindow.Enable();
+}
+
+
+void MainWindow::SaveModule()
+{
+    m_nodesFactory.SaveAllModules(m_resources);;
+    Log("Modules saved");
+}
+
 void MainWindow::OpenModule(const std::string &uuid)
 {
     m_module = m_nodesFactory.GetModule(uuid);
@@ -930,7 +964,7 @@ void MainWindow::CloseProject()
     // }
 
     m_resources.Clear();
-    m_nodeEditorWindow.Initialize();
+    m_nodeEditorWindow.Clear();
     m_nodeEditorWindow.Disable();
 
     m_emulatorWindow.ClearImage();
@@ -951,7 +985,7 @@ void MainWindow::CloseProject()
 
 void MainWindow::CloseModule()
 {
-    m_moduleEditorWindow.Initialize();
+    m_moduleEditorWindow.Clear();
     m_moduleEditorWindow.Disable();
 
 }
@@ -1337,6 +1371,12 @@ void MainWindow::SaveParams()
 void MainWindow::LoadParams()
 {
     try {
+
+        // Modules directory
+        std::filesystem::path dlDir = std::filesystem::path(pf::getConfigHome()) / "ost_modules";
+        std::filesystem::create_directories(dlDir);
+        m_nodesFactory.SetModulesRootDirectory(dlDir.string());
+
         std::string loc = pf::getConfigHome() + "/ost_settings.json";
         // read a JSON file
         std::ifstream i(loc);
@@ -1365,6 +1405,6 @@ void MainWindow::LoadParams()
     }
     catch(std::exception &e)
     {
-
+        Log(e.what(), true);
     }
 }

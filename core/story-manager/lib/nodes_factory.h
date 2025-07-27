@@ -14,6 +14,7 @@
 #include "print_node.h"
 #include "syscall_node.h"
 #include "story_project.h"
+#include "story_primitive.h"
 
 static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
 static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
@@ -35,18 +36,24 @@ public:
     {
         // Register node types
         // registerNode<MediaNode>("media-node");
-        registerNode<OperatorNode>(OperatorNodeUuid, nullptr);
-        registerNode<CallFunctionNode>(CallFunctionNodeUuid, nullptr);
-        registerNode<VariableNode>(VariableNodeUuid, nullptr);
-        registerNode<PrintNode>(PrintNodeUuid, nullptr);
-        registerNode<SyscallNode>(SyscallNodeUuid, nullptr);
+        registerNode<OperatorNode>(OperatorNodeUuid, std::make_shared<StoryPrimitive>("Operator"));
+        registerNode<CallFunctionNode>(CallFunctionNodeUuid, std::make_shared<StoryPrimitive>("Call function"));
+        registerNode<VariableNode>(VariableNodeUuid, std::make_shared<StoryPrimitive>("Variable"));
+        registerNode<PrintNode>(PrintNodeUuid, std::make_shared<StoryPrimitive>("Print"));
+        registerNode<SyscallNode>(SyscallNodeUuid, std::make_shared<StoryPrimitive>("System call"));
     }
 
     ~NodesFactory() = default;
 
-    std::vector<std::string> GetNodeTypes() const { 
-        std::vector<std::string> l;
-        for(auto const& imap: m_registry) l.push_back(imap.first);
+    struct NodeInfo {
+        std::string uuid;
+        std::string name;
+    };
+
+    // key: uuid, value: node name
+    std::vector<NodeInfo> LitOfNodes() const { 
+        std::vector<NodeInfo> l;
+        for(auto const& imap: m_registry) l.push_back(NodeInfo{imap.first, imap.second.first->GetName() });
         return l;
     }
 
@@ -78,7 +85,12 @@ public:
                     // We have a module here, get the name
                     if (n.second.first->GetName() == name)
                     {
-                        module = n.second.first;
+                        auto p = dynamic_cast<StoryProject*>(n.second.first.get());
+                        if (p == nullptr)
+                        {
+                            throw std::runtime_error("Node is not a StoryProject");
+                        }
+                        module = p->shared_from_this();
                     }
                 }
             }
@@ -87,45 +99,88 @@ public:
         return module;
     }
 
+    void SaveAllModules(ResourceManager &manager)
+    {
+        for (const auto &entry : m_registry)
+        {
+            // Uniquement les modules custom (ici ModuleNodeUuid)
+            if (entry.first == ModuleNodeUuid)
+            {
+                // Get the module from the registry
+                auto module = std::dynamic_pointer_cast<StoryProject>(entry.second.first);
+                if (module)
+                {
+                    module->Save(manager);
+                }
+            }
+        }
+    }
+
+    // Creates a new empty module (StoryProject) and registers it as a module node.
+    std::shared_ptr<StoryProject> NewModule(const std::string& moduleName = "Untitled Module") {
+        // Create a new StoryProject with the given name
+        auto module = std::make_shared<StoryProject>(m_log);
+        module->New(Uuid().String(), m_rootPath);
+        module->SetName(moduleName);
+        module->SetTitleImage("");
+        module->SetTitleSound("");
+        module->SetDisplayFormat(320, 240);
+        module->SetImageFormat(Resource::ImageFormat::IMG_SAME_FORMAT);
+        module->SetSoundFormat(Resource::SoundFormat::SND_SAME_FORMAT);
+        module->SetDescription("");
+        module->SetProjectType(IStoryProject::PROJECT_TYPE_MODULE);
+        
+        // Register as module node if not already in registry
+        registerNode<ModuleNode>(ModuleNodeUuid, module);
+
+        return module;
+    }
+
+    
+
     void SetModulesRootDirectory(const std::string &rootPath) {
         m_rootPath = rootPath;
     }
 
     void ScanModules() {
-        // This function should scan the rootPath for modules and register them
-        // For now, we just log the root path
         std::cout << "Scanning modules in: " << m_rootPath << std::endl;
-        // Here you would implement the logic to scan the directory and register modules
-
-        // For example, you could read JSON files in the directory and create nodes based on their content
-        // This is a placeholder for actual scanning logic
-        // Example: registerNode<CustomModuleNode>("custom-module-node");
         
         // Loop through files in m_rootPath
         // and register them as nodes if they match certain criteria
         for (const auto& entry : std::filesystem::directory_iterator(m_rootPath))
         {
-            if (entry.is_regular_file() && entry.path().extension() == ".json")
+            // Enter directory and look for .json files
+            if (entry.is_directory())
             {
-                // Load the JSON file and register a node based on its content
-                std::ifstream file(entry.path());
-                nlohmann::json j;
-                file >> j;
-
-                auto p = std::make_shared<StoryProject>(m_log);
-                p->ParseStoryInformation(j);
-
-                if (p->IsModule())
+                std::cout << "Scanning directory: " << entry.path() << std::endl;
+                for (const auto& subEntry : std::filesystem::directory_iterator(entry.path()))
                 {
-                    registerNode<ModuleNode>(ModuleNodeUuid, p);
-                        // For now, function node use only primitives nodes
-                    // FIXME: in the future, allow function node to use other function nodes
-                    // Need a list of required nodes to be registered
+                    if (subEntry.is_regular_file() && subEntry.path().extension() == ".json")
+                    {
+                        std::cout << "Found module file: " << subEntry.path() << std::endl;
+                        // Load the JSON file and register a node based on its content
+                        std::ifstream file(subEntry.path());
+                        nlohmann::json j;
+                        file >> j;
+                        auto p = std::make_shared<StoryProject>(m_log);
+                        p->ParseStoryInformation(j);
+                        if (p->IsModule())
+                        {
+                            registerNode<ModuleNode>(ModuleNodeUuid, p);
+                            // For now, function node use only primitives nodes 
+                            // FIXME: in the future, allow function node to use other function nodes
+                            // Need a list of required nodes to be registered
 
-                    // Maybe this algorithm:
-                    // 1. load all function nodes
-                    // 2. for each function node, check if it has a "requires" field
-                    // 3. if it does, check if we have them
+                            // Maybe this algorithm:
+                            // 1. load all function nodes
+                            // 2. for each function node, check if it has a "requires" field
+                            // 3. if it does, check if we have them
+                        }
+                        else
+                        {
+                            std::cout << "Skipping non-module project: " << p->GetName() << std::endl;
+                        }
+                    }
                 }
             }
         }
@@ -143,11 +198,11 @@ private:
     };
 
     // UUID is the key, and the value is a function that creates the node
-    typedef std::map<std::string, std::pair<std::shared_ptr<StoryProject>, GenericCreator>> Registry;
+    typedef std::map<std::string, std::pair<std::shared_ptr<IStoryProject>, GenericCreator>> Registry;
     Registry m_registry;
 
     template<class Derived>
-    void registerNode(const std::string& uuid, std::shared_ptr<StoryProject> moduleInfo) {
+    void registerNode(const std::string& uuid, std::shared_ptr<IStoryProject> moduleInfo) {
         m_registry.insert(std::make_pair(uuid, std::make_pair(moduleInfo, Factory<Derived>::create_func)));
     }
 };

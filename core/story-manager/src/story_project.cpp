@@ -558,65 +558,80 @@ bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
 
 void StoryProject::Save(ResourceManager &manager)
 {
-    nlohmann::json j;
-    j["project"] = { {"name", m_name}, {"uuid", m_uuid}, { "title_image", m_titleImage }, { "title_sound", m_titleSound } };
-
+    try
     {
-        nlohmann::json resourcesData;
+        nlohmann::json j;
+        j["project"] = { 
+            {"name", m_name}, 
+            {"uuid", m_uuid}, 
+            { "title_image", m_titleImage }, 
+            { "title_sound", m_titleSound }, 
+            {"description", m_description}, 
+            {"type", (m_projectType == IStoryProject::PROJECT_TYPE_STORY) ? "story" : "module"},
+            {"version", m_version}
+        };
 
-        auto [b, e] = manager.Items();
-        for (auto it = b; it != e; ++it)
         {
-            nlohmann::json obj = {{"type", (*it)->type},
-                                  {"format", (*it)->format},
-                                  {"description", (*it)->description},
-                                  {"file", (*it)->file}};
+            nlohmann::json resourcesData;
 
-            resourcesData.push_back(obj);
+            auto [b, e] = manager.Items();
+            for (auto it = b; it != e; ++it)
+            {
+                nlohmann::json obj = {{"type", (*it)->type},
+                                    {"format", (*it)->format},
+                                    {"description", (*it)->description},
+                                    {"file", (*it)->file}};
+
+                resourcesData.push_back(obj);
+            }
+            j["resources"] = resourcesData;
         }
-        j["resources"] = resourcesData;
+
+        nlohmann::json model;
+        ModelToJson(model);
+        j["pages"] = model;
+
+        nlohmann::json variablesData;
+        for (const auto &v : m_variables)
+        {
+            std::string value;
+
+            if (v->IsFloat())
+            {
+                value = std::to_string(v->GetFloatValue());
+            }
+            else if (v->IsInteger())
+            {
+                value = std::to_string(v->GetIntegerValue());
+            }
+            else if (v->IsString())
+            {
+                value = v->GetStringValue();
+            }
+            else if (v->IsBool())
+            {
+                value = v->GetBoolValue() ? "true" : "false";
+            }
+
+            nlohmann::json obj = {{"name", v->GetVariableName()},
+                                {"label", v->GetLabel()},
+                                {"uuid", v->GetUuid()},
+                                {"value", value},
+                                {"scale", v->GetScalePower()},
+                                {"constant", v->IsConstant()},
+                                {"type", Variable::ValueTypeToString(v->GetValueType())}};
+
+            variablesData.push_back(obj);
+        }
+        j["variables"] = variablesData;
+
+        std::ofstream o(m_project_file_path);
+        o << std::setw(4) << j << std::endl;
     }
-
-    nlohmann::json model;
-    ModelToJson(model);
-    j["pages"] = model;
-
-    nlohmann::json variablesData;
-    for (const auto &v : m_variables)
+    catch(const std::exception& e)
     {
-        std::string value;
-
-        if (v->IsFloat())
-        {
-            value = std::to_string(v->GetFloatValue());
-        }
-        else if (v->IsInteger())
-        {
-            value = std::to_string(v->GetIntegerValue());
-        }
-        else if (v->IsString())
-        {
-            value = v->GetStringValue();
-        }
-        else if (v->IsBool())
-        {
-            value = v->GetBoolValue() ? "true" : "false";
-        }
-
-        nlohmann::json obj = {{"name", v->GetVariableName()},
-                              {"label", v->GetLabel()},
-                              {"uuid", v->GetUuid()},
-                              {"value", value},
-                              {"scale", v->GetScalePower()},
-                              {"constant", v->IsConstant()},
-                              {"type", Variable::ValueTypeToString(v->GetValueType())}};
-
-        variablesData.push_back(obj);
+        std::cerr << e.what() << '\n';
     }
-    j["variables"] = variablesData;
-
-    std::ofstream o(m_project_file_path);
-    o << std::setw(4) << j << std::endl;
 }
 
 

@@ -33,6 +33,9 @@ public:
     virtual void Draw() override;
 
     void Initialize();
+    void InitializeProject();
+    void NewProject();
+    void Clear();
     void Load(std::shared_ptr<StoryProject> story);
     void SaveNodePositions();
     void OpenFunction(const std::string &uuid, const std::string &name);

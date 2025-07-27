@@ -141,7 +141,9 @@ private:
     void SaveProject();
     void CloseProject();
 
-    void OpenModule(const std::string &uuid);    
+    void OpenModule(const std::string &uuid);  
+    void NewModule();
+    void SaveModule();
     void CloseModule();
     
     // From IStoryManager (proxy to StoryProject class)

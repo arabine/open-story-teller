@@ -19,7 +19,7 @@
 
 class NodesFactory;
 
-struct StoryProject : public IStoryProject
+struct StoryProject : public std::enable_shared_from_this<StoryProject>, public IStoryProject
 {
 
 public:
@@ -29,6 +29,10 @@ public:
     bool *Selected() {
         return &m_selected;
     }
+
+    // std::shared_ptr<StoryProject> shared_from_this() {
+    //     return shared_from_this();
+    // }
 
     std::string MainUuid() const {
         return "490745ab-df4d-476d-ae27-027e94b8ee0a";
@@ -86,14 +90,15 @@ public:
     const bool IsInitialized() const { return m_initialized; }
     const bool IsModule() const { return m_projectType == IStoryProject::PROJECT_TYPE_MODULE; }
     const bool IsStory() const { return m_projectType == IStoryProject::PROJECT_TYPE_STORY; }
+    void SetProjectType(IStoryProject::Type type) { m_projectType = type; }
 
     bool ParseStoryInformation(nlohmann::json &j);
    
     // From IStoryProject
-    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId) override;
-    virtual int OutputsCount(const std::string &nodeId) override;
-    virtual StoryOptions GetOptions() override { return m_storyOptions; }
-    virtual bool UseResource(const std::string &label) override;
+    virtual std::list<std::shared_ptr<Connection>> GetNodeConnections(const std::string &nodeId);
+    virtual int OutputsCount(const std::string &nodeId);
+    StoryOptions GetOptions() { return m_storyOptions; }
+    virtual bool UseResource(const std::string &label);
 
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);
