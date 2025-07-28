@@ -158,16 +158,20 @@ public:
             if (entry.is_directory())
             {
                 std::cout << "Scanning directory: " << entry.path() << std::endl;
+                auto uuid = entry.path().filename().string();
                 for (const auto& subEntry : std::filesystem::directory_iterator(entry.path()))
                 {
                     if (subEntry.is_regular_file() && subEntry.path().extension() == ".json")
                     {
                         std::cout << "Found module file: " << subEntry.path() << std::endl;
+
+                        auto p = std::make_shared<StoryProject>(m_log);
+
+                        p->SetPaths(uuid, m_rootPath);  
                         // Load the JSON file and register a node based on its content
                         std::ifstream file(subEntry.path());
                         nlohmann::json j;
                         file >> j;
-                        auto p = std::make_shared<StoryProject>(m_log);
                         p->ParseStoryInformation(j);
                         if (p->IsModule())
                         {

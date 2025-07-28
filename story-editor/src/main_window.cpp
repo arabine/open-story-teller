@@ -909,16 +909,13 @@ void MainWindow::OpenModule(const std::string &uuid)
     {
         Log("Open module success");
         m_moduleEditorWindow.Load(m_module);
+        m_moduleEditorWindow.Enable();
     }
     else
     {
         Log("Open module error");
     }
-
-
-    m_moduleEditorWindow.Enable();
 }
-
 
 
 void MainWindow::CloseProject()
