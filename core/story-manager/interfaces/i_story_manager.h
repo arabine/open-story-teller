@@ -42,14 +42,6 @@ public:
     // Modules
     virtual void OpenModule(const std::string &uuid) = 0;
 
-    // Resources management
-    virtual std::pair<FilterIterator, FilterIterator> Images() = 0;
-    virtual std::pair<FilterIterator, FilterIterator> Sounds() = 0;
-    virtual std::pair<FilterIterator, FilterIterator> Resources() = 0;
-    virtual void AddResource(std::shared_ptr<Resource> res) = 0;
-    virtual void ClearResources() = 0;
-    virtual void DeleteResource(FilterIterator &it) = 0;
-
     // Node interaction
     virtual void BuildNodes(bool compileonly) = 0;
     virtual void BuildCode(bool compileonly) = 0;

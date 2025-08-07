@@ -9,19 +9,11 @@
 #include <queue>
 #include <thread>
 #include "thread_safe_queue.h"
-
+#include "i_audio_event.h"
 
 struct AudioCommand {
     std::string order;
     std::string filename;
-};
-
-class IAudioEvent
-{
-public:
-    virtual ~IAudioEvent() {}
-
-    virtual void EndOfAudio() = 0;
 };
 
 

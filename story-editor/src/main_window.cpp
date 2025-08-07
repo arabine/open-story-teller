@@ -22,34 +22,24 @@
 #include "ImGuiFileDialog.h"
 #include "imgui_memory_editor.h"
 
-MainWindow::MainWindow()
-    : m_resources(*this)
-    , m_nodesFactory(*this)
-    , m_libraryManager(*this, m_nodesFactory)
-    , m_emulatorWindow(*this)
-    , m_debuggerWindow(*this)
-    , m_cpuWindow(*this)
-    , m_resourcesWindow(*this)
-    , m_nodeEditorWindow(*this, m_nodesFactory)
-    , m_moduleEditorWindow(*this, m_nodesFactory, IStoryProject::Type::PROJECT_TYPE_MODULE)
-    , m_libraryWindow(*this, m_libraryManager, m_nodesFactory)
-    , m_variablesWindow(*this)
-    , m_player(*this)
-    , m_webServer(m_libraryManager)
+#include "app_controller.h"
+#include "all_events.h"
+
+MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
+    : m_logger(logger)
+    , m_eventBus(eventBus)
+    , m_appController(appController)
+     , m_emulatorWindow(appController)
+    , m_debuggerWindow(appController)
+    , m_cpuWindow(appController)
+    , m_resourcesWindow(appController.GetResourceManager())
+    , m_nodeEditorWindow(appController)
+    , m_moduleEditorWindow(appController)
+    , m_libraryWindow(appController)
+    , m_variablesWindow(appController)
 {
-    // VM Initialize
-    m_chip32_ctx.stack_size = 512;
 
-    m_chip32_ctx.rom.mem = m_rom_data;
-    m_chip32_ctx.rom.addr = 0;
-    m_chip32_ctx.rom.size = sizeof(m_rom_data);
-
-    m_chip32_ctx.ram.mem = m_ram_data;
-    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
-    m_chip32_ctx.ram.size = sizeof(m_ram_data);
-
-    Callback<uint8_t(chip32_ctx_t *, uint8_t)>::func = std::bind(&MainWindow::Syscall, this, std::placeholders::_1, std::placeholders::_2);
-    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
+    logger.RegisterSubject(shared_from_this());
 
     CloseProject();
     CloseModule();
@@ -59,11 +49,19 @@ MainWindow::MainWindow()
     // define style for all files
     ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeFile, "", ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ICON_MDI_FILE);
 
+
+    m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {
+        OpenProject(event.GetUuid());
+    });
+
+    m_eventBus.Subscribe<OpenFunctionEvent>([this](const OpenFunctionEvent &event) {
+        OpenFunction(event.GetUuid(), event.GetName());
+    });
 }
 
 MainWindow::~MainWindow()
 {
-    SaveParams();
+    m_appController.SaveParams();
 }
 
 
@@ -81,240 +79,16 @@ std::string MainWindow::GetStringFromMemory(uint32_t addr)
 }
 
 
-void MainWindow::Play()
-{
-
-    if ((m_dbg.run_result == VM_READY) || (m_dbg.run_result == VM_FINISHED))
-    {
-        m_dbg.free_run = true;
-        m_dbg.run_result = VM_OK; // actually starts the execution
-    }
-
-}
-
-void MainWindow::Step()
-{
-    m_eventQueue.push({VmEventType::EvStep});
-}
-
-void MainWindow::Run()
-{
-    m_eventQueue.push({VmEventType::EvRun});
-}
-
-void MainWindow::Ok()
-{
-    m_eventQueue.push({VmEventType::EvOkButton});
-}
-
-
-void MainWindow::Stop()
-{
-    m_dbg.run_result = VM_FINISHED; // better than sending an event: avoid infinite loops in assembly
-}
-
-void MainWindow::Pause()
-{
-
-}
-
-void MainWindow::Home()
-{
-    m_eventQueue.push({VmEventType::EvHomeButton});
-}
-
-void MainWindow::Next()
-{
-    Log("Next button");
-    m_eventQueue.push({VmEventType::EvNextButton});
-}
-
-void MainWindow::Previous()
-{
-    Log("Previous button");
-    m_eventQueue.push({VmEventType::EvPreviousButton});
-}
-
-std::string MainWindow::VmState() const
-{
-    std::string state = "Unknown";
-
-    switch (m_dbg.run_result)
-    {
-        case VM_READY:
-            state = "VM Ready";
-            break;
-        case VM_FINISHED:
-            state = "VM Finished";
-            break;
-        case VM_SKIPED:
-            state = "VM Skiped";
-            break;
-        case VM_WAIT_EVENT:
-            state = "VM Wait Event";
-            break;
-        case VM_OK:
-            state = "VM Ok";
-            break;
-        default:
-            state = "VM Error";
-            break;
-    }
-    return state;
-}
-
-void MainWindow::EndOfAudio()
-{
-    Log("End of audio track");
-    m_eventQueue.push({VmEventType::EvAudioFinished});
-}
-
 void MainWindow::StepInstruction()
 {
     m_dbg.run_result = chip32_step(&m_chip32_ctx);
     UpdateVmView();
 }
 
-void MainWindow::ProcessStory()
-{
-    if (m_dbg.run_result == VM_FINISHED)
-        return;
-
-    // Error states
-    if (m_dbg.run_result > VM_OK)
-        return;
-
-    // Check events
-
-    VmEvent event;
-    if (m_eventQueue.try_pop(event))
-    {
-        if (event.type == VmEventType::EvStep)
-        {
-            StepInstruction();
-            m_dbg.run_result = VM_OK; // FIXME: bizarre d'écraser le code de retour...
-        }
-        else if (event.type == VmEventType::EvRun)
-        {
-            m_dbg.free_run = true;
-            m_dbg.run_result = VM_OK;
-        }
-        else if (event.type == VmEventType::EvStop)
-        {
-            m_dbg.run_result = VM_FINISHED;
-        }
-
-        // Events managed only if the code is in wait event state
-        if (m_dbg.run_result == VM_WAIT_EVENT)
-        {
-
-            if (event.type == VmEventType::EvOkButton)
-            {
-                if (m_dbg.IsValidEvent(EV_MASK_OK_BUTTON))
-                {
-                    m_chip32_ctx.registers[R0] = EV_MASK_OK_BUTTON;
-                    m_dbg.run_result = VM_OK;
-                }
-            }
-            else if (event.type == VmEventType::EvPreviousButton)
-            {
-                if (m_dbg.IsValidEvent(EV_MASK_PREVIOUS_BUTTON))
-                {
-                    m_chip32_ctx.registers[R0] = EV_MASK_PREVIOUS_BUTTON;
-                    m_dbg.run_result = VM_OK;
-                }
-            }
-            else if (event.type == VmEventType::EvNextButton)
-            {
-                if (m_dbg.IsValidEvent(EV_MASK_NEXT_BUTTON))
-                {
-                    m_chip32_ctx.registers[R0] = EV_MASK_NEXT_BUTTON;
-                    m_dbg.run_result = VM_OK;
-                }
-            }
-            else if (event.type == VmEventType::EvAudioFinished)
-            {
-                if (m_dbg.IsValidEvent(EV_MASK_END_OF_AUDIO))
-                {
-                    m_chip32_ctx.registers[R0] = EV_MASK_END_OF_AUDIO;
-                    m_dbg.run_result = VM_OK;
-                }
-            }
-            else if (event.type == VmEventType::EvHomeButton)
-            {
-                if (m_dbg.IsValidEvent(EV_MASK_HOME_BUTTON))
-                {
-                    m_chip32_ctx.registers[R0] = EV_MASK_HOME_BUTTON;
-                    m_dbg.run_result = VM_OK;
-                }
-            }
-        }
-    }
-
-    if (m_dbg.run_result == VM_OK)
-    {
-        if (m_dbg.m_breakpoints.contains(m_dbg.line))
-        {
-          //  Log("Breakpoint on line: " + std::to_string(m_dbg.line + 1));
-            m_dbg.run_result = VM_WAIT_EVENT;
-            m_dbg.free_run = false;
-        }
-
-        if (m_dbg.free_run)
-        {
-            StepInstruction();
-        }
-    }
-
-    if (m_dbg.run_result == VM_FINISHED)
-    {
-        m_dbg.free_run = false;
-    }
-    else if (m_dbg.run_result > VM_OK)
-    {
-        std::string error = "VM Error: ";
-        switch (m_dbg.run_result)
-        {
-            case VM_ERR_STACK_OVERFLOW:
-                error += "Stack overflow";
-                break;
-            case VM_ERR_STACK_UNDERFLOW:
-                error += "Stack underflow";
-                break;
-            case VM_ERR_INVALID_ADDRESS:
-                error += "Invalid address";
-                break;
-            case VM_ERR_UNSUPPORTED_OPCODE:
-                error += "Invalid address";
-                break;
-            case VM_ERR_UNKNOWN_OPCODE:
-                error += "Unknown opcode";
-                break;
-            case VM_ERR_UNHANDLED_INTERRUPT:
-                error += "Unhandled interrupt";
-                break;
-            case VM_ERR_INVALID_REGISTER:
-                error += "Invalid register";
-                break;
-            default:
-                error += "Unknown error";
-                break;
-        }
-        error += " (line: " + std::to_string(m_dbg.line) + ")";
-        Log(error, true);
-    }
-
-    // In this case, we wait for single step debugger
-    if ((m_dbg.run_result == VM_OK) && !m_dbg.free_run)
-    {
-        m_dbg.run_result = VM_WAIT_EVENT;
-    }
-}
-
 uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
 {
     uint8_t retCode = SYSCALL_RET_OK;
-    Log("SYSCALL: " + std::to_string(code));
+    m_logger.Log("SYSCALL: " + std::to_string(code));
 
     // Media
     if (code == 1) // Execute media
@@ -323,7 +97,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         {
             // image file name address is in R0
             std::string imageFile = m_story->BuildFullAssetsPath(GetStringFromMemory(m_chip32_ctx.registers[R0]));
-            Log("Image: " + imageFile);
+            m_logger.Log("Image: " + imageFile);
             m_emulatorWindow.SetImage(imageFile);
         }
         else
@@ -335,7 +109,7 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
         {
             // sound file name address is in R1
             std::string soundFile = m_story->BuildFullAssetsPath(GetStringFromMemory(m_chip32_ctx.registers[R1]));
-            Log("Sound: " + soundFile);
+            m_logger.Log("Sound: " + soundFile);
             m_player.Play(soundFile);
         }
         retCode = SYSCALL_RET_OK; // We continue execution, script must wait for event if necessary (end of audio)
@@ -379,19 +153,19 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
 
         switch(arg_count){
             case 0: 
-                Log(text);
+                m_logger.Log(text);
                 break;
             case 1: 
                 snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2]);
-                Log(working_buf);
+                m_logger.Log(working_buf);
                 break;
             case 2: 
                 snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3]);
-                Log(working_buf);
+                m_logger.Log(working_buf);
                 break;
             case 3: 
                 snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3], ctx->registers[R4]);
-                Log(working_buf);
+                m_logger.Log(working_buf);
                 break;
             default:
                 break;
@@ -406,31 +180,6 @@ uint8_t MainWindow::Syscall(chip32_ctx_t *ctx, uint8_t code)
     
 
     return retCode;
-}
-
-void MainWindow::DrawStatusBar()
-{
-    float statusWindowHeight = ImGui::GetFrameHeight() * 1.4f;
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + viewport->Size.y - statusWindowHeight));
-    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, statusWindowHeight));
-    ImGui::SetNextWindowViewport(viewport->ID);
-
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
-    ImGui::Begin("StatusBar", nullptr, windowFlags);
-
-    if (true)
-    {
-        float dy = ImGui::GetFontSize() * 0.15f;
-
-        ImGui::SameLine(ImGui::GetIO().DisplaySize.x - 14.f * ImGui::GetFontSize());
-
-        ImGui::SameLine();
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - dy);
-        ImGui::Text("FPS: %.1f", 1000.0f / ImGui::GetIO().Framerate);
-    }
-
-    ImGui::End();
 }
 
 float MainWindow::DrawMainMenuBar()
@@ -829,56 +578,35 @@ void MainWindow::SaveProject()
 {
     nlohmann::json model;
     m_story->Save(m_resources);
-    Log("Project saved");
+    m_logger.Log("Project saved");
 }
 
 void MainWindow::OpenProject(const std::string &uuid)
 {
-    CloseProject();
-
-    m_story = m_libraryManager.GetStory(uuid);
-
-    // DEBUG CODE !!!!!!!!!!!!!  Permet si décommenter de forcer l'import, permet de tester plus facilement l'algo en ouvrant le projet
-    // PackArchive arch(*this);
-    // std::string basePath = m_libraryManager.LibraryPath() + "/" + uuid;
-    // arch.ConvertJsonStudioToOst(basePath, uuid, m_libraryManager.LibraryPath());
-
-    if (!m_story)
+    m_nodeEditorWindow.Load(m_story);
+    auto proj = m_story->GetProjectFilePath();
+    // Add to recent if not exists
+    if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
     {
-        Log("Cannot find story: " + uuid);
-    }
-    else if (m_story->Load(m_resources, m_nodesFactory))
-    {
-        Log("Open project success");
-        m_nodeEditorWindow.Load(m_story);
-        auto proj = m_story->GetProjectFilePath();
-        // Add to recent if not exists
-        if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
-        {
-            m_recentProjects.push_back(proj);
-            // Limit to 10 recent projects
-            if (m_recentProjects.size() > 10) {
-                m_recentProjects.pop_back();
-            }
-
-            // Save recent projects on disk
-            SaveParams();
+        m_recentProjects.push_back(proj);
+        // Limit to 10 recent projects
+        if (m_recentProjects.size() > 10) {
+            m_recentProjects.pop_back();
         }
 
-        m_nodeEditorWindow.Enable();
-        
-        m_emulatorWindow.Enable();
-        m_consoleWindow.Enable();
-        m_debuggerWindow.Enable();
-        m_resourcesWindow.Enable();
-        m_PropertiesWindow.Enable();
-        m_variablesWindow.Enable();
-        m_cpuWindow.Enable();
+        // Save recent projects on disk
+        m_appController.SaveParams();
     }
-    else
-    {
-        Log("Open project error");
-    }
+
+    m_nodeEditorWindow.Enable();
+    
+    m_emulatorWindow.Enable();
+    m_consoleWindow.Enable();
+    m_debuggerWindow.Enable();
+    m_resourcesWindow.Enable();
+    m_PropertiesWindow.Enable();
+    m_variablesWindow.Enable();
+    m_cpuWindow.Enable();
 
     RefreshProjectInformation();
 }
@@ -895,7 +623,7 @@ void MainWindow::NewModule()
 void MainWindow::SaveModule()
 {
     m_nodesFactory.SaveAllModules(m_resources);;
-    Log("Modules saved");
+    m_logger.Log("Modules saved");
 }
 
 void MainWindow::OpenModule(const std::string &uuid)
@@ -903,17 +631,17 @@ void MainWindow::OpenModule(const std::string &uuid)
     m_module = m_nodesFactory.GetModule(uuid);
     if (!m_module)
     {
-        Log("Cannot find module: " + uuid);
+        m_logger.Log("Cannot find module: " + uuid);
     }
     else if (m_module->Load(m_resources, m_nodesFactory))
     {
-        Log("Open module success");
+        m_logger.Log("Open module success");
         m_moduleEditorWindow.Load(m_module);
         m_moduleEditorWindow.Enable();
     }
     else
     {
-        Log("Open module error");
+        m_logger.Log("Open module error");
     }
 }
 
@@ -975,7 +703,7 @@ void MainWindow::ImportProject(const std::string &filePathName, int format)
     }
     else
     {
-        Log("Unknown file format: " + filePathName);
+        m_logger.Log("Unknown file format: " + filePathName);
     }
 }
  
@@ -1051,8 +779,6 @@ void MainWindow::Loop()
         ImGui::DockSpaceOverViewport(0, vp);
         float height = DrawMainMenuBar();
 
-       // DrawStatusBar();
-
         ProcessStory();
 
         // ------------  Draw all windows
@@ -1111,56 +837,24 @@ void MainWindow::Loop()
 }
 
 
-void MainWindow::Log(const std::string &txt, bool critical)
+void MainWindow::LogEvent(const std::string &txt, bool critical)
 {
     m_consoleWindow.AddLog(txt, critical ? 1 : 0);
 }
 
-void MainWindow::PlaySoundFile(const std::string &fileName)
-{
-    Log("Play sound file: " + fileName);
-    m_player.Play(fileName);
-}
 
 std::string MainWindow::BuildFullAssetsPath(const std::string_view fileName) const
 {
     return m_story->BuildFullAssetsPath(fileName);
 }
 
-std::pair<FilterIterator, FilterIterator> MainWindow::Images()
-{
-    return m_resources.Images();
-}
 
-std::pair<FilterIterator, FilterIterator> MainWindow::Sounds()
-{
-    return m_resources.Sounds();
-}
 
 void MainWindow::OpenFunction(const std::string &uuid, const std::string &name)
 {
     m_nodeEditorWindow.OpenFunction(uuid, name);
 }
 
-void MainWindow::AddResource(std::shared_ptr<Resource> res)
-{
-    m_resources.Add(res);
-}
-
-void MainWindow::ClearResources()
-{
-    m_resources.Clear();
-}
-
-std::pair<FilterIterator, FilterIterator> MainWindow::Resources()
-{
-    return m_resources.Items();
-}
-
-void MainWindow::DeleteResource(FilterIterator &it)
-{
-    return m_resources.Delete(it);
-}
 
 void MainWindow::LoadBinaryStory(const std::string &filename)
 {
@@ -1178,11 +872,11 @@ void MainWindow::LoadBinaryStory(const std::string &filename)
             {
                 m_dbg.run_result = VM_READY;
                 chip32_initialize(&m_chip32_ctx);
-                Log("Loaded binary file: " + filename);
+                m_logger.Log("Loaded binary file: " + filename);
             }
             else
             {
-                Log("Failed to load binary file", true);
+                m_logger.Log("Failed to load binary file", true);
             }
             
         }
@@ -1190,47 +884,7 @@ void MainWindow::LoadBinaryStory(const std::string &filename)
     }
 }
 
-void MainWindow::ToggleBreakpoint(int line)
-{
-    if (m_dbg.m_breakpoints.contains(line))
-    {
-        m_dbg.m_breakpoints.erase(line);
-    }
-    else
-    {
-        m_dbg.m_breakpoints.insert(line);
-    }
-}
 
-uint32_t MainWindow::GetRegister(int reg)
-{
-    uint32_t regVal = 0;
-
-    if (reg >= 0 && reg < REGISTER_COUNT)
-    {
-        regVal = m_chip32_ctx.registers[reg];
-    }
-
-    return regVal;
-}
-
-void MainWindow::ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation)
-{
-    if (m_story)
-    {
-        m_story->ScanVariable(operation);
-    }
-}
-
-void MainWindow::AddVariable() 
-{
-    m_story->AddVariable();
-}
-
-void MainWindow::DeleteVariable(int i)
-{
-    m_story->DeleteVariable(i);
-}
 
 void MainWindow::BuildNodes(bool compileonly)
 {
@@ -1271,12 +925,12 @@ void MainWindow::Build(bool compileonly)
         }
         else
         {
-            Log("Program too big. Expand ROM memory.");
+            m_logger.Log("Program too big. Expand ROM memory.");
         }
     }
     else
     {
-        Log(err.ToString(), true);
+        m_logger.Log(err.ToString(), true);
         m_debuggerWindow.AddError(err.line, err.message); // show also the error in the code editor
     }
 }
@@ -1311,28 +965,12 @@ void MainWindow::UpdateVmView()
     else
     {
         // Not found
-        Log("Reached end or instruction not found line: " + std::to_string(m_dbg.line));
+        m_logger.Log("Reached end or instruction not found line: " + std::to_string(m_dbg.line));
     }
     // Refresh RAM content
 //    m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
 }
 
-
-void MainWindow::SaveParams()
-{
-    nlohmann::json j;
-    nlohmann::json recents(m_recentProjects);
-
-    j["recents"] = recents;
-    j["library_path"] = m_libraryManager.LibraryPath();
-    j["store_url"] = m_libraryManager.GetStoreUrl();
-
-    std::string loc = pf::getConfigHome() + "/ost_settings.json";
-    std::ofstream o(loc);
-    o << std::setw(4) << j << std::endl;
-
-    Log("Saved settings to: " + loc);
-}
 
 void MainWindow::LoadParams()
 {
@@ -1371,6 +1009,6 @@ void MainWindow::LoadParams()
     }
     catch(std::exception &e)
     {
-        Log(e.what(), true);
+        m_logger.Log(e.what(), true);
     }
 }

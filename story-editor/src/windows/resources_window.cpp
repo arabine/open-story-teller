@@ -7,9 +7,9 @@
 
 //static thread_pool pool;
 
-ResourcesWindow::ResourcesWindow(IStoryManager &project)
+ResourcesWindow::ResourcesWindow(ResourceManager &resources)
     : WindowBase("Resources")
-    , m_story(project)
+    , m_resources(resources)
 {
 
 }
@@ -29,7 +29,7 @@ void ResourcesWindow::ChooseFile()
         m_showImportDialog = false;
         // open Dialog Simple
         IGFD::FileDialogConfig config;
-        config.path = m_story.BuildFullAssetsPath("");
+        config.path = m_resources.BuildFullAssetsPath("");
         config.countSelectionMax = 1;
         config.sidePaneWidth = 350.0f;
         config.flags = ImGuiFileDialogFlags_Modal;
@@ -49,7 +49,7 @@ void ResourcesWindow::ChooseFile()
 
 
             std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_story.BuildFullAssetsPath( p.filename().generic_string());
+            std::filesystem::path p2 = m_resources.BuildFullAssetsPath( p.filename().generic_string());
 
             bool allowCopy = true;
             // On ne copie pas le fichier sur lui-même
@@ -72,7 +72,7 @@ void ResourcesWindow::ChooseFile()
             res->format = ext;
             res->type = m_soundFile ? "sound" : "image";
             res->file = p.filename().generic_string();
-            m_story.AddResource(res);
+            m_resources.Add(res);
         }
 
         // close
@@ -120,7 +120,7 @@ void ResourcesWindow::Draw()
 
         ImGui::TableHeadersRow();
 
-        auto [b, e] = m_story.Resources();
+        auto [b, e] = m_resources.Items();
 
         int id = 1000;
         for (auto it = b; it != e; ++it)
@@ -168,7 +168,7 @@ void ResourcesWindow::Draw()
             ImGui::TableNextColumn();
             if (ImGui::SmallButton("Delete"))
             {
-                m_story.DeleteResource(it);
+                m_resources.DeleteResource(it);
                 quitLoop = true;
             }
             ImGui::PopID();

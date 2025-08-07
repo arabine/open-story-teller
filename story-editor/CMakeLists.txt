@@ -120,6 +120,8 @@ set(SRCS
     src/main.cpp
     src/main_window.cpp
 
+    src/app/app_controller.cpp
+
     src/windows/window_base.cpp
     src/windows/console_window.cpp
     src/windows/library_window.cpp
@@ -167,7 +169,6 @@ set(SRCS
     ../shared/resource_manager.cpp
     ../shared/library_manager.cpp
     ../shared/downloader.cpp
-    ../shared/story_db.cpp
     ../shared/miniz.c
     ../shared/zip.cpp
     ../shared/platform_folders.cpp
@@ -187,10 +188,9 @@ set(SRCS
     ../core/story-manager/src/nodes/print_node.cpp
     ../core/story-manager/src/nodes/syscall_node.cpp
     ../core/story-manager/src/nodes/connection.cpp
-
-    ../core/story-manager/lib/sys_lib.cpp
-    ../core/story-manager/lib/resource.cpp
-
+    ../core/story-manager/src/story_db.cpp
+    ../core/story-manager/src/sys_lib.cpp
+    ../core/story-manager/src/resource.cpp
 
     ../core/chip32/chip32_assembler.cpp
     ../core/chip32/chip32_vm.c
@@ -267,6 +267,8 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     src/windows
     src/docks
     src/dialogs
+    src/app
+    src/events
 
     ../firmware/library
     ../core/chip32
@@ -274,7 +276,6 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../core/story-manager/src
     ../core/story-manager/src/nodes
     ../core/story-manager/src/compiler
-    ../core/story-manager/lib
     ../core/story-manager/interfaces
 )
 
