@@ -10,7 +10,7 @@
 #include "console_window.h"
 #include "debugger_window.h"
 #include "emulator_dock.h"
-#include "resources_window.h"
+#include "resources_dock.h"
 #include "node_editor_window.h"
 #include "properties_window.h"
 #include "variables_window.h"
@@ -18,6 +18,7 @@
 #include "cpu_window.h"
 // Dialogs
 #include "about_dialog.h"
+#include "project_properties_dialog.h"
 
 #include "event_bus.h"
 #include "app_controller.h"
@@ -46,14 +47,11 @@ private:
     std::vector<std::string> m_recentProjects;
 
     Gui m_gui;
-    EmulatorDock m_emulatorWindow;
+    EmulatorDock m_emulatorDock;
     ConsoleWindow m_consoleWindow;
     DebuggerWindow m_debuggerWindow;
     CpuWindow m_cpuWindow;
-
-    char m_project_name[256] = "";
-
-    ResourcesWindow m_resourcesWindow;
+    ResourcesDock m_resourcesDock;
     NodeEditorWindow m_nodeEditorWindow;
     NodeEditorWindow m_moduleEditorWindow;
     PropertiesWindow m_PropertiesWindow;
@@ -62,12 +60,12 @@ private:
 
     // Dialogs
     AboutDialog m_aboutDialog;
+    ProjectPropertiesDialog m_projectPropertiesDialog;
 
     // From IStoryManager (proxy to StoryProject class)
     void OpenProject(const std::string &uuid);
-    void SaveProject();
     void CloseProject();
-
+    void OpenFunction(const std::string &uuid, const std::string &name);
     void OpenModule(const std::string &uuid);  
     void NewModule();
     void SaveModule();
@@ -77,18 +75,13 @@ private:
     virtual void LogEvent(const std::string &txt, bool critical) override;
 
     void LoadParams();
-
+    void RefreshProjectInformation();
     float DrawMainMenuBar();
     bool ShowQuitConfirm();
     void DrawToolBar(float topPadding);
 
     void UpdateVmView();
-    uint8_t Syscall(chip32_ctx_t *ctx, uint8_t code);
-    std::string GetStringFromMemory(uint32_t addr);
-    void ProcessStory();
-    void StepInstruction();
-    void RefreshProjectInformation();
-    void ProjectPropertiesPopup();
+    void RefreshProjectIœnformation();
     void Build(bool compileonly);
 };
 

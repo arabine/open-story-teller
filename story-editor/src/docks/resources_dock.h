@@ -4,15 +4,16 @@
 #include "window_base.h"
 #include "resource_manager.h"
 
-class ResourcesWindow : public WindowBase
+class ResourcesDock : public WindowBase
 {
 public:
-    ResourcesWindow(ResourceManager &resources);
-    ~ResourcesWindow();
+    ResourcesDock(ResourceManager &resources, IStoryManager &manager);
+    ~ResourcesDock();
     virtual void Draw() override;
 
 private:
     ResourceManager &m_resources;
+    IStoryManager &m_storyManager;
 
     bool m_showImportDialog{false};
     bool m_soundFile{false};

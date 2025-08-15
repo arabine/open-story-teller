@@ -125,7 +125,6 @@ set(SRCS
     src/windows/window_base.cpp
     src/windows/console_window.cpp
     src/windows/library_window.cpp
-    src/windows/resources_window.cpp
     src/windows/properties_window.cpp
     src/windows/debugger_window.cpp
     src/windows/cpu_window.cpp
@@ -133,6 +132,7 @@ set(SRCS
 
     ## Docks
     src/docks/emulator_dock.cpp
+    src/docks/resources_dock.cpp
     
     # src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.cpp

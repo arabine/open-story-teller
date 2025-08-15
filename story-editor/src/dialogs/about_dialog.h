@@ -2,16 +2,12 @@
 #ifndef ABOUT_DIALOG_H
 #define ABOUT_DIALOG_H
 
-#include "imgui.h" // Nécessaire pour ImGui::BeginPopupModal, ImGui::Text, etc.
+#include "dialog_base.h" // Pour DialogBase
 #include <string>   // Pour std::string
 #include "library_manager.h" // Pour LibraryManager::GetVersion()
-#include <SDL3/SDL.h> // Pour SDL_GetPlatform(), SDL_GetNumLogicalCPUCores(), SDL_GetSystemRAM()
+#include <SDL3/SDL.h>
 
-// Il est important de noter que cette classe AboutDialog
-// dépendra de ImGui et de SDL pour afficher les informations
-// système, comme c'est le cas dans le code original de MainWindow.
-
-class AboutDialog
+class AboutDialog : public DialogBase
 {
 public:
     AboutDialog() = default;
@@ -24,7 +20,7 @@ public:
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-        if (ImGui::BeginPopupModal("AboutPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal(GetTitle(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("Story Editor - v%s", LibraryManager::GetVersion().c_str());
             ImGui::Text("http://www.openstoryteller.org");
@@ -41,33 +37,19 @@ public:
             if (ImGui::Button("Close", ImVec2(100, 35)))
             {
                 ImGui::CloseCurrentPopup();
+                Reset(); // Cache le popup après la fermeture
             }
             ImGui::EndPopup();
         }
     }
 
-    // Ouvre le popup "About".
-    // Doit être appelée lorsque l'utilisateur clique sur "About" dans le menu.
-    void Open()
-    {
-        if (m_showAboutPopup)
-        {
-            ImGui::OpenPopup("AboutPopup");
-        }
-    }
-
-    void Show()
-    {
-        m_showAboutPopup = true;
-    }
-
-    void Reset()
-    {
-        m_showAboutPopup = false;
-    }
 
 private:
-    bool m_showAboutPopup = false; // Indique si le popup "About" doit être affiché
+    // Implémentation de la méthode virtuelle pure GetTitle()
+    const char* GetTitle() const override
+    {
+        return "AboutPopup";
+    }
 };
 
 #endif // ABOUT_DIALOG_H

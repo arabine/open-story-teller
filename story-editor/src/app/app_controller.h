@@ -48,6 +48,7 @@ public:
     // Initialisation de l'AppController
     bool Initialize();
 
+    std::shared_ptr<StoryProject> NewProject() { return m_libraryManager.NewProject();  }
     void OpenProject(const std::string &uuid);
     void ImportProject(const std::string &fileName, int format);
     void Log(const std::string &txt, bool critical = false) override;
@@ -56,6 +57,7 @@ public:
     void OpenFunction(const std::string &uuid, const std::string &name);
     void NewStory();
     void CloseProject();
+    void SaveProject();
     void NewModule();
     void SaveModule();
     void CloseModule();
@@ -87,6 +89,9 @@ public:
     virtual void Next() override;
     virtual void Previous() override;
     virtual std::string VmState() const override;
+    virtual void BuildNodes(bool compileonly);
+    virtual void BuildCode(bool compileonly);
+    virtual std::shared_ptr<IStoryProject> GetCurrentProject() override;
 
     // --- Fonctions de IAudioEvent ---
     virtual void EndOfAudio() override;
@@ -116,9 +121,6 @@ public:
 
     // Méthode pour mettre à jour l'état de la vue VM (peut être un événement notifié à la GUI)
     void UpdateVmView();
-
-    virtual std::pair<FilterIterator, FilterIterator> Images() override;
-    virtual std::pair<FilterIterator, FilterIterator> Sounds() override;
 
 private:
     ILogger& m_logger; // Référence au logger pour les messages métier

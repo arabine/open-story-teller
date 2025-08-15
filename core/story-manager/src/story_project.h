@@ -60,17 +60,10 @@ public:
 
     void Select(bool selected) { m_selected = selected; }
     bool IsSelected() const { return m_selected; }
-    
-    void SetImageFormat(Resource::ImageFormat format);
-    void SetSoundFormat(Resource::SoundFormat format);
-
-    void SetDisplayFormat(int w, int h);
-    void SetName(const std::string &name) { m_name = name; }
-    void SetUuid(const std::string &uuid) { m_uuid = uuid; }
 
     std::string GetProjectFilePath() const;
     std::string GetWorkingDir() const;
-    virtual std::string GetName() const override { return m_name; }
+    
     std::string GetUuid() const { return m_uuid; }
     std::string GetDescription() const { return m_description; }
     uint32_t GetVersion() const { return m_version; }
@@ -83,14 +76,11 @@ public:
     void SetTitleSound(const std::string &titleSound);
     void SetDescription(const std::string &description) { m_description = description; }
 
-    std::string GetTitleImage() const { return m_titleImage; }
-    std::string GetTitleSound() const { return m_titleSound; }
-
     // Initialize with an existing project
     bool IsInitialized() const { return m_initialized; }
     bool IsModule() const override { return m_projectType == IStoryProject::PROJECT_TYPE_MODULE; }
     bool IsStory() const { return m_projectType == IStoryProject::PROJECT_TYPE_STORY; }
-    void SetProjectType(IStoryProject::Type type) { m_projectType = type; }
+    
 
     bool ParseStoryInformation(nlohmann::json &j);
    
@@ -99,6 +89,16 @@ public:
     virtual int OutputsCount(const std::string &nodeId);
     StoryOptions GetOptions() { return m_storyOptions; }
     virtual bool UseResource(const std::string &label);
+    virtual std::string GetName() const override { return m_name; }
+    virtual std::string GetTitleImage() const override { return m_titleImage; }
+    virtual std::string GetTitleSound() const override { return m_titleSound; }
+    virtual void SetProjectType(IStoryProject::Type type) override { m_projectType = type; }
+    virtual void SetImageFormat(Resource::ImageFormat format) override;
+    virtual void SetSoundFormat(Resource::SoundFormat format) override;
+    virtual void SetDisplayFormat(int w, int h) override;
+    virtual void SetName(const std::string &name) override { m_name = name; }
+    virtual void SetUuid(const std::string &uuid) override { m_uuid = uuid; }
+    virtual Type GetProjectType() const override { return m_projectType; }
 
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);

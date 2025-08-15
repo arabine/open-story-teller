@@ -36,8 +36,50 @@ public:
         return m_uuid;
     }
 
+
+
+    virtual std::string GetTitleImage() const {
+        return ""; // No title image by default
+    }
+    virtual std::string GetTitleSound() const {
+        return ""; // No title sound by default
+    }
+    virtual Type GetProjectType() const {
+        return Type::PROJECT_TYPE_PRIMITIVE;
+    }
+    virtual void SetTitleImage(const std::string &titleImage) {
+        (void)titleImage; // No title image to set
+    }
+    virtual void SetTitleSound(const std::string &titleSound) {
+        (void)titleSound; // No title sound to set
+    }
+    virtual void SetDescription(const std::string &description) {
+        m_description = description;
+    }
+    virtual void SetProjectType(Type type) {
+        (void)type; // Project type is fixed for primitives
+    }
+    virtual void SetImageFormat(Resource::ImageFormat format) {
+        (void)format; // Image format is fixed for primitives
+    }
+    virtual void SetSoundFormat(Resource::SoundFormat format) {
+        (void)format; // Sound format is fixed for primitives
+    }
+    virtual void SetDisplayFormat(int w, int h) {
+        (void)w; // Display width is fixed for primitives
+        (void)h; // Display height is fixed for primitives
+    }
+    virtual void SetName(const std::string &name) {
+        m_name = name;
+    }
+    virtual void SetUuid(const std::string &uuid) {
+        m_uuid = uuid;
+    }
+
 private:
     std::string m_name;
     std::string m_description;
     std::string m_uuid;
+    std::string m_titleImage;
+    std::string m_titleSound;
 };

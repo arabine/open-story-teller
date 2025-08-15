@@ -62,33 +62,6 @@
 #endif
 
 
-// Implémentation du callback pour le syscall de la VM
-// C'est un peu délicat avec une fonction membre.
-// Une solution courante est d'utiliser un 'trampoline' ou std::function.
-// Pour ce projet, nous allons faire une adaptation simple en passant 'this'
-// via un mécanisme global ou un wrapper. L'approche originale de MainWindow
-// utilisait une classe Callback statique, que nous allons adapter ici.
-
-// Classe trampoline pour les syscalls de la VM
-// Ceci est une version simplifiée. Dans un système plus robuste, vous pourriez
-// vouloir un registre de callbacks ou une approche plus souple.
-class SyscallTrampoline
-{
-public:
-    static AppController* s_instance; // Pointer vers l'instance de AppController
-
-    static uint8_t Callback(chip32_ctx_t *ctx, uint8_t code)
-    {
-        if (s_instance)
-        {
-            return s_instance->Syscall(ctx, code);
-        }
-        return SYSCALL_RET_OK; // Ou gérer l'erreur
-    }
-};
-AppController* SyscallTrampoline::s_instance = nullptr;
-
-
 AppController::AppController(ILogger& logger, EventBus& eventBus)
     : m_logger(logger)
     , m_eventBus(eventBus) // m_eventBus pour les événements
@@ -347,6 +320,26 @@ void AppController::BuildCode(std::shared_ptr<StoryProject> story, bool compileo
         m_logger.Log("No story provided for BuildCode.", true);
     }
 }
+
+
+void AppController::BuildCode(bool compileonly)
+{
+    m_currentCode = SysLib::ReadFile(m_externalSourceFileName);
+    // m_debuggerWindow.SetScript(m_currentCode); // FIXME: GUI event
+    Build(compileonly);
+}
+
+
+void AppController::BuildNodes(bool compileonly)
+{
+    if (m_story->GenerateScript(m_currentCode))
+    {
+       //  m_debuggerWindow.SetScript(m_currentCode); // FIXME: GUI event
+        Build(compileonly);
+    }
+}
+
+
 
 void AppController::SetExternalSourceFile(const std::string &filename)
 {
@@ -762,11 +755,11 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
             std::string imageFile = m_story->BuildFullAssetsPath(GetStringFromMemory(ctx->registers[R0]));
             m_logger.Log("Image: " + imageFile);
             // Ici, vous notifieriez la fenêtre de l'émulateur
-            // m_emulatorWindow.SetImage(imageFile); // Ceci est une dépendance GUI
+            // m_emulatorDock.SetImage(imageFile); // Ceci est une dépendance GUI
         }
         else
         {
-            // m_emulatorWindow.ClearImage(); // Dépendance GUI
+            // m_emulatorDock.ClearImage(); // Dépendance GUI
         }
 
         if (ctx->registers[R1] != 0)
@@ -865,6 +858,7 @@ void AppController::CloseProject()
         m_story->Clear(); // Clear story resources/data
         m_story.reset(); // Release shared_ptr
     }
+    m_resources.Clear();
 
     // Clear VM state
     m_dbg.run_result = VM_FINISHED;
@@ -875,22 +869,19 @@ void AppController::CloseProject()
     m_resources.Clear(); // Clear loaded resources
     m_eventQueue.clear(); // Clear any pending VM events
 
-    // Notify GUI (or specific windows) to clear/disable project-related data
-    // These would be events or direct calls from AppController to GUI objects
-    // m_nodeEditorWindow.Clear();
-    // m_emulatorWindow.ClearImage();
-    // m_consoleWindow.ClearLog();
-    // m_debuggerWindow.ClearErrors();
-    // m_debuggerWindow.SetScript("");
-    // m_nodeEditorWindow.Disable();
-    // m_emulatorWindow.Disable();
-    // m_debuggerWindow.Disable();
-    // m_resourcesWindow.Disable();
-    // m_PropertiesWindow.Disable();
-    // m_variablesWindow.Disable();
-    // m_cpuWindow.Disable();
-
     m_logger.Log("Project closed.");
+}
+
+void AppController::SaveProject()
+{
+    if (m_story)
+    {
+        m_story->Save(m_resources);
+        m_libraryManager.Scan(); // Add new project to library
+        m_logger.Log("Project saved: " + m_story->GetProjectFilePath());
+    } else {
+        m_logger.Log("No project open to save.", true);
+    }
 }
 
 void AppController::NewModule()
@@ -941,7 +932,7 @@ void AppController::CloseModule()
 void AppController::ImportProject(const std::string &filePathName, int format)
 {
     (void) format; // Not used in the original snippet but kept for signature.
-    PackArchive archive(*this, m_nodesFactory); // PackArchive constructor might need an ILogger, adjust if needed
+    PackArchive archive(m_logger, m_nodesFactory); // PackArchive constructor might need an ILogger, adjust if needed
 
     auto ext = SysLib::GetFileExtension(filePathName);
     auto filename = SysLib::GetFileName(filePathName);
@@ -962,12 +953,7 @@ void AppController::ImportProject(const std::string &filePathName, int format)
     }
 }
 
-std::pair<FilterIterator, FilterIterator> AppController::Images()
+std::shared_ptr<IStoryProject> AppController::GetCurrentProject()
 {
-    return m_resources.Images();
-}
-
-std::pair<FilterIterator, FilterIterator> AppController::Sounds()
-{
-    return m_resources.Sounds();
+    return m_story; // Retourne le projet actuel
 }

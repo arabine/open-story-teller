@@ -1,4 +1,4 @@
-#include "resources_window.h"
+#include "resources_dock.h"
 #include "imgui.h"
 #include <filesystem>
 #include <memory>
@@ -7,19 +7,20 @@
 
 //static thread_pool pool;
 
-ResourcesWindow::ResourcesWindow(ResourceManager &resources)
+ResourcesDock::ResourcesDock(ResourceManager &resources, IStoryManager &manager)
     : WindowBase("Resources")
     , m_resources(resources)
+    , m_storyManager(manager)
 {
 
 }
 
-ResourcesWindow::~ResourcesWindow()
+ResourcesDock::~ResourcesDock()
 {
 
 }
 
-void ResourcesWindow::ChooseFile()
+void ResourcesDock::ChooseFile()
 {
     static const char * soundFormats = ".wav,.mp3,.ogg,.flac";
     static const char * imagesFormats = ".bmp,.png,.jpg";
@@ -29,7 +30,7 @@ void ResourcesWindow::ChooseFile()
         m_showImportDialog = false;
         // open Dialog Simple
         IGFD::FileDialogConfig config;
-        config.path = m_resources.BuildFullAssetsPath("");
+        config.path = m_storyManager.BuildFullAssetsPath("");
         config.countSelectionMax = 1;
         config.sidePaneWidth = 350.0f;
         config.flags = ImGuiFileDialogFlags_Modal;
@@ -49,7 +50,7 @@ void ResourcesWindow::ChooseFile()
 
 
             std::filesystem::path p(filePathName);
-            std::filesystem::path p2 = m_resources.BuildFullAssetsPath( p.filename().generic_string());
+            std::filesystem::path p2 = m_storyManager.BuildFullAssetsPath( p.filename().generic_string());
 
             bool allowCopy = true;
             // On ne copie pas le fichier sur lui-même
@@ -81,7 +82,7 @@ void ResourcesWindow::ChooseFile()
 }
 
 
-void ResourcesWindow::Draw()
+void ResourcesDock::Draw()
 {
     WindowBase::BeginDraw();
 
@@ -168,7 +169,7 @@ void ResourcesWindow::Draw()
             ImGui::TableNextColumn();
             if (ImGui::SmallButton("Delete"))
             {
-                m_resources.DeleteResource(it);
+                m_resources.Delete(it);
                 quitLoop = true;
             }
             ImGui::PopID();
