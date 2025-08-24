@@ -41,5 +41,18 @@ private:
     std::string m_name; // Nom de la fonction à ouvrir
 };
 
+class GenericResultEvent : public Event
+{
+public:
+    GenericResultEvent(bool success, const std::string& message)
+        : m_success(success), m_message(message) {}
+
+    bool IsSuccess() const { return m_success; }
+    const std::string& GetMessage() const { return m_message; }
+
+private:
+    bool m_success;
+    std::string m_message;
+};
 
 #endif // ALL_EVENTS_H

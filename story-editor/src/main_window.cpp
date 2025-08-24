@@ -39,9 +39,6 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     , m_variablesWindow(appController)
     , m_projectPropertiesDialog(appController, appController.GetResourceManager())
 {
-
-    logger.RegisterSubject(shared_from_this());
-
     CloseProject();
     CloseModule();
 
@@ -58,10 +55,24 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     m_eventBus.Subscribe<OpenFunctionEvent>([this](const OpenFunctionEvent &event) {
         OpenFunction(event.GetUuid(), event.GetName());
     });
+
+    m_eventBus.Subscribe<GenericResultEvent>([this](const GenericResultEvent &event) {
+
+        // FIXME: ImGui notification widget
+
+        if (event.IsSuccess()) {
+            m_logger.Log("Operation successful: " + event.GetMessage());
+            m_toastNotifier.addToast("Success", event.GetMessage(), ToastType::Success);
+        } else {
+            m_logger.Log("Operation failed: " + event.GetMessage(), true);
+            m_toastNotifier.addToast("Error", event.GetMessage(), ToastType::Error);
+        }
+    });
 }
 
 MainWindow::~MainWindow()
 {
+    m_gui.Destroy();
     m_appController.SaveParams();
 }
 
@@ -180,6 +191,8 @@ bool MainWindow::Initialize()
 {
     bool success = false;
 
+    m_logger.RegisterSubject(shared_from_this());
+
     // GUI Init
     if (m_gui.Initialize())
     {
@@ -263,34 +276,33 @@ void MainWindow::OpenProject(const std::string &uuid)
 void MainWindow::NewModule()
 {
     auto module = m_appController.NewModule();
-    m_moduleEditorWindow.Load(module);
 
-    m_moduleEditorWindow.Enable();
+    if (module)
+    {
+        m_moduleEditorWindow.Load(module);
+        m_moduleEditorWindow.Enable();
+        m_logger.Log("New module created.");
+    }
+    else
+    {
+        m_logger.Log("Failed to create new module.");
+    }
 }
-
 
 void MainWindow::SaveModule()
 {
-    m_appController.SaveAllModules(m_resources);;
+    m_appController.SaveModule();
     m_logger.Log("Modules saved");
 }
 
 void MainWindow::OpenModule(const std::string &uuid)
 {
-    m_module = m_nodesFactory.GetModule(uuid);
-    if (!m_module)
+    auto module = m_appController.OpenModule(uuid);
+    if (module)
     {
-        m_logger.Log("Cannot find module: " + uuid);
-    }
-    else if (m_module->Load(m_resources, m_nodesFactory))
-    {
-        m_logger.Log("Open module success");
-        m_moduleEditorWindow.Load(m_module);
+        std::shared_ptr<StoryProject> modulePtr = std::dynamic_pointer_cast<StoryProject>(module);
+        m_moduleEditorWindow.Load(modulePtr);
         m_moduleEditorWindow.Enable();
-    }
-    else
-    {
-        m_logger.Log("Open module error");
     }
 }
 
@@ -332,29 +344,6 @@ void MainWindow::CloseModule()
 
 }
 
-
-void MainWindow::ImportProject(const std::string &filePathName, int format)
-{
-    (void) format;
-    PackArchive archive(*this, m_nodesFactory);
-
-    // On va déterminer le type de fichier selon l'extension
-    auto ext = SysLib::GetFileExtension(filePathName);
-    auto filename = SysLib::GetFileName(filePathName);
-
-    if ((ext == "pk") || (filename == "ni"))
-    {
-        archive.ImportCommercialFormat(filePathName, m_libraryManager.LibraryPath(), m_libraryManager.CommercialDbView());
-    }
-    else if ((ext == "json") || (ext == "zip"))
-    {
-        archive.ImportStudioFormat(filePathName, m_libraryManager.LibraryPath());
-    }
-    else
-    {
-        m_logger.Log("Unknown file format: " + filePathName);
-    }
-}
  
 void MainWindow::RefreshProjectInformation()
 {
@@ -392,7 +381,7 @@ void MainWindow::DrawToolBar(float topPadding)
 
     // Ajouter des boutons à la barre d'outils
     if (ImGui::Button(ICON_MDI_SPEAKER_STOP "##stop_sound", ImVec2(-1, 50))) {  // Le bouton prend toute la largeur de la fenêtre et a une hauteur de 50 pixels
-        m_player.Stop();
+        m_appController.StopAudio();
     }
     
     ImGui::GetFont()->Scale = old_size;
@@ -405,84 +394,80 @@ void MainWindow::DrawToolBar(float topPadding)
 }
 
 #include "imgui_internal.h"
-void MainWindow::Loop()
+bool MainWindow::Loop()
 {
     // Main loop
-    bool done = false;
+    static bool done = false;
 
-    while (!done)
+
+    Uint64 frameStart = SDL_GetTicks();
+    bool aboutToClose = m_gui.PollEvent();
+
+    m_gui.StartFrame();
+
+    auto vp = ImGui::GetMainViewport();
+
+    auto pos = vp->WorkPos;
+    auto size = vp->WorkSize;
+    pos.x += 60;
+    size.x -= 60;
+    vp->WorkPos = pos;
+    vp->WorkSize = size;
+    ImGui::DockSpaceOverViewport(0, vp);
+    float height = DrawMainMenuBar();
+
+    // ------------  Draw all windows
+    m_libraryWindow.Draw();
+
+    if (m_appController.IsLibraryManagerInitialized())
     {
-        Uint64 frameStart = SDL_GetTicks();
-        bool aboutToClose = m_gui.PollEvent();
+        m_consoleWindow.Draw();
+        m_emulatorDock.Draw();
+        m_debuggerWindow.Draw();
+        m_resourcesDock.Draw();
+        m_nodeEditorWindow.Draw();
+        m_moduleEditorWindow.Draw();
+        m_variablesWindow.Draw();
+        m_cpuWindow.Draw();
 
-        m_gui.StartFrame();
+        static MemoryEditor mem_edit_1;
+        mem_edit_1.DrawWindow("RAM view", m_appController.GetChip32Context()->ram.mem, m_appController.GetChip32Context()->ram.size);
 
-        auto vp = ImGui::GetMainViewport();
-
-        auto pos = vp->WorkPos;
-        auto size = vp->WorkSize;
-        pos.x += 60;
-        size.x -= 60;
-        vp->WorkPos = pos;
-        vp->WorkSize = size;
-        ImGui::DockSpaceOverViewport(0, vp);
-        float height = DrawMainMenuBar();
-
-        ProcessStory();
-
-        // ------------  Draw all windows
-        m_libraryWindow.Draw();
-
-        if (m_libraryManager.IsInitialized())
-        {
-            m_consoleWindow.Draw();
-            m_emulatorDock.Draw();
-            m_debuggerWindow.Draw();
-            m_resourcesDock.Draw();
-            m_nodeEditorWindow.Draw();
-            m_moduleEditorWindow.Draw();
-            m_variablesWindow.Draw();
-            m_cpuWindow.Draw();
-
-            static MemoryEditor mem_edit_1;
-            mem_edit_1.DrawWindow("RAM view", m_chip32_ctx.ram.mem, m_chip32_ctx.ram.size);
-
-            m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
-            m_PropertiesWindow.Draw();
+        m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
+        m_PropertiesWindow.Draw();
 
 
-            // static ImGuiAxis toolbar2_axis = ImGuiAxis_Y;
-            // DockingToolbar("Toolbar2", &toolbar2_axis);
+        // static ImGuiAxis toolbar2_axis = ImGuiAxis_Y;
+        // DockingToolbar("Toolbar2", &toolbar2_axis);
 
-            DrawToolBar(height);
-        }
-
-        m_aboutDialog.Draw();
-        m_projectPropertiesDialog.Draw();
-
-        if (aboutToClose)
-        {
-            ImGui::OpenPopup("QuitConfirm");
-        }
-        if (ShowQuitConfirm())
-        {
-            done = true;
-        }
-
-        m_gui.EndFrame();
-
-        
-        // Rendering and event handling
-        Uint64 frameTime = SDL_GetTicks() - frameStart; // Temps écoulé pour la frame
-
-        if (frameTime < 32) { // 16 ms =  60 FPS
-            SDL_Delay(32 - frameTime); // Attendez pour compléter la frame
-        }
-
-
+        DrawToolBar(height);
     }
 
-    m_gui.Destroy();
+    m_aboutDialog.Draw();
+    m_projectPropertiesDialog.Draw();
+
+    m_toastNotifier.render();
+
+    if (aboutToClose)
+    {
+        ImGui::OpenPopup("QuitConfirm");
+    }
+    if (ShowQuitConfirm())
+    {
+        done = true;
+    }
+
+    m_gui.EndFrame();
+
+    
+    // Rendering and event handling
+    Uint64 frameTime = SDL_GetTicks() - frameStart; // Temps écoulé pour la frame
+
+    if (frameTime < 32) { // 16 ms =  60 FPS
+        SDL_Delay(32 - frameTime); // Attendez pour compléter la frame
+    }
+
+    return done;
 }
 
 
@@ -495,115 +480,4 @@ void MainWindow::LogEvent(const std::string &txt, bool critical)
 void MainWindow::OpenFunction(const std::string &uuid, const std::string &name)
 {
     m_nodeEditorWindow.OpenFunction(uuid, name);
-}
-
-
-void MainWindow::Build(bool compileonly)
-{
-    m_dbg.run_result = VM_FINISHED;
-    m_dbg.free_run = false;
-
-    if (!compileonly)
-    {
-        // 3. Convert all media to desired type format
-        auto options = m_story->GetOptions();
-        m_resources.ConvertResources(m_story->AssetsPath(), "", options.image_format, options.sound_format); // pas de répertoire de destination
-    }
-
-    Chip32::Assembler::Error err;
-    m_debuggerWindow.ClearErrors();
-    if (m_story->GenerateBinary(m_currentCode, err))
-    {
-        m_result.Print();
-
-        if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
-        {
-            //            m_ramView->SetMemory(m_ram_data, sizeof(m_ram_data));
-//            m_romView->SetMemory(m_rom_data, m_program.size());
-            m_story->SaveBinary();
-            chip32_initialize(&m_chip32_ctx);
-            m_dbg.run_result = VM_READY;
-            UpdateVmView();
-        }
-        else
-        {
-            m_logger.Log("Program too big. Expand ROM memory.");
-        }
-    }
-    else
-    {
-        m_logger.Log(err.ToString(), true);
-        m_debuggerWindow.AddError(err.line, err.message); // show also the error in the code editor
-    }
-}
-
-
-void MainWindow::SetExternalSourceFile(const std::string &filename)
-{
-    m_externalSourceFileName = filename;
-}
-
-
-void MainWindow::UpdateVmView()
-{
-    // FIXME
-//    m_vmDock->updateRegistersView(m_chip32_ctx);
-
-    // Highlight next line in the test editor
-    uint32_t pcVal = m_chip32_ctx.registers[PC];
-
-    if (m_story->GetAssemblyLine(pcVal, m_dbg.line))
-    {
-        m_debuggerWindow.HighlightLine(m_dbg.line);
-        std::cout << "Executing line: " << m_dbg.line << std::endl;
-    }
-    else
-    {
-        // Not found
-        m_logger.Log("Reached end or instruction not found line: " + std::to_string(m_dbg.line));
-    }
-    // Refresh RAM content
-//    m_ramView->SetMemory(m_ram_data, m_chip32_ctx.ram.size);
-}
-
-
-void MainWindow::LoadParams()
-{
-    try {
-
-        // Modules directory
-        std::filesystem::path dlDir = std::filesystem::path(pf::getConfigHome()) / "ost_modules";
-        std::filesystem::create_directories(dlDir);
-        m_nodesFactory.SetModulesRootDirectory(dlDir.string());
-
-        std::string loc = pf::getConfigHome() + "/ost_settings.json";
-        // read a JSON file
-        std::ifstream i(loc);
-        nlohmann::json j;
-        i >> j;
-
-        nlohmann::json recents = j["recents"];
-        for (auto& element : recents) {
-
-            if (std::filesystem::exists(element))
-            {
-                m_recentProjects.push_back(element);
-            }
-        }
-
-        nlohmann::json library_path = j["library_path"];
-
-        if (std::filesystem::exists(library_path))
-        {
-            m_libraryManager.Initialize(library_path);
-        }
-
-        nlohmann::json store_url = j.value("store_url", "https://gist.githubusercontent.com/DantSu/3aea4c1fe15070bcf394a40b89aec33e/raw/stories.json");
-        m_libraryManager.SetStoreUrl(store_url);
-
-    }
-    catch(std::exception &e)
-    {
-        m_logger.Log(e.what(), true);
-    }
 }

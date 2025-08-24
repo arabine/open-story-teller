@@ -43,7 +43,7 @@ public:
     virtual std::shared_ptr<IStoryProject> GetCurrentProject() = 0;
 
     // Modules
-    virtual void OpenModule(const std::string &uuid) = 0;
+    virtual std::shared_ptr<IStoryProject> OpenModule(const std::string &uuid) = 0;
 
     // Node interaction
     virtual void BuildNodes(bool compileonly) = 0;

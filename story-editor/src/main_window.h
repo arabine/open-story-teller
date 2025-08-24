@@ -23,7 +23,7 @@
 #include "event_bus.h"
 #include "app_controller.h"
 #include "i_logger.h"
-
+#include "imgui_toast_notifier.h"
 
 class MainWindow : public std::enable_shared_from_this<MainWindow>, public ILogSubject
 {
@@ -32,7 +32,7 @@ public:
     ~MainWindow();
 
     bool Initialize();
-    void Loop();
+    bool Loop();
 
 private:
     enum VmEventType { EvNoEvent, EvStep, EvRun, EvOkButton, EvPreviousButton, EvNextButton, EvAudioFinished, EvStop, EvHomeButton};
@@ -62,6 +62,8 @@ private:
     AboutDialog m_aboutDialog;
     ProjectPropertiesDialog m_projectPropertiesDialog;
 
+    ImGuiToastNotifier m_toastNotifier;
+
     // From IStoryManager (proxy to StoryProject class)
     void OpenProject(const std::string &uuid);
     void CloseProject();
@@ -74,15 +76,11 @@ private:
     // From ILogSubject
     virtual void LogEvent(const std::string &txt, bool critical) override;
 
-    void LoadParams();
     void RefreshProjectInformation();
     float DrawMainMenuBar();
     bool ShowQuitConfirm();
     void DrawToolBar(float topPadding);
-
     void UpdateVmView();
-    void RefreshProjectIœnformation();
-    void Build(bool compileonly);
 };
 
 #endif // MAINWINDOW_H

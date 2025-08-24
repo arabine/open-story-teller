@@ -58,10 +58,10 @@ public:
     void NewStory();
     void CloseProject();
     void SaveProject();
-    void NewModule();
+    std::shared_ptr<StoryProject> NewModule();
     void SaveModule();
     void CloseModule();
-    void OpenModule(const std::string &uuid);
+    std::shared_ptr<IStoryProject> OpenModule(const std::string &uuid);
     void OpenStory(const std::string &path = "");
     void SaveStory(const std::string &path = "");
     void ExportStory(const std::string &filename);
@@ -106,6 +106,9 @@ public:
     std::string GetStringFromMemory(uint32_t addr);
     void ProcessStory();
     void StepInstruction();
+    void StopAudio() { m_player.Stop(); }
+
+    bool IsLibraryManagerInitialized() const { return m_libraryManager.IsInitialized(); }
 
     // Getters pour les managers gérés par AppController
     ResourceManager& GetResourceManager() { return m_resources; }

@@ -122,6 +122,8 @@ set(SRCS
 
     src/app/app_controller.cpp
 
+    src/events/event_bus.cpp
+
     src/windows/window_base.cpp
     src/windows/console_window.cpp
     src/windows/library_window.cpp

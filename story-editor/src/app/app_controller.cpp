@@ -279,7 +279,7 @@ void AppController::Build(bool compileonly)
     }
 
     Chip32::Assembler::Error err;
-    // La GUI (DebuggerWindow) doit être notifiée pour effacer les erreurs.
+    // La GUI (DebuggerWindow) doit être notifiée pour effacer les erreurs. FIXME
     // m_debuggerWindow.ClearErrors();
     
     if (m_story->GenerateBinary(m_currentCode, err))
@@ -302,7 +302,7 @@ void AppController::Build(bool compileonly)
     else
     {
         m_logger.Log(err.ToString(), true);
-        // La GUI (DebuggerWindow) doit être notifiée pour ajouter l'erreur.
+        // La GUI (DebuggerWindow) doit être notifiée pour ajouter l'erreur. FIXME
         // m_debuggerWindow.AddError(err.line, err.message);
     }
 }
@@ -813,6 +813,8 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
 
 void AppController::UpdateVmView()
 {
+    // FIXME !!
+
     // C'est une fonction de notification pour la GUI.
     // AppController ne devrait pas directement manipuler les vues GUI.
     // Au lieu de cela, il émettrait un signal ou appellerait un observer.
@@ -884,14 +886,10 @@ void AppController::SaveProject()
     }
 }
 
-void AppController::NewModule()
+std::shared_ptr<StoryProject> AppController::NewModule()
 {
     m_module = m_nodesFactory.NewModule();
-    if (m_module) {
-        // Notify GUI (e.g., m_moduleEditorWindow.Load(m_module);)
-        // m_moduleEditorWindow.Enable();
-        m_logger.Log("New module created.");
-    }
+    return m_module;
 }
 
 void AppController::SaveModule()
@@ -900,7 +898,7 @@ void AppController::SaveModule()
     m_logger.Log("Modules saved.");
 }
 
-void AppController::OpenModule(const std::string &uuid)
+std::shared_ptr<IStoryProject> AppController::OpenModule(const std::string &uuid)
 {
     m_module = m_nodesFactory.GetModule(uuid);
     if (!m_module)
@@ -910,13 +908,12 @@ void AppController::OpenModule(const std::string &uuid)
     else if (m_module->Load(m_resources, m_nodesFactory))
     {
         m_logger.Log("Open module success: " + uuid);
-        // Notify GUI (e.g., m_moduleEditorWindow.Load(m_module);)
-        // m_moduleEditorWindow.Enable();
     }
     else
     {
         m_logger.Log("Open module error: " + uuid, true);
     }
+    return m_module;
 }
 
 void AppController::CloseModule()
@@ -951,6 +948,10 @@ void AppController::ImportProject(const std::string &filePathName, int format)
     {
         m_logger.Log("Unknown file format for import: " + filePathName, true);
     }
+
+    // Send event success
+    m_eventBus.Emit(std::make_shared<GenericResultEvent>(true, "Import successful"));
+
 }
 
 std::shared_ptr<IStoryProject> AppController::GetCurrentProject()

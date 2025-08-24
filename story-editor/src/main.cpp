@@ -11,14 +11,19 @@ int main(int, char**)
     EventBus eventBus;
 
     AppController appController(logger, eventBus);
-    
-    MainWindow w(logger, eventBus, appController);
-    
-    if (w.Initialize())
+
+    auto w = std::make_shared<MainWindow>(logger, eventBus, appController);
+
+    bool done = false;
+
+    if (w->Initialize())
     {
-        w.Loop();
-        appController.ProcessStory();
-    }  
+        while (!done)
+        {
+            done = w->Loop();
+            appController.ProcessStory();
+        }
+    }
 
     return 0;
 }
