@@ -22,7 +22,7 @@ public:
 
     void Draw() override;
 
-    virtual void DrawProperties() override;
+    virtual void DrawProperties(std::shared_ptr<IStoryProject> story) override;
     virtual void Initialize() override;
 
 private:

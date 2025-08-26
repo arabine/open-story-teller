@@ -36,7 +36,6 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     , m_nodeEditorWindow(appController, appController.GetNodesFactory(), IStoryProject::PROJECT_TYPE_STORY)
     , m_moduleEditorWindow(appController, appController.GetNodesFactory(), IStoryProject::PROJECT_TYPE_MODULE)
     , m_libraryWindow(appController, appController.GetLibraryManager(), appController.GetNodesFactory())
-    , m_variablesWindow(appController)
     , m_projectPropertiesDialog(appController, appController.GetResourceManager())
 {
     CloseProject();
@@ -58,8 +57,6 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
 
     m_eventBus.Subscribe<GenericResultEvent>([this](const GenericResultEvent &event) {
 
-        // FIXME: ImGui notification widget
-
         if (event.IsSuccess()) {
             m_logger.Log("Operation successful: " + event.GetMessage());
             m_toastNotifier.addToast("Success", event.GetMessage(), ToastType::Success);
@@ -68,12 +65,19 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
             m_toastNotifier.addToast("Error", event.GetMessage(), ToastType::Error);
         }
     });
+
+    m_eventBus.Subscribe<ModuleEvent>([this](const ModuleEvent &event) {
+        if (event.GetType() == ModuleEvent::Type::Opened) {
+            OpenModule(event.GetUuid());
+        } else if (event.GetType() == ModuleEvent::Type::Closed) {
+            CloseModule();
+        }
+    });
 }
 
 MainWindow::~MainWindow()
 {
     m_gui.Destroy();
-    m_appController.SaveParams();
 }
 
 
@@ -102,19 +106,6 @@ float MainWindow::DrawMainMenuBar()
                 }
             }
 
-            if (ImGui::MenuItem("New module"))
-            {
-                // Current module project
-                CloseModule();
-                showNewProject = true;
-                NewModule();
-            }
-
-            if (ImGui::MenuItem("Save module"))
-            {
-                SaveModule();
-            }
-
 /*
             if (ImGui::BeginMenu("Open Recent"))
             {
@@ -137,7 +128,6 @@ float MainWindow::DrawMainMenuBar()
             if (!init)
                 ImGui::BeginDisabled();
 
-            ImGui::Separator();
             if (ImGui::MenuItem("Save project"))
             {
                 m_appController.SaveProject();
@@ -153,13 +143,30 @@ float MainWindow::DrawMainMenuBar()
                 m_projectPropertiesDialog.Show();
             }
 
+
+            if (!init)
+                ImGui::EndDisabled();
+
+            ImGui::Separator();
+
+            if (ImGui::MenuItem("New module"))
+            {
+                // Current module project
+                CloseModule();
+                showNewProject = true;
+                NewModule();
+            }
+
+            if (ImGui::MenuItem("Save module"))
+            {
+                SaveModule();
+            }
+
             if (ImGui::MenuItem("Close module"))
             {
                 CloseModule();
             }
 
-            if (!init)
-                ImGui::EndDisabled();
 
             ImGui::EndMenu();
         }
@@ -201,7 +208,7 @@ bool MainWindow::Initialize()
         m_emulatorDock.Initialize();
         m_nodeEditorWindow.Initialize();
         m_moduleEditorWindow.Initialize();
-        m_PropertiesWindow.Initialize();
+        m_propertiesWindow.Initialize();
         m_libraryWindow.Initialize();
 
         success = true;
@@ -266,7 +273,7 @@ void MainWindow::OpenProject(const std::string &uuid)
     m_consoleWindow.Enable();
     m_debuggerWindow.Enable();
     m_resourcesDock.Enable();
-    m_PropertiesWindow.Enable();
+    m_propertiesWindow.Enable();
     m_variablesWindow.Enable();
     m_cpuWindow.Enable();
 
@@ -293,16 +300,24 @@ void MainWindow::SaveModule()
 {
     m_appController.SaveModule();
     m_logger.Log("Modules saved");
+    m_toastNotifier.addToast("Module", "Module saved", ToastType::Success);
 }
 
 void MainWindow::OpenModule(const std::string &uuid)
 {
-    auto module = m_appController.OpenModule(uuid);
+    auto module = m_appController.GetCurrentModule();
     if (module)
     {
-        std::shared_ptr<StoryProject> modulePtr = std::dynamic_pointer_cast<StoryProject>(module);
-        m_moduleEditorWindow.Load(modulePtr);
+        m_moduleEditorWindow.Load(module);
         m_moduleEditorWindow.Enable();
+
+        m_emulatorDock.Enable();
+        m_consoleWindow.Enable();
+        m_debuggerWindow.Enable();
+        m_resourcesDock.Enable();
+        m_propertiesWindow.Enable();
+        m_variablesWindow.Enable();
+        m_cpuWindow.Enable();
     }
 }
 
@@ -329,7 +344,7 @@ void MainWindow::CloseProject()
     m_emulatorDock.Disable();
     m_debuggerWindow.Disable();
     m_resourcesDock.Disable();
-    m_PropertiesWindow.Disable();
+    m_propertiesWindow.Disable();
     m_variablesWindow.Disable();
     m_cpuWindow.Disable();
 
@@ -421,20 +436,26 @@ bool MainWindow::Loop()
 
     if (m_appController.IsLibraryManagerInitialized())
     {
+        bool nodeEditorFocused = m_nodeEditorWindow.IsFocused();
         m_consoleWindow.Draw();
         m_emulatorDock.Draw();
         m_debuggerWindow.Draw();
         m_resourcesDock.Draw();
         m_nodeEditorWindow.Draw();
         m_moduleEditorWindow.Draw();
-        m_variablesWindow.Draw();
+
+
+        auto currentStory = nodeEditorFocused ? m_nodeEditorWindow.GetCurrentStory() : m_moduleEditorWindow.GetCurrentStory();
+        m_variablesWindow.Draw(currentStory);
         m_cpuWindow.Draw();
 
         static MemoryEditor mem_edit_1;
         mem_edit_1.DrawWindow("RAM view", m_appController.GetChip32Context()->ram.mem, m_appController.GetChip32Context()->ram.size);
 
-        m_PropertiesWindow.SetSelectedNode(m_nodeEditorWindow.GetSelectedNode());
-        m_PropertiesWindow.Draw();
+        auto selectedNode = nodeEditorFocused ? m_nodeEditorWindow.GetSelectedNode() : m_moduleEditorWindow.GetSelectedNode();
+        m_propertiesWindow.SetSelectedNode(selectedNode);
+
+        m_propertiesWindow.Draw(currentStory);
 
 
         // static ImGuiAxis toolbar2_axis = ImGuiAxis_Y;

@@ -66,7 +66,7 @@ public:
     void SaveStory(const std::string &path = "");
     void ExportStory(const std::string &filename);
     std::shared_ptr<StoryProject> GetCurrentStory() const { return m_story; }
-    std::shared_ptr<StoryProject> GetModuleStory() const { return m_module; }
+    std::shared_ptr<StoryProject> GetCurrentModule() const { return m_module; }
     void BuildNodes(IStoryProject::Type type);
     void Build(bool compileonly);
     void BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force = false);
@@ -76,9 +76,6 @@ public:
     virtual void LoadBinaryStory(const std::string &filename) override;
     virtual void ToggleBreakpoint(int line) override;
     virtual uint32_t GetRegister(int reg) override;
-    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) override;
-    virtual void AddVariable() override;
-    virtual void DeleteVariable(int i) override;
     virtual void Play() override;
     virtual void Step() override;
     virtual void Run() override;

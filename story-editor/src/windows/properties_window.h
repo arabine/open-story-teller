@@ -11,7 +11,8 @@ public:
     PropertiesWindow();
 
     void Initialize();
-    virtual void Draw() override;
+    void Draw() override;
+    void Draw(std::shared_ptr<IStoryProject> story);
 
     void SetSelectedNode(std::shared_ptr<BaseNodeWidget> node);
 

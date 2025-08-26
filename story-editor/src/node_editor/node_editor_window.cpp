@@ -65,7 +65,7 @@ void NodeEditorWindow::Clear()
 
 void NodeEditorWindow::Initialize()
 {
-    Clear();   
+    Clear();
 }
 
 void NodeEditorWindow::InitializeProject()
@@ -139,7 +139,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
                 if (n)
                 {
                     n->Initialize();
-                    n->SetOutputs(m_story->OutputsCount((*it)->GetId())); // il faut que les noeuds aient une bonne taille de outputs avant de créer les liens
+                //    n->SetOutputs(m_story->OutputsCount((*it)->GetId())); // il faut que les noeuds aient une bonne taille de outputs avant de créer les liens
                     m_currentPage->AddNode(n);
                 }
                 else
@@ -250,7 +250,6 @@ void NodeEditorWindow::Draw()
 
     if (WindowBase::BeginDraw())
     {
-
         if (m_currentPage)
         {
             m_currentPage->Select();

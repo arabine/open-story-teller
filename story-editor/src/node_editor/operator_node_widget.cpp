@@ -28,7 +28,7 @@ void OperatorNodeWidget::Initialize()
 
 
 
-void OperatorNodeWidget::DrawProperties()
+void OperatorNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     ImGui::AlignTextToFramePadding();
     static ImGuiComboFlags flags = 0;

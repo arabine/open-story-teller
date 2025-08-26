@@ -27,7 +27,7 @@ void PrintNodeWidget::Initialize()
 }
 
 
-void PrintNodeWidget::DrawProperties()
+void PrintNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     ImGui::AlignTextToFramePadding();
 
@@ -38,7 +38,7 @@ void PrintNodeWidget::DrawProperties()
 
     bool edited = ImGui::InputText("##edit", m_buffer, sizeof(m_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
 
-    if (edited)
+   // if (edited)
     {
         m_printNode->SetText(m_buffer);
     }

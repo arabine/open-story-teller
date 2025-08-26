@@ -13,7 +13,11 @@ void PropertiesWindow::Initialize() {
 
 }
 
-void PropertiesWindow::Draw()
+void PropertiesWindow::Draw() {
+
+}
+
+void PropertiesWindow::Draw(std::shared_ptr<IStoryProject> story)
 {
     WindowBase::BeginDraw();
     ImGui::SetWindowSize(ImVec2(626, 744), ImGuiCond_FirstUseEver);
@@ -36,7 +40,7 @@ void PropertiesWindow::Draw()
         ImGui::InputText("Title",     buf1, 32);
         m_selectedNode->Base()->SetTitle(buf1);
         ImGui::Text("Node ID: %s", m_selectedNode->Base()->GetId().data());
-        m_selectedNode->DrawProperties();
+        m_selectedNode->DrawProperties(story);
     }
 
     WindowBase::EndDraw();

@@ -5,7 +5,7 @@
 
 
 CompareNode::CompareNode(const std::string &type)
-    : BaseNode(type, "Branch Node")
+    : BaseNode(type, "Compare Node")
 {
 
 }

@@ -5,9 +5,8 @@
 #include "chip32_vm.h"
 #include "variable.h"
 
-VariablesWindow::VariablesWindow(IStoryManager &proj)
+VariablesWindow::VariablesWindow()
     : WindowBase("Variables")
-    , m_story(proj)
 {
 
 }
@@ -29,18 +28,18 @@ int64_t FloatToScaled(float floatValue, int scalePower) {
 }
 
 
-void VariablesWindow::ShowRAMEditor()
+void VariablesWindow::ShowRAMEditor(std::shared_ptr<IStoryProject> story)
 {
 
-    if (ImGui::Button("Add Variable")) {
+    if (ImGui::Button("Add variable")) {
         // Ajouter une nouvelle variable par défaut
-        m_story.AddVariable();
+        story->AddVariable();
     }
 
     ImGui::Separator();
     int i = 0;
 
-    m_story.ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
+    story->ScanVariable([&i, story] (std::shared_ptr<Variable> var) {
 
         ImGui::PushID(static_cast<int>(i)); // Assure l'unicité des widgets
         std::string l = var->GetVariableName();
@@ -91,7 +90,7 @@ void VariablesWindow::ShowRAMEditor()
 
             // Bouton pour supprimer la variable
             if (ImGui::Button("Delete")) {
-                m_story.DeleteVariable(i);
+                story->DeleteVariable(i);
                 ImGui::TreePop();
                 ImGui::PopID();
 
@@ -106,11 +105,17 @@ void VariablesWindow::ShowRAMEditor()
 }
 
 void VariablesWindow::Draw()
+{ 
+}
+
+void VariablesWindow::Draw(std::shared_ptr<IStoryProject> story)
 {  
     WindowBase::BeginDraw();
 
-
-    ShowRAMEditor();
+    if (story)
+    {
+        ShowRAMEditor(story);
+    }
 
     WindowBase::EndDraw();
 }

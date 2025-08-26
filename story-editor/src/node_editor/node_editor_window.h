@@ -41,12 +41,12 @@ public:
     void OpenFunction(const std::string &uuid, const std::string &name);
 
     std::shared_ptr<BaseNodeWidget> GetSelectedNode();
+    std::shared_ptr<StoryProject> GetCurrentStory() { return m_story; }
 
 private:
     IStoryManager &m_manager;
     NodesFactory &m_nodesFactory;
     IStoryProject::Type m_editorType{IStoryProject::Type::PROJECT_TYPE_STORY};
-
     bool m_loaded{false};
 
     // "MainUuid" is the entry point editor context. You always need to create one.

@@ -16,6 +16,7 @@ int main(int, char**)
 
     bool done = false;
 
+    appController.Initialize();
     if (w->Initialize())
     {
         while (!done)

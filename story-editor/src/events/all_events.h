@@ -55,4 +55,24 @@ private:
     std::string m_message;
 };
 
+class ModuleEvent : public Event
+{
+public:
+    enum class Type
+    {
+        Opened,
+        Closed,
+    };
+
+    ModuleEvent(Type type, const std::string &uuid)
+        : m_type(type), m_uuid(uuid) {}
+
+    Type GetType() const { return m_type; }
+    const std::string& GetUuid() const { return m_uuid; }
+
+private:
+    Type m_type;
+    std::string m_uuid;
+};
+
 #endif // ALL_EVENTS_H

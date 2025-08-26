@@ -41,7 +41,7 @@ void CallFunctionNodeWidget::Initialize()
     m_functionName = "Function";
 }
 
-void CallFunctionNodeWidget::DrawProperties()
+void CallFunctionNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     
     

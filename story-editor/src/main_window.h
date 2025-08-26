@@ -54,7 +54,7 @@ private:
     ResourcesDock m_resourcesDock;
     NodeEditorWindow m_nodeEditorWindow;
     NodeEditorWindow m_moduleEditorWindow;
-    PropertiesWindow m_PropertiesWindow;
+    PropertiesWindow m_propertiesWindow;
     LibraryWindow m_libraryWindow;
     VariablesWindow m_variablesWindow;
 

@@ -4,6 +4,7 @@
 #include <string>
 #include "connection.h"
 #include "story_options.h"
+#include "variable.h"
 
 class IStoryProject
 {
@@ -36,7 +37,10 @@ public:
     virtual void SetName(const std::string &name) = 0;
     virtual void SetUuid(const std::string &uuid) = 0;
 
-    
+    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) = 0;
+    virtual void AddVariable() = 0;
+    virtual void DeleteVariable(int i) = 0;
+
 };
 
 

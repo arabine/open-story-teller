@@ -108,7 +108,7 @@ void MediaNodeWidget::Initialize()
     m_soundPath = m_manager.BuildFullAssetsPath(m_mediaNode->GetSound());
 }
 
-void MediaNodeWidget::DrawProperties()
+void MediaNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Image");

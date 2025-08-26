@@ -20,11 +20,12 @@ public:
 
     void Draw() override;
 
-    virtual void DrawProperties() override;
+    virtual void DrawProperties(std::shared_ptr<IStoryProject> story) override;
     virtual void Initialize() override;
 
 private:
     IStoryManager &m_manager;
+    bool m_isInitialized{false};
     std::shared_ptr<VariableNode> m_variableNode;
     int m_selectedIndex{-1};
     std::string m_selectedVariableUuid;

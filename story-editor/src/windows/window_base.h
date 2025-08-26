@@ -23,6 +23,10 @@ public:
         m_disabled = true;
     }
 
+    bool IsFocused() const {
+        return m_focused;
+    }
+
     void Enable() {
         m_disabled = false;
     }
@@ -34,6 +38,7 @@ public:
 private:
 
     bool m_disabled{false};
+    bool m_focused{false};
     std::string m_title;
     ImGuiWindowFlags m_windowFlags = 0;
 };

@@ -23,25 +23,31 @@ void VariableNodeWidget::Initialize()
     BaseNodeWidget::Initialize();
 
     m_selectedVariableUuid = m_variableNode->GetVariableUuid();
-
-    m_manager.ScanVariable([this] (std::shared_ptr<Variable> var) {
-        if (var->GetUuid() == m_selectedVariableUuid)
-        {
-            m_selectedVariableName = var->GetVariableName();
-        }
-    });
 }
 
 
-void VariableNodeWidget::DrawProperties()
+void VariableNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
+    if (!m_isInitialized)
+    {
+        m_isInitialized = true;
+        story->ScanVariable([this] (std::shared_ptr<Variable> var) {
+            if (var->GetUuid() == m_selectedVariableUuid)
+            {
+                m_selectedVariableName = var->GetVariableName();
+            }
+        });
+    }
+
     ImGui::AlignTextToFramePadding();
     static ImGuiComboFlags flags = 0;
+
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 
     if (ImGui::BeginCombo("Variables list", m_selectedVariableName.c_str(), flags))
     {
         int i = 0;
-        m_manager.ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
+        story->ScanVariable([&i, this] (std::shared_ptr<Variable> var) {
 
             // ImGui::PushID(static_cast<int>(i)); // Assure l'unicité des widgets
 

@@ -52,11 +52,6 @@ public:
     virtual void LoadBinaryStory(const std::string &filename) = 0;
     virtual void ToggleBreakpoint(int line) = 0;
     virtual uint32_t GetRegister(int reg) = 0;
-
-    // Variables management
-    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) = 0;
-    virtual void AddVariable() = 0;
-    virtual void DeleteVariable(int i) = 0;
  
     virtual void Play() = 0;
     virtual void Step() = 0;

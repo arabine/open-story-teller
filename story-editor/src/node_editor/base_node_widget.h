@@ -104,7 +104,7 @@ public:
     virtual void Initialize();
 
     virtual void Draw() = 0;
-    virtual void DrawProperties() = 0;
+    virtual void DrawProperties(std::shared_ptr<IStoryProject> story) = 0;
 
     void SetInputPinName(int pinIndex, const std::string &name);
     void SetOutPinName(int pinIndex, const std::string &name);

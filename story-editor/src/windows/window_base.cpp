@@ -11,6 +11,8 @@ bool WindowBase::BeginDraw()
 {
     bool ok  = ImGui::Begin(m_title.c_str(), nullptr, m_windowFlags);
 
+    m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+
     if (m_disabled)
     {
         ImGui::BeginDisabled();

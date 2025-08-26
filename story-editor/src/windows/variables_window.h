@@ -1,22 +1,19 @@
 #pragma once
 
 #include "window_base.h"
-#include "i_story_manager.h"
+#include "i_story_project.h"
 #include "gui.h"
 
 class VariablesWindow : public WindowBase
 {
 public:
-    VariablesWindow(IStoryManager &proj);
+    VariablesWindow();
 
     void Initialize();
-    virtual void Draw() override;
+    void Draw() override;
+    void Draw(std::shared_ptr<IStoryProject> story);
 
 private:
-    IStoryManager &m_story;
-
-
-    void ShowRAMEditor();
-
+    void ShowRAMEditor(std::shared_ptr<IStoryProject> story);
 };
 

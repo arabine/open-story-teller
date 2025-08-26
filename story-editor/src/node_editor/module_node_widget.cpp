@@ -37,7 +37,7 @@ void ModuleNodeWidget::Initialize()
     m_functionName = "Function";
 }
 
-void ModuleNodeWidget::DrawProperties()
+void ModuleNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     
     

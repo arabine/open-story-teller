@@ -76,6 +76,16 @@ public:
         m_uuid = uuid;
     }
 
+    virtual void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) override {
+
+    }
+    virtual void AddVariable() override {
+        
+    }
+    virtual void DeleteVariable(int i) override {
+        
+    }
+
 private:
     std::string m_name;
     std::string m_description;

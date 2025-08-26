@@ -404,36 +404,6 @@ uint32_t AppController::GetRegister(int reg)
     return regVal;
 }
 
-void AppController::ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation)
-{
-    if (m_story)
-    {
-        m_story->ScanVariable(operation);
-    }
-}
-
-void AppController::AddVariable()
-{
-    if (m_story)
-    {
-        m_story->AddVariable();
-        m_logger.Log("Variable added to project: " + m_story->GetProjectFilePath());
-    } else {
-        m_logger.Log("No project open to add a variable.", true);
-    }
-}
-
-void AppController::DeleteVariable(int i)
-{
-    if (m_story)
-    {
-        m_story->DeleteVariable(i);
-        m_logger.Log("Variable deleted from project: " + m_story->GetProjectFilePath());
-    } else {
-        m_logger.Log("No project open to delete a variable.", true);
-    }
-}
-
 
 void AppController::Play()
 {
@@ -903,14 +873,17 @@ std::shared_ptr<IStoryProject> AppController::OpenModule(const std::string &uuid
     m_module = m_nodesFactory.GetModule(uuid);
     if (!m_module)
     {
+        m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Cannot find module: " + uuid));
         m_logger.Log("Cannot find module: " + uuid, true);
     }
     else if (m_module->Load(m_resources, m_nodesFactory))
     {
+        m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::Opened, uuid));
         m_logger.Log("Open module success: " + uuid);
     }
     else
     {
+        m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Failed to open module: " + uuid));
         m_logger.Log("Open module error: " + uuid, true);
     }
     return m_module;

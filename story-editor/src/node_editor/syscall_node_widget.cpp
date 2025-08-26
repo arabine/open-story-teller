@@ -27,7 +27,7 @@ void SyscallNodeWidget::Initialize()
     BaseNodeWidget::Initialize();
 }
 
-void SyscallNodeWidget::DrawProperties()
+void SyscallNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     ImGui::AlignTextToFramePadding();
     static ImGuiComboFlags flags = 0;
