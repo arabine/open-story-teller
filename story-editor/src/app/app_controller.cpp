@@ -241,22 +241,34 @@ void AppController::ExportStory(const std::string &filename)
     m_logger.Log("Export story to: " + filename);
 }
 
-void AppController::BuildNodes(IStoryProject::Type type)
+void AppController::CompileNodes(IStoryProject::Type type)
 {
-    if (type == IStoryProject::Type::PROJECT_TYPE_STORY && m_story) {
-        if (m_story->GenerateScript(m_currentCode))
+    if (type == IStoryProject::Type::PROJECT_TYPE_STORY && m_story)
+    {
+        if (m_story->GenerateScript(m_storyAssembly))
         {
             // La GUI (DebuggerWindow) doit être notifiée de cette mise à jour.
-            // Au lieu de appeler m_debuggerWindow.SetScript(m_currentCode); directement,
+            // Au lieu de appeler m_debuggerWindow.SetScript(m_storyAssembly); directement,
             // AppController pourrait émettre un événement ou un callback.
             // Pour l'instant, on suppose une notification ou que la GUI tire les données.
             m_logger.Log("Nodes script generated for story.");
             Build(true); // Compile seulement par défaut
         }
-    } else if (type == IStoryProject::Type::PROJECT_TYPE_MODULE && m_module) {
-        // Logique de génération de script pour le module
-        // Similaire à BuildNodes pour le projet principal.
-        m_logger.Log("Nodes script generated for module.");
+        else
+        {
+            m_logger.Log("Failed to generate script for story.", true);
+        }
+    } 
+    else if (type == IStoryProject::Type::PROJECT_TYPE_MODULE && m_module)
+    {
+        if (m_module->GenerateScript(m_storyAssembly))
+        {
+            m_logger.Log("Nodes script generated for module.");
+        }
+        else
+        {
+            m_logger.Log("Failed to generate script for module.", true);
+        }
     }
 }
 
@@ -282,7 +294,7 @@ void AppController::Build(bool compileonly)
     // La GUI (DebuggerWindow) doit être notifiée pour effacer les erreurs. FIXME
     // m_debuggerWindow.ClearErrors();
     
-    if (m_story->GenerateBinary(m_currentCode, err))
+    if (m_story->GenerateBinary(m_storyAssembly, err))
     {
         m_result.Print(); // Imprime le résultat de l'assemblage (Debug uniquement)
 
@@ -310,11 +322,11 @@ void AppController::Build(bool compileonly)
 void AppController::BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force)
 {
     // Note: Dans le code original, BuildCode lisait m_externalSourceFileName.
-    // Il faut s'assurer que m_currentCode est bien défini avant d'appeler Build.
+    // Il faut s'assurer que m_storyAssembly est bien défini avant d'appeler Build.
     if (story) {
-        m_currentCode = SysLib::ReadFile(story->GetProjectFilePath()); // Simplifié pour l'exemple
+        m_storyAssembly = SysLib::ReadFile(story->GetProjectFilePath()); // Simplifié pour l'exemple
         // La GUI (DebuggerWindow) doit être notifiée pour SetScript.
-        // m_debuggerWindow.SetScript(m_currentCode);
+        // m_debuggerWindow.SetScript(m_storyAssembly);
         Build(compileonly);
     } else {
         m_logger.Log("No story provided for BuildCode.", true);
@@ -324,17 +336,17 @@ void AppController::BuildCode(std::shared_ptr<StoryProject> story, bool compileo
 
 void AppController::BuildCode(bool compileonly)
 {
-    m_currentCode = SysLib::ReadFile(m_externalSourceFileName);
-    // m_debuggerWindow.SetScript(m_currentCode); // FIXME: GUI event
+    m_storyAssembly = SysLib::ReadFile(m_externalSourceFileName);
+    // m_debuggerWindow.SetScript(m_storyAssembly); // FIXME: GUI event
     Build(compileonly);
 }
 
 
-void AppController::BuildNodes(bool compileonly)
+void AppController::CompileNodes(bool compileonly)
 {
-    if (m_story->GenerateScript(m_currentCode))
+    if (m_story->GenerateScript(m_storyAssembly))
     {
-       //  m_debuggerWindow.SetScript(m_currentCode); // FIXME: GUI event
+       //  m_debuggerWindow.SetScript(m_storyAssembly); // FIXME: GUI event
         Build(compileonly);
     }
 }

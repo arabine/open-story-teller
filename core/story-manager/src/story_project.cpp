@@ -420,14 +420,14 @@ bool StoryProject::GenerateScript(std::string &codeStr)
         generator.StartSection(AssemblyGenerator::Section::TEXT);
         for (const auto & p : m_pages)
         {
-            p->BuildNodes(generator);
+            p->CompileNodes(generator);
         }
 
         // Generate data section
         generator.StartSection(AssemblyGenerator::Section::DATA);
         for (const auto & p : m_pages)
         {
-            p->BuildNodesVariables(generator);
+            p->CompileNodesVariables(generator);
         }
         generator.GenerateGlobalVariables();
 

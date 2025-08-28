@@ -399,6 +399,20 @@ void MainWindow::DrawToolBar(float topPadding)
         m_appController.StopAudio();
     }
     
+    if (ImGui::Button(ICON_MDI_HAMMER "##build_project", ImVec2(-1, 50))) {  // Le bouton prend toute la largeur de la fenêtre et a une hauteur de 50 pixels
+        
+        // Compile story if window focused, otherwise module
+        if (m_nodeEditorWindow.IsFocused())
+        {
+            m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_STORY);
+        }
+        else
+        {
+            m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_MODULE);
+        }
+    }
+    
+
     ImGui::GetFont()->Scale = old_size;
     ImGui::PopFont();
     ImGui::PopStyleColor();

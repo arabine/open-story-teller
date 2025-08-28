@@ -46,7 +46,7 @@ public:
     virtual std::shared_ptr<IStoryProject> OpenModule(const std::string &uuid) = 0;
 
     // Node interaction
-    virtual void BuildNodes(bool compileonly) = 0;
+    virtual void CompileNodes(bool compileonly) = 0;
     virtual void BuildCode(bool compileonly) = 0;
     virtual void SetExternalSourceFile(const std::string &filename) = 0;
     virtual void LoadBinaryStory(const std::string &filename) = 0;

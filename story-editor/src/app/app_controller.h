@@ -67,7 +67,7 @@ public:
     void ExportStory(const std::string &filename);
     std::shared_ptr<StoryProject> GetCurrentStory() const { return m_story; }
     std::shared_ptr<StoryProject> GetCurrentModule() const { return m_module; }
-    void BuildNodes(IStoryProject::Type type);
+    void CompileNodes(IStoryProject::Type type);
     void Build(bool compileonly);
     void BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force = false);
 
@@ -86,7 +86,7 @@ public:
     virtual void Next() override;
     virtual void Previous() override;
     virtual std::string VmState() const override;
-    virtual void BuildNodes(bool compileonly);
+    virtual void CompileNodes(bool compileonly);
     virtual void BuildCode(bool compileonly);
     virtual std::shared_ptr<IStoryProject> GetCurrentProject() override;
 
@@ -133,7 +133,8 @@ private:
     chip32_ctx_t m_chip32_ctx;
     Chip32::Result m_result;
     DebugContext m_dbg; // Contexte de débogage
-    std::string m_currentCode;
+    std::string m_storyAssembly;
+    std::string m_moduleAssembly;
     std::string m_externalSourceFileName;
     std::vector<std::string> m_recentProjects;
 

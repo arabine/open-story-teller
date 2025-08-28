@@ -51,13 +51,13 @@ public:
         m_nodes.clear();
     }
 
-    void BuildNodesVariables(AssemblyGenerator &generator)
+    void CompileNodesVariables(AssemblyGenerator &generator)
     {
         std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
         generator.GenerateNodesVariables(nodes);
     }
 
-    void BuildNodes(AssemblyGenerator &generator)
+    void CompileNodes(AssemblyGenerator &generator)
     {
         std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
         std::vector<std::shared_ptr<Connection>> links(m_links.begin(), m_links.end());

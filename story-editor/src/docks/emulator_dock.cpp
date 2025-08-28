@@ -83,7 +83,7 @@ void EmulatorDock::Draw()
 
     if (ImGui::Button("Build nodes"))
     {
-        m_story.BuildNodes(true);
+        m_story.CompileNodes(true);
     }
     ImGui::SameLine();
     if (ImGui::Button("Build code"))
