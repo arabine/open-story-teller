@@ -52,7 +52,7 @@ public:
     };
 
     // key: uuid, value: node name
-    std::vector<NodeInfo> LitOfNodes() const { 
+    std::vector<NodeInfo> ListOfNodes() const { 
         std::vector<NodeInfo> l;
         for (auto const& imap : m_registry) {
             l.push_back(NodeInfo{imap.first, imap.second.first->GetName(), imap.second.first->GetDescription() });

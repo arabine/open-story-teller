@@ -1,7 +1,7 @@
 #ifndef GUI_H
 #define GUI_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+// #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 
 #include <string>

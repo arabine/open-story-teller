@@ -127,7 +127,15 @@ public:
     void AddOutputPort(Port::Type type, const std::string& label) {
         m_outputPorts.push_back({type, label});
     }
-    
+
+
+    uint32_t OutputsCount() const {
+        return m_outputPorts.size();
+    }
+
+    uint32_t InputsCount() const {
+        return m_inputPorts.size();
+    }
 
     void SetBehavior(Behavior behavior) {
         m_behavior = behavior;

@@ -5,46 +5,95 @@
 #include <list>
 #include <utility>
 
-#include <imgui_node_editor.h>
 #include "base_node_widget.h"
+#include "nodes_factory.h"
+#include "node_widget_factory.h"
+#include "i_story_manager.h"
+#include "ImNodeFlow.h"
 
-namespace ed = ax::NodeEditor;
-
-struct EditorLink {
-    ed::LinkId Id;
-    ed::PinId  InputId;
-    ed::PinId  OutputId;
-};
-
-// Stuff from ImGuiNodeEditor, each element has a unique ID within one editor
-struct LinkInfo
-{
-
-    LinkInfo()
-    {
-        ed_link = std::make_shared<EditorLink>();
-        model = std::make_shared<Connection>();
+class SimpleSum : public ImFlow::BaseNode {
+public:
+    SimpleSum() {
+        setTitle("Simple sum");
+        setStyle(ImFlow::NodeStyle::green());
+        ImFlow::BaseNode::addIN<int>("In", 0, ImFlow::ConnectionFilter::SameType());
+        ImFlow::BaseNode::addOUT<int>("Out", nullptr)->behaviour([this]() { return getInVal<int>("In") + m_valB; });
     }
 
-    std::shared_ptr<EditorLink> ed_link;
-    std::shared_ptr<Connection> model;
+    void draw() override {
+        ImGui::SetNextItemWidth(100.f);
+        ImGui::InputInt("##ValB", &m_valB);
+    }
+
+private:
+    int m_valB = 0;
 };
 
 
-struct NodeEditorPage  {
-    ed::Config config;
-    ed::EditorContext* EditorContext;
-    std::list<std::shared_ptr<BaseNodeWidget>>  m_nodes;
-    std::list<std::shared_ptr<LinkInfo>> m_links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
+// Generic delegate
+class NodeDelegate : public ImFlow::BaseNode {
+public:
+    NodeDelegate()
+    {
+
+    }
+
+    void SetWidget(std::shared_ptr<BaseNodeWidget> widget) {
+        m_widget = widget;
+
+        // Initialize delegate
+        setTitle("Node Delegate");
+        setStyle(ImFlow::NodeStyle::green());
+
+        // Add inputs
+        for (int i = 0; i < m_widget->Inputs(); ++i) {
+            ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType());
+        }
+
+        // Add outputs
+        for (int i = 0; i < m_widget->Outputs(); ++i) {
+            ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->behaviour([this, i]() { return getInVal<int>("In" + std::to_string(i)) + m_valB; });
+        }
+    }
+
+    std::shared_ptr<BaseNodeWidget> Widget() {
+        return m_widget;
+    }
+
+    void draw() override {
+        if (m_widget)
+        {
+            m_widget->Draw();
+        }
+        
+        // ImGui::SetNextItemWidth(100.f);
+        // ImGui::InputInt("##ValB", &m_valB);
+    }
+
+private:
+    int m_valB = 0;
+    std::shared_ptr<BaseNodeWidget> m_widget;
+};
+
+
+
+struct NodeEditorPage : public  ImFlow::BaseNode 
+{
+    ImFlow::ImNodeFlow mINF;
 
     NodeEditorPage(const std::string &uuid, const std::string &name) 
         : m_uuid(uuid)
         , m_name(name)
     {
-        config.SettingsFile = nullptr;
-        config.SaveSettings = nullptr;
-        config.LoadSettings = nullptr;
-        EditorContext = ed::CreateEditor(&config);
+        
+        mINF.setSize({500, 500});
+        // mINF.addNode<SimpleSum>({0, 0});
+        // mINF.addNode<SimpleSum>({10, 10});
+
+    }
+
+    ~NodeEditorPage() {
+        // Clear();
     }
 
     std::string_view Name() const {
@@ -55,17 +104,77 @@ struct NodeEditorPage  {
         return m_uuid;
     }
 
-    ~NodeEditorPage() {
-        ed::DestroyEditor(EditorContext);
-        Clear();
+    std::list<std::shared_ptr<BaseNodeWidget>> GetNodes()
+    {
+        std::list<std::shared_ptr<BaseNodeWidget>> nlist;
+        // std::unordered_map<ImFlow::NodeUID, std::shared_ptr<BaseNode>>&
+        for (auto &node : mINF.getNodes())
+        {
+            auto delegate = dynamic_cast<NodeDelegate*>(node.second.get());
+
+            if (delegate == nullptr)
+                continue;
+            nlist.push_back(delegate->Widget());
+        }
+
+        return nlist;
+    }
+
+    std::list<std::shared_ptr<Connection>> GetLinks() {
+
+        std::list<std::shared_ptr<Connection>> links;
+
+        // const std::vector<std::weak_ptr<Link>>& getLinks()
+        for (auto &link : mINF.getLinks())
+        {
+            auto linkInfo = std::make_shared<Connection>();
+
+            links.push_back(linkInfo);
+        }
+
+        return links;
     }
 
     void Select()
     {
-        ed::SetCurrentEditor(EditorContext);
     }
 
-    void Draw() {
+    void Draw(NodesFactory &nodesFactory, NodeWidgetFactory &widgetFactory, IStoryManager &storyManager)
+    {
+        mINF.update();
+
+        auto openPopupPosition = ImGui::GetMousePos();
+        mINF.rightClickPopUpContent([this, openPopupPosition, &nodesFactory, &widgetFactory, &storyManager](ImFlow::BaseNode* node){
+            // std::cout << "Right-clicked on node: " << node->getName() << std::endl;
+
+            auto newNodePostion = openPopupPosition;
+            auto nodeTypes = nodesFactory.ListOfNodes();
+
+            for (auto &type : nodeTypes)
+            {
+                if (ImGui::MenuItem(type.name.c_str()))
+                {
+                    auto base = nodesFactory.CreateNode(type.uuid);
+                    if (base)
+                    {
+                        auto n = widgetFactory.CreateNodeWidget(type.uuid, storyManager, base);
+                        if (n)
+                        {
+                            // Create delegate
+                            auto delegate = mINF.addNode<NodeDelegate>({newNodePostion.x, newNodePostion.y});
+                            // Link with the widget
+                            delegate->SetWidget(n);
+
+                            n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
+                            n->Initialize();
+                           // AddNode(n);
+                        }
+                    }
+                }
+            }
+        });
+
+        /*
         for (const auto & n : m_nodes)
         {
             ImGui::PushID(n->GetInternalId());
@@ -77,58 +186,59 @@ struct NodeEditorPage  {
         {
             ed::Link(linkInfo->ed_link->Id, linkInfo->ed_link->OutputId, linkInfo->ed_link->InputId);
         }
+            */
     }
 
-    bool GetNode(const ed::NodeId &nodeId, std::shared_ptr<BaseNodeWidget> &node) {
-        for (const auto & n : m_nodes)
-        {
-            if (n->GetInternalId() == nodeId.Get())
-            {
-                node = n;
-                return true;
-            }
-        }
-        return false;
-    }
+    // bool GetNode(const ed::NodeId &nodeId, std::shared_ptr<BaseNodeWidget> &node) {
+    //     for (const auto & n : m_nodes)
+    //     {
+    //         if (n->GetInternalId() == nodeId.Get())
+    //         {
+    //             node = n;
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
-    void DeleteNode(const ed::NodeId &nodeId) {
-        m_nodes.remove_if([nodeId](const std::shared_ptr<BaseNodeWidget>& node) {
-            return node->GetInternalId() == nodeId.Get();
-        });
-    }
+    // void DeleteNode(const ed::NodeId &nodeId) {
+    //     m_nodes.remove_if([nodeId](const std::shared_ptr<BaseNodeWidget>& node) {
+    //         return node->GetInternalId() == nodeId.Get();
+    //     });
+    // }
 
     std::shared_ptr<BaseNodeWidget> GetSelectedNode() {
 
         std::shared_ptr<BaseNodeWidget> selected;
 
-        if (ed::GetSelectedObjectCount() > 0)
-        {
-            ed::NodeId nId;
-            int nodeCount = ed::GetSelectedNodes(&nId, 1);
+        // if (ed::GetSelectedObjectCount() > 0)
+        // {
+        //     ed::NodeId nId;
+        //     int nodeCount = ed::GetSelectedNodes(&nId, 1);
 
-            if (nodeCount > 0)
-            {
-                for (auto & n : m_nodes)
-                {
-                    if (n->GetInternalId() == nId.Get())
-                    {
-                        selected = n;
-                    }
-                }
-            }
-        }
+        //     if (nodeCount > 0)
+        //     {
+        //         for (auto & n : m_nodes)
+        //         {
+        //             if (n->GetInternalId() == nId.Get())
+        //             {
+        //                 selected = n;
+        //             }
+        //         }
+        //     }
+        // }
         return selected;
     }
 
-    void AddNode(std::shared_ptr<BaseNodeWidget> node) {
-        m_nodes.push_back(node);
-    }
+    // void AddNode(std::shared_ptr<BaseNodeWidget> node) {
+    //     m_nodes.push_back(node);
+    // }
 
-    void Clear() {
-        m_nodes.clear();
-        m_links.clear();
-    }
-
+    // void Clear() {
+    //     m_nodes.clear();
+    //     m_links.clear();
+    // }
+/*
     bool GetModel(ed::LinkId linkId, std::shared_ptr<Connection> &model) {
         for (const auto& linkInfo : m_links)
         {
@@ -214,6 +324,8 @@ struct NodeEditorPage  {
 
         return id;
     }
+
+    */
 
 private:
     std::string m_uuid;

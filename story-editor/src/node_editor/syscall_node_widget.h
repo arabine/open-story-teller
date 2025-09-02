@@ -10,7 +10,6 @@
 #include "i_story_project.h"
 #include "gui.h"
 #include "syscall_node.h"
-#include <imgui_node_editor.h>
 #include "media_node.h"
 
 class SyscallNodeWidget : public BaseNodeWidget

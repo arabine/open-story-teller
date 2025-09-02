@@ -101,7 +101,7 @@ public:
     virtual Type GetProjectType() const override { return m_projectType; }
 
     // Node interaction
-    std::shared_ptr<StoryPage> CreatePage(const std::string &uuid);
+    std::shared_ptr<StoryPage> CreatePage(const std::string_view uuid);
     std::shared_ptr<StoryPage> GetPage(const std::string &uuid);
     void AddNode(const std::string_view &page, std::shared_ptr<BaseNode> node);
 

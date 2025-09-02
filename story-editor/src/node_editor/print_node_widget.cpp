@@ -2,7 +2,6 @@
 #include <sstream>
 #include "print_node_widget.h"
 
-namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 #include "uuid.h"
@@ -14,11 +13,6 @@ PrintNodeWidget::PrintNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNod
     , m_manager(manager)
 {
     m_printNode = std::dynamic_pointer_cast<PrintNode>(node);
-    // Create defaut one input and one output
-    AddInputs(1);
-    SetInputPinName(0, "");
-    AddOutputs(1);
-    SetOutPinName(0, "");
 }
 
 void PrintNodeWidget::Initialize()
@@ -46,11 +40,7 @@ void PrintNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 
 void PrintNodeWidget::Draw()
 {
-    BaseNodeWidget::FrameStart();  
 
-    DrawPins();
-
-    BaseNodeWidget::FrameEnd();
 
 }
 

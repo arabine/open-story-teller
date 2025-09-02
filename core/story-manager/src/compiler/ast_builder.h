@@ -24,7 +24,7 @@ public:
     // The actual node from the visual editor
     std::shared_ptr<BaseNode> node;
 
-    // Execution flow children (for EXECUTION_LINKJ connections)
+    // Execution flow children (for EXECUTION_LINK connections)
     std::vector<std::shared_ptr<ASTNode>> children;   
 
     // Data inputs: port_index -> source node

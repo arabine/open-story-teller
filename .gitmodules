@@ -19,3 +19,6 @@
 [submodule "libs/ImGuiColorTextEdit"]
 	path = libs/ImGuiColorTextEdit
 	url = https://github.com/santaclose/ImGuiColorTextEdit
+[submodule "story-editor/externals/ImNodeFlow"]
+	path = story-editor/externals/ImNodeFlow
+	url = https://github.com/Fattorino/ImNodeFlow

@@ -2,7 +2,6 @@
 #include <sstream>
 #include "operator_node_widget.h"
 
-namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 #include "uuid.h"
@@ -12,13 +11,6 @@ OperatorNodeWidget::OperatorNodeWidget(IStoryManager &manager, std::shared_ptr<B
     , m_manager(manager)
 {
     m_opNode = std::dynamic_pointer_cast<OperatorNode>(node);
-
-    // Create defaut one input and one output
-    AddInputs(2);
-    SetInputPinName(0, "A");
-    SetInputPinName(1, "B");
-    AddOutputs(1);
-    SetOutPinName(0, "=");
 }
 
 void OperatorNodeWidget::Initialize()
@@ -69,13 +61,6 @@ void OperatorNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 
 void OperatorNodeWidget::Draw()
 {
-    BaseNodeWidget::FrameStart();
-
     ImGui::TextUnformatted(m_selectedOperatorSymbol.c_str());
-
-    DrawPins();
-
-    BaseNodeWidget::FrameEnd();
-
 }
 

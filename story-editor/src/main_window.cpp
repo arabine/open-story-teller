@@ -25,6 +25,15 @@
 #include "app_controller.h"
 #include "all_events.h"
 
+#include "nodes_factory.h"
+#include "media_node_widget.h"
+#include "call_function_node_widget.h"
+#include "module_node_widget.h"
+#include "variable_node_widget.h"
+#include "operator_node_widget.h"
+#include "print_node_widget.h"
+#include "syscall_node_widget.h"
+
 MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
     : m_logger(logger)
     , m_eventBus(eventBus)
@@ -33,8 +42,8 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     , m_debuggerWindow(appController)
     , m_cpuWindow(appController)
     , m_resourcesDock(appController.GetResourceManager(), appController)
-    , m_nodeEditorWindow(appController, appController.GetNodesFactory(), IStoryProject::PROJECT_TYPE_STORY)
-    , m_moduleEditorWindow(appController, appController.GetNodesFactory(), IStoryProject::PROJECT_TYPE_MODULE)
+    , m_nodeEditorWindow(appController, appController.GetNodesFactory(), m_widgetFactory, IStoryProject::PROJECT_TYPE_STORY)
+    , m_moduleEditorWindow(appController, appController.GetNodesFactory(), m_widgetFactory, IStoryProject::PROJECT_TYPE_MODULE)
     , m_libraryWindow(appController, appController.GetLibraryManager(), appController.GetNodesFactory())
     , m_projectPropertiesDialog(appController, appController.GetResourceManager())
 {
@@ -45,6 +54,23 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeDir, "", ImVec4(0.5f, 1.0f, 0.9f, 0.9f), ICON_MDI_FOLDER);
     // define style for all files
     ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeFile, "", ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ICON_MDI_FILE);
+
+
+    // g OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
+// static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
+// static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
+// static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
+// static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
+// static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
+
+
+    // registerNode<MediaNodeWidget>("media-node");
+    m_widgetFactory.registerNode<OperatorNodeWidget>(OperatorNodeUuid);
+    m_widgetFactory.registerNode<CallFunctionNodeWidget>(CallFunctionNodeUuid);
+    // m_widgetFactory.registerNode<ModuleNodeWidget>("module-node");
+    m_widgetFactory.registerNode<VariableNodeWidget>(VariableNodeUuid);
+    m_widgetFactory.registerNode<PrintNodeWidget>(PrintNodeUuid);
+    m_widgetFactory.registerNode<SyscallNodeWidget>(SyscallNodeUuid);
 
 
     m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {

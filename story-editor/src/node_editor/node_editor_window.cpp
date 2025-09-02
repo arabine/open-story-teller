@@ -9,13 +9,7 @@
 #include <sstream>
 #include "IconsFontAwesome5_c.h"
 
-#include "media_node_widget.h"
-#include "call_function_node_widget.h"
-#include "module_node_widget.h"
-#include "variable_node_widget.h"
-#include "operator_node_widget.h"
-#include "print_node_widget.h"
-#include "syscall_node_widget.h"
+
 #include "gui.h"
 #include "uuid.h"
 
@@ -27,28 +21,15 @@ if (!(x)) { \
 #include "json.hpp"
 
 
-NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, IStoryProject::Type type)
+NodeEditorWindow::NodeEditorWindow(IStoryManager &manager, NodesFactory &factory, NodeWidgetFactory &widgetFactory, IStoryProject::Type type)
     : WindowBase(type == IStoryProject::Type::PROJECT_TYPE_STORY ? "Story editor" : "Module editor")
     , m_manager(manager)
     , m_nodesFactory(factory)
+    , m_widgetFactory(widgetFactory)
     , m_editorType(type)
 {
 
-// g OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
-// static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
-// static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
-// static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
-// static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
-// static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
 
-
-    // registerNode<MediaNodeWidget>("media-node");
-    registerNode<OperatorNodeWidget>(OperatorNodeUuid);
-    registerNode<CallFunctionNodeWidget>(CallFunctionNodeUuid);
-    // registerNode<ModuleNodeWidget>("module-node");
-    registerNode<VariableNodeWidget>(VariableNodeUuid);
-    registerNode<PrintNodeWidget>(PrintNodeUuid);
-    registerNode<SyscallNodeWidget>(SyscallNodeUuid);
 }
  
 NodeEditorWindow::~NodeEditorWindow()
@@ -108,15 +89,15 @@ void NodeEditorWindow::LoadPage(const std::string &uuid, const std::string &name
     }
 }
 
-ed::PinId NodeEditorWindow::GetInputPin(const std::string &modelNodeId, int pinIndex)
-{
-    return m_currentPage->GetInputPin(modelNodeId, pinIndex);
-}
+// ed::PinId NodeEditorWindow::GetInputPin(const std::string &modelNodeId, int pinIndex)
+// {
+//     return m_currentPage->GetInputPin(modelNodeId, pinIndex);
+// }
 
-ed::PinId NodeEditorWindow::GetOutputPin(const std::string &modelNodeId, int pinIndex)
-{
-    return m_currentPage->GetOutputPin(modelNodeId, pinIndex);
-}
+// ed::PinId NodeEditorWindow::GetOutputPin(const std::string &modelNodeId, int pinIndex)
+// {
+//     return m_currentPage->GetOutputPin(modelNodeId, pinIndex);
+// }
 
 void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 {
@@ -135,12 +116,12 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 
             for (auto it = node_begin; it != node_end; ++it)
             {
-                auto n = CreateNodeWidget((*it)->GetType(), m_manager, (*it));
+                auto n = m_widgetFactory.CreateNodeWidget((*it)->GetType(), m_manager, (*it));
                 if (n)
                 {
                     n->Initialize();
                 //    n->SetOutputs(m_story->OutputsCount((*it)->GetId())); // il faut que les noeuds aient une bonne taille de outputs avant de créer les liens
-                    m_currentPage->AddNode(n);
+                    // m_currentPage->AddNode(n);
                 }
                 else
                 {
@@ -153,9 +134,9 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 
             for (auto it = link_begin; it != link_end; ++it)
             {
-                    CreateLink(*it,
-                            GetInputPin((*it)->inNodeId, (*it)->inPortIndex),
-                            GetOutputPin((*it)->outNodeId, (*it)->outPortIndex));
+                    // CreateLink(*it,
+                    //         GetInputPin((*it)->inNodeId, (*it)->inPortIndex),
+                    //         GetOutputPin((*it)->outNodeId, (*it)->outPortIndex));
             }
 
             m_loaded = true;
@@ -166,7 +147,7 @@ void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
         }
     }
 
-    std::cout << "Loaded " << m_currentPage->m_nodes.size() << " nodes, " << m_currentPage->m_links.size() << " links" << std::endl;
+    // std::cout << "Loaded " << m_currentPage->m_nodes.size() << " nodes, " << m_currentPage->m_links.size() << " links" << std::endl;
   
 }
 
@@ -175,51 +156,78 @@ void NodeEditorWindow::SaveNodePositions()
     
 }
 
+void NodeEditorWindow::SaveNodesToProject()
+{
+    // Pour toutes les pages
+    for (const auto& page : m_pages)
+    {
+        // Clear current project nodes and links
+        m_story->Clear();
+
+        auto currentPage = m_story->CreatePage(page->Uuid());
+
+        // On récupère les noeuds de la page
+        for (const auto& node : page->GetNodes())
+        {
+            // On les ajoute au projet
+            // currentPage->AddNode(node);
+        }
+
+        // On récupère tous les liens de la page
+        for (const auto& link : page->GetLinks())
+        {
+            // On les ajoute au projet
+            // currentPage->AddLink(link);
+        }
+    }
+}
+
 void NodeEditorWindow::OpenFunction(const std::string &uuid, const std::string &name)
 {
     m_newPageUuid = uuid;
     m_newPageName = name;
 }
 
-void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId)
-{
-    auto conn = std::make_shared<LinkInfo>();
+// void NodeEditorWindow::CreateLink(std::shared_ptr<Connection> model, ed::PinId inId, ed::PinId outId)
+// {
 
-    conn->model = model;
+    // auto conn = std::make_shared<LinkInfo>();
 
-    // ImGui stuff for links
-    conn->ed_link->Id = BaseNodeWidget::GetNextId();
-    conn->ed_link->InputId = inId;
-    conn->ed_link->OutputId = outId;
+    // conn->model = model;
+
+    // // ImGui stuff for links
+    // conn->ed_link->Id = BaseNodeWidget::GetNextId();
+    // conn->ed_link->InputId = inId;
+    // conn->ed_link->OutputId = outId;
 
     // Since we accepted new link, lets add one to our list of links.
-    m_currentPage->m_links.push_back(conn);
-}
+    // m_currentPage->m_links.push_back(conn);
+// }
 
-
+/*
 bool NodeEditorWindow::FillConnection(std::shared_ptr<Connection> c, ed::PinId pinId)
 {
     bool success = false;
-    std::string nodeId;
-    int nodeIndex;
-    int ret = m_currentPage->FindNodeAndPin(pinId, nodeIndex, nodeId);
-    if (ret > 0)
-    {
-        if (ret == 1)
-        {
-            c->outNodeId = nodeId;
-            c->outPortIndex = nodeIndex;
-        }
-        else
-        {
-            c->inNodeId = nodeId;
-            c->inPortIndex = nodeIndex;
-        }
-        success = true;
-    }
+    // std::string nodeId;
+    // int nodeIndex;
+    // int ret = m_currentPage->FindNodeAndPin(pinId, nodeIndex, nodeId);
+    // if (ret > 0)
+    // {
+    //     if (ret == 1)
+    //     {
+    //         c->outNodeId = nodeId;
+    //         c->outPortIndex = nodeIndex;
+    //     }
+    //     else
+    //     {
+    //         c->inNodeId = nodeId;
+    //         c->inPortIndex = nodeIndex;
+    //     }
+    //     success = true;
+    // }
     return success;
 }
-
+*/
 
 std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 {
@@ -232,7 +240,6 @@ std::shared_ptr<BaseNodeWidget> NodeEditorWindow::GetSelectedNode()
 
     m_currentPage->Select();
     selected = m_currentPage->GetSelectedNode();
-    ed::SetCurrentEditor(nullptr);
 
     return selected;
 }
@@ -256,6 +263,10 @@ void NodeEditorWindow::Draw()
 
             ToolbarUI();
 
+            m_currentPage->Draw(m_nodesFactory, m_widgetFactory, m_manager);
+
+           
+/*
             ed::Begin(m_currentPage->Uuid().data(), ImVec2(0.0, 0.0f));
 
             // Draw our nodes
@@ -364,7 +375,7 @@ void NodeEditorWindow::Draw()
             {
                 auto newNodePostion = openPopupPosition;
                 std::shared_ptr<BaseNode> base;
-                auto nodeTypes = m_nodesFactory.LitOfNodes();
+                auto nodeTypes = m_nodesFactory.ListOfNodes();
 
                 for (auto &type : nodeTypes)
                 {
@@ -399,6 +410,7 @@ void NodeEditorWindow::Draw()
             
             ed::End();
             ed::SetCurrentEditor(nullptr);
+            */
         }
         else
         {

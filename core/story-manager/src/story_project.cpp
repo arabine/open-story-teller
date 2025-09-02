@@ -139,7 +139,7 @@ void StoryProject::ModelToJson(nlohmann::json &model)
     }
 }
 
-std::shared_ptr<StoryPage> StoryProject::CreatePage(const std::string &uuid)
+std::shared_ptr<StoryPage> StoryProject::CreatePage(const std::string_view uuid)
 {
     auto newPage = std::make_shared<StoryPage>(uuid);
     m_pages.push_back(newPage);
@@ -642,6 +642,7 @@ void StoryProject::Clear()
     m_project_file_path = "";
     m_initialized = false;
     m_variables.clear();
+    m_pages.clear();
 }
 
 

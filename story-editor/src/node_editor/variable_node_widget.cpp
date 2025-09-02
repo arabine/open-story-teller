@@ -2,7 +2,6 @@
 #include <sstream>
 #include "variable_node_widget.h"
 
-namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 #include "uuid.h"
@@ -12,10 +11,6 @@ VariableNodeWidget::VariableNodeWidget(IStoryManager &manager, std::shared_ptr<B
     , m_manager(manager)
 {
     m_variableNode = std::dynamic_pointer_cast<VariableNode>(node);
-    // Create defaut one input and one output
-    //AddInput();
-    AddOutputs(1);
-    SetOutPinName(0, "");
 }
 
 void VariableNodeWidget::Initialize()
@@ -73,13 +68,6 @@ void VariableNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 
 void VariableNodeWidget::Draw()
 {
-    BaseNodeWidget::FrameStart();
-
     ImGui::TextUnformatted(m_selectedVariableName.c_str());
-
-    DrawPins();
-
-    BaseNodeWidget::FrameEnd();
-
 }
 

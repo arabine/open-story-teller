@@ -10,7 +10,6 @@
 #include "i_story_project.h"
 #include "gui.h"
 #include "operator_node.h"
-#include <imgui_node_editor.h>
 #include "media_node.h"
 
 class OperatorNodeWidget : public BaseNodeWidget

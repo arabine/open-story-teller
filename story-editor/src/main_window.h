@@ -24,6 +24,7 @@
 #include "app_controller.h"
 #include "i_logger.h"
 #include "imgui_toast_notifier.h"
+#include "node_widget_factory.h"
 
 class MainWindow : public std::enable_shared_from_this<MainWindow>, public ILogSubject
 {
@@ -40,6 +41,7 @@ private:
     ILogger& m_logger;
     EventBus& m_eventBus;
     AppController &m_appController; // Controller for application logic
+    NodeWidgetFactory m_widgetFactory;
 
     std::shared_ptr<StoryProject> m_story; // Current story
     std::shared_ptr<StoryProject> m_module; // Current module

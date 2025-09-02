@@ -44,6 +44,9 @@ add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/C
 add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
+include_directories(externals/ImNodeFlow/src)
+
+add_subdirectory(externals/ImNodeFlow EXCLUDE_FROM_ALL)
 
 # =========================================================================================================================
 # CIVETWEB
@@ -153,10 +156,6 @@ set(SRCS
     src/importers/pack_archive.cpp
     src/importers/ni_parser.c
 
-    libs/imgui-node-editor/imgui_node_editor.cpp
-    libs/imgui-node-editor/imgui_canvas.cpp
-    libs/imgui-node-editor/imgui_node_editor_api.cpp
-    libs/imgui-node-editor/crude_json.cpp
     libs/ImGuiFileDialog/ImGuiFileDialog.cpp
 
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
@@ -292,6 +291,8 @@ add_definitions(
 )
 add_link_options(-static-libgcc -static-libstdc++)
 
+target_compile_definitions(${STORY_EDITOR_PROJECT} PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
+
 if (APPLE)
 set_target_properties(${PROJECT_NAME} PROPERTIES
         LINKER_LANGUAGE CXX
@@ -336,6 +337,7 @@ if(UNIX)
         pthread
         OpenGL::GL
         dl
+        ImNodeFlow
 
     )
 elseif(WIN32)

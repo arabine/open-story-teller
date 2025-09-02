@@ -9,8 +9,6 @@
 #include "i_story_manager.h"
 #include "i_story_project.h"
 #include "gui.h"
-#include <imgui_node_editor.h>
-
 
 class ModuleNodeWidget : public BaseNodeWidget
 {

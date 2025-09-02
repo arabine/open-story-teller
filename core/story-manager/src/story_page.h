@@ -14,7 +14,7 @@ class StoryPage : public IStoryPage
 {
 
 public:
-    StoryPage(const std::string &uuid)
+    StoryPage(const std::string_view uuid)
         : m_uuid(uuid)
     {
     }

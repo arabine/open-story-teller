@@ -10,7 +10,6 @@
 #include "i_story_project.h"
 #include "call_function_node.h"
 #include "gui.h"
-#include <imgui_node_editor.h>
 
 
 class CallFunctionNodeWidget : public BaseNodeWidget

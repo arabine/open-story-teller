@@ -1,8 +1,6 @@
 
 #include <sstream>
 #include "media_node_widget.h"
-
-namespace ed = ax::NodeEditor;
 #include "IconsMaterialDesignIcons.h"
 #include "story_project.h"
 
@@ -12,19 +10,11 @@ MediaNodeWidget::MediaNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNod
 {
     m_mediaNode = std::dynamic_pointer_cast<MediaNode>(node);
 
-    // Create defaut one input and one output
-    AddInput();
-    AddOutputs(1);
-
-    std::string widgetId =  std::to_string(GetInternalId()); // Make widget unique by using the node ID
-
-    m_buttonUniqueName = "Play " ICON_MDI_PLAY "##id" + widgetId;
+    m_buttonUniqueName = "Play " ICON_MDI_PLAY "##id";
 }
 
 void MediaNodeWidget::Draw()
 {
-    BaseNodeWidget::FrameStart();
-
     const char * text = "Media node";
     // Obtenir la position courante du curseur
     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -85,13 +75,6 @@ void MediaNodeWidget::Draw()
     ImGui::PopButtonRepeat();
     ImGui::SameLine();
     ImGui::Text("%d", counter);
-
-    SetOutputs(counter);
-
-    DrawPins();
-
-    BaseNodeWidget::FrameEnd();
-
 }
 
 /*
