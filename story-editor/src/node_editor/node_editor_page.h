@@ -56,7 +56,7 @@ public:
         }
     }
 
-    std::shared_ptr<BaseNodeWidget> Widget() {
+    std::shared_ptr<BaseNodeWidget> GetWidget() {
         return m_widget;
     }
 
@@ -114,7 +114,7 @@ struct NodeEditorPage : public  ImFlow::BaseNode
 
             if (delegate == nullptr)
                 continue;
-            nlist.push_back(delegate->Widget());
+            nlist.push_back(delegate->GetWidget());
         }
 
         return nlist;
@@ -210,6 +210,29 @@ struct NodeEditorPage : public  ImFlow::BaseNode
     std::shared_ptr<BaseNodeWidget> GetSelectedNode() {
 
         std::shared_ptr<BaseNodeWidget> selected;
+
+        updatePublicStatus();
+
+       // if (mINF.on_selected_node())
+        {
+            // Loop all nodes, get first selected
+            for (auto &node : mINF.getNodes())
+            {
+                if (node.second->isSelected())
+                {
+                    // cast to delegate
+                    auto delegate = dynamic_cast<NodeDelegate*>(node.second.get());
+                    if (delegate)
+                    {
+                        //get widget
+                        selected = delegate->GetWidget();
+                    }
+                    break;
+                }
+            }
+        }
+
+        
 
         // if (ed::GetSelectedObjectCount() > 0)
         // {
