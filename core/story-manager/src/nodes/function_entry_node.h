@@ -10,6 +10,8 @@ public:
         : BaseNode(type, "Function Entry Node")
     {
         SetWeight(100);
+        SetBehavior(BaseNode::BEHAVIOR_EXECUTION);
+        AddOutputPort(BaseNode::Port::Type::EXECUTION_PORT, ">", true);
     }
 
     void Initialize() override {

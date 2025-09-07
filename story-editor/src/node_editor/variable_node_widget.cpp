@@ -11,6 +11,7 @@ VariableNodeWidget::VariableNodeWidget(IStoryManager &manager, std::shared_ptr<B
     , m_manager(manager)
 {
     m_variableNode = std::dynamic_pointer_cast<VariableNode>(node);
+    SetTitle("Variable");
 }
 
 void VariableNodeWidget::Initialize()

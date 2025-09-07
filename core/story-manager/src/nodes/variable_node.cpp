@@ -9,6 +9,7 @@ VariableNode::VariableNode(const std::string &type)
 {
     nlohmann::json j{ {"uuid", ""} };
     SetInternalData(j);
+    SetBehavior(BaseNode::BEHAVIOR_DATA);
 }
 
 void VariableNode::Initialize()

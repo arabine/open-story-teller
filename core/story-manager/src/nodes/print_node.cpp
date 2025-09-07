@@ -13,6 +13,8 @@ PrintNode::PrintNode(const std::string &type)
     m_label = v->GetLabel();
     m_variables[m_label] = v;
 
+    SetBehavior(BaseNode::BEHAVIOR_EXECUTION);
+
     SetText("");
 }
 

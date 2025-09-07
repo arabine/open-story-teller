@@ -42,17 +42,52 @@ public:
         m_widget = widget;
 
         // Initialize delegate
-        setTitle("Node Delegate");
+        setTitle(m_widget->GetTitle());
         setStyle(ImFlow::NodeStyle::green());
+
+        // Add Sync input if it is an executable node
+        if (m_widget->HasSync())
+        {
+            ImFlow::BaseNode::addIN<int>(">", 0, ImFlow::ConnectionFilter::SameType());
+        }
 
         // Add inputs
         for (int i = 0; i < m_widget->Inputs(); ++i) {
-            ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType());
+
+            auto port = m_widget->Base()->GetInputPort(i);
+
+            if (port.customSocketIcon)
+            {
+                ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType())->renderer([this, i](ImFlow::Pin* p) {
+                    ImGui::Text("C");
+                    p->drawDecoration();
+                    //p->drawSocket();
+                    m_widget->DrawSocket(i, true, p->getPos(), p->isConnected());
+                });
+            }
+            else
+            {
+                ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType());
+            }
         }
 
         // Add outputs
-        for (int i = 0; i < m_widget->Outputs(); ++i) {
-            ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->behaviour([this, i]() { return getInVal<int>("In" + std::to_string(i)) + m_valB; });
+        for (int i = 0; i < m_widget->Outputs(); ++i)
+        {
+            auto port = m_widget->Base()->GetOutputPort(i);
+            if (port.customSocketIcon)
+            {
+                ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->renderer([this, i](ImFlow::Pin* p) {
+                    ImGui::Text("C");
+                    p->drawDecoration();
+                    // p->drawSocket();
+                    m_widget->DrawSocket(i, false, p->getPos(), p->isConnected());
+                });
+            }
+            else
+            {
+                ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->behaviour([this, i]() { return getInVal<int>("In" + std::to_string(i)) + m_valB; });
+            }
         }
     }
 

@@ -36,6 +36,7 @@ public:
 
         Port::Type type{EXECUTION_PORT};
         std::string label;
+        bool customSocketIcon{false};
     };
 
     struct NodePosition
@@ -124,10 +125,37 @@ public:
         m_inputPorts.push_back({type, label});
     }
 
-    void AddOutputPort(Port::Type type, const std::string& label) {
-        m_outputPorts.push_back({type, label});
+    void AddOutputPort(Port::Type type, const std::string& label, bool customRendering = false) {
+        m_outputPorts.push_back({type, label, customRendering});
     }
 
+    bool HasOutputCustomRendering(uint32_t index) const {
+        if (index < m_outputPorts.size()) {
+            return m_outputPorts[index].customSocketIcon;
+        }
+        return false;
+    }
+
+    bool HasInputCustomRendering(uint32_t index) const {
+        if (index < m_inputPorts.size()) {
+            return m_inputPorts[index].customSocketIcon;
+        }
+        return false;
+    }
+
+    Port GetInputPort(uint32_t index) const {
+        if (index < m_inputPorts.size()) {
+            return m_inputPorts[index];
+        }
+        return {Port::Type::EXECUTION_PORT, "?", false};
+    }
+
+    Port GetOutputPort(uint32_t index) const {
+        if (index < m_outputPorts.size()) {
+            return m_outputPorts[index];
+        }
+        return {Port::Type::EXECUTION_PORT, "?", false};
+    }
 
     uint32_t OutputsCount() const {
         return m_outputPorts.size();
@@ -142,6 +170,10 @@ public:
     }
     Behavior GetBehavior() const {
         return m_behavior;
+    }
+
+    bool IsExecutable() const {
+        return m_behavior == BEHAVIOR_EXECUTION;
     }
 
     void Accept(IVariableVisitor &visitor);
