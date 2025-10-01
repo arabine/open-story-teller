@@ -71,6 +71,11 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
             OpenModule(event.GetUuid());
         } else if (event.GetType() == ModuleEvent::Type::Closed) {
             CloseModule();
+        } else if (event.GetType() == ModuleEvent::Type::BuildSuccess) {
+            m_toastNotifier.addToast("Module", "Module built successfully", ToastType::Success);
+            m_debuggerWindow.SetScript(m_appController.GetModuleAssembly());
+        } else if (event.GetType() == ModuleEvent::Type::BuildFailure) {
+            m_toastNotifier.addToast("Module", "Module build failed", ToastType::Error);
         }
     });
 }
@@ -388,7 +393,7 @@ void MainWindow::DrawToolBar(float topPadding)
     // Création de la fenêtre pour la barre d'outils
     ImGui::Begin("ToolBar", nullptr, window_flags);
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // rouge
+   // ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // rouge
     float old_size = ImGui::GetFont()->Scale;
     ImGui::GetFont()->Scale *= 2.5;
 
@@ -415,7 +420,7 @@ void MainWindow::DrawToolBar(float topPadding)
 
     ImGui::GetFont()->Scale = old_size;
     ImGui::PopFont();
-    ImGui::PopStyleColor();
+ //   ImGui::PopStyleColor();
 
     
     // Fermeture de la fenêtre ImGui

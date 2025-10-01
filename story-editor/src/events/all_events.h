@@ -62,6 +62,8 @@ public:
     {
         Opened,
         Closed,
+        BuildSuccess,
+        BuildFailure
     };
 
     ModuleEvent(Type type, const std::string &uuid)
@@ -70,9 +72,17 @@ public:
     Type GetType() const { return m_type; }
     const std::string& GetUuid() const { return m_uuid; }
 
+    const std::string& GetScript() const { return m_script; }
+    bool IsSuccess() const { return success; }
+
+    void SetScript(const std::string& script) { m_script = script; }
+    void SetSuccess(bool s) { success = s; }
+
 private:
     Type m_type;
     std::string m_uuid;
+    std::string m_script;
+    bool success{false};
 };
 
 #endif // ALL_EVENTS_H

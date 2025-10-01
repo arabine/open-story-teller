@@ -104,6 +104,8 @@ public:
     void ProcessStory();
     void StepInstruction();
     void StopAudio() { m_player.Stop(); }
+    std::string GetModuleAssembly() const { return m_moduleAssembly; }
+    std::string GetStoryAssembly() const { return m_storyAssembly; }
 
     bool IsLibraryManagerInitialized() const { return m_libraryManager.IsInitialized(); }
 

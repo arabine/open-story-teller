@@ -15,10 +15,11 @@ PrintNodeWidget::PrintNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNod
 {
     m_printNode = std::dynamic_pointer_cast<PrintNode>(node);
     // Create defaut one input and one output
-    AddInputs(1);
-    SetInputPinName(0, "");
+    AddInputs(2);
+    SetInputPinName(0, ">");
+    SetInputPinName(1, "Argument 1");
     AddOutputs(1);
-    SetOutPinName(0, "");
+    SetOutPinName(0, ">");
 }
 
 void PrintNodeWidget::Initialize()
