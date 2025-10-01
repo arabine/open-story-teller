@@ -61,7 +61,7 @@ public:
     std::shared_ptr<StoryProject> NewModule();
     void SaveModule();
     void CloseModule();
-    std::shared_ptr<IStoryProject> OpenModule(const std::string &uuid);
+    std::shared_ptr<StoryProject> OpenModule(const std::string &uuid);
     void OpenStory(const std::string &path = "");
     void SaveStory(const std::string &path = "");
     void ExportStory(const std::string &filename);

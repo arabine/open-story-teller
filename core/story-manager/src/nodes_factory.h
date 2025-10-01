@@ -114,14 +114,19 @@ public:
 
     void SaveAllModules(ResourceManager &manager)
     {
-        for (const auto &entry : m_registry)
+        for (const auto &n : m_registry)
         {
-            // Only modules
-            auto module = std::dynamic_pointer_cast<StoryProject>(entry.second.first);
-            if (module)
+            auto p = dynamic_cast<StoryProject*>(n.second.first.get());
+            if (p)
             {
-                module->Save(manager);
+                p->Save(manager);
             }
+            // Only modules
+            // auto module = std::dynamic_pointer_cast<StoryProject>(entry.second.first);
+            // if (module)
+            // {
+            //     module->Save(manager);
+            // }
         }
     }
 

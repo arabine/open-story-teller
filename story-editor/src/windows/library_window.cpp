@@ -9,6 +9,8 @@
 #include "gui.h"
 #include "ImGuiFileDialog.h"
 
+#include "all_events.h"
+
 typedef int (*xfer_callback_t)(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
                                curl_off_t ultotal, curl_off_t ulnow);
 
@@ -50,11 +52,12 @@ void download_file(CURL *curl,
 }
 
 
-LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory)
+LibraryWindow::LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory, EventBus& eventBus)
     : WindowBase("Library Manager")
     , m_storyManager(project)
     , m_libraryManager(library)
     , m_nodesFactory(nodesFactory)
+    , m_eventBus(eventBus)
 {
     m_downloadThread = std::thread( std::bind(&LibraryWindow::DownloadThread, this) );
 
@@ -678,8 +681,7 @@ void LibraryWindow::Draw()
                         ImGui::PushID(module.uuid.c_str());
                         if (ImGui::SmallButton("Open"))
                         {
-                            // Open the module in the editor
-                            m_storyManager.OpenModule(module.uuid);
+                            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::Open, module.uuid));
                         }
                         ImGui::PopID();
                     }

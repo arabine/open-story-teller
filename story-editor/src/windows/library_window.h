@@ -7,6 +7,7 @@
 #include "thread_safe_queue.h"
 #include "downloader.h"
 #include "nodes_factory.h"
+#include "event_bus.h"
 
 #include <curl/curl.h>
 
@@ -65,7 +66,7 @@ struct TransferProgress {
 class LibraryWindow : public WindowBase
 {
 public:
-    LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory);
+    LibraryWindow(IStoryManager &project, LibraryManager &library, NodesFactory &nodesFactory, EventBus& eventBus);
 
     void Initialize();
     virtual void Draw() override;
@@ -75,6 +76,7 @@ private:
     IStoryManager &m_storyManager;
     LibraryManager &m_libraryManager;
     NodesFactory &m_nodesFactory;
+    EventBus    &m_eventBus;
 
     Downloader m_downloader;
     CURL *m_curl;

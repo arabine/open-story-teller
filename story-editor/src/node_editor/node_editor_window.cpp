@@ -102,53 +102,140 @@ void NodeEditorWindow::LoadPage(const std::string &uuid, const std::string &name
 void NodeEditorWindow::Load(std::shared_ptr<StoryProject> story)
 {
     m_story = story;
-
-    if (m_story)
+    
+    if (!m_story)
     {
-        try {
-
-            BaseNodeWidget::InitId();
-            InitializeProject();
-
-            auto [node_begin, node_end] = m_story->Nodes(m_currentPage->Uuid());
-
-            int i = 0;
-
-            for (auto it = node_begin; it != node_end; ++it)
-            {
-                auto n = m_widgetFactory.CreateNodeWidget((*it)->GetType(), m_manager, (*it));
-                if (n)
-                {
-                    n->Initialize();
-                //    n->SetOutputs(m_story->OutputsCount((*it)->GetId())); // il faut que les noeuds aient une bonne taille de outputs avant de créer les liens
-                    // m_currentPage->AddNode(n);
-                }
-                else
-                {
-                    throw std::logic_error(std::string("No registered model with name ") + (*it)->GetType());
-                }
-
-                std::cout << "Created " << ++i << " node" << std::endl;
-            }
-            auto [link_begin, link_end] = m_story->Links(m_currentPage->Uuid());
-
-            for (auto it = link_begin; it != link_end; ++it)
-            {
-                    // CreateLink(*it,
-                    //         GetInputPin((*it)->inNodeId, (*it)->inPortIndex),
-                    //         GetOutputPin((*it)->outNodeId, (*it)->outPortIndex));
-            }
-
-            m_loaded = true;
-        }
-        catch(std::exception &e)
-        {
-            std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
-        }
+        std::cout << "Cannot load null story" << std::endl;
+        return;
     }
 
-    // std::cout << "Loaded " << m_currentPage->m_nodes.size() << " nodes, " << m_currentPage->m_links.size() << " links" << std::endl;
-  
+    try
+    {
+        // Clear existing pages
+        m_pages.clear();
+        m_currentPage.reset();
+        
+        // Load all pages from the project
+        auto [nodesBegin, nodesEnd] = m_story->Nodes(m_story->MainUuid());
+        auto [linksBegin, linksEnd] = m_story->Links(m_story->MainUuid());
+        
+        // Create the main page
+        auto page = std::make_shared<NodeEditorPage>(m_story->MainUuid(), "Main");
+        m_pages.push_back(page);
+        m_currentPage = page;
+        
+        // Map to store node UUID -> ImNodeFlow UID mapping
+        std::map<std::string, ImFlow::NodeUID> nodeUidMap;
+        
+        // 1. Load all nodes from the project into ImNodeFlow
+        for (auto it = nodesBegin; it != nodesEnd; ++it)
+        {
+            auto baseNode = *it;
+            if (!baseNode)
+                continue;
+                
+            // Create the widget for this node
+            auto widget = m_widgetFactory.CreateNodeWidget(
+                baseNode->GetType(), 
+                m_manager, 
+                baseNode
+            );
+            
+            if (!widget)
+            {
+                std::cout << "Failed to create widget for node type: " 
+                          << baseNode->GetType() << std::endl;
+                continue;
+            }
+            
+            // Initialize the widget
+            widget->Initialize();
+            
+            // Create a NodeDelegate in ImNodeFlow
+            ImVec2 nodePos(baseNode->GetX(), baseNode->GetY());
+            auto delegate = page->mINF.addNode<NodeDelegate>(nodePos);
+            
+            // Link the delegate with the widget
+            delegate->SetWidget(widget);
+            
+            // Store the mapping between project node UUID and ImNodeFlow UID
+            nodeUidMap[baseNode->GetId()] = delegate->getUID();
+            
+            std::cout << "Loaded node: " << baseNode->GetType() 
+                      << " at (" << nodePos.x << ", " << nodePos.y << ")" << std::endl;
+        }
+        
+        // 2. Load all connections/links
+        for (auto it = linksBegin; it != linksEnd; ++it)
+        {
+            auto connection = *it;
+            if (!connection)
+                continue;
+                
+            // Find the source and target nodes in ImNodeFlow
+            auto sourceUidIt = nodeUidMap.find(connection->outNodeId);
+            auto targetUidIt = nodeUidMap.find(connection->inNodeId);
+            
+            if (sourceUidIt == nodeUidMap.end() || targetUidIt == nodeUidMap.end())
+            {
+                std::cout << "Warning: Cannot create link - node not found" << std::endl;
+                continue;
+            }
+            
+            // Get the ImNodeFlow nodes
+            auto& nodes = page->mINF.getNodes();
+            auto sourceNodeIt = nodes.find(sourceUidIt->second);
+            auto targetNodeIt = nodes.find(targetUidIt->second);
+            
+            if (sourceNodeIt == nodes.end() || targetNodeIt == nodes.end())
+            {
+                std::cout << "Warning: Node UID not found in ImNodeFlow" << std::endl;
+                continue;
+            }
+            
+            auto sourceNode = sourceNodeIt->second;
+            auto targetNode = targetNodeIt->second;
+            
+            // Get the pins from the nodes
+            // Output pin from source node
+            auto& sourcePins = sourceNode->getOuts();
+            if (connection->outPortIndex >= static_cast<int>(sourcePins.size()))
+            {
+                std::cout << "Warning: Invalid output port index: " 
+                          << connection->outPortIndex << std::endl;
+                continue;
+            }
+            auto* sourcePin = sourcePins[connection->outPortIndex].get();
+            
+            // Input pin from target node
+            auto& targetPins = targetNode->getIns();
+            if (connection->inPortIndex >= static_cast<int>(targetPins.size()))
+            {
+                std::cout << "Warning: Invalid input port index: " 
+                          << connection->inPortIndex << std::endl;
+                continue;
+            }
+            auto* targetPin = targetPins[connection->inPortIndex].get();
+            
+            // Create the link in ImNodeFlow
+            if (sourcePin && targetPin)
+            {
+                targetPin->createLink(sourcePin);
+                std::cout << "Created link: " << connection->outNodeId 
+                          << "[" << connection->outPortIndex << "] -> " 
+                          << connection->inNodeId 
+                          << "[" << connection->inPortIndex << "]" << std::endl;
+            }
+        }
+        
+        m_loaded = true;
+        std::cout << "Loaded " << nodeUidMap.size() << " nodes successfully" << std::endl;
+    }
+    catch(std::exception &e)
+    {
+        std::cout << "(NodeEditorWindow::Load) Exception: " << e.what() << std::endl;
+        m_loaded = false;
+    }
 }
 
 void NodeEditorWindow::SaveNodePositions()
@@ -158,28 +245,140 @@ void NodeEditorWindow::SaveNodePositions()
 
 void NodeEditorWindow::SaveNodesToProject()
 {
+    if (!m_story)
+    {
+        std::cout << "Cannot save: no story project loaded" << std::endl;
+        return;
+    }
+
+    // Clear current project structure
+    m_story->Clear();
+
     // Pour toutes les pages
     for (const auto& page : m_pages)
     {
-        // Clear current project nodes and links
-        m_story->Clear();
-
+        // Create the page in the project
         auto currentPage = m_story->CreatePage(page->Uuid());
 
-        // On récupère les noeuds de la page
-        for (const auto& node : page->GetNodes())
+        // 1. Save all nodes with their updated positions
+        for (auto &nodeEntry : page->mINF.getNodes())
         {
-            // On les ajoute au projet
-            // currentPage->AddNode(node);
+            auto delegate = dynamic_cast<NodeDelegate*>(nodeEntry.second.get());
+            if (!delegate)
+                continue;
+
+            auto widget = delegate->GetWidget();
+            if (!widget)
+                continue;
+
+            auto baseNode = widget->Base();
+            if (!baseNode)
+                continue;
+
+            // Update node position from ImNodeFlow
+            ImVec2 nodePos = nodeEntry.second->getPos();
+            baseNode->SetPosition(nodePos.x, nodePos.y);
+
+            // Add node to project
+            m_story->AddNode(currentPage->Uuid(), baseNode);
+
+            std::cout << "Saved node: " << baseNode->GetId() 
+                      << " at (" << nodePos.x << ", " << nodePos.y << ")" << std::endl;
         }
 
-        // On récupère tous les liens de la page
-        for (const auto& link : page->GetLinks())
+        // 2. Save all links/connections
+        const auto& links = page->mINF.getLinks();
+        
+        for (const auto& weakLink : links)
         {
-            // On les ajoute au projet
-            // currentPage->AddLink(link);
+            auto link = weakLink.lock();
+            if (!link)
+                continue;
+
+            // Get left (source) and right (target) pins
+            auto* leftPin = link->left();
+            auto* rightPin = link->right();
+
+            if (!leftPin || !rightPin)
+                continue;
+
+            // Get the nodes that own these pins
+            auto* leftNode = leftPin->getParent();
+            auto* rightNode = rightPin->getParent();
+
+            if (!leftNode || !rightNode)
+                continue;
+
+            // Cast to NodeDelegate to get the widget
+            auto* leftDelegate = dynamic_cast<NodeDelegate*>(leftNode);
+            auto* rightDelegate = dynamic_cast<NodeDelegate*>(rightNode);
+
+            if (!leftDelegate || !rightDelegate)
+                continue;
+
+            auto leftWidget = leftDelegate->GetWidget();
+            auto rightWidget = rightDelegate->GetWidget();
+
+            if (!leftWidget || !rightWidget)
+                continue;
+
+            // Get the base nodes (model)
+            auto leftBaseNode = leftWidget->Base();
+            auto rightBaseNode = rightWidget->Base();
+
+            if (!leftBaseNode || !rightBaseNode)
+                continue;
+
+            // Find the pin indices
+            int leftPinIndex = -1;
+            int rightPinIndex = -1;
+
+            // Find output pin index on left node
+            const auto& leftOuts = leftNode->getOuts();
+            for (size_t i = 0; i < leftOuts.size(); ++i)
+            {
+                if (leftOuts[i].get() == leftPin)
+                {
+                    leftPinIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+
+            // Find input pin index on right node
+            const auto& rightIns = rightNode->getIns();
+            for (size_t i = 0; i < rightIns.size(); ++i)
+            {
+                if (rightIns[i].get() == rightPin)
+                {
+                    rightPinIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+
+            if (leftPinIndex < 0 || rightPinIndex < 0)
+            {
+                std::cout << "Warning: Could not find pin indices for connection" << std::endl;
+                continue;
+            }
+
+            // Create the connection object
+            auto connection = std::make_shared<Connection>();
+            connection->outNodeId = leftBaseNode->GetId();
+            connection->outPortIndex = leftPinIndex;
+            connection->inNodeId = rightBaseNode->GetId();
+            connection->inPortIndex = rightPinIndex;
+
+            // Add connection to project
+            m_story->AddConnection(currentPage->Uuid(), connection);
+
+            std::cout << "Saved connection: " << connection->outNodeId 
+                      << "[" << connection->outPortIndex << "] -> " 
+                      << connection->inNodeId 
+                      << "[" << connection->inPortIndex << "]" << std::endl;
         }
     }
+
+    std::cout << "SaveNodesToProject completed successfully" << std::endl;
 }
 
 void NodeEditorWindow::OpenFunction(const std::string &uuid, const std::string &name)

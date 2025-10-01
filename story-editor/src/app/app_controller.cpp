@@ -880,23 +880,21 @@ void AppController::SaveModule()
     m_logger.Log("Modules saved.");
 }
 
-std::shared_ptr<IStoryProject> AppController::OpenModule(const std::string &uuid)
+std::shared_ptr<StoryProject> AppController::OpenModule(const std::string &uuid)
 {
     m_module = m_nodesFactory.GetModule(uuid);
     if (!m_module)
     {
         m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Cannot find module: " + uuid));
-        m_logger.Log("Cannot find module: " + uuid, true);
+        
     }
     else if (m_module->Load(m_resources, m_nodesFactory))
     {
-        m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::Opened, uuid));
-        m_logger.Log("Open module success: " + uuid);
+        m_eventBus.Emit(std::make_shared<GenericResultEvent>(true, "Open module success: " + uuid));
     }
     else
     {
         m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Failed to open module: " + uuid));
-        m_logger.Log("Open module error: " + uuid, true);
     }
     return m_module;
 }

@@ -637,10 +637,6 @@ void StoryProject::Save(ResourceManager &manager)
 
 void StoryProject::Clear()
 {
-    m_uuid = "";
-    m_working_dir = "";
-    m_project_file_path = "";
-    m_initialized = false;
     m_variables.clear();
     m_pages.clear();
 }

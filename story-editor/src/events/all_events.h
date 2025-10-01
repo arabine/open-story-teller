@@ -60,7 +60,7 @@ class ModuleEvent : public Event
 public:
     enum class Type
     {
-        Opened,
+        Open,
         Closed,
     };
 

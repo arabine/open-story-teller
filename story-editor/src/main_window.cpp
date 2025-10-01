@@ -46,7 +46,7 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     , m_resourcesDock(appController.GetResourceManager(), appController)
     , m_nodeEditorWindow(appController, appController.GetNodesFactory(), m_widgetFactory, IStoryProject::PROJECT_TYPE_STORY)
     , m_moduleEditorWindow(appController, appController.GetNodesFactory(), m_widgetFactory, IStoryProject::PROJECT_TYPE_MODULE)
-    , m_libraryWindow(appController, appController.GetLibraryManager(), appController.GetNodesFactory())
+    , m_libraryWindow(appController, appController.GetLibraryManager(), appController.GetNodesFactory(), eventBus)
     , m_projectPropertiesDialog(appController, appController.GetResourceManager())
 {
     CloseProject();
@@ -96,7 +96,7 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     });
 
     m_eventBus.Subscribe<ModuleEvent>([this](const ModuleEvent &event) {
-        if (event.GetType() == ModuleEvent::Type::Opened) {
+        if (event.GetType() == ModuleEvent::Type::Open) {
             OpenModule(event.GetUuid());
         } else if (event.GetType() == ModuleEvent::Type::Closed) {
             CloseModule();
@@ -327,6 +327,7 @@ void MainWindow::NewModule()
 
 void MainWindow::SaveModule()
 {
+    m_moduleEditorWindow.SaveNodesToProject();
     m_appController.SaveModule();
     m_logger.Log("Modules saved");
     m_toastNotifier.addToast("Module", "Module saved", ToastType::Success);
@@ -334,7 +335,7 @@ void MainWindow::SaveModule()
 
 void MainWindow::OpenModule(const std::string &uuid)
 {
-    auto module = m_appController.GetCurrentModule();
+    auto module = m_appController.OpenModule(uuid);
     if (module)
     {
         m_moduleEditorWindow.Load(module);
