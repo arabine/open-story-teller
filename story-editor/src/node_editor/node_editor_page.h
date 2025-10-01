@@ -59,10 +59,15 @@ public:
             if (port.customSocketIcon)
             {
                 ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType())->renderer([this, i](ImFlow::Pin* p) {
-                    ImGui::Text("C");
-                    p->drawDecoration();
-                    //p->drawSocket();
-                    m_widget->DrawSocket(i, true, p->getPos(), p->isConnected());
+                   Nw::Pin pin;
+                    pin.index = i;
+                    pin.isConnected = p->isConnected();
+                    pin.pinKind = Nw::PinKind::Input;
+                    pin.pinPoint = p->pinPoint();
+                    pin.pos = p->getPos();
+                    pin.size =  p->getSize();
+
+                    m_widget->DrawSocket(pin);
                 });
             }
             else
@@ -78,10 +83,16 @@ public:
             if (port.customSocketIcon)
             {
                 ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->renderer([this, i](ImFlow::Pin* p) {
-                    ImGui::Text("C");
-                    p->drawDecoration();
-                    // p->drawSocket();
-                    m_widget->DrawSocket(i, false, p->getPos(), p->isConnected());
+                
+                    Nw::Pin pin;
+                    pin.index = i;
+                    pin.isConnected = p->isConnected();
+                    pin.pinKind = Nw::PinKind::Output;
+                    pin.pinPoint = p->pinPoint();
+                    pin.pos = p->getPos();
+                    pin.size =  p->getSize();
+
+                    m_widget->DrawSocket(pin);
                 });
             }
             else
@@ -122,9 +133,6 @@ struct NodeEditorPage : public  ImFlow::BaseNode
     {
         
         mINF.setSize({500, 500});
-        // mINF.addNode<SimpleSum>({0, 0});
-        // mINF.addNode<SimpleSum>({10, 10});
-
     }
 
     ~NodeEditorPage() {
@@ -182,7 +190,7 @@ struct NodeEditorPage : public  ImFlow::BaseNode
         mINF.rightClickPopUpContent([this, openPopupPosition, &nodesFactory, &widgetFactory, &storyManager](ImFlow::BaseNode* node){
             // std::cout << "Right-clicked on node: " << node->getName() << std::endl;
 
-            auto newNodePostion = openPopupPosition;
+            auto newNodePosition = mINF.screen2grid(openPopupPosition);
             auto nodeTypes = nodesFactory.ListOfNodes();
 
             for (auto &type : nodeTypes)
@@ -196,11 +204,11 @@ struct NodeEditorPage : public  ImFlow::BaseNode
                         if (n)
                         {
                             // Create delegate
-                            auto delegate = mINF.addNode<NodeDelegate>({newNodePostion.x, newNodePostion.y});
+                            auto delegate =  mINF.placeNode<NodeDelegate>();
                             // Link with the widget
                             delegate->SetWidget(n);
 
-                            n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
+                            n->Base()->SetPosition(newNodePosition.x, newNodePosition.y);
                             n->Initialize();
                            // AddNode(n);
                         }

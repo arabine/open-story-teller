@@ -10,6 +10,9 @@
 #include "base_node.h"
 #include "gui.h"
 
+namespace Nw
+{
+
 enum class PinType
 {
     Flow,
@@ -40,18 +43,42 @@ enum class NodeType
 struct PinStyle
 {
     /// @brief Socket and link color
-    ImU32 color;
+    ImU32 color{IM_COL32(255,255,255,255)};
     /// @brief Socket shape ID
-    int socket_shape;
+    int socket_shape{5};
     /// @brief Socket radius
-    float socket_radius;
+    float socket_radius{4.f};
     /// @brief Socket radius when hovered
-    float socket_hovered_radius;
+    float socket_hovered_radius{4.4f};
     /// @brief Socket radius when connected
-    float socket_connected_radius;
+    float socket_connected_radius{4.2f};
     /// @brief Socket outline thickness when empty
-    float socket_thickness;
+    float socket_thickness{1.f};
+    ImVec2 padding = ImVec2(3.f, 1.f);
+    /// @brief Border and background corner rounding
+    float bg_radius = 8.f;
+    /// @brief Border thickness
+    float border_thickness = 1.f;
+    /// @brief Background color
+    ImU32 bg_color = IM_COL32(23, 16, 16, 0);
+    /// @brief Background color when hovered
+    ImU32 bg_hover_color = IM_COL32(100, 100, 255, 70);
+    /// @brief Border color
+    ImU32 border_color = IM_COL32(255, 255, 255, 0);
 };
+
+struct Pin
+{
+    ImVec2 pos = ImVec2(0.f, 0.f);
+    ImVec2 size;
+    ImVec2 pinPoint = ImVec2(0.f, 0.f);
+    bool isConnected{false};
+    int index{0};
+    PinKind pinKind{PinKind::Input};
+    PinStyle style;
+};
+
+} // namespace Nw
 
 /**
  * @brief Basically a wrapper class around ImGuiNodeEditor Node structure
@@ -69,7 +96,7 @@ public:
     virtual void DrawProperties(std::shared_ptr<IStoryProject> story) = 0;
 
 
-    virtual void DrawSocket(uint32_t index, bool isInput, ImVec2 pin_pos, bool isConnected)  {}
+    virtual void DrawSocket(const Nw::Pin &pin)  {}
 
 
     virtual bool HasSync() const { 
