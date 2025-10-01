@@ -247,10 +247,6 @@ void AppController::CompileNodes(IStoryProject::Type type)
     {
         if (m_story->GenerateScript(m_storyAssembly))
         {
-            // La GUI (DebuggerWindow) doit être notifiée de cette mise à jour.
-            // Au lieu de appeler m_debuggerWindow.SetScript(m_storyAssembly); directement,
-            // AppController pourrait émettre un événement ou un callback.
-            // Pour l'instant, on suppose une notification ou que la GUI tire les données.
             m_logger.Log("Nodes script generated for story.");
             Build(true); // Compile seulement par défaut
         }
@@ -261,9 +257,11 @@ void AppController::CompileNodes(IStoryProject::Type type)
     } 
     else if (type == IStoryProject::Type::PROJECT_TYPE_MODULE && m_module)
     {
-        if (m_module->GenerateScript(m_storyAssembly))
+        if (m_module->GenerateScript(m_moduleAssembly))
         {
             m_logger.Log("Nodes script generated for module.");
+            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildSuccess, m_module->GetUuid()));
+            Build(true); // Compile seulement par défaut
         }
         else
         {

@@ -100,6 +100,11 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
             OpenModule(event.GetUuid());
         } else if (event.GetType() == ModuleEvent::Type::Closed) {
             CloseModule();
+        } else if (event.GetType() == ModuleEvent::Type::BuildSuccess) {
+            m_toastNotifier.addToast("Module", "Module built successfully", ToastType::Success);
+            m_debuggerWindow.SetScript(m_appController.GetModuleAssembly());
+        } else if (event.GetType() == ModuleEvent::Type::BuildFailure) {
+            m_toastNotifier.addToast("Module", "Module build failed", ToastType::Error);
         }
     });
 }
@@ -411,45 +416,80 @@ void MainWindow::DrawToolBar(float topPadding)
             ImGuiWindowFlags_NoDocking;
 
     // Définit la taille et la position de la barre d'outils
-    ImVec2 size = ImVec2(60, ImGui::GetIO().DisplaySize.y - topPadding);  // Largeur de 60 pixels et hauteur égale à celle de l'écran
+    ImVec2 size = ImVec2(60, ImGui::GetIO().DisplaySize.y - topPadding);
     ImGui::SetNextWindowSize(size);
-    ImGui::SetNextWindowPos(ImVec2(0, topPadding));  // Positionné à gauche et en haut
+    ImGui::SetNextWindowPos(ImVec2(0, topPadding));
 
+    // Style pour les coins arrondis des boutons
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
+    
     // Création de la fenêtre pour la barre d'outils
-    ImGui::Begin("ToolBar", nullptr, window_flags);
-
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // rouge
-    float old_size = ImGui::GetFont()->Scale;
-    ImGui::GetFont()->Scale *= 2.5;
-
-    ImGui::PushFont(ImGui::GetFont());
-
-    // Ajouter des boutons à la barre d'outils
-    if (ImGui::Button(ICON_MDI_SPEAKER_STOP "##stop_sound", ImVec2(-1, 50))) {  // Le bouton prend toute la largeur de la fenêtre et a une hauteur de 50 pixels
-        m_appController.StopAudio();
-    }
-    
-    if (ImGui::Button(ICON_MDI_HAMMER "##build_project", ImVec2(-1, 50))) {  // Le bouton prend toute la largeur de la fenêtre et a une hauteur de 50 pixels
+    if (ImGui::Begin("ToolBar", nullptr, window_flags))
+    {
+        // Taille réduite des boutons
+        float buttonSize = 36.0f;
+        float windowWidth = ImGui::GetContentRegionAvail().x;
+        float offsetX = (windowWidth - buttonSize) * 0.5f;
         
-        // Compile story if window focused, otherwise module
-        if (m_nodeEditorWindow.IsFocused())
-        {
-            m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_STORY);
+        // Style pour les couleurs des boutons
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+
+        // Taille de fonte réduite pour les icônes
+        float old_size = ImGui::GetFont()->Scale;
+        ImGui::GetFont()->Scale *= 1.2f;
+        ImGui::PushFont(ImGui::GetFont());
+
+        // Bouton Stop Sound
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button(ICON_MDI_SPEAKER_STOP "##stop_sound", ImVec2(buttonSize, buttonSize))) {
+            m_appController.StopAudio();
         }
-        else
-        {
-            m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_MODULE);
+        ImGui::PopStyleColor();
+        
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Stop Sound");
         }
+
+        // Espacement vertical
+        ImGui::Dummy(ImVec2(0, 8));
+
+        // Bouton Build
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.8f, 0.9f, 1.0f));
+        if (ImGui::Button(ICON_MDI_HAMMER "##build_project", ImVec2(buttonSize, buttonSize))) {
+            // Compile story if window focused, otherwise module
+            if (m_nodeEditorWindow.IsFocused())
+            {
+                m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_STORY);
+            }
+            else
+            {
+                m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_MODULE);
+            }
+        }
+        ImGui::PopStyleColor();
+        
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Build Project");
+        }
+
+        // Restaurer le scale de la fonte
+        ImGui::GetFont()->Scale = old_size;
+        ImGui::PopFont();
+
+        // Pop les couleurs des boutons
+        ImGui::PopStyleColor(3); // Button, ButtonHovered, ButtonActive
+        
+        // Fermeture de la fenêtre ImGui
+        ImGui::End();
     }
     
-
-    ImGui::GetFont()->Scale = old_size;
-    ImGui::PopFont();
-    ImGui::PopStyleColor();
-
-    
-    // Fermeture de la fenêtre ImGui
-    ImGui::End();
+    // Pop les styles de frame
+    ImGui::PopStyleVar(2); // FrameRounding, FramePadding
 }
 
 #include "imgui_internal.h"

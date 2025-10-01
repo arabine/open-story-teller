@@ -132,7 +132,7 @@ struct NodeEditorPage : public  ImFlow::BaseNode
         , m_name(name)
     {
         
-        mINF.setSize({500, 500});
+        mINF.setSize({0, 0});
     }
 
     ~NodeEditorPage() {
