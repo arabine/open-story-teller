@@ -15,9 +15,9 @@
 #include "json.hpp"
 #include "variable.h"       // Pour Variable
 #include "all_events.h"
+#include "Localization.h"
 
 // Définitions des registres et événements CHIP-32 si non déjà dans chip32_vm.h
-// Assurez-vous que ces définitions sont accessibles.
 #ifndef R0
 #define R0 0
 #endif
@@ -519,6 +519,7 @@ void AppController::SaveParams()
     j["recents"] = m_recentProjects;
     j["library_path"] = m_libraryManager.LibraryPath();
     j["store_url"] = m_libraryManager.GetStoreUrl();
+    j["language"] = Localization::Instance().GetCurrentLang();
 
     std::string loc = pf::getConfigHome() + "/ost_settings.json";
     std::ofstream o(loc);
@@ -561,6 +562,11 @@ void AppController::LoadParams()
             m_libraryManager.SetStoreUrl(j.value("store_url", "https://gist.githubusercontent.com/DantSu/3aea4c1fe15070bcf394a40b89aec33e/raw/stories.json"));
         } else {
             m_logger.Log("No 'store_url' found in settings, using default.", false);
+        }
+
+        if (j.contains("language")) {
+            std::string lang = j["language"].get<std::string>();
+            Localization::Instance().LoadLanguage(lang);
         }
 
     }

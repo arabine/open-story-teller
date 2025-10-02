@@ -357,6 +357,8 @@ elseif(WIN32)
     )
 endif()
 
+
+
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/OUTPUT" CACHE PATH "Directory for sbnw installation" FORCE)
 
 # set_target_properties(${STORY_EDITOR_PROJECT}

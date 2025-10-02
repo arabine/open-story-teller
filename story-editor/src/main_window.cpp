@@ -106,6 +106,13 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
             m_toastNotifier.addToast("Module", "Module build failed", ToastType::Error);
         }
     });
+
+
+    m_languageSelector.SetOnLanguageChanged([this](const std::string& langCode) {
+        // Sauvegarder la préférence
+       m_appController.SaveParams();
+       m_logger.Log("Language changed to: " + langCode);
+    });
 }
 
 MainWindow::~MainWindow()
@@ -123,7 +130,7 @@ float MainWindow::DrawMainMenuBar()
 
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("File"))
+        if (ImGui::BeginMenu(TR("menu.file")))
         {
 
             if (ImGui::MenuItem("New story project"))
@@ -190,7 +197,7 @@ float MainWindow::DrawMainMenuBar()
                 NewModule();
             }
 
-            if (ImGui::MenuItem("Save module"))
+            if (ImGui::MenuItem("Save module (ctrl+s)"))
             {
                 SaveModule();
             }
@@ -203,6 +210,16 @@ float MainWindow::DrawMainMenuBar()
 
             ImGui::EndMenu();
         }
+
+        // if (ImGui::BeginMenu(TR("menu.view"))) {
+        //     ImGui::MenuItem(TR("window.console"), nullptr, &m_showConsole);
+        //     ImGui::MenuItem(TR("window.resources"), nullptr, &m_showResources);
+        //     ImGui::MenuItem(TR("window.properties"), nullptr, &m_showProperties);
+        //     ImGui::EndMenu();
+        // }
+
+        m_languageSelector.DrawMenu();
+
 
         if (ImGui::BeginMenu("Help"))
         {
@@ -261,7 +278,7 @@ bool MainWindow::ShowQuitConfirm()
    // ImGui::SetNextWindowSize(ImVec2(200, 150));
     if (ImGui::BeginPopupModal("QuitConfirm", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Really qui without saving?");
+        ImGui::Text("Really quit without saving?");
         ImGui::Separator();
 
         if (ImGui::Button("OK", ImVec2(120, 0)))
@@ -520,14 +537,17 @@ bool MainWindow::Loop()
 
     if (m_appController.IsLibraryManagerInitialized())
     {
+        
+
         bool nodeEditorFocused = m_nodeEditorWindow.IsFocused();
+        bool moduleEditorFocused = m_moduleEditorWindow.IsFocused();
+
         m_consoleWindow.Draw();
         m_emulatorDock.Draw();
         m_debuggerWindow.Draw();
         m_resourcesDock.Draw();
         m_nodeEditorWindow.Draw();
         m_moduleEditorWindow.Draw();
-
 
         auto currentStory = nodeEditorFocused ? m_nodeEditorWindow.GetCurrentStory() : m_moduleEditorWindow.GetCurrentStory();
         m_variablesWindow.Draw(currentStory);
@@ -546,6 +566,31 @@ bool MainWindow::Loop()
         // DockingToolbar("Toolbar2", &toolbar2_axis);
 
         DrawToolBar(height);
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false))
+        {
+            if (moduleEditorFocused && m_module)
+            {
+                // Si l'éditeur de module a le focus, sauvegarder le module
+                m_appController.SaveModule();
+                m_toastNotifier.success("Module sauvegardé");
+                m_logger.Log("Module sauvegardé via Ctrl+S");
+            }
+            else if (m_story)
+            {
+                // Sinon, sauvegarder l'histoire principale
+                m_appController.SaveProject();
+                m_toastNotifier.success("Projet sauvegardé");
+                m_logger.Log("Projet sauvegardé via Ctrl+S");
+            }
+            else
+            {
+                // Aucun projet ouvert
+                m_toastNotifier.warning("Aucun projet ou module à sauvegarder");
+                m_logger.Log("Tentative de sauvegarde sans projet ouvert", true);
+            }
+        }
     }
 
     m_aboutDialog.Draw();

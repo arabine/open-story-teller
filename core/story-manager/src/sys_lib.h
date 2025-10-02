@@ -17,4 +17,7 @@ public:
     static std::string ToUpper(const std::string &input);
     static std::string ToLower(const std::string &input);
     static std::string ReadFile(const std::filesystem::path &filename);
+    static bool FileExists(const std::string& path) {
+        return std::filesystem::exists(path);
+    }
 };

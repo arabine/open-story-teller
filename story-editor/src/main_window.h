@@ -17,6 +17,7 @@
 #include "variables_window.h"
 #include "library_window.h"
 #include "cpu_window.h"
+
 // Dialogs
 #include "about_dialog.h"
 #include "project_properties_dialog.h"
@@ -26,6 +27,8 @@
 #include "i_logger.h"
 #include "imgui_toast_notifier.h"
 #include "node_widget_factory.h"
+#include "Localization.h"
+#include "LanguageSelector.h"
 
 class MainWindow : public std::enable_shared_from_this<MainWindow>, public ILogSubject
 {
@@ -67,6 +70,7 @@ private:
     ProjectPropertiesDialog m_projectPropertiesDialog;
 
     ImGuiToastNotifier m_toastNotifier;
+    LanguageSelector m_languageSelector;
 
     // From IStoryManager (proxy to StoryProject class)
     void OpenProject(const std::string &uuid);
