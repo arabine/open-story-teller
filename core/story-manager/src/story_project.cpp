@@ -179,7 +179,7 @@ void StoryProject::DeleteNode(const std::string_view &page_uuid, const std::stri
     }
 }
 
-std::shared_ptr<StoryPage> StoryProject::GetPage(const std::string &uuid)
+std::shared_ptr<StoryPage> StoryProject::GetPage(const std::string_view &uuid)
 {
     for (const auto & p : m_pages)
     {

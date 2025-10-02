@@ -10,7 +10,6 @@
 #include "i_story_project.h"
 #include "gui.h"
 #include "variable_node.h"
-#include "media_node.h"
 
 class VariableNodeWidget : public BaseNodeWidget
 {
@@ -18,7 +17,6 @@ public:
     VariableNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node);
 
     void Draw() override;
-
     virtual void DrawProperties(std::shared_ptr<IStoryProject> story) override;
     virtual void Initialize() override;
 
@@ -28,5 +26,5 @@ private:
     std::shared_ptr<VariableNode> m_variableNode;
     int m_selectedIndex{-1};
     std::string m_selectedVariableUuid;
-    std::string m_selectedVariableName;
+    std::string m_selectedVariableName{"<none>"};
 };

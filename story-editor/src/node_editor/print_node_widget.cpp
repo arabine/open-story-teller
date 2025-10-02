@@ -1,4 +1,3 @@
-
 #include <sstream>
 #include "print_node_widget.h"
 
@@ -13,40 +12,55 @@ PrintNodeWidget::PrintNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNod
     , m_manager(manager)
 {
     m_printNode = std::dynamic_pointer_cast<PrintNode>(node);
-    // Create defaut one input and one output
-    // AddInputs(2);
-    // SetInputPinName(0, ">");
-    // SetInputPinName(1, "Argument 1");
-    // AddOutputs(1);
-    // SetOutPinName(0, ">");
+    SetTitle("Print");
 }
 
 void PrintNodeWidget::Initialize()
 {
     BaseNodeWidget::Initialize();
+    
+    // Copy current text to buffer
+    auto text = m_printNode->GetText();
+    if (text.size() < MAX_PRINT_SIZE) {
+        text.copy(m_buffer, text.size());
+        m_buffer[text.size()] = '\0';
+    }
 }
-
 
 void PrintNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
 {
     ImGui::AlignTextToFramePadding();
+    ImGui::Text("Format string:");
+    
+    ImGui::PushItemWidth(200.0f);
 
-    ImGui::PushItemWidth(100.0f);
-
-    auto t = m_printNode->GetText();
-    t.copy(m_buffer, sizeof(m_buffer) - 1);
-
-    bool edited = ImGui::InputText("##edit", m_buffer, sizeof(m_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
-
-   // if (edited)
-    {
+    // Edit the format string
+    if (ImGui::InputText("##format", m_buffer, sizeof(m_buffer))) {
         m_printNode->SetText(m_buffer);
     }
+    
+    ImGui::PopItemWidth();
+    
+    // Show help text
+    ImGui::TextDisabled("Use {0}, {1}, {2}, {3} for arguments");
+    
+    // Display current text
+    ImGui::Separator();
+    ImGui::Text("Preview: %s", m_printNode->GetText().c_str());
 }
 
 void PrintNodeWidget::Draw()
 {
-
-
+    // Display format string in the node body
+    std::string displayText = m_printNode->GetText();
+    if (displayText.empty()) {
+        displayText = "<empty>";
+    }
+    
+    // Truncate if too long
+    if (displayText.length() > 30) {
+        displayText = displayText.substr(0, 27) + "...";
+    }
+    
+    ImGui::TextUnformatted(displayText.c_str());
 }
-

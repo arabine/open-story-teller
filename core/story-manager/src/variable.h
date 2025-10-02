@@ -147,6 +147,21 @@ public:
         return GetValue<bool>();
     }
 
+    std::string GetValueAsString() const {
+        switch (m_valueType) {
+            case ValueType::INTEGER:
+                return std::to_string(GetValue<int>());
+            case ValueType::FLOAT:
+                return std::to_string(GetValue<float>());
+            case ValueType::BOOL:
+                return GetValue<bool>() ? "true" : "false";
+            case ValueType::STRING:
+                return GetValue<std::string>();
+            default:
+                return "<unknown>";
+        }
+    }
+
     using VariableValue = std::variant<int, float, bool, std::string>;
 
     std::string GetUuid() const { 

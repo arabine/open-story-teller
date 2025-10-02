@@ -138,6 +138,7 @@ set(SRCS
     ## Docks
     src/docks/emulator_dock.cpp
     src/docks/resources_dock.cpp
+    src/docks/error_list_dock.cpp
     
     # src/node_editor/media_node_widget.cpp
     src/node_editor/base_node_widget.cpp

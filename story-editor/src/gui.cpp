@@ -664,16 +664,16 @@ void Gui::ApplyTheme()
     colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.13f, 0.75f, 1.00f, 0.80f);
     
     // ===== AMÉLIORATION DES ONGLETS =====
-    // Onglet inactif (non sélectionné)
-    colors[ImGuiCol_Tab]                    = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+    // Onglet inactif (non sélectionné) - TRÈS FONCÉ
+    colors[ImGuiCol_Tab]                    = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
     // Onglet survolé
     colors[ImGuiCol_TabHovered]             = ImVec4(0.25f, 0.60f, 0.80f, 1.00f);
-    // Onglet actif (sélectionné) - couleur vive et contrastée
+    // Onglet actif (sélectionné dans fenêtre focusée) - BLEU VIF
     colors[ImGuiCol_TabActive]              = ImVec4(0.20f, 0.65f, 0.85f, 1.00f);
-    // Onglet inactif dans une fenêtre non-focusée
-    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
-    // Onglet actif dans une fenêtre non-focusée
-    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.18f, 0.45f, 0.60f, 1.00f);
+    // Onglet inactif dans une fenêtre non-focusée - TRÈS FONCÉ
+    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    // Onglet actif dans une fenêtre non-focusée - BEAUCOUP PLUS FONCÉ
+    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.10f, 0.10f, 0.12f, 1.00f);
     
     colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
     colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
@@ -701,8 +701,8 @@ void Gui::ApplyTheme()
     style.PopupRounding = 2.0f;
     style.ScrollbarRounding = 12.0f;
     style.ScrollbarSize = 13.0f;
-    style.TabBorderSize = 0.0f;  // Pas de bordure autour des onglets
-    style.TabRounding = 4.0f;     // Coins arrondis pour les onglets
+    style.TabBorderSize = 0.0f;
+    style.TabRounding = 4.0f;
     style.WindowRounding = 4.0f;
 }
 

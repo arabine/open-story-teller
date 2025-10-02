@@ -12,7 +12,8 @@
 enum ToastType {
     Success,
     Warning,
-    Error
+    Error,
+    Info
 };
 
 struct Toast {
@@ -26,7 +27,7 @@ struct Toast {
 class ImGuiToastNotifier {
 private:
     std::vector<Toast> toasts;
-    const float TOAST_WIDTH = 300.0f;
+    const float TOAST_WIDTH = 350.0f;
     const float TOAST_PADDING = 10.0f;
 
 public:
@@ -34,12 +35,43 @@ public:
         toasts.push_back({title, text, type, std::chrono::steady_clock::now(), duration});
     }
 
+    // Helper methods pour les cas communs
+    void success(const std::string& message) {
+        addToast("Success", message, ToastType::Success, 3.0f);
+    }
+    
+    void error(const std::string& message, float duration = 5.0f) {
+        addToast("Error", message, ToastType::Error, duration);
+    }
+    
+    void warning(const std::string& message) {
+        addToast("Warning", message, ToastType::Warning, 4.0f);
+    }
+    
+    void info(const std::string& message) {
+        addToast("Info", message, ToastType::Info, 3.0f);
+    }
+    
+    // Pour les erreurs de compilation
+    void compilationFailed(size_t errorCount, size_t warningCount = 0) {
+        std::string msg = std::to_string(errorCount) + " error(s) found";
+        if (warningCount > 0) {
+            msg += ", " + std::to_string(warningCount) + " warning(s)";
+        }
+        msg += ". Check Error List for details.";
+        addToast("Compilation Failed", msg, ToastType::Error, 6.0f);
+    }
+    
+    void compilationSuccess(float duration = 2.5f) {
+        addToast("Compilation Success", "Build completed successfully", ToastType::Success, duration);
+    }
+
     void render() {
         if (toasts.empty()) {
             return;
         }
 
-        // Get the main viewport work area (excludes menu bar, status bar, etc.)
+        // Get the main viewport work area
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImVec2 work_pos = viewport->WorkPos;
         ImVec2 work_size = viewport->WorkSize;
@@ -54,7 +86,6 @@ public:
         ImGui::SetNextWindowSize(ImVec2(TOAST_WIDTH, 0), ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(0.90f);
         
-        // Add NoNav to prevent interfering with other windows
         ImGuiWindowFlags window_flags = 
             ImGuiWindowFlags_NoDecoration | 
             ImGuiWindowFlags_NoMove | 
@@ -103,6 +134,10 @@ public:
                         color = ImVec4(0.94f, 0.31f, 0.31f, 1.0f);
                         icon = ICON_FA_TIMES_CIRCLE;
                         break;
+                    case Info:
+                        color = ImVec4(0.3f, 0.7f, 1.0f, 1.0f);
+                        icon = ICON_FA_INFO_CIRCLE;
+                        break;
                 }
 
                 // Draw icon and title on the same line
@@ -111,13 +146,13 @@ public:
                 ImGui::PopStyleColor();
                 
                 ImGui::SameLine();
-                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Use default font for title
-                ImGui::TextUnformatted(it->title.c_str());
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
+                ImGui::Text("%s", it->title.c_str());
                 ImGui::PopFont();
 
                 // Draw message text with wrapping
                 ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + TOAST_WIDTH - 24.0f);
-                ImGui::TextUnformatted(it->text.c_str());
+                ImGui::TextWrapped("%s", it->text.c_str());
                 ImGui::PopTextWrapPos();
 
                 ImGui::PopStyleVar(); // Alpha

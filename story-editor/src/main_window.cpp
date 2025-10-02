@@ -517,6 +517,7 @@ bool MainWindow::Loop()
 
     // ------------  Draw all windows
     m_libraryWindow.Draw();
+    m_errorListDock.Draw();
 
     if (m_appController.IsLibraryManagerInitialized())
     {

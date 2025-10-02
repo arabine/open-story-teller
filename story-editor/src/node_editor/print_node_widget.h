@@ -10,17 +10,15 @@
 #include "i_story_project.h"
 #include "gui.h"
 #include "print_node.h"
-#include "media_node.h"
 
 class PrintNodeWidget : public BaseNodeWidget
 {
 public:
-
-    static const int MAX_PRINT_SIZE = 128;
+    static const int MAX_PRINT_SIZE = 256;
+    
     PrintNodeWidget(IStoryManager &manager, std::shared_ptr<BaseNode> node);
 
     void Draw() override;
-
     virtual void DrawProperties(std::shared_ptr<IStoryProject> story) override;
     virtual void Initialize() override;
 

@@ -251,14 +251,20 @@ void NodeEditorWindow::SaveNodesToProject()
         return;
     }
 
-    // Clear current project structure
-    m_story->Clear();
-
-    // Pour toutes les pages
+    // IMPORTANT: Ne PAS appeler Clear() car cela efface aussi les variables!
+    // Au lieu de cela, on efface seulement les pages
     for (const auto& page : m_pages)
     {
-        // Create the page in the project
-        auto currentPage = m_story->CreatePage(page->Uuid());
+        // Récupérer la page correspondante dans le projet
+        auto projectPage = m_story->GetPage(page->Uuid());
+        
+        if (!projectPage) {
+            // La page n'existe pas, la créer
+            projectPage = m_story->CreatePage(page->Uuid());
+        } else {
+            // La page existe, vider son contenu (nodes et links)
+            projectPage->Clear();
+        }
 
         // 1. Save all nodes with their updated positions
         for (auto &nodeEntry : page->mINF.getNodes())
@@ -280,7 +286,7 @@ void NodeEditorWindow::SaveNodesToProject()
             baseNode->SetPosition(nodePos.x, nodePos.y);
 
             // Add node to project
-            m_story->AddNode(currentPage->Uuid(), baseNode);
+            m_story->AddNode(projectPage->Uuid(), baseNode);
 
             std::cout << "Saved node: " << baseNode->GetId() 
                       << " at (" << nodePos.x << ", " << nodePos.y << ")" << std::endl;
@@ -369,7 +375,7 @@ void NodeEditorWindow::SaveNodesToProject()
             connection->inPortIndex = rightPinIndex;
 
             // Add connection to project
-            m_story->AddConnection(currentPage->Uuid(), connection);
+            m_story->AddConnection(projectPage->Uuid(), connection);
 
             std::cout << "Saved connection: " << connection->outNodeId 
                       << "[" << connection->outPortIndex << "] -> " 
@@ -378,7 +384,7 @@ void NodeEditorWindow::SaveNodesToProject()
         }
     }
 
-    std::cout << "SaveNodesToProject completed successfully" << std::endl;
+    std::cout << "SaveNodesToProject completed successfully (variables preserved)" << std::endl;
 }
 
 void NodeEditorWindow::OpenFunction(const std::string &uuid, const std::string &name)

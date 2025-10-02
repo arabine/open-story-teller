@@ -16,9 +16,9 @@ public:
     void SetText(const std::string &text);
     std::string GetLabel() const;
     std::string GetText() const;
+    
+    static constexpr int MAX_INPUT_COUNT = 4;
 
 private:
     std::string m_label; // Label for the string literal
-    uint32_t m_arguments{0}; // number of arguments
 };
-

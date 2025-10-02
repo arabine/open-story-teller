@@ -11,6 +11,7 @@
 #include "debugger_window.h"
 #include "emulator_dock.h"
 #include "resources_dock.h"
+#include "error_list_dock.h"
 #include "node_editor_window.h"
 #include "properties_window.h"
 #include "variables_window.h"
@@ -50,6 +51,7 @@ private:
 
     Gui m_gui;
     EmulatorDock m_emulatorDock;
+    ErrorListDock m_errorListDock;
     ConsoleWindow m_consoleWindow;
     DebuggerWindow m_debuggerWindow;
     CpuWindow m_cpuWindow;

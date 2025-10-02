@@ -3,19 +3,19 @@
 #include "connection.h"
 #include "sys_lib.h"
 
-
 VariableNode::VariableNode(const std::string &type)
-    : BaseNode(type, "Variable Node")
+    : BaseNode(type, "Variable Node", BaseNode::BEHAVIOR_DATA)
 {
     nlohmann::json j{ {"uuid", ""} };
     SetInternalData(j);
-    SetBehavior(BaseNode::BEHAVIOR_DATA);
+    
+    // Add data output port
+    AddOutputPort(Port::DATA_PORT, "value");
 }
 
 void VariableNode::Initialize()
 {
     nlohmann::json j = GetInternalData();
-
     m_variableUuid = j["uuid"].get<std::string>();
 }
 
@@ -33,5 +33,16 @@ std::string VariableNode::GetVariableUuid() const
     return m_variableUuid;
 }
 
+void VariableNode::SetVariable(std::shared_ptr<Variable> var)
+{
+    m_variable = var;
+    if (var) {
+        SetVariableUuid(var->GetUuid());
+        SetTitle(var->GetLabel());
+    }
+}
 
-
+std::shared_ptr<Variable> VariableNode::GetVariable() const
+{
+    return m_variable;
+}
