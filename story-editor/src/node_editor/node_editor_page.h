@@ -10,7 +10,7 @@
 #include "node_widget_factory.h"
 #include "i_story_manager.h"
 #include "ImNodeFlow.h"
-
+#include "base_node.h"
 
 // Generic delegate
 class NodeDelegate : public ImFlow::BaseNode {
@@ -32,9 +32,11 @@ public:
 
             auto port = m_widget->Base()->GetInputPort(i);
 
+            std::string label = (port.type == ::BaseNode::Port::Type::EXECUTION_PORT) ? "" : port.label;
+
             if (port.customSocketIcon)
             {
-                ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType())->renderer([this, i](ImFlow::Pin* p) {
+                ImFlow::BaseNode::addIN<int>(label, 0, ImFlow::ConnectionFilter::SameType())->renderer([this, i](ImFlow::Pin* p) {
                    Nw::Pin pin;
                     pin.index = i;
                     pin.isConnected = p->isConnected();
@@ -48,7 +50,7 @@ public:
             }
             else
             {
-                ImFlow::BaseNode::addIN<int>("In" + std::to_string(i), 0, ImFlow::ConnectionFilter::SameType());
+                ImFlow::BaseNode::addIN<int>(label, 0, ImFlow::ConnectionFilter::SameType());
             }
         }
 
@@ -56,9 +58,11 @@ public:
         for (int i = 0; i < m_widget->Outputs(); ++i)
         {
             auto port = m_widget->Base()->GetOutputPort(i);
+            // Détermine le label : vide pour les ports d'exécution, utilise port.label pour les ports de données
+            std::string label = (port.type == ::BaseNode::Port::Type::EXECUTION_PORT) ? "" : port.label;
             if (port.customSocketIcon)
             {
-                ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->renderer([this, i](ImFlow::Pin* p) {
+                ImFlow::BaseNode::addOUT<int>(label, nullptr)->renderer([this, i](ImFlow::Pin* p) {
                 
                     Nw::Pin pin;
                     pin.index = i;
@@ -73,7 +77,7 @@ public:
             }
             else
             {
-                ImFlow::BaseNode::addOUT<int>("Out" + std::to_string(i), nullptr)->behaviour([this, i]() { return getInVal<int>("In" + std::to_string(i)) + m_valB; });
+                ImFlow::BaseNode::addOUT<int>(label, nullptr)->behaviour([this, i]() { return getInVal<int>("In" + std::to_string(i)) + m_valB; });
             }
         }
     }
@@ -192,41 +196,10 @@ struct NodeEditorPage : public  ImFlow::BaseNode
                 }
             }
         });
-
-        /*
-        for (const auto & n : m_nodes)
-        {
-            ImGui::PushID(n->GetInternalId());
-            n->Draw();
-            ImGui::PopID();
-        }
-
-        for (const auto& linkInfo : m_links)
-        {
-            ed::Link(linkInfo->ed_link->Id, linkInfo->ed_link->OutputId, linkInfo->ed_link->InputId);
-        }
-            */
     }
 
-    // bool GetNode(const ed::NodeId &nodeId, std::shared_ptr<BaseNodeWidget> &node) {
-    //     for (const auto & n : m_nodes)
-    //     {
-    //         if (n->GetInternalId() == nodeId.Get())
-    //         {
-    //             node = n;
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
-
-    // void DeleteNode(const ed::NodeId &nodeId) {
-    //     m_nodes.remove_if([nodeId](const std::shared_ptr<BaseNodeWidget>& node) {
-    //         return node->GetInternalId() == nodeId.Get();
-    //     });
-    // }
-
-    std::shared_ptr<BaseNodeWidget> GetSelectedNode() {
+    std::shared_ptr<BaseNodeWidget> GetSelectedNode()
+    {
 
         std::shared_ptr<BaseNodeWidget> selected;
 
@@ -251,123 +224,8 @@ struct NodeEditorPage : public  ImFlow::BaseNode
             }
         }
 
-        
-
-        // if (ed::GetSelectedObjectCount() > 0)
-        // {
-        //     ed::NodeId nId;
-        //     int nodeCount = ed::GetSelectedNodes(&nId, 1);
-
-        //     if (nodeCount > 0)
-        //     {
-        //         for (auto & n : m_nodes)
-        //         {
-        //             if (n->GetInternalId() == nId.Get())
-        //             {
-        //                 selected = n;
-        //             }
-        //         }
-        //     }
-        // }
         return selected;
     }
-
-    // void AddNode(std::shared_ptr<BaseNodeWidget> node) {
-    //     m_nodes.push_back(node);
-    // }
-
-    // void Clear() {
-    //     m_nodes.clear();
-    //     m_links.clear();
-    // }
-/*
-    bool GetModel(ed::LinkId linkId, std::shared_ptr<Connection> &model) {
-        for (const auto& linkInfo : m_links)
-        {
-            if (linkInfo->ed_link->Id == linkId)
-            {
-                model = linkInfo->model;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void EraseLink(ed::LinkId linkId) {
-        m_links.remove_if([linkId](const std::shared_ptr<LinkInfo>& linkInfo) {
-            return linkInfo->ed_link->Id == linkId;
-        });
-    }
-
-    // retourne 1 si c'est une sortie, 2 une entrée, 0 pas trouvé
-    int FindNodeAndPin(ed::PinId pinId, int &foundIndex, std::string &foundNodeId)
-    {
-        int success = 0;
-        for (const auto & n : m_nodes)
-        {
-            // std::cout << "---> Node: " << n->Base()->GetId() << std::endl;
-
-            if (n->HasOnputPinId(pinId, foundIndex))
-            {
-                foundNodeId = n->Base()->GetId();
-                success = 1;
-                break;
-            }
-
-            if (n->HasInputPinId(pinId, foundIndex))
-            {
-                foundNodeId = n->Base()->GetId();
-                success = 2;
-                break;
-            }
-        }
-
-        return success;
-    }
-
-    ed::PinId GetInputPin(const std::string &modelNodeId, int pinIndex)
-    {
-        ed::PinId id = 0;
-
-        for (auto & n : m_nodes)
-        {
-            if (n->Base()->GetId() == modelNodeId)
-            {
-                id = n->GetInputPinAt(pinIndex);
-                break;
-            }
-        }
-
-        if (id.Get() == 0)
-        {
-            std::cout << "Invalid Id: " << modelNodeId << " input pin: " << pinIndex <<" not found" << std::endl;
-        }
-
-        return id;
-    }
-
-    ed::PinId GetOutputPin(const std::string &modelNodeId, int pinIndex)
-{
-        ed::PinId id = 0;
-
-        for (auto & n : m_nodes)
-        {
-            if (n->Base()->GetId() == modelNodeId)
-            {
-                id = n->GetOutputPinAt(pinIndex);
-                break;
-            }
-        }
-
-        if (id.Get() == 0)
-        {
-            std::cout << "Invalid Id: " << modelNodeId << " output pin: " << pinIndex <<" not found" << std::endl;
-        }
-
-        return id;
-    }
-
-    */
 
 private:
     std::string m_uuid;
