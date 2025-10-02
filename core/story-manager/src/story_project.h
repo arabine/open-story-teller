@@ -99,6 +99,7 @@ public:
     virtual void SetName(const std::string &name) override { m_name = name; }
     virtual void SetUuid(const std::string &uuid) override { m_uuid = uuid; }
     virtual Type GetProjectType() const override { return m_projectType; }
+    std::vector<FunctionInfo> GetFunctionsList() const override;
 
     // Node interaction
     std::shared_ptr<StoryPage> CreatePage(const std::string_view uuid);

@@ -11,7 +11,7 @@ public:
     {
         SetWeight(100);
         SetBehavior(BaseNode::BEHAVIOR_EXECUTION);
-        AddOutputPort(BaseNode::Port::Type::EXECUTION_PORT, ">", true);
+        SetupExecutionPorts(false, 1, true);
     }
 
     void Initialize() override {

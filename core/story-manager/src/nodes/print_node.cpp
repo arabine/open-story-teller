@@ -14,18 +14,13 @@ PrintNode::PrintNode(const std::string &type)
     m_variables[m_label] = v;
 
     SetBehavior(BaseNode::BEHAVIOR_EXECUTION);
-
-    // Add execution input port (sync)
-    AddInputPort(Port::EXECUTION_PORT, ">");
+    SetupExecutionPorts(true, 1, true);
     
     // Add 4 data input ports for arguments
     for (int i = 0; i < MAX_INPUT_COUNT; ++i) {
         AddInputPort(Port::DATA_PORT, "arg" + std::to_string(i));
     }
-    
-    // Add execution output port
-    AddOutputPort(Port::EXECUTION_PORT, ">");
-
+  
     SetText("");
 }
 

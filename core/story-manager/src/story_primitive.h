@@ -36,6 +36,9 @@ public:
         return m_uuid;
     }
 
+    virtual std::vector<FunctionInfo> GetFunctionsList() const override {
+        return std::vector<FunctionInfo>();
+    }
 
 
     virtual std::string GetTitleImage() const {

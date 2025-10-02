@@ -17,6 +17,11 @@ public:
         PROJECT_TYPE_PRIMITIVE = 2
     };
 
+    struct FunctionInfo {
+        std::string uuid;
+        std::string name;
+    };
+
     virtual ~IStoryProject() {};
 
     virtual std::string GetName() const = 0;
@@ -26,6 +31,7 @@ public:
     virtual std::string GetUuid() const = 0;
     virtual std::string GetTitleImage() const = 0;
     virtual std::string GetTitleSound() const = 0;
+    virtual std::vector<FunctionInfo> GetFunctionsList() const = 0;
 
     virtual void SetTitleImage(const std::string &titleImage) = 0;
     virtual void SetTitleSound(const std::string &titleSound) = 0;

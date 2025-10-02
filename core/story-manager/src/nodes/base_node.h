@@ -102,6 +102,22 @@ public:
         return m_weight;
     }
 
+    void SetupExecutionPorts(bool hasInput = true, 
+                            int numOutputs = 1, 
+                            bool customRendering = true) 
+    {
+        if (m_behavior != BEHAVIOR_EXECUTION) return;
+        
+        if (hasInput) {
+            AddInputPort(Port::Type::EXECUTION_PORT, ">", customRendering);
+        }
+        
+        for (int i = 0; i < numOutputs; ++i) {
+            std::string label = (numOutputs == 1) ? ">" : std::to_string(i);
+            AddOutputPort(Port::Type::EXECUTION_PORT, label, customRendering);
+        }
+    }
+
     void SetId(const std::string &id) { m_uuid = id; }
     std::string GetId() const { return m_uuid; }
 
@@ -121,8 +137,8 @@ public:
     }
 
     // Port management
-    void AddInputPort(Port::Type type, const std::string& label) {
-        m_inputPorts.push_back({type, label});
+    void AddInputPort(Port::Type type, const std::string& label, bool customRendering = false) {
+        m_inputPorts.push_back({type, label, customRendering});
     }
 
     void AddOutputPort(Port::Type type, const std::string& label, bool customRendering = false) {

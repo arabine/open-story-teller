@@ -16,6 +16,7 @@ class StoryPage : public IStoryPage
 public:
     StoryPage(const std::string_view uuid)
         : m_uuid(uuid)
+        , m_name("Unnamed Page")
     {
     }
     ~StoryPage() {
@@ -25,6 +26,9 @@ public:
     }
 
     std::string_view Uuid() const { return m_uuid; }
+
+    std::string_view GetName() const { return m_name; }
+    void SetName(const std::string& name) { m_name = name; }
 
     void AddNode(std::shared_ptr<BaseNode> node) {
         m_nodes.push_back(node);
@@ -125,6 +129,7 @@ public:
     {
         nlohmann::json model;
         model["uuid"] = m_uuid;
+        model["name"] = m_name; 
 
         nlohmann::json nodes = nlohmann::json::array();
         for (const auto & n : m_nodes)

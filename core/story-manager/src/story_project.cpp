@@ -268,6 +268,7 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model, NodesFactory &fact
             // 1. Create the page in memory
             auto p = std::make_shared<StoryPage>(pageModel["uuid"].get<std::string>());
             m_pages.push_back(p);
+            p->SetName(pageModel.value("name", "Unnamed Page"));
 
             // 2. Load the nodes
             nlohmann::json nodesJsonArray = pageModel["nodes"];
@@ -330,6 +331,30 @@ bool StoryProject::CopyProgramTo(uint8_t *memory, uint32_t size)
         success = true;
     }
     return success;
+}
+
+std::vector<IStoryProject::FunctionInfo> StoryProject::GetFunctionsList() const
+{
+    std::vector<IStoryProject::FunctionInfo> functions;
+    
+    // Parcourir toutes les pages du projet
+    for (const auto& page : m_pages)
+    {
+        // Exclure la page main (MainUuid)
+        if (page->Uuid() == MainUuid())
+        {
+            continue;
+        }
+        
+        // Ajouter la page à la liste des fonctions disponibles
+        IStoryProject::FunctionInfo info;
+        info.uuid = page->Uuid();
+        info.name = page->GetName();
+        
+        functions.push_back(info);
+    }
+    
+    return functions;
 }
 
 bool StoryProject::GetAssemblyLine(uint32_t pointer_counter, uint32_t &line)
