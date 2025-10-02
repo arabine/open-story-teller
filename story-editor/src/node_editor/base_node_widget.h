@@ -96,7 +96,7 @@ public:
     virtual void DrawProperties(std::shared_ptr<IStoryProject> story) = 0;
 
 
-    virtual void DrawSocket(const Nw::Pin &pin)  {}
+    virtual void DrawSocket(const Nw::Pin &pin);
 
 
     virtual bool HasSync() const { 

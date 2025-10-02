@@ -34,7 +34,7 @@
 #include "print_node_widget.h"
 #include "syscall_node_widget.h"
 #include "function_entry_widget.h"
-#include "function_exit_widget.h"
+
 
 MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
     : m_logger(logger)
@@ -74,7 +74,6 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     m_widgetFactory.registerNode<PrintNodeWidget>(PrintNodeUuid);
     m_widgetFactory.registerNode<SyscallNodeWidget>(SyscallNodeUuid);
     m_widgetFactory.registerNode<FunctionEntryWidget>(FunctionEntryNodeUuid);
-    m_widgetFactory.registerNode<FunctionExitWidget>(FunctionExitNodeUuid);
 
     m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {
         OpenProject(event.GetUuid());

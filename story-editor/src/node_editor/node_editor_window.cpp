@@ -75,6 +75,11 @@ void NodeEditorWindow::LoadPage(const std::string &uuid, const std::string &name
     {
         // New page
         page = std::make_shared<NodeEditorPage>(uuid, name);
+        auto storyPage = m_story->GetPage(uuid);
+        if (!storyPage) {
+            storyPage = m_story->CreatePage(uuid);
+        }
+        storyPage->SetName(name);
     }
     else
     {
