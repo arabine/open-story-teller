@@ -829,16 +829,22 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
     {
         std::string text = GetStringFromMemory(ctx->registers[R0]);
         int arg_count = ctx->registers[R1];
-        char working_buf[200] = {0};
+        char working_buf[400] = {0};
 
         // Simplified printf logic for logging
         switch(arg_count){
-            case 0: m_logger.Log(text); break;
-            case 1: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2]); m_logger.Log(working_buf); break;
-            case 2: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3]); m_logger.Log(working_buf); break;
-            case 3: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3], ctx->registers[R4]); m_logger.Log(working_buf); break;
+            case 0: strcpy(working_buf, text.c_str()); break;
+            case 1: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2]); break;
+            case 2: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3]); break;
+            case 3: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3], ctx->registers[R4]); break;
             default: m_logger.Log("Printf with unsupported arg_count: " + std::to_string(arg_count) + " text: " + text, true); break;
         }
+
+        // Send event to UI
+        auto evObj = std::make_shared<VmStateEvent>();
+        evObj->type = VmStateEvent::Type::PrintEvent;
+        evObj->printOutput = working_buf;
+        m_eventBus.Emit(evObj);
     }
     else if (code == 5) // WAIT (sleep)
     {

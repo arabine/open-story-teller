@@ -83,6 +83,15 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
         OpenFunction(event.GetUuid(), event.GetName());
     });
 
+    m_eventBus.Subscribe<VmStateEvent>([this](const VmStateEvent &event) {
+        
+        if (event.type == VmStateEvent::Type::PrintEvent)
+        {
+            m_logger.Log("Print from VM: " + event.printOutput);
+            m_emulatorDock.AddVmOutput(event.printOutput);
+        }
+    });
+
     m_eventBus.Subscribe<GenericResultEvent>([this](const GenericResultEvent &event) {
 
         if (event.IsSuccess()) {
@@ -102,6 +111,8 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
         } else if (event.GetType() == ModuleEvent::Type::BuildSuccess) {
             m_toastNotifier.addToast("Module", "Module built successfully! Binary ready for testing.", ToastType::Success);
             m_debuggerWindow.SetScript(m_appController.GetModuleAssembly());
+
+            m_emulatorDock.ClearVmOutput();
             
             // Show success message if no errors
             if (!m_errorListDock.HasErrors()) {

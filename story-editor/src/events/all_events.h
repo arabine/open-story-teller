@@ -13,11 +13,15 @@ struct VmStateEvent : public Event
     int currentLine;
     chip32_result_t vmResult;
     std::set<int> breakpoints;
+    std::string printOutput;
     // Ajoutez d'autres données nécessaires, ex: std::vector<std::shared_ptr<Variable>> variables;
 
-    // Constructeur pour faciliter la création de l'événement
-    VmStateEvent(const chip32_ctx_t& ctx, int line, chip32_result_t result, const std::set<int>& bps)
-        : vmContext(ctx), currentLine(line), vmResult(result), breakpoints(bps) {}
+    enum class Type
+    {
+        PrintEvent,
+    };
+
+    Type type;
 };
 
 class OpenProjectEvent : public Event
