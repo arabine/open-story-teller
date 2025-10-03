@@ -78,11 +78,21 @@ public:
     void SetScript(const std::string& script) { m_script = script; }
     void SetSuccess(bool s) { success = s; }
 
+    void SetFailure(const std::string &message, int line) {
+        m_message = message;
+        m_line = line;
+    }
+
+    const std::string &GetMessage() const { return m_message; }
+    int GetLine() const { return m_line; }
+
 private:
     Type m_type;
     std::string m_uuid;
     std::string m_script;
     bool success{false};
+    std::string m_message;
+    int m_line{0};
 };
 
 #endif // ALL_EVENTS_H

@@ -260,12 +260,15 @@ void AppController::CompileNodes(IStoryProject::Type type)
         if (m_module->GenerateScript(m_moduleAssembly))
         {
             m_logger.Log("Nodes script generated for module.");
-            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildSuccess, m_module->GetUuid()));
-            Build(true); // Compile seulement par défaut
+            BuildModule(true); // NEW: Use BuildModule instead
         }
         else
         {
             m_logger.Log("Failed to generate script for module.", true);
+            // if (m_errorListDock) {
+            //     m_errorListDock->AddError("Failed to generate assembly code from nodes");
+            // }
+            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildFailure, m_module->GetUuid()));
         }
     }
 }
@@ -316,6 +319,60 @@ void AppController::Build(bool compileonly)
         // m_debuggerWindow.AddError(err.line, err.message);
     }
 }
+
+
+void AppController::BuildModule(bool compileonly)
+{
+    if (!m_module) {
+        m_logger.Log("No module loaded to build.", true);
+        return;
+    }
+
+    // Le code du module est déjà complet avec .main: et halt
+    // Pas besoin de wrapper !
+    
+    m_logger.Log("=== Module Assembly Code ===");
+    m_logger.Log(m_moduleAssembly);
+    m_logger.Log("============================");
+
+    // Try to compile the module code directly
+    Chip32::Assembler::Error err;
+    
+    if (m_module->GenerateBinary(m_moduleAssembly, err))
+    {
+        m_logger.Log("Module compiled successfully!");
+        
+        // Save the binary to disk
+        m_module->SaveBinary();
+        
+        // Load into VM for testing
+        if (m_module->CopyProgramTo(m_rom_data, sizeof(m_rom_data)))
+        {
+            chip32_initialize(&m_chip32_ctx);
+            m_dbg.run_result = VM_READY;
+            UpdateVmView();
+            
+            m_logger.Log("Module binary ready for testing.");
+            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildSuccess, m_module->GetUuid()));
+        }
+        else
+        {
+            auto errObj = std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildFailure, m_module->GetUuid());
+            errObj->SetFailure("Module program too big. Expand ROM memory.", -1);
+            m_eventBus.Emit(errObj);
+        }
+    }
+    else
+    {
+        // Compilation failed - show error
+        std::string errorMsg = err.ToString();
+            
+        auto errObj = std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildFailure, m_module->GetUuid());
+        errObj->SetFailure(errorMsg, err.line);
+        m_eventBus.Emit(errObj);
+    }
+}
+
 
 void AppController::BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force)
 {

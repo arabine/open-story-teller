@@ -100,10 +100,30 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
         } else if (event.GetType() == ModuleEvent::Type::Closed) {
             CloseModule();
         } else if (event.GetType() == ModuleEvent::Type::BuildSuccess) {
-            m_toastNotifier.addToast("Module", "Module built successfully", ToastType::Success);
+            m_toastNotifier.addToast("Module", "Module built successfully! Binary ready for testing.", ToastType::Success);
             m_debuggerWindow.SetScript(m_appController.GetModuleAssembly());
-        } else if (event.GetType() == ModuleEvent::Type::BuildFailure) {
-            m_toastNotifier.addToast("Module", "Module build failed", ToastType::Error);
+            
+            // Show success message if no errors
+            if (!m_errorListDock.HasErrors()) {
+                // You can also open a popup if desired
+                m_logger.Log("✓ Module compilation successful - Binary saved and loaded into VM");
+            }
+        } 
+        else if (event.GetType() == ModuleEvent::Type::BuildFailure) {
+
+            m_logger.Log("Module compilation failed: " + event.GetMessage(), true);
+            m_toastNotifier.addToast("Module", "Module build failed - Check Error List", ToastType::Error);
+            
+            // Make sure error list is visible
+            m_errorListDock.Enable();
+            m_errorListDock.Show();
+
+            static CompilationError err;
+            err.line = event.GetLine();
+            err.message = event.GetMessage();
+
+            // Add error to dock
+            m_errorListDock.AddError(err);
         }
     });
 
@@ -589,6 +609,22 @@ bool MainWindow::Loop()
                 // Aucun projet ouvert
                 m_toastNotifier.warning("Aucun projet ou module à sauvegarder");
                 m_logger.Log("Tentative de sauvegarde sans projet ouvert", true);
+            }
+        }
+
+        if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_B, false))
+        {
+            bool moduleEditorFocused = m_moduleEditorWindow.IsFocused();
+            
+            if (moduleEditorFocused && m_module)
+            {
+                m_logger.Log("Building module...");
+                m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_MODULE);
+            }
+            else if (m_story)
+            {
+                m_logger.Log("Building story...");
+                m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_STORY);
             }
         }
     }

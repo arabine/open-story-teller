@@ -43,14 +43,26 @@ public:
     
     void Draw() override;
     
-    void Clear() { m_errors.clear(); }
-    void AddError(const CompilationError& error) { m_errors.push_back(error); }
+    void Clear() { 
+        m_errors.clear(); 
+        m_shouldShow = false; // Hide when cleared
+    }
+    
+    void AddError(const CompilationError& error) { 
+        m_errors.push_back(error);
+        m_shouldShow = true; // Show when error added
+    }
+    
     void AddError(const std::string& message, const std::string& nodeId = "", int line = 0) {
         m_errors.push_back({CompilationError::ERROR, message, nodeId, line});
+        m_shouldShow = true;
     }
+    
     void AddWarning(const std::string& message, const std::string& nodeId = "", int line = 0) {
         m_errors.push_back({CompilationError::WARNING, message, nodeId, line});
+        m_shouldShow = true;
     }
+    
     void AddInfo(const std::string& message, const std::string& nodeId = "", int line = 0) {
         m_errors.push_back({CompilationError::INFO, message, nodeId, line});
     }
@@ -70,6 +82,13 @@ public:
             [](const auto& e) { return e.type == CompilationError::WARNING; });
     }
     
+    // Force the window to be visible (used when errors occur)
+    void Show() { 
+        m_shouldShow = true;
+        Enable();
+    }
+    
 private:
     std::vector<CompilationError> m_errors;
+    bool m_shouldShow = false;
 };

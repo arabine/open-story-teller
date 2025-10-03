@@ -69,6 +69,7 @@ public:
     std::shared_ptr<StoryProject> GetCurrentModule() const { return m_module; }
     void CompileNodes(IStoryProject::Type type);
     void Build(bool compileonly);
+    void BuildModule(bool compileonly);
     void BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force = false);
 
     // --- Fonctions de IStoryManager ---
@@ -147,8 +148,7 @@ private:
     ThreadSafeQueue<VmEvent> m_eventQueue; // File d'événements de la VM
     WebServer m_webServer; // Serveur web intégré
 
-    // Fonctions privées utilitaires pour la logique métier
-    void SetupVM(int start_line, uint32_t entry_point);
+    std::string WrapModuleWithMain(const std::string& moduleCode);
 };
 
 #endif // APP_CONTROLLER_H
