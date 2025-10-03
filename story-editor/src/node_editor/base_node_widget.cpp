@@ -29,7 +29,7 @@ void BaseNodeWidget::DrawSocket(const Nw::Pin &pin)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-        // Taille du socket
+    // Taille du socket
     float socket_size = 4.0f;
     
     // Définir les 5 points du polygone (flèche pointant vers la droite pour Output)

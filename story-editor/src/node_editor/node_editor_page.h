@@ -37,6 +37,7 @@ public:
             if (port.customSocketIcon)
             {
                 ImFlow::BaseNode::addIN<int>(label, 0, ImFlow::ConnectionFilter::SameType())->renderer([this, i](ImFlow::Pin* p) {
+                    ImGui::Dummy(ImVec2(20.0f, 20.0f));  // Ajustez la taille selon vos besoins
                    Nw::Pin pin;
                     pin.index = i;
                     pin.isConnected = p->isConnected();
@@ -62,17 +63,23 @@ public:
             std::string label = (port.type == ::BaseNode::Port::Type::EXECUTION_PORT) ? "" : port.label;
             if (port.customSocketIcon)
             {
-                ImFlow::BaseNode::addOUT<int>(label, nullptr)->renderer([this, i](ImFlow::Pin* p) {
+                ImFlow::BaseNode::addOUT<int>(label, nullptr)->renderer([this, i,  cached_pin = Nw::Pin{}](ImFlow::Pin* p) mutable {
                 
-                    Nw::Pin pin;
-                    pin.index = i;
-                    pin.isConnected = p->isConnected();
-                    pin.pinKind = Nw::PinKind::Output;
-                    pin.pinPoint = p->pinPoint();
-                    pin.pos = p->getPos();
-                    pin.size =  p->getSize();
+                    if (p->getName().empty()) {
+                        ImGui::Dummy(ImVec2(1.0f, 10.0f));
+                    } else {
+                        ImGui::Text("%s", p->getName().c_str());
+                    }
 
-                    m_widget->DrawSocket(pin);
+
+                    cached_pin.index = i;
+                    cached_pin.isConnected = p->isConnected();
+                    cached_pin.pinKind = Nw::PinKind::Output;
+                    cached_pin.pinPoint = p->pinPoint();
+                    cached_pin.pos = p->getPos();
+                    cached_pin.size =  p->getSize();
+
+                    m_widget->DrawSocket(cached_pin);
                 });
             }
             else
