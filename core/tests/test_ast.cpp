@@ -45,7 +45,7 @@ THE SOFTWARE.
 #include "flow_generator.h"
 #include "assembly_generator_chip32.h"
 
-TEST_CASE( "Check various indentations and typos" ) {
+TEST_CASE( "Check AST with basic nodes" ) {
 
     Compiler compiler;
 
@@ -215,6 +215,7 @@ TEST_CASE( "Check various indentations and typos" ) {
 
      // Create generator context with current time and user
      AssemblyGenerator::GeneratorContext context(
+        variables,
         "2025-04-08 12:09:01",  // Current UTC time
         "unit-test-ast",              // Current user
         true,                   // Enable debug output
@@ -248,7 +249,7 @@ TEST_CASE( "Check various indentations and typos" ) {
     // Generate data section
     generator.StartSection(AssemblyGenerator::Section::DATA);
     generator.GenerateNodesVariables(nodes);
-    generator.GenerateGlobalVariables(variables);
+    generator.GenerateGlobalVariables();
     generator.StartSection(AssemblyGenerator::Section::TEXT);
     generator.GenerateTextSection(pathTree);
     generator.GenerateExit();

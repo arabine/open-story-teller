@@ -32,7 +32,7 @@ void PrintNode::Initialize()
 
 void PrintNode::SetText(const std::string &text)
 {
-    m_variables.at(m_label)->SetValue<std::string>(text);
+    m_variables.at(m_label)->SetTextValue(text);
     SetInternalData({{"text", text}});
 }
 

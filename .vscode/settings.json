@@ -1,8 +1,7 @@
 {
 
     "cmake.sourceDirectory": [
-        "${workspaceFolder}/core/chip32/tests",
-        "${workspaceFolder}/core/story-manager/tests",
+        "${workspaceFolder}/core/tests",
         "${workspaceFolder}/story-editor",
         "${workspaceFolder}/story-player-raylib",
         "${workspaceFolder}/software"

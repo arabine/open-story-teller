@@ -35,15 +35,7 @@ Purpose: grammar, ram usage and macros, rom code generation
 
 void hexdump(void *ptr, int buflen);
 
-static const std::string test1 = R"(; jump over the data, to our entry label
-
-$imageBird          DC8  "example.bmp", 8  ; data
-$someConstant       DC32  12456789
-
-; DSxx to declare a variable in RAM, followed by the number of elements
-$RamData1           DV32    1 ; one 32-bit integer
-$MyArray            DV8    10 ; array of 10 bytes
-
+static const std::string test1 = R"(
 ; label definition
 .main:   ;; comment here should work
 ; We create a stupid loop just for RAM variable testing
@@ -64,6 +56,14 @@ $MyArray            DV8    10 ; array of 10 bytes
 mov R0,R2  ; copy R2 into R0 (NO blank space between , and R2)
 
     halt
+
+$imageBird          DC8  "example.bmp", 8  ; data
+$someConstant       DC32  12456789
+
+; DSxx to declare a variable in RAM, followed by the number of elements
+$RamData1           DV32    1 ; one 32-bit integer
+$MyArray            DV8    10 ; array of 10 bytes
+
 )";
 
 #include <stdarg.h>

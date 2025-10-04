@@ -10677,7 +10677,7 @@ namespace Catch {
 
 // end catch_exception_translator_registry.h
 #ifdef __OBJC__
-#import "Foundation/Foundation.h"
+#import "../story-manager/tests/Foundation/Foundation.h"
 #endif
 
 namespace Catch {
