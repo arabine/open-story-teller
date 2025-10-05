@@ -44,7 +44,7 @@ add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/C
 add_compile_definitions(IMGUI_INCLUDE="imgui.h")
 add_subdirectory(libs/ImGuiFileDialog)
 
-include_directories(externals/ImNodeFlow/src)
+include_directories(externals/ImNodeFlow/src externals/ImNodeFlow/include)
 
 add_subdirectory(externals/ImNodeFlow EXCLUDE_FROM_ALL)
 

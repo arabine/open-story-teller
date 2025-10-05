@@ -237,3 +237,63 @@ TEST_CASE("Print with multiple arguments") {
     Chip32::Machine machine;
     machine.QuickExecute(assembly);
 }
+
+
+TEST_CASE("Print with format placeholders") {
+    auto printNode = std::make_shared<PrintNode>("print-node");
+    
+    // L'utilisateur utilise maintenant {0}, {1}, etc.
+    printNode->SetText("Résultat: {0} + {1} = {2}");
+    
+    auto var_a = std::make_shared<Variable>("a");
+    var_a->SetIntegerValue(10);
+    
+    auto var_b = std::make_shared<Variable>("b");
+    var_b->SetIntegerValue(20);
+    
+    std::vector<std::shared_ptr<Variable>> variables = {var_a, var_b};
+    
+    auto functionEntry = std::make_shared<FunctionEntryNode>("function-entry-node");
+    auto varNodeA = std::make_shared<VariableNode>("variable-node");
+    varNodeA->SetVariableUuid(var_a->GetUuid());
+    
+    auto varNodeB = std::make_shared<VariableNode>("variable-node");
+    varNodeB->SetVariableUuid(var_b->GetUuid());
+    
+    auto addNode = std::make_shared<OperatorNode>("operator-node");
+    addNode->SetOperationType(OperatorNode::OperationType::ADD);
+    
+    std::vector<std::shared_ptr<BaseNode>> nodes = {
+        functionEntry, varNodeA, varNodeB, addNode, printNode
+    };
+    
+    // Connexions...
+    std::vector<std::shared_ptr<Connection>> connections;
+    // [Ajouter les connexions comme dans les tests existants]
+    
+    // Générer le code
+    ASTBuilder builder(nodes, connections);
+    auto pathTree = builder.BuildAST();
+    
+    AssemblyGenerator::GeneratorContext context(
+        variables, "2025-01-10 10:00:00", "test-format", true, true, 1024
+    );
+    
+    AssemblyGeneratorChip32 generator(context);
+    generator.Reset();
+    generator.GenerateHeader();
+    generator.StartSection(AssemblyGenerator::Section::DATA);
+    generator.GenerateNodesVariables(nodes);
+    generator.GenerateGlobalVariables();
+    generator.StartSection(AssemblyGenerator::Section::TEXT);
+    generator.GenerateTextSection(pathTree);
+    generator.GenerateExit();
+    
+    std::string assembly = generator.GetAssembly();
+    
+    // Vérifier que le format a été converti de {0} {1} {2} en %d %d %d
+    REQUIRE(assembly.find("\"Résultat: %d + %d = %d\"") != std::string::npos);
+    
+    std::cout << "\n===== Assembly avec format converti =====\n" 
+              << assembly << std::endl;
+}
