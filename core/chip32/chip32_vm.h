@@ -201,7 +201,7 @@ typedef uint8_t (*syscall_t)(chip32_ctx_t *, uint8_t);
 
 #define SYSCALL_RET_OK          0   ///< Default state, continue execution immediately
 #define SYSCALL_RET_WAIT_EV     1   ///< Sets the VM in wait for event state
-
+#define SYSCALL_RET_ERROR       2
 
 struct chip32_ctx_t
 {
@@ -213,6 +213,7 @@ struct chip32_ctx_t
     uint32_t max_instr;
     uint32_t registers[REGISTER_COUNT];
     syscall_t syscall;
+    void* user_data;
 
 };
 

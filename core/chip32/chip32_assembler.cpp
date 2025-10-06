@@ -365,7 +365,7 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
     {
         if (i.isRamData)
         {
-            result.ramUsageSize += i.dataLen * i.dataTypeSize/8;
+            result.ramUsageSize += i.dataLen;
         }
         else
         {
@@ -373,7 +373,10 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
             {
                 program.push_back(i.code.opcode);
             }
-            result.constantsSize += i.compiledArgs.size();
+            else if (i.isRomData)  // Seulement pour ROM DATA
+            {
+                result.constantsSize += i.compiledArgs.size();
+            }
             std::copy (i.compiledArgs.begin(), i.compiledArgs.end(), std::back_inserter(program));
         }
     }

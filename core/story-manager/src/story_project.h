@@ -16,6 +16,7 @@
 #include "story_page.h"
 #include "story_options.h"
 #include "variable.h"
+#include "assembly_generator_chip32_tac.h"
 
 class NodesFactory;
 
@@ -38,9 +39,14 @@ public:
         return "490745ab-df4d-476d-ae27-027e94b8ee0a";
     }
 
+    bool FindMain(Chip32::Instr &mainLine) {
+        return m_assembler.GetMain(mainLine);
+    }
+
+    bool GenerateCompleteProgram(std::string &assembly);
+
     void New(const std::string &uuid, const std::string &library_path);
     std::filesystem::path BinaryFileName() const;
-    bool GenerateScript(std::string &codeStr);
     bool GenerateBinary(const std::string &code, Chip32::Assembler::Error &err);
     bool Load(ResourceManager &manager, NodesFactory &factory);
     void Save(ResourceManager &manager);

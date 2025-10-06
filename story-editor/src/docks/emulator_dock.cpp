@@ -99,11 +99,6 @@ void EmulatorDock::Draw()
     // ===== CONTRÔLES DE SCRIPT ET DEBUG =====
     ImGui::SeparatorText("Script control and debug");
 
-    if (ImGui::Button("Build nodes"))
-    {
-        m_story.CompileNodes(true);
-    }
-    ImGui::SameLine();
     if (ImGui::Button("Build code"))
     {
         m_story.BuildCode(true);

@@ -13,7 +13,7 @@
 #include "print_node.h"
 #include "syscall_node.h"
 #include "sys_lib.h"
-#include "assembly_generator_chip32.h"
+#include "assembly_generator_chip32_tac.h"
 #include "nodes_factory.h"
 
 StoryProject::StoryProject(ILogger &log)
@@ -50,7 +50,7 @@ void StoryProject::CopyToDevice(const std::string &outputDir, NodesFactory &fact
 
     // Generate and copy binary
     std::string code;
-    GenerateScript(code);
+    // GenerateScript(code); // FIXME 
 
     std::cout << code << std::endl;
 
@@ -411,63 +411,109 @@ bool StoryProject::UseResource(const std::string &label)
     return used;
 }
 
-bool StoryProject::GenerateScript(std::string &codeStr)
+
+// story_project.cpp
+
+bool StoryProject::GenerateCompleteProgram(std::string &assembly) 
 {
-    bool retCode = true;
-    std::stringstream code;
+    // === PHASE 1 : COLLECTE ===
+    // Collecter tous les nœuds et connexions de toutes les pages
+    std::vector<std::shared_ptr<BaseNode>> allNodes;
+    std::map<std::string, std::pair<std::vector<std::shared_ptr<BaseNode>>,
+        std::vector<std::shared_ptr<Connection>>
+    >> pageData;
     
-    // Empty resources usage
-    m_usedLabels.clear();
-
-
-
-     // Create generator context with current time and user
-     AssemblyGenerator::GeneratorContext context(
+    for (const auto& page : m_pages) {
+        auto [nodesBegin, nodesEnd] = page->Nodes();
+        auto [linksBegin, linksEnd] = page->Links();
+        
+        std::vector<std::shared_ptr<BaseNode>> pageNodes(nodesBegin, nodesEnd);
+        std::vector<std::shared_ptr<Connection>> pageLinks(linksBegin, linksEnd);
+        
+        // Ajouter tous les nœuds à la liste globale pour la section DATA
+        allNodes.insert(allNodes.end(), pageNodes.begin(), pageNodes.end());
+        
+        // Stocker les données de chaque page
+        pageData[std::string(page->Uuid())] = {pageNodes, pageLinks};
+    }
+    
+    // === PHASE 2 : GÉNÉRATION ===
+    AssemblyGenerator::GeneratorContext context(
         m_variables,
-        "2025-04-08 12:09:01",  // Current UTC time
-        "story-editor",              // Current user
-        true,                   // Enable debug output
-        true,                   // Enable optimizations
-        1024                    // Stack size
+        "2025-01-10 15:30:00",
+        "story-project",
+        true,   // debug
+        true,   // optimize
+        1024
     );
-
-    // Create generator
-    AssemblyGeneratorChip32 generator(context);
-
-    try
-    {
-        generator.Reset();
-            
-        // Generate header comments
-        generator.GenerateHeader();
-
-        // Generate text section
-        generator.StartSection(AssemblyGenerator::Section::TEXT);
-        for (const auto & p : m_pages)
-        {
-            p->CompileNodes(generator);
+    
+    AssemblyGeneratorChip32TAC generator(context);
+    
+    // Header
+    generator.Reset();
+    generator.GenerateHeader();
+    
+    // === SECTION DATA (commune à toutes les pages) ===
+    generator.StartSection(AssemblyGenerator::Section::DATA);
+    
+    // Variables globales (partagées entre toutes les pages)
+    generator.GenerateGlobalVariables();
+    
+    // Constantes de tous les nœuds de toutes les pages
+    generator.GenerateNodesVariables(allNodes);
+    
+    // === SECTION TEXT (chaque page = une fonction) ===
+    generator.AddComment("=======================  CODE  =======================");
+    
+    // Générer chaque page comme une fonction
+    bool isFirstPage = true;
+    for (const auto& page : m_pages) {
+        std::string pageUuid(page->Uuid());
+        auto& [nodes, connections] = pageData[pageUuid];
+        
+        // Construire l'AST pour cette page
+        ASTBuilder builder(nodes, connections);
+        auto astNodes = builder.BuildAST();
+        
+        // Générer le label de fonction
+        std::string functionLabel;
+        if (isFirstPage || pageUuid == MainUuid()) {
+            functionLabel = ".main";
+            isFirstPage = false;
+        } else {
+            functionLabel = ".page_" + pageUuid;
         }
-
-        // Generate data section
-        generator.StartSection(AssemblyGenerator::Section::DATA);
-        for (const auto & p : m_pages)
-        {
-            p->CompileNodesVariables(generator);
+        
+        generator.AddComment("========================================");
+        generator.AddComment("Page: " + std::string(page->GetName()));
+        generator.AddComment("UUID: " + pageUuid);
+        generator.AddComment("========================================");
+        generator.GetAssembly() << functionLabel << ":\n";
+        
+        // Générer le TAC pour cette page
+        TACGenerator tacGen;
+        TACProgram pageTAC = tacGen.Generate(astNodes);
+        
+        if (context.debugOutput) {
+            std::cout << "\n=== TAC for page: " << page->GetName() << " ===\n";
+            std::cout << pageTAC.ToString() << std::endl;
         }
-        generator.GenerateGlobalVariables();
-
-        generator.GenerateExit();
-
+        
+        // Convertir le TAC en assembleur
+        generator.GenerateTACToAssembly(pageTAC);
+        
+        // Retour de la fonction (sauf pour main)
+        if (functionLabel != ".main") {
+            generator.GetAssembly() << "    ret\n\n";
+        }
     }
-    catch (const std::exception &e)
-    {
-        m_log.Log(e.what(), true);
-        retCode = false;
-    }
+    
+    // Exit du programme
+    generator.GenerateExit();
+    
+    assembly = generator.GetAssembly().str();
 
-    codeStr = generator.GetAssembly();
-
-    return retCode;
+    return true;
 }
 
 bool StoryProject::GenerateBinary(const std::string &code, Chip32::Assembler::Error &err)

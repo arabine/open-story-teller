@@ -183,14 +183,19 @@ public:
         // Maintenant, on va ajouter les connexions de données
         for (const auto& conn : m_connections)
         {
+            // Ne traiter que les connexions DATA_LINK
+            if (conn->type != Connection::DATA_LINK) {
+                continue;
+            }
+            
             auto outNode = nodeMap[conn->outNodeId];
             auto inNode = nodeMap[conn->inNodeId];
 
-            // Keep variables nodes as data inputs
-            if (dynamic_cast<VariableNode*>(outNode->node.get()))
-            {
-                inNode->AddDataInput(conn->inPortIndex, outNode);
-            }
+            // Ajouter TOUTES les connexions de données, pas seulement celles depuis VariableNode
+            inNode->AddDataInput(conn->inPortIndex, outNode);
+            
+            // Ajouter aussi dans le sens inverse pour les dataOutputs
+            outNode->AddDataOutput(conn->outPortIndex, inNode, conn->inPortIndex);
         }
 
         // Build execution paths

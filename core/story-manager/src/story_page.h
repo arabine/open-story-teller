@@ -55,21 +55,7 @@ public:
         m_nodes.clear();
     }
 
-    void CompileNodesVariables(AssemblyGenerator &generator)
-    {
-        std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
-        generator.GenerateNodesVariables(nodes);
-    }
 
-    void CompileNodes(AssemblyGenerator &generator)
-    {
-        std::vector<std::shared_ptr<BaseNode>> nodes(m_nodes.begin(), m_nodes.end());
-        std::vector<std::shared_ptr<Connection>> links(m_links.begin(), m_links.end());
-        ASTBuilder builder(nodes, links);
-        auto pathTree = builder.BuildAST();
-
-        generator.GenerateTextSection(pathTree);
-    }
 
     virtual void GetNodeConnections(std::list<std::shared_ptr<Connection>> &c, const std::string &nodeId) override
     {

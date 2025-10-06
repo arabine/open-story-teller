@@ -87,7 +87,6 @@ public:
     virtual void Next() override;
     virtual void Previous() override;
     virtual std::string VmState() const override;
-    virtual void CompileNodes(bool compileonly);
     virtual void BuildCode(bool compileonly);
     virtual std::shared_ptr<IStoryProject> GetCurrentProject() override;
 

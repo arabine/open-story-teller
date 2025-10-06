@@ -245,7 +245,7 @@ void AppController::CompileNodes(IStoryProject::Type type)
 {
     if (type == IStoryProject::Type::PROJECT_TYPE_STORY && m_story)
     {
-        if (m_story->GenerateScript(m_storyAssembly))
+        if (m_story->GenerateCompleteProgram(m_storyAssembly))
         {
             m_logger.Log("Nodes script generated for story.");
             Build(true); // Compile seulement par défaut
@@ -257,10 +257,10 @@ void AppController::CompileNodes(IStoryProject::Type type)
     } 
     else if (type == IStoryProject::Type::PROJECT_TYPE_MODULE && m_module)
     {
-        if (m_module->GenerateScript(m_moduleAssembly))
+        if (m_module->GenerateCompleteProgram(m_moduleAssembly))
         {
             m_logger.Log("Nodes script generated for module.");
-            BuildModule(true); // NEW: Use BuildModule instead
+            BuildModule(true);
         }
         else
         {
@@ -303,6 +303,12 @@ void AppController::Build(bool compileonly)
         {
             m_story->SaveBinary();
             chip32_initialize(&m_chip32_ctx);
+
+            Chip32::Instr mainLine;
+            if (m_story->FindMain(mainLine)) {
+                m_chip32_ctx.registers[PC] = mainLine.addr;
+            }
+
             m_dbg.run_result = VM_READY;
             UpdateVmView(); // Notifie la GUI de mettre à jour la vue VM
             m_logger.Log("Build successful. VM ready.");
@@ -349,6 +355,12 @@ void AppController::BuildModule(bool compileonly)
         if (m_module->CopyProgramTo(m_rom_data, sizeof(m_rom_data)))
         {
             chip32_initialize(&m_chip32_ctx);
+
+            Chip32::Instr mainLine;
+            if (m_module->FindMain(mainLine)) {
+                m_chip32_ctx.registers[PC] = mainLine.addr;
+            }
+
             m_dbg.run_result = VM_READY;
             UpdateVmView();
             
@@ -395,18 +407,6 @@ void AppController::BuildCode(bool compileonly)
     // m_debuggerWindow.SetScript(m_storyAssembly); // FIXME: GUI event
     Build(compileonly);
 }
-
-
-void AppController::CompileNodes(bool compileonly)
-{
-    if (m_story->GenerateScript(m_storyAssembly))
-    {
-       //  m_debuggerWindow.SetScript(m_storyAssembly); // FIXME: GUI event
-        Build(compileonly);
-    }
-}
-
-
 
 void AppController::SetExternalSourceFile(const std::string &filename)
 {
