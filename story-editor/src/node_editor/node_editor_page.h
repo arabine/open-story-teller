@@ -134,37 +134,6 @@ struct NodeEditorPage : public  ImFlow::BaseNode
         return m_uuid;
     }
 
-    std::list<std::shared_ptr<BaseNodeWidget>> GetNodes()
-    {
-        std::list<std::shared_ptr<BaseNodeWidget>> nlist;
-        // std::unordered_map<ImFlow::NodeUID, std::shared_ptr<BaseNode>>&
-        for (auto &node : mINF.getNodes())
-        {
-            auto delegate = dynamic_cast<NodeDelegate*>(node.second.get());
-
-            if (delegate == nullptr)
-                continue;
-            nlist.push_back(delegate->GetWidget());
-        }
-
-        return nlist;
-    }
-
-    std::list<std::shared_ptr<Connection>> GetLinks() {
-
-        std::list<std::shared_ptr<Connection>> links;
-
-        // const std::vector<std::weak_ptr<Link>>& getLinks()
-        for (auto &link : mINF.getLinks())
-        {
-            auto linkInfo = std::make_shared<Connection>();
-
-            links.push_back(linkInfo);
-        }
-
-        return links;
-    }
-
     void Select()
     {
     }

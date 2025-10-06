@@ -284,9 +284,27 @@ private:
                 m_assembly << "    lcons " << targetReg << ", " << op->GetValue() << "\n";
                 return targetReg;
                 
-            case TACOperand::Type::VARIABLE:
-                m_assembly << "    load " << targetReg << ", $" << op->GetValue() << ", 4\n";
+            case TACOperand::Type::VARIABLE: {
+                std::shared_ptr<Variable> var = nullptr;
+            
+                // Chercher la variable par son label
+                for (const auto& v : m_context.variables) {
+                    if (v->GetLabel() == op->GetValue()) {
+                        var = v;
+                        break;
+                    }
+                }
+                
+                if (var && var->GetValueType() == Variable::ValueType::STRING) {
+                    // Pour les strings, charger l'ADRESSE
+                    m_assembly << "    lcons " << targetReg << ", $" << op->GetValue() << "\n";
+                } else {
+                    // Pour les autres types, charger la VALEUR
+                    m_assembly << "    load " << targetReg << ", $" << op->GetValue() << ", 4\n";
+                }
                 return targetReg;
+
+            }
                 
             case TACOperand::Type::TEMPORARY: {
                 auto it = m_tempLocations.find(op->GetValue());
@@ -541,17 +559,7 @@ private:
         switch (v->GetValueType()) {
             case Variable::ValueType::STRING: {
                 std::string value = v->GetValue<std::string>();
-                
-                // Convertir {0} {1} {2} {3} en %d
-                for (int i = 0; i < 4; ++i) {
-                    std::string placeholder = "{" + std::to_string(i) + "}";
-                    size_t pos = 0;
-                    while ((pos = value.find(placeholder, pos)) != std::string::npos) {
-                        value.replace(pos, placeholder.length(), "%d");
-                        pos += 2;
-                    }
-                }
-                
+                              
                 m_assembly << "$" << v->GetLabel() << " DC8, \"" 
                           << value << "\" ; " << v->GetVariableName() << "\n";
                 break;

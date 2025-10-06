@@ -19,6 +19,14 @@ public:
     
     static constexpr int MAX_INPUT_COUNT = 4;
 
+    std::shared_ptr<Variable> GetVariable(const std::string& label) const {
+        auto it = m_variables.find(label);
+        if (it != m_variables.end()) {
+            return it->second;
+        }
+        return nullptr;
+    }
+
 private:
     std::string m_label; // Label for the string literal
 };

@@ -436,8 +436,39 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
         // Stocker les données de chaque page
         pageData[std::string(page->Uuid())] = {pageNodes, pageLinks};
     }
+
+    std::cout << "\n=== Resolving VariableNode references ===\n";
+    for (const auto& baseNode : allNodes) {
+        auto varNode = std::dynamic_pointer_cast<VariableNode>(baseNode);
+        if (varNode) {
+            varNode->ResolveVariable(m_variables);
+        }
+    }
     
-    // === PHASE 2 : GÉNÉRATION ===
+    // ✅ PHASE 2 : GÉNÉRATION DE TOUS LES TAC (avant la section DATA!)
+    std::cout << "\n=== Generating all TAC programs ===\n";
+    std::map<std::string, TACProgram> pageTACPrograms;
+    
+    for (const auto& page : m_pages) {
+        std::string pageUuid(page->Uuid());
+        auto& [nodes, connections] = pageData[pageUuid];
+        
+        // Construire l'AST pour cette page
+        ASTBuilder builder(nodes, connections);
+        auto astNodes = builder.BuildAST();
+        
+        // Générer le TAC pour cette page
+        TACGenerator tacGen;
+        TACProgram pageTAC = tacGen.Generate(astNodes);
+        
+        // Stocker le TAC
+        pageTACPrograms[pageUuid] = pageTAC;
+        
+        std::cout << "Generated TAC for page: " << page->GetName() << std::endl;
+    }
+    std::cout << "=== All TAC programs generated ===\n\n";
+    
+    // === PHASE 3 : GÉNÉRATION DE L'ASSEMBLEUR ===
     AssemblyGenerator::GeneratorContext context(
         m_variables,
         "2025-01-10 15:30:00",
@@ -453,13 +484,14 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
     generator.Reset();
     generator.GenerateHeader();
     
-    // === SECTION DATA (commune à toutes les pages) ===
+    // === SECTION DATA (maintenant les format strings sont corrects!) ===
     generator.StartSection(AssemblyGenerator::Section::DATA);
     
     // Variables globales (partagées entre toutes les pages)
     generator.GenerateGlobalVariables();
     
     // Constantes de tous les nœuds de toutes les pages
+    // ✅ Les format strings ont déjà été modifiés par le TAC generator
     generator.GenerateNodesVariables(allNodes);
     
     // === SECTION TEXT (chaque page = une fonction) ===
@@ -469,11 +501,9 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
     bool isFirstPage = true;
     for (const auto& page : m_pages) {
         std::string pageUuid(page->Uuid());
-        auto& [nodes, connections] = pageData[pageUuid];
         
-        // Construire l'AST pour cette page
-        ASTBuilder builder(nodes, connections);
-        auto astNodes = builder.BuildAST();
+        // Récupérer le TAC pré-généré
+        TACProgram& pageTAC = pageTACPrograms[pageUuid];
         
         // Générer le label de fonction
         std::string functionLabel;
@@ -489,10 +519,6 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
         generator.AddComment("UUID: " + pageUuid);
         generator.AddComment("========================================");
         generator.GetAssembly() << functionLabel << ":\n";
-        
-        // Générer le TAC pour cette page
-        TACGenerator tacGen;
-        TACProgram pageTAC = tacGen.Generate(astNodes);
         
         if (context.debugOutput) {
             std::cout << "\n=== TAC for page: " << page->GetName() << " ===\n";

@@ -29,23 +29,32 @@ struct Connection
     std::string inNodeId;
     unsigned int inPortIndex{0};
 
-    Connection(const Connection &other){
-        *this = other;
+    Connection(const Connection &other)
+        : type(other.type)
+        , outNodeId(other.outNodeId)
+        , outPortIndex(other.outPortIndex)
+        , inNodeId(other.inNodeId)
+        , inPortIndex(other.inPortIndex)
+    {
+
     }
 
     Connection& operator=(const Connection& other) {
-        this->outNodeId = other.outNodeId;
-        this->outPortIndex = other.outPortIndex;
-        this->inNodeId = other.inNodeId;
-        this->inPortIndex = other.inPortIndex;
+        if (this != &other) { 
+            this->outNodeId = other.outNodeId;
+            this->outPortIndex = other.outPortIndex;
+            this->inNodeId = other.inNodeId;
+            this->inPortIndex = other.inPortIndex;
+            this->type = other.type;
+        }
         return *this;
-    }
+    } 
 };
 
 inline bool operator==(Connection const &a, Connection const &b)
 {
     return a.outNodeId == b.outNodeId && a.outPortIndex == b.outPortIndex
-           && a.inNodeId == b.inNodeId && a.inPortIndex == b.inPortIndex;
+           && a.inNodeId == b.inNodeId && a.inPortIndex == b.inPortIndex && a.type == b.type;
 }
 
 inline bool operator!=(Connection const &a, Connection const &b)

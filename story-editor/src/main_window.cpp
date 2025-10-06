@@ -117,7 +117,7 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
             // Show success message if no errors
             if (!m_errorListDock.HasErrors()) {
                 // You can also open a popup if desired
-                m_logger.Log("✓ Module compilation successful - Binary saved and loaded into VM");
+                m_logger.Log("Module compilation successful - Binary saved and loaded into VM");
             }
         } 
         else if (event.GetType() == ModuleEvent::Type::BuildFailure) {

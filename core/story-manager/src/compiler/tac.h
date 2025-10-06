@@ -460,10 +460,19 @@ private:
 
     std::shared_ptr<TACOperand> GenerateVariableNode(std::shared_ptr<ASTNode> node) {
         auto* varNode = node->GetAs<VariableNode>();
-        if (!varNode) return nullptr;
+        if (!varNode) {
+            std::cout << "    ERROR: node is not a VariableNode!\n";
+            return nullptr;
+        }
 
         auto var = varNode->GetVariable();
-        if (!var) return nullptr;
+        
+        if (!var) {
+            std::cout << "    ERROR: Variable is NULL for node " << varNode->GetId() 
+                    << " (UUID: " << varNode->GetVariableUuid() << ")\n";
+            std::cout << "    This should have been resolved before TAC generation!\n";
+            return nullptr;
+        }
 
         // Créer une opérande qui référence la variable
         return std::make_shared<TACOperand>(
@@ -552,17 +561,12 @@ private:
 
         std::cout << "    GeneratePrintNode: START\n";
 
-        // Créer l'opérande pour la chaîne de format
-        auto formatOperand = std::make_shared<TACOperand>(
-            TACOperand::Type::VARIABLE,
-            printNode->GetLabel()
-        );
-
-        std::cout << "      Format string label: " << printNode->GetLabel() << "\n";
-        std::cout << "      Number of data inputs: " << node->dataInputs.size() << "\n";
-
-        // Évaluer tous les arguments
+        // RÉCUPÉRER ET CONVERTIR LE FORMAT STRING
+        std::string formatString = printNode->GetText();
+        
+        // Évaluer tous les arguments et déterminer leurs types
         std::vector<std::shared_ptr<TACOperand>> args;
+        std::vector<Variable::ValueType> argTypes;
         
         // Collecter et trier les inputs par port index
         std::vector<std::pair<unsigned int, std::shared_ptr<ASTNode>>> sortedInputs;
@@ -574,17 +578,75 @@ private:
         std::sort(sortedInputs.begin(), sortedInputs.end(),
                 [](const auto& a, const auto& b) { return a.first < b.first; });
 
-        // Générer le code pour chaque argument
+        // Générer le code pour chaque argument ET récupérer son type
         for (const auto& [port, inputNode] : sortedInputs) {
             std::cout << "      Processing input port " << port << "\n";
             auto argOperand = GenerateNode(inputNode);
             if (argOperand) {
                 std::cout << "        -> Got operand: " << argOperand->ToString() << "\n";
                 args.push_back(argOperand);
+                
+                // DÉTERMINER LE TYPE DE L'ARGUMENT
+                Variable::ValueType argType = Variable::ValueType::INTEGER; // défaut
+                
+                if (inputNode->IsType<VariableNode>()) {
+                    auto* varNode = inputNode->GetAs<VariableNode>();
+                    auto var = varNode->GetVariable();
+                    if (var) {
+                        argType = var->GetValueType();
+                        std::cout << "        -> Variable type: " 
+                                << Variable::ValueTypeToString(argType) << "\n";
+                    }
+                }
+                // Pour les OperatorNode, le résultat est toujours un INTEGER
+                else if (inputNode->IsType<OperatorNode>()) {
+                    argType = Variable::ValueType::INTEGER;
+                }
+                
+                argTypes.push_back(argType);
             }
         }
 
         std::cout << "      Total args collected: " << args.size() << "\n";
+
+        // CONVERTIR LES PLACEHOLDERS EN FONCTION DU TYPE
+        for (size_t i = 0; i < argTypes.size() && i < 4; i++) {
+            std::string placeholder = "{" + std::to_string(i) + "}";
+            std::string formatSpec;
+            
+            switch (argTypes[i]) {
+                case Variable::ValueType::STRING:
+                    formatSpec = "{" + std::to_string(i) + ":s}";
+                    break;
+                case Variable::ValueType::INTEGER:
+                    formatSpec = "{" + std::to_string(i) + ":d}";
+                    break;
+                case Variable::ValueType::FLOAT:
+                    formatSpec = "{" + std::to_string(i) + ":f}";
+                    break;
+                default:
+                    formatSpec = "{" + std::to_string(i) + ":d}";
+            }
+            
+            // Remplacer {0} par {0:d} ou {0:s}
+            size_t pos = formatString.find(placeholder);
+            if (pos != std::string::npos) {
+                formatString.replace(pos, placeholder.length(), formatSpec);
+            }
+        }
+        
+        // METTRE À JOUR LE FORMAT STRING DANS LA VARIABLE
+        auto formatVar = printNode->GetVariable(printNode->GetLabel());
+        if (formatVar) {
+            formatVar->SetTextValue(formatString);
+            std::cout << "      Updated format string to: " << formatString << "\n";
+        }
+
+        // Créer l'opérande pour la chaîne de format (avec le format mis à jour)
+        auto formatOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::VARIABLE,
+            printNode->GetLabel()
+        );
 
         // Générer les instructions PARAM pour chaque argument
         for (size_t i = 0; i < args.size(); i++) {

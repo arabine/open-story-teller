@@ -100,7 +100,7 @@ public:
     // Méthodes pour interagir avec la VM et le débogueur
     chip32_ctx_t* GetChip32Context() { return &m_chip32_ctx; }
     DebugContext* GetDebugContext() { return &m_dbg; }
-    std::string GetStringFromMemory(uint32_t addr);
+
     void ProcessStory();
     void StepInstruction();
     void StopAudio() { m_player.Stop(); }

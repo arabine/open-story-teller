@@ -46,3 +46,32 @@ std::shared_ptr<Variable> VariableNode::GetVariable() const
 {
     return m_variable;
 }
+
+bool VariableNode::ResolveVariable(const std::vector<std::shared_ptr<Variable>>& variables)
+{
+    // Si la variable est déjà résolue, pas besoin de chercher
+    if (m_variable) {
+        return true;
+    }
+    
+    // Si pas d'UUID, impossible de résoudre
+    if (m_variableUuid.empty()) {
+        std::cout << "WARNING: VariableNode " << GetId() 
+                  << " has no variable UUID!" << std::endl;
+        return false;
+    }
+    
+    // Chercher la variable correspondant à l'UUID
+    for (const auto& var : variables) {
+        if (var->GetUuid() == m_variableUuid) {
+            m_variable = var;
+            std::cout << "✓ Resolved variable '" << var->GetVariableName() 
+                      << "' for VariableNode " << GetId() << std::endl;
+            return true;
+        }
+    }
+    
+    std::cout << "ERROR: Could not resolve variable UUID " << m_variableUuid 
+              << " for VariableNode " << GetId() << std::endl;
+    return false;
+}

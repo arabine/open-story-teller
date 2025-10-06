@@ -379,6 +379,22 @@ void NodeEditorWindow::SaveNodesToProject()
             connection->inNodeId = rightBaseNode->GetId();
             connection->inPortIndex = rightPinIndex;
 
+            // Detect type 
+            auto outputPort = leftBaseNode->GetOutputPort(leftPinIndex);
+            if (outputPort.type == BaseNode::Port::Type::DATA_PORT) {
+                connection->type = Connection::DATA_LINK;
+            } else {
+                connection->type = Connection::EXECUTION_LINK;
+            }
+
+//             // 🔍 DEBUG
+// std::cout << "=== SAVE CONNECTION ===" << std::endl;
+// std::cout << "  From: " << connection->outNodeId << "[" << connection->outPortIndex << "]" << std::endl;
+// std::cout << "  To: " << connection->inNodeId << "[" << connection->inPortIndex << "]" << std::endl;
+// std::cout << "  Output port type: " << (outputPort.type == BaseNode::Port::Type::DATA_PORT ? "DATA_PORT" : "EXECUTION_PORT") << std::endl;
+// std::cout << "  Connection type: " << (connection->type == Connection::DATA_LINK ? "DATA_LINK" : "EXECUTION_LINK") << std::endl;
+// std::cout << "========================" << std::endl;
+
             // Add connection to project
             m_story->AddConnection(projectPage->Uuid(), connection);
 
@@ -474,165 +490,15 @@ void NodeEditorWindow::Draw()
             ToolbarUI();
 
             m_currentPage->Draw(m_nodesFactory, m_widgetFactory, m_manager);
-
-           
-/*
-            ed::Begin(m_currentPage->Uuid().data(), ImVec2(0.0, 0.0f));
-
-            // Draw our nodes
-            m_currentPage->Draw();
-
-            // Handle creation action, returns true if editor want to create new object (node or link)
-            if (ed::BeginCreate())
-            {
-                ed::PinId startId, endId;
-                if (ed::QueryNewLink(&startId, &endId))
-                {
-                // QueryNewLink returns true if editor want to create new link between pins.
-                //
-                // Link can be created only for two valid pins, it is up to you to
-                // validate if connection make sense. Editor is happy to make any.
-                //
-                // Link always goes from input to output. User may choose to drag
-                // link from output pin or input pin. This determine which pin ids
-                // are valid and which are not:
-                //   * input valid, output invalid - user started to drag new ling from input pin
-                //   * input invalid, output valid - user started to drag new ling from output pin
-                //   * input valid, output valid   - user dragged link over other pin, can be validated
-
-                if (startId && endId) // both are valid, let's accept link
-                {
-                    // ed::AcceptNewItem() return true when user release mouse button.
-                    if (ed::AcceptNewItem())
-                    {
-                            auto c = std::make_shared<Connection>();
-
-                            // On cherche à quel noeud appartien les pin (selon si le lien a été créé à partir d'une entrée ou d'une sortie)
-                            if (FillConnection(c, startId))
-                            {
-                                if (FillConnection(c, endId))
-                                {
-                                    m_story->AddConnection(m_currentPage->Uuid(), c);
-
-                                    CreateLink(c, startId, endId);
-
-                                    // Draw new link.
-                                    ed::Link(m_currentPage->m_links.back()->ed_link->Id, startId, endId);
-                                }
-                            }
-                    }
-
-                    // You may choose to reject connection between these nodes
-                    // by calling ed::RejectNewItem(). This will allow editor to give
-                    // visual feedback by changing link thickness and color.
-                }
-                }
-
-                ed::EndCreate(); // Wraps up object creation action handling.
-            }
-            
-
-
-            // Handle deletion action
-            if (ed::BeginDelete())
-            {
-                ed::NodeId nodeId = 0;
-                while (ed::QueryDeletedNode(&nodeId))
-                {
-                    if (ed::AcceptDeletedItem())
-                    {
-                        std::shared_ptr<BaseNodeWidget> node;
-                        if (m_currentPage->GetNode(nodeId, node))
-                        {
-                            // First delete model, then current entry
-                            m_story->DeleteNode(m_currentPage->Uuid(), node->Base()->GetId());
-                            m_currentPage->DeleteNode(nodeId);
-                        }
-                    }
-                }
-
-                // There may be many links marked for deletion, let's loop over them.
-                ed::LinkId deletedLinkId;
-                while (ed::QueryDeletedLink(&deletedLinkId))
-                {
-                // If you agree that link can be deleted, accept deletion.
-                if (ed::AcceptDeletedItem())
-                {
-                        std::shared_ptr<Connection> model;
-                        if (m_currentPage->GetModel(deletedLinkId, model))
-                        {
-                            m_story->DeleteLink(m_currentPage->Uuid(), model);
-                            m_currentPage->EraseLink(deletedLinkId);
-                        }
-                }
-
-                // You may reject link deletion by calling:
-                // ed::RejectDeletedItem();
-                }
-            }
-            ed::EndDelete(); // Wrap up deletion action
-
-
-            auto openPopupPosition = ImGui::GetMousePos();
-            ed::Suspend();
-
-            if (ed::ShowBackgroundContextMenu())
-            {
-                ImGui::OpenPopup("Create New Node");
-            }
-
-            if (ImGui::BeginPopup("Create New Node"))
-            {
-                auto newNodePostion = openPopupPosition;
-                std::shared_ptr<BaseNode> base;
-                auto nodeTypes = m_nodesFactory.ListOfNodes();
-
-                for (auto &type : nodeTypes)
-                {
-                    if (ImGui::MenuItem(type.name.c_str()))
-                    {
-                        base = m_nodesFactory.CreateNode(type.uuid);
-                        if (base)
-                        {
-                            m_story->AddNode(m_currentPage->Uuid(), base);
-                            auto n = CreateNodeWidget(type.uuid, m_manager, base);
-                            if (n)
-                            {
-                                n->Base()->SetPosition(newNodePostion.x, newNodePostion.y);
-                                n->Initialize();
-                                m_currentPage->AddNode(n);
-                            }
-                        }
-                    }
-                }
-
-                ImGui::EndPopup();
-            }
-
-            if (m_loaded)
-            {
-                ed::NavigateToContent();
-                m_loaded = false;
-            }
-
-            ed::Resume();
-
-            
-            ed::End();
-            ed::SetCurrentEditor(nullptr);
-            */
         }
         else
         {
             // Set background color to light gray
             // ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
-
             ImGui::Text("Please load or create a project.");
-
             ImGui::PopStyleColor(1); // Pop both colors
         }
-
     }
 
     WindowBase::EndDraw();
@@ -640,16 +506,6 @@ void NodeEditorWindow::Draw()
 
 void NodeEditorWindow::ToolbarUI()
 {
-    // auto& io = ImGui::GetIO();
-    // ImVec2 window_pos = ImGui::GetWindowPos();
-    // ImVec2 window_size = ImGui::GetWindowSize();
-    // ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
-
-    // ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-
-    // ImGui::Begin("TOOLBAR", NULL, window_flags);
-
-
     ImGui::SetCursorPos(ImVec2(10, 40));
     ImGui::BeginChild("ToolbarChild", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 1.5f), false, ImGuiWindowFlags_NoScrollbar);
 
@@ -677,17 +533,7 @@ void NodeEditorWindow::ToolbarUI()
         ImGui::SameLine();
     }
 
-    ImGui::PopID();
-
-    // ImGui::End();
-    
+    ImGui::PopID();   
     ImGui::EndChild(); // Fin de la ChildWindow de la barre d'outils
-
     ImGui::SetCursorPos(ImVec2(0, 0));
-
-
-    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    // {
-    //     io.ConfigViewportsNoDecoration = false;
-    // }
 }

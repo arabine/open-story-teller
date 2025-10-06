@@ -16,51 +16,7 @@
 #include "variable.h"       // Pour Variable
 #include "all_events.h"
 #include "Localization.h"
-
-// Définitions des registres et événements CHIP-32 si non déjà dans chip32_vm.h
-#ifndef R0
-#define R0 0
-#endif
-#ifndef R1
-#define R1 1
-#endif
-#ifndef R2
-#define R2 2
-#endif
-#ifndef R3
-#define R3 3
-#endif
-#ifndef R4
-#define R4 4
-#endif
-#ifndef PC
-#define PC 7 // Exemple de registre Program Counter
-#endif
-
-#ifndef EV_MASK_OK_BUTTON
-#define EV_MASK_OK_BUTTON 1
-#endif
-#ifndef EV_MASK_HOME_BUTTON
-#define EV_MASK_HOME_BUTTON 2
-#endif
-#ifndef EV_MASK_PREVIOUS_BUTTON
-#define EV_MASK_PREVIOUS_BUTTON 4
-#endif
-#ifndef EV_MASK_NEXT_BUTTON
-#define EV_MASK_NEXT_BUTTON 8
-#endif
-#ifndef EV_MASK_END_OF_AUDIO
-#define EV_MASK_END_OF_AUDIO 16
-#endif
-
-// Définitions pour les codes de retour de Syscall
-#ifndef SYSCALL_RET_OK
-#define SYSCALL_RET_OK 0
-#endif
-#ifndef SYSCALL_RET_WAIT_EV
-#define SYSCALL_RET_WAIT_EV 1 // Exemple: VM doit attendre un événement
-#endif
-
+#include "chip32_machine.h"
 
 AppController::AppController(ILogger& logger, EventBus& eventBus)
     : m_logger(logger)
@@ -633,37 +589,6 @@ void AppController::LoadParams()
     }
 }
 
-std::string AppController::GetStringFromMemory(uint32_t addr)
-{
-    // Buffer local pour la chaîne
-    // Assurez-vous qu'il est assez grand pour gérer les chaînes de votre VM
-    // et qu'il est terminé par null
-    char strBuf[256]; // Augmenté la taille pour plus de sécurité
-
-    // Le bit le plus significatif indique si c'est de la RAM (0x80000000) ou ROM
-    bool isRam = (addr & 0x80000000) != 0;
-    addr &= 0xFFFF; // Masque pour obtenir l'adresse 16 bits
-
-    // Vérification de l'adresse pour éviter les dépassements de buffer
-    if (isRam) {
-        if (addr < m_chip32_ctx.ram.size) {
-            strncpy(strBuf, (const char *)&m_chip32_ctx.ram.mem[addr], sizeof(strBuf) - 1);
-            strBuf[sizeof(strBuf) - 1] = '\0'; // S'assurer que c'est null-terminated
-        } else {
-            m_logger.Log("GetStringFromMemory: Invalid RAM address: 0x" + std::to_string(addr), true);
-            return "";
-        }
-    } else {
-        if (addr < m_chip32_ctx.rom.size) {
-            strncpy(strBuf, (const char *)&m_chip32_ctx.rom.mem[addr], sizeof(strBuf) - 1);
-            strBuf[sizeof(strBuf) - 1] = '\0'; // S'assurer que c'est null-terminated
-        } else {
-            m_logger.Log("GetStringFromMemory: Invalid ROM address: 0x" + std::to_string(addr), true);
-            return "";
-        }
-    }
-    return strBuf;
-}
 
 void AppController::ProcessStory()
 {
@@ -784,6 +709,7 @@ void AppController::StepInstruction()
     UpdateVmView();
 }
 
+
 uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
 {
     uint8_t retCode = SYSCALL_RET_OK;
@@ -795,7 +721,7 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
         // R0: image file name address, R1: sound file name address
         if (ctx->registers[R0] != 0)
         {
-            std::string imageFile = m_story->BuildFullAssetsPath(GetStringFromMemory(ctx->registers[R0]));
+            std::string imageFile = m_story->BuildFullAssetsPath(Chip32::Machine::GetStringFromMemory(ctx, ctx->registers[R0]));
             m_logger.Log("Image: " + imageFile);
             // Ici, vous notifieriez la fenêtre de l'émulateur
             // m_emulatorDock.SetImage(imageFile); // Ceci est une dépendance GUI
@@ -807,7 +733,7 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
 
         if (ctx->registers[R1] != 0)
         {
-            std::string soundFile = m_story->BuildFullAssetsPath(GetStringFromMemory(ctx->registers[R1]));
+            std::string soundFile = m_story->BuildFullAssetsPath(Chip32::Machine::GetStringFromMemory(ctx, ctx->registers[R1]));
             m_logger.Log("Sound: " + soundFile);
             m_player.Play(soundFile);
         }
@@ -827,23 +753,18 @@ uint8_t AppController::Syscall(chip32_ctx_t *ctx, uint8_t code)
     }
     else if (code == 4) // Printf (printf-like behavior)
     {
-        std::string text = GetStringFromMemory(ctx->registers[R0]);
+        std::string format = Chip32::Machine::GetStringFromMemory(ctx, ctx->registers[R0]);
         int arg_count = ctx->registers[R1];
-        char working_buf[400] = {0};
-
-        // Simplified printf logic for logging
-        switch(arg_count){
-            case 0: strcpy(working_buf, text.c_str()); break;
-            case 1: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2]); break;
-            case 2: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3]); break;
-            case 3: snprintf(working_buf, sizeof(working_buf), text.c_str(), ctx->registers[R2], ctx->registers[R3], ctx->registers[R4]); break;
-            default: m_logger.Log("Printf with unsupported arg_count: " + std::to_string(arg_count) + " text: " + text, true); break;
+        
+        std::vector<uint32_t> args;
+        for (int i = 0; i < arg_count && i < 4; ++i) {
+            args.push_back(ctx->registers[R2 + i]);
         }
 
         // Send event to UI
         auto evObj = std::make_shared<VmStateEvent>();
         evObj->type = VmStateEvent::Type::PrintEvent;
-        evObj->printOutput = working_buf;
+        evObj->printOutput = Chip32::Machine::FormatStringWithPlaceholders(ctx, format, args);
         m_eventBus.Emit(evObj);
     }
     else if (code == 5) // WAIT (sleep)
@@ -869,14 +790,13 @@ void AppController::UpdateVmView()
     // Au lieu de cela, il émettrait un signal ou appellerait un observer.
     uint32_t pcVal = m_chip32_ctx.registers[PC];
 
-    if (m_story && m_story->GetAssemblyLine(pcVal, m_dbg.line))
+    if (m_story)
     {
-        m_logger.Log("Executing line: " + std::to_string(m_dbg.line + 1));
+        if (m_story->GetAssemblyLine(pcVal, m_dbg.line))
+        {
+            m_logger.Log("Executing line: " + std::to_string(m_dbg.line + 1));
         // m_debuggerWindow.HighlightLine(m_dbg.line); // Dépendance GUI
-    }
-    else
-    {
-        m_logger.Log("Reached end or instruction not found (line: " + std::to_string(m_dbg.line) + ")", false);
+        }        
     }
     // m_cpuWindow.updateRegistersView(m_chip32_ctx); // Dépendance GUI
     // m_memoryEditor.DrawWindow("RAM view", m_chip32_ctx.ram.mem, m_chip32_ctx.ram.size); // Dépendance GUI

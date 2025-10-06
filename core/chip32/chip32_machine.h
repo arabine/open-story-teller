@@ -33,7 +33,7 @@ public:
     }
 
     // Lecture d'une chaîne depuis la mémoire (non statique maintenant)
-    std::string GetStringFromMemory(chip32_ctx_t *ctx, uint32_t addr)
+    static std::string GetStringFromMemory(chip32_ctx_t *ctx, uint32_t addr)
     {
         if (!ctx) {
             throw std::runtime_error("Invalid context in GetStringFromMemory");
@@ -73,66 +73,101 @@ public:
         }
     }
 
-    // Formatter avec nombre variable d'arguments (non statique)
-    std::string FormatString(const std::string& format, 
-                            const std::vector<uint32_t>& args)
+    static std::string FormatStringWithPlaceholders(chip32_ctx_t *ctx, 
+                                             const std::string& format, 
+                                             const std::vector<uint32_t>& args)
     {
-        if (args.empty()) {
-            return format;
-        }
-
-        std::vector<char> buffer(1024);
-        int result = -1;
+        std::ostringstream result;
+        size_t pos = 0;
         
-        switch (args.size()) {
-            case 1:
-                result = std::snprintf(buffer.data(), buffer.size(), 
-                                      format.c_str(), args[0]);
-                break;
-            case 2:
-                result = std::snprintf(buffer.data(), buffer.size(), 
-                                      format.c_str(), args[0], args[1]);
-                break;
-            case 3:
-                result = std::snprintf(buffer.data(), buffer.size(), 
-                                      format.c_str(), args[0], args[1], args[2]);
-                break;
-            case 4:
-                result = std::snprintf(buffer.data(), buffer.size(), 
-                                      format.c_str(), args[0], args[1], args[2], args[3]);
-                break;
-            default:
-                throw std::runtime_error("Too many arguments for printf (max 4)");
-        }
-
-        if (result < 0) {
-            throw std::runtime_error("Error formatting string");
-        }
-
-        if (static_cast<size_t>(result) >= buffer.size()) {
-            buffer.resize(result + 1);
-            
-            switch (args.size()) {
-                case 1:
-                    std::snprintf(buffer.data(), buffer.size(), 
-                                 format.c_str(), args[0]);
-                    break;
-                case 2:
-                    std::snprintf(buffer.data(), buffer.size(), 
-                                 format.c_str(), args[0], args[1]);
-                    break;
-                case 3:
-                    std::snprintf(buffer.data(), buffer.size(), 
-                                 format.c_str(), args[0], args[1], args[2]);
-                    break;
-                case 4:
-                    std::snprintf(buffer.data(), buffer.size(), 
-                                 format.c_str(), args[0], args[1], args[2], args[3]);
-                    break;
+        while (pos < format.length()) {
+            // Chercher le prochain placeholder '{'
+            if (format[pos] == '{' && pos + 1 < format.length()) {
+                char nextChar = format[pos + 1];
+                
+                // Vérifier si c'est un placeholder valide {0} à {3}
+                if (nextChar >= '0' && nextChar <= '3') {
+                    int argIndex = nextChar - '0';
+                    
+                    // Vérifier si on a assez d'arguments
+                    if (argIndex >= static_cast<int>(args.size())) {
+                        result << "{" << argIndex << ":?}"; // Argument manquant
+                        pos += 2;
+                        continue;
+                    }
+                    
+                    uint32_t argValue = args[argIndex];
+                    
+                    // Vérifier s'il y a un type spécifié {:d}, {:s}, {:f}, {:x}
+                    if (pos + 3 < format.length() && format[pos + 2] == ':') {
+                        char typeChar = format[pos + 3];
+                        
+                        // Vérifier si le placeholder se termine bien par '}'
+                        if (pos + 4 < format.length() && format[pos + 4] == '}') {
+                            // Parser le type et formater
+                            switch (typeChar) {
+                                case 'd':  // Entier décimal signé
+                                case 'i':
+                                    result << static_cast<int32_t>(argValue);
+                                    break;
+                                    
+                                case 'u':  // Entier non signé
+                                    result << argValue;
+                                    break;
+                                    
+                                case 'x':  // Hexadécimal minuscule
+                                    result << "0x" << std::hex << argValue << std::dec;
+                                    break;
+                                    
+                                case 'X':  // Hexadécimal majuscule
+                                    result << "0x" << std::hex << std::uppercase 
+                                          << argValue << std::nouppercase << std::dec;
+                                    break;
+                                    
+                                case 's':  // String (adresse)
+                                    try {
+                                        result << GetStringFromMemory(ctx, argValue);
+                                    } catch (const std::exception& e) {
+                                        result << "<error:0x" << std::hex << argValue << std::dec << ">";
+                                    }
+                                    break;
+                                    
+                                case 'f':  // Float
+                                {
+                                    float floatValue;
+                                    std::memcpy(&floatValue, &argValue, sizeof(float));
+                                    result << floatValue;
+                                    break;
+                                }
+                                
+                                case 'c':  // Caractère
+                                    result << static_cast<char>(argValue);
+                                    break;
+                                    
+                                default:
+                                    // Type inconnu, afficher tel quel
+                                    result << "{" << argIndex << ":" << typeChar << "}";
+                            }
+                            
+                            pos += 5; // Avancer de "{0:d}"
+                            continue;
+                        }
+                    }
+                    // Format court {0} sans type → défaut: entier
+                    else if (pos + 2 < format.length() && format[pos + 2] == '}') {
+                        result << static_cast<int32_t>(argValue);
+                        pos += 3; // Avancer de "{0}"
+                        continue;
+                    }
+                }
             }
+            
+            // Caractère normal, copier tel quel
+            result << format[pos];
+            pos++;
         }
-
-        return std::string(buffer.data());
+        
+        return result.str();
     }
 
     // Handler de syscall (méthode membre, non statique)
@@ -149,7 +184,7 @@ public:
                     args.push_back(ctx->registers[R2 + i]);
                 }
                 
-                printOutput = FormatString(format, args);
+                printOutput = FormatStringWithPlaceholders(ctx, format, args);
                 std::cout << "[SYSCALL PRINT] " << printOutput << std::endl;
             }
             else if (code == 5) // WAIT

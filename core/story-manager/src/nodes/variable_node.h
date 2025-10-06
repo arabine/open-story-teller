@@ -20,6 +20,8 @@ public:
     void SetVariable(std::shared_ptr<Variable> var);
     std::shared_ptr<Variable> GetVariable() const;
 
+    bool ResolveVariable(const std::vector<std::shared_ptr<Variable>>& variables);
+
 private:
     std::string m_variableUuid;
     std::shared_ptr<Variable> m_variable;

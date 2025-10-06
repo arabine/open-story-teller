@@ -183,10 +183,16 @@ public:
         // Maintenant, on va ajouter les connexions de données
         for (const auto& conn : m_connections)
         {
+             std::cout << ">>> ASTBuilder: Processing connection from " << conn->outNodeId 
+              << " to " << conn->inNodeId 
+              << " type=" << conn->type << " (0=EXEC, 1=DATA)" << std::endl;
+
             // Ne traiter que les connexions DATA_LINK
             if (conn->type != Connection::DATA_LINK) {
                 continue;
             }
+
+            std::cout << "  -> Adding DATA connection!" << std::endl;
             
             auto outNode = nodeMap[conn->outNodeId];
             auto inNode = nodeMap[conn->inNodeId];
