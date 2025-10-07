@@ -194,6 +194,7 @@ set(SRCS
 
     ../core/chip32/chip32_assembler.cpp
     ../core/chip32/chip32_vm.c
+    ../core/chip32/chip32_binary_format.c
 
 
     # Add lua source code files

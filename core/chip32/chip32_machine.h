@@ -1,16 +1,21 @@
+/*
+ * Chip32 Machine - VM wrapper with binary format support
+ * Updated to use chip32_binary_format for proper DV/DZ handling
+ */
+
 #pragma once
-
-
 
 #include <iostream>
 #include <thread>
 #include <stdarg.h>
 #include <string.h>
+#include <sstream>
+#include <functional>
+#include <cstring>
 
 #include "chip32_assembler.h"
+#include "chip32_binary_format.h"
 #include "chip32_macros.h"
-
-// Dans chip32_machine.h
 
 namespace Chip32
 {
@@ -22,9 +27,8 @@ public:
     bool buildResult{false};
     chip32_result_t runResult{VM_OK};
     std::string printOutput;
-
-    static Machine *m_instance;
-
+    chip32_ctx_t ctx;  // Public pour accès aux registres dans les tests
+    
     Machine() {
         // Bind syscall handler to this instance
         m_syscallHandler = std::bind(&Machine::HandleSyscall, this, 
@@ -32,7 +36,94 @@ public:
                                      std::placeholders::_2);
     }
 
-    // Lecture d'une chaîne depuis la mémoire (non statique maintenant)
+    // ========================================================================
+    // Méthode principale : Parse, Build, Execute
+    // ========================================================================
+    
+    void QuickExecute(const std::string &assemblyCode)
+    {
+        std::vector<uint8_t> program;
+        Chip32::Assembler assembler;
+        Chip32::Result result;
+
+        // Parse
+        parseResult = assembler.Parse(assemblyCode);
+        
+        if (!parseResult) {
+            std::cout << "Parse error: " << assembler.GetLastError().ToString() << std::endl;
+            return;
+        }
+
+        // Build binary with new format
+        buildResult = assembler.BuildBinary(program, result);
+        
+        if (!buildResult) {
+            std::cout << "Build error: " << assembler.GetLastError().ToString() << std::endl;
+            return;
+        }
+        
+        result.Print();
+
+        // Load binary using new format
+        chip32_loaded_binary_t loaded;
+        chip32_binary_error_t error = chip32_binary_load(
+            program.data(),
+            static_cast<uint32_t>(program.size()),
+            &loaded
+        );
+        
+        if (error != CHIP32_BIN_OK) {
+            std::cout << "Binary load error: " << chip32_binary_error_string(error) << std::endl;
+            buildResult = false;
+            return;
+        }
+        
+        // Allocate and initialize RAM
+        m_ram.resize(loaded.header.bss_size);
+        
+        uint32_t init_bytes = chip32_binary_init_ram(&loaded, m_ram.data(), m_ram.size());
+        
+        if (init_bytes > 0) {
+            std::cout << "RAM initialized: " << init_bytes << " bytes" << std::endl;
+        }
+
+        // Setup VM context
+        memset(&ctx, 0, sizeof(ctx));
+        ctx.stack_size = 512;
+        
+        // ROM = DATA + CODE (contiguous in loaded binary)
+        ctx.rom.mem = loaded.data_section;
+        ctx.rom.addr = 0;
+        ctx.rom.size = loaded.header.data_size + loaded.header.code_size;
+        
+        // RAM
+        ctx.ram.mem = m_ram.data();
+        ctx.ram.addr = ctx.rom.size;
+        ctx.ram.size = m_ram.size();
+
+        // Set syscall handler using wrapper
+        ctx.syscall = SyscallWrapper;
+        ctx.user_data = this;
+
+        // Initialize VM
+        chip32_initialize(&ctx);
+
+        // Set entry point (DATA size + entry point offset in CODE)
+        ctx.registers[PC] = loaded.header.data_size + loaded.header.entry_point;
+
+        std::cout << "Starting execution at PC=0x" << std::hex << ctx.registers[PC] 
+                  << std::dec << std::endl;
+
+        // Run
+        runResult = chip32_run(&ctx);
+        
+        std::cout << "Execution finished with result: " << runResult << std::endl;
+    }
+
+    // ========================================================================
+    // Helper functions
+    // ========================================================================
+    
     static std::string GetStringFromMemory(chip32_ctx_t *ctx, uint32_t addr)
     {
         if (!ctx) {
@@ -91,72 +182,41 @@ public:
                     
                     // Vérifier si on a assez d'arguments
                     if (argIndex >= static_cast<int>(args.size())) {
-                        result << "{" << argIndex << ":?}"; // Argument manquant
-                        pos += 2;
+                        result << "{" << argIndex << ":?}";
+                        pos += 3;
                         continue;
                     }
                     
-                    uint32_t argValue = args[argIndex];
-                    
-                    // Vérifier s'il y a un type spécifié {:d}, {:s}, {:f}, {:x}
-                    if (pos + 3 < format.length() && format[pos + 2] == ':') {
-                        char typeChar = format[pos + 3];
-                        
-                        // Vérifier si le placeholder se termine bien par '}'
-                        if (pos + 4 < format.length() && format[pos + 4] == '}') {
-                            // Parser le type et formater
-                            switch (typeChar) {
-                                case 'd':  // Entier décimal signé
-                                case 'i':
-                                    result << static_cast<int32_t>(argValue);
-                                    break;
-                                    
-                                case 'u':  // Entier non signé
-                                    result << argValue;
-                                    break;
-                                    
-                                case 'x':  // Hexadécimal minuscule
-                                    result << "0x" << std::hex << argValue << std::dec;
-                                    break;
-                                    
-                                case 'X':  // Hexadécimal majuscule
-                                    result << "0x" << std::hex << std::uppercase 
-                                          << argValue << std::nouppercase << std::dec;
-                                    break;
-                                    
-                                case 's':  // String (adresse)
-                                    try {
-                                        result << GetStringFromMemory(ctx, argValue);
-                                    } catch (const std::exception& e) {
-                                        result << "<error:0x" << std::hex << argValue << std::dec << ">";
-                                    }
-                                    break;
-                                    
-                                case 'f':  // Float
-                                {
-                                    float floatValue;
-                                    std::memcpy(&floatValue, &argValue, sizeof(float));
-                                    result << floatValue;
-                                    break;
-                                }
-                                
-                                case 'c':  // Caractère
-                                    result << static_cast<char>(argValue);
-                                    break;
-                                    
-                                default:
-                                    // Type inconnu, afficher tel quel
-                                    result << "{" << argIndex << ":" << typeChar << "}";
-                            }
+                    // Vérifier le type (i ou s)
+                    if (pos + 2 < format.length() && format[pos + 2] == ':') {
+                        if (pos + 3 < format.length()) {
+                            char typeChar = format[pos + 3];
+                            uint32_t argValue = args[argIndex];
                             
-                            pos += 5; // Avancer de "{0:d}"
-                            continue;
+                            if (typeChar == 's') {
+                                // String: argValue est une adresse
+                                try {
+                                    std::string str = GetStringFromMemory(ctx, argValue);
+                                    result << str;
+                                    pos += 5; // Avancer de "{0:s}"
+                                    continue;
+                                } catch (const std::exception& e) {
+                                    result << "{str_error}";
+                                    pos += 5;
+                                    continue;
+                                }
+                            } else if (typeChar == 'i' || typeChar == 'd') {
+                                // Integer
+                                result << static_cast<int32_t>(argValue);
+                                pos += 5;
+                                continue;
+                            }
                         }
-                    }
-                    // Format court {0} sans type → défaut: entier
-                    else if (pos + 2 < format.length() && format[pos + 2] == '}') {
+                    } else if (pos + 2 < format.length() && format[pos + 2] == '}') {
+                        // Format simple {0} - traiter comme int par défaut
+                        uint32_t argValue = args[argIndex];
                         result << static_cast<int32_t>(argValue);
-                        pos += 3; // Avancer de "{0}"
+                        pos += 3;
                         continue;
                     }
                 }
@@ -170,7 +230,10 @@ public:
         return result.str();
     }
 
-    // Handler de syscall (méthode membre, non statique)
+    // ========================================================================
+    // Syscall handler
+    // ========================================================================
+    
     uint8_t HandleSyscall(chip32_ctx_t *ctx, uint8_t code)
     {
         try {
@@ -207,44 +270,84 @@ public:
         }
     }
 
-    void QuickExecute(const std::string &assemblyCode)
+    // ============================================================================
+    // Fonction helper pour charger un binaire Chip32 dans la VM
+    // IMPORTANT: Le vecteur binary doit rester en vie pendant toute l'exécution
+    // car vm_ctx pointe directement dans ses données
+    // ============================================================================
+    bool LoadBinaryIntoVM(
+        std::vector<uint8_t> &binary,
+        chip32_ctx_t &vm_ctx,
+        uint8_t *ram_buffer,
+        uint32_t ram_size)
     {
-        std::vector<uint8_t> program;
-        Chip32::Assembler assembler;
-        Chip32::Result result;
-        std::vector<uint8_t> data(8*1024);
-
-        parseResult = assembler.Parse(assemblyCode);
-        std::cout << assembler.GetLastError().ToString() << std::endl;
-
-        buildResult = assembler.BuildBinary(program, result);
-        result.Print();
-
-        chip32_ctx_t chip32_ctx;
-        chip32_ctx.stack_size = 512;
-        chip32_ctx.rom.mem = program.data();
-        chip32_ctx.rom.addr = 0;
-        chip32_ctx.rom.size = program.size();
-        chip32_ctx.ram.mem = data.data();
-        chip32_ctx.ram.addr = 40 * 1024;
-        chip32_ctx.ram.size = data.size();
-
-        // Utiliser le wrapper statique qui appelle notre fonction membre
-        chip32_ctx.syscall = SyscallWrapper;
-        chip32_ctx.user_data = this; // Stocker le pointeur vers cette instance
-
-        chip32_initialize(&chip32_ctx);
-
-        Instr mainLine;
-        if (assembler.GetMain(mainLine)) {
-            chip32_ctx.registers[PC] = mainLine.addr;
+        // Charger et valider le binaire
+        chip32_loaded_binary_t loaded;
+        chip32_binary_error_t err = chip32_binary_load(
+            binary.data(),
+            static_cast<uint32_t>(binary.size()),
+            &loaded
+        );
+        
+        if (err != CHIP32_BIN_OK)
+        {
+            std::cerr << "Binary load error: " << chip32_binary_error_string(err) << std::endl;
+            return false;
         }
-
-        runResult = chip32_run(&chip32_ctx);
+        
+        // Afficher les informations du binaire (debug)
+        chip32_binary_print_header(&loaded.header);
+        
+        // Vérifier que la RAM est suffisante
+        if (loaded.header.bss_size > ram_size)
+        {
+            std::cerr << "Insufficient RAM: need " << loaded.header.bss_size 
+                    << " bytes, have " << ram_size << " bytes" << std::endl;
+            return false;
+        }
+        
+        // ========================================================================
+        // Configurer la VM - ROM pointe directement dans le binaire
+        // ========================================================================
+        
+        // Pour la VM, on considère DATA + CODE comme une seule ROM
+        // DATA commence à l'offset après le header
+        // CODE suit immédiatement après DATA
+        
+        vm_ctx.rom.mem = const_cast<uint8_t*>(loaded.data_section);
+        vm_ctx.rom.addr = 0;
+        vm_ctx.rom.size = loaded.header.data_size + loaded.header.code_size;
+        
+        // ========================================================================
+        // Initialiser la RAM avec INIT DATA section
+        // ========================================================================
+        
+        // D'abord mettre toute la RAM à zéro
+        memset(ram_buffer, 0, ram_size);
+        
+        // Ensuite copier les données d'initialisation (DV values + DZ zeros)
+        if (loaded.header.init_data_size > 0)
+        {
+            uint32_t copied = chip32_binary_init_ram(&loaded, ram_buffer, ram_size);
+            std::cout << "Copied " << copied << " bytes of init data to RAM" << std::endl;
+        }
+        
+        // Configurer RAM dans la VM
+        vm_ctx.ram.mem = ram_buffer;
+        vm_ctx.ram.addr = 0x8000; // Bit 31 = 1 pour RAM
+        vm_ctx.ram.size = ram_size;
+        
+        // ========================================================================
+        // Configurer le point d'entrée
+        // ========================================================================
+        // Le PC doit pointer dans la section CODE, qui commence après DATA
+        vm_ctx.registers[PC] = loaded.header.data_size + loaded.header.entry_point;
+        
+        return true;
     }
 
 private:
-    // std::function contenant le bind
+    std::vector<uint8_t> m_ram;  // RAM storage
     std::function<uint8_t(chip32_ctx_t*, uint8_t)> m_syscallHandler;
 
     // Wrapper statique qui récupère l'instance et appelle la méthode membre

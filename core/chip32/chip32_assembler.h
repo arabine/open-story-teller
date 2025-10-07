@@ -50,12 +50,14 @@ struct Instr {
     uint16_t dataTypeSize{0};
     uint16_t dataLen{0};
 
-    bool isLabel{false}; //!< If true, this is a label, otherwise it is an instruction
-    bool useLabel{false}; //!< If true, the instruction uses a label
-    bool isRomData{false}; //!< True is constant data in program
-    bool isRamData{false}; //!< True is constant data in program
+    bool isLabel{false};    //!< If true, this is a label, otherwise it is an instruction
+    bool useLabel{false};   //!< If true, the instruction uses a label
+    bool isRomData{false};  //!< True if constant data in ROM (DC)
+    bool isRamData{false};  //!< True if RAM variable (DV or DZ)
+    bool isZeroData{false}; //!< True if zero-initialized RAM (DZ only)
 
-    uint16_t addr{0}; //!< instruction address when assembled in program memory
+    uint16_t addr{0};       //!< Instruction/data address (ROM for DC, RAM for DV/DZ)
+    uint16_t romInitAddr{0};//!< For DV: ROM address where initial data is stored
 
     bool isRomCode() const { return !(isLabel || isRomData || isRamData); }
 };

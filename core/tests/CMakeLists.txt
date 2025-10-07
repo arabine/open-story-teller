@@ -22,6 +22,7 @@ add_executable(${PROJECT_NAME}
 
     ../chip32/chip32_assembler.cpp 
     ../chip32/chip32_vm.c
+    ../chip32/chip32_binary_format.c
 )
 
 target_include_directories(${PROJECT_NAME}  PRIVATE 

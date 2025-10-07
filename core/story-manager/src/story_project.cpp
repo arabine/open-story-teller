@@ -445,7 +445,7 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
         }
     }
     
-    // ✅ PHASE 2 : GÉNÉRATION DE TOUS LES TAC (avant la section DATA!)
+    // PHASE 2 : GÉNÉRATION DE TOUS LES TAC (avant la section DATA!)
     std::cout << "\n=== Generating all TAC programs ===\n";
     std::map<std::string, TACProgram> pageTACPrograms;
     
@@ -491,7 +491,7 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
     generator.GenerateGlobalVariables();
     
     // Constantes de tous les nœuds de toutes les pages
-    // ✅ Les format strings ont déjà été modifiés par le TAC generator
+    // Les format strings ont déjà été modifiés par le TAC generator
     generator.GenerateNodesVariables(allNodes);
     
     // === SECTION TEXT (chaque page = une fonction) ===

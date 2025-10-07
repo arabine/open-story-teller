@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 
 #include "chip32_assembler.h"
+#include "chip32_binary_format.h"
 
 #include <sstream>
 #include <vector>
@@ -32,6 +33,7 @@ THE SOFTWARE.
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <set>
 
 namespace Chip32
 {
@@ -358,29 +360,197 @@ bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
 bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
 {
     program.clear();
-    result = { 0, 0, 0}; // clear stuff!
-
-    // serialize each instruction and arguments to program memory, assign address to variables (rom or ram)
-    for (auto &i : m_instructions)
+    result = { 0, 0, 0};
+    
+    // ========================================================================
+    // PHASE 1: Créer les sections temporaires
+    // ========================================================================
+    std::vector<uint8_t> dataSection;     // DC - ROM constants only
+    std::vector<uint8_t> codeSection;     // Executable code
+    std::vector<uint8_t> initDataSection; // DV values + DZ zeros (RAM init)
+    
+    uint32_t bssSize = 0;                 // Total RAM size (DV + DZ)
+    uint32_t entryPoint = 0;              // Entry point (.main)
+    
+    // Map to track DV init data: RAM address -> init data
+    std::map<uint16_t, std::vector<uint8_t>> dvInitData;
+    
+    // ========================================================================
+    // PHASE 2: Première passe - identifier les variables DV et leurs données
+    // ========================================================================
+    // On doit d'abord construire une map des données d'initialisation DV
+    for (size_t idx = 0; idx < m_instructions.size(); idx++)
     {
-        if (i.isRamData)
+        const auto &instr = m_instructions[idx];
+        
+        // Détecter une variable DV (le marqueur final)
+        if (instr.isRamData && !instr.isZeroData && instr.mnemonic[0] == '$')
         {
-            result.ramUsageSize += i.dataLen;
-        }
-        else
-        {
-            if (i.isRomCode())
+            uint16_t ramAddr = instr.addr;
+            uint16_t romInitAddr = instr.romInitAddr;
+            uint16_t dataLen = instr.dataLen;
+            
+            // Collecter les données d'init depuis les instructions précédentes
+            std::vector<uint8_t> initData;
+            
+            // Chercher en arrière les instructions ROM data pour cette variable
+            for (size_t j = 0; j < idx; j++)
             {
-                program.push_back(i.code.opcode);
+                const auto &dataInstr = m_instructions[j];
+                
+                // Ces instructions ont isRomData=true et leur addr correspond à romInitAddr
+                if (dataInstr.isRomData && !dataInstr.isRamData &&
+                    dataInstr.addr >= romInitAddr && 
+                    dataInstr.addr < romInitAddr + dataLen)
+                {
+                    // Ces données appartiennent à cette variable DV
+                    initData.insert(initData.end(), 
+                                   dataInstr.compiledArgs.begin(), 
+                                   dataInstr.compiledArgs.end());
+                }
             }
-            else if (i.isRomData)  // Seulement pour ROM DATA
-            {
-                result.constantsSize += i.compiledArgs.size();
-            }
-            std::copy (i.compiledArgs.begin(), i.compiledArgs.end(), std::back_inserter(program));
+            
+            dvInitData[ramAddr] = initData;
         }
     }
-    result.romUsageSize = program.size();
+    
+    // ========================================================================
+    // PHASE 3: Deuxième passe - dispatcher dans les bonnes sections
+    // ========================================================================
+    // Track which ROM data belongs to DV variables
+    std::set<uint16_t> dvRomAddresses;
+    for (const auto &instr : m_instructions)
+    {
+        if (instr.isRamData && !instr.isZeroData && instr.mnemonic[0] == '$')
+        {
+            for (uint16_t addr = instr.romInitAddr; 
+                 addr < instr.romInitAddr + instr.dataLen; 
+                 addr++)
+            {
+                dvRomAddresses.insert(addr);
+            }
+        }
+    }
+    
+    for (const auto &i : m_instructions)
+    {
+        // ====================================================================
+        // RAM VARIABLES (DV et DZ) - marqueurs uniquement
+        // ====================================================================
+        if (i.isRamData)
+        {
+            bssSize += i.dataLen;
+            // Les données seront traitées dans la phase 4
+        }
+        // ====================================================================
+        // ROM CODE (Instructions exécutables)
+        // ====================================================================
+        else if (i.isRomCode())
+        {
+            // Détecter le point d'entrée AVANT d'ajouter les données
+            if (i.isLabel && i.mnemonic == ".main")
+            {
+                entryPoint = static_cast<uint32_t>(codeSection.size());
+            }
+            
+            // Ajouter l'opcode
+            codeSection.push_back(i.code.opcode);
+            
+            // Ajouter les arguments compilés
+            std::copy(i.compiledArgs.begin(), 
+                     i.compiledArgs.end(), 
+                     std::back_inserter(codeSection));
+        }
+        // ====================================================================
+        // ROM DATA - Distinguer DC (vraies constantes) de DV init data
+        // ====================================================================
+        else if (i.isRomData && !i.isRamData)
+        {
+            // Vérifier si cette donnée appartient à une variable DV
+            bool isDvInitData = (dvRomAddresses.find(i.addr) != dvRomAddresses.end());
+            
+            if (!isDvInitData)
+            {
+                // C'est une vraie constante DC - va dans dataSection
+                std::copy(i.compiledArgs.begin(), 
+                         i.compiledArgs.end(), 
+                         std::back_inserter(dataSection));
+                
+                result.constantsSize += i.compiledArgs.size();
+            }
+            // Sinon, c'est une donnée DV, elle sera traitée dans la phase 4
+        }
+    }
+    
+    // ========================================================================
+    // PHASE 4: Construire initDataSection (DV + DZ dans l'ordre RAM)
+    // ========================================================================
+    if (bssSize > 0)
+    {
+        initDataSection.resize(bssSize, 0); // Tout à zéro par défaut (pour DZ)
+        
+        // Copier les données DV aux bonnes positions RAM
+        for (const auto &pair : dvInitData)
+        {
+            uint16_t ramAddr = pair.first;
+            const std::vector<uint8_t> &data = pair.second;
+            
+            // Copier les données d'init à l'adresse RAM correspondante
+            for (size_t i = 0; i < data.size() && (ramAddr + i) < bssSize; i++)
+            {
+                initDataSection[ramAddr + i] = data[i];
+            }
+        }
+        
+        // Les zones DZ sont déjà à zéro grâce au resize()
+    }
+    
+    // ========================================================================
+    // PHASE 5: Créer le header binaire
+    // ========================================================================
+    chip32_binary_header_t header;
+    chip32_binary_header_init(&header);
+    
+    header.data_size = static_cast<uint32_t>(dataSection.size());
+    header.bss_size = bssSize;
+    header.code_size = static_cast<uint32_t>(codeSection.size());
+    header.entry_point = entryPoint;
+    header.init_data_size = static_cast<uint32_t>(initDataSection.size());
+    
+    if (initDataSection.size() > 0)
+    {
+        header.flags |= CHIP32_FLAG_HAS_INIT_DATA;
+    }
+    
+    // ========================================================================
+    // PHASE 6: Assembler le binaire final
+    // ========================================================================
+    uint32_t totalSize = chip32_binary_calculate_size(&header);
+    program.resize(totalSize);
+    
+    uint32_t bytesWritten = chip32_binary_write(
+        &header,
+        dataSection.empty() ? nullptr : dataSection.data(),
+        codeSection.empty() ? nullptr : codeSection.data(),
+        initDataSection.empty() ? nullptr : initDataSection.data(),
+        program.data(),
+        static_cast<uint32_t>(program.size())
+    );
+    
+    if (bytesWritten == 0 || bytesWritten != totalSize)
+    {
+        // Erreur lors de l'écriture
+        program.clear();
+        return false;
+    }
+    
+    // ========================================================================
+    // PHASE 7: Remplir les statistiques
+    // ========================================================================
+    result.ramUsageSize = bssSize;
+    result.romUsageSize = header.data_size + header.code_size;
+    result.constantsSize = header.data_size;
+    
     return true;
 }
 
@@ -474,43 +644,96 @@ bool Assembler::Parse(const std::string &data)
             std::string type = lineParts[1];
 
             CHIP32_CHECK(instr, (type.size() >= 3), "bad data type size");
-            CHIP32_CHECK(instr, (type[0] == 'D') && ((type[1] == 'C') || (type[1] == 'V')), "bad data type (must be DCxx or DVxx");
+            CHIP32_CHECK(instr, (type[0] == 'D') && ((type[1] == 'C') || (type[1] == 'V') || (type[1] == 'Z')), 
+                        "bad data type (must be DCxx, DVxx or DZxx)");
             CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " + opcode);
 
-            instr.isRomData = type[1] == 'C' ? true : false;
-            instr.isRamData = type[1] == 'V' ? true : false;
+            // Parse data type size (8, 16, or 32)
             type.erase(0, 2);
-            instr.dataTypeSize = static_cast<uint32_t>(strtol(type.c_str(),  NULL, 0));
+            instr.dataTypeSize = static_cast<uint32_t>(strtol(type.c_str(), NULL, 0));
 
+            // Determine data type
+            char typeChar = lineParts[1][1];
+            instr.isRomData = (typeChar == 'C');
+            instr.isRamData = (typeChar == 'V' || typeChar == 'Z');
+            instr.isZeroData = (typeChar == 'Z');
+
+            // =======================================================================================
+            // DC - ROM Constants (read-only data in program memory)
+            // =======================================================================================
             if (instr.isRomData)
             {
                 instr.addr = code_addr;
                 m_labels[opcode] = instr; // location of the start of the data
-                // if ROM data, we generate one instruction per argument
-                // reason: arguments may be labels, easier to replace later
-
+                
+                // Generate one instruction per argument
+                // Reason: arguments may be labels, easier to replace later
                 for (unsigned int i = 2; i < lineParts.size(); i++)
                 {
-                    CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), "Compile argument error, stopping.");
+                    CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), 
+                                "Compile argument error, stopping.");
                     m_instructions.push_back(instr);
                     code_addr += instr.compiledArgs.size();
                     instr.addr = code_addr;
                 }
             }
-            else // RAM DATA, only one argument is used: the size of the array
+            // =======================================================================================
+            // DV - RAM Variables with initial values (data stored in ROM, copied to RAM at startup)
+            // =======================================================================================
+            else if (!instr.isZeroData)  // DV
             {
+                // DV behaves like DC for data storage, but marks the location as RAM
+                // The initial values are stored in ROM and must be copied to RAM at startup
+                
                 instr.addr = ram_addr;
-                instr.dataLen = static_cast<uint16_t>(strtol(lineParts[2].c_str(),  NULL, 0)) * instr.dataTypeSize/8;
+                m_labels[opcode] = instr; // RAM address for this variable
+                
+                // Store the ROM address where initial data starts
+                instr.romInitAddr = code_addr;
+                
+                // Process all initial values (like DC)
+                for (unsigned int i = 2; i < lineParts.size(); i++)
+                {
+                    Instr dataInstr = instr; // Copy instruction info
+                    CHIP32_CHECK(dataInstr, CompileConstantArgument(dataInstr, lineParts[i]), 
+                                "Compile argument error, stopping.");
+                    
+                    // This instruction contains ROM data for initialization
+                    dataInstr.addr = code_addr;
+                    dataInstr.isRomData = true;  // Store in ROM for init data
+                    dataInstr.isRamData = false; // But this is just init data, not the variable
+                    m_instructions.push_back(dataInstr);
+                    
+                    code_addr += dataInstr.compiledArgs.size();
+                    instr.dataLen += dataInstr.compiledArgs.size();
+                }
+                
+                // Now add the RAM variable marker
+                instr.addr = ram_addr;
+                instr.isRomData = false;
+                instr.isRamData = true;
+                ram_addr += instr.dataLen;
+                m_instructions.push_back(instr);
+            }
+            // =======================================================================================
+            // DZ - Zero-initialized RAM zones (no data in ROM, just reserve space)
+            // =======================================================================================
+            else  // DZ
+            {
+                // DZ only takes ONE argument: the number of elements
+                CHIP32_CHECK(instr, lineParts.size() == 3, 
+                            "DZ directive requires exactly one argument (number of elements)");
+                
+                instr.addr = ram_addr;
+                
+                // Calculate size in bytes: num_elements * (type_size / 8)
+                uint32_t numElements = static_cast<uint32_t>(strtol(lineParts[2].c_str(), NULL, 0));
+                instr.dataLen = static_cast<uint16_t>(numElements * (instr.dataTypeSize / 8));
+                
                 ram_addr += instr.dataLen;
                 m_labels[opcode] = instr;
                 m_instructions.push_back(instr);
             }
-        }
-        else
-        {
-            m_lastError.message = "Unknown mnemonic or badly formatted line";
-            m_lastError.line = lineNum;
-            return false;
         }
     }
 
