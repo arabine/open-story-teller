@@ -208,7 +208,7 @@ struct chip32_ctx_t
     virtual_mem_t rom;
     virtual_mem_t ram;
     uint16_t stack_size;
-    uint32_t instrCount;
+    uint32_t instr_count;
     uint16_t prog_size;
     uint32_t max_instr;
     uint32_t registers[REGISTER_COUNT];

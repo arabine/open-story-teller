@@ -24,59 +24,37 @@ THE SOFTWARE.
 
 #include <iostream>
 #include "catch.hpp"
-#include "chip32_assembler.h"
-#include "chip32_vm.h"
+#include "chip32_machine.h" // Inclure chip32_machine.h au lieu de assembler et vm
 
 /*
 Purpose: test all opcodes
 */
 
-void hexdump(void *ptr, int buflen);
-
-static uint8_t story_player_syscall(chip32_ctx_t *ctx, uint8_t code)
-{
-    uint8_t retCode = SYSCALL_RET_OK;
-
-    return retCode;
-}
-
+// Suppression des fonctions et classes de configuration de la VM
+// qui sont maintenant encapsulées dans Chip32::Machine.
 
 class VmTestContext
 {
 public:
     VmTestContext() {
-
+        // La RAM est allouée et initialisée à l'intérieur de QuickExecute 
+        // de la classe Machine. On peut laisser le constructeur vide.
     }
 
     void Execute(const std::string &assemblyCode)
     {
-        // ---------  BUILD BINARY  ---------
-        REQUIRE( assembler.Parse(assemblyCode) == true );
-        REQUIRE( assembler.BuildBinary(program, result) == true );
-        result.Print();
+        // Utiliser la méthode QuickExecute de Machine pour Parse, Build et Run
+        machine.QuickExecute(assemblyCode);
 
-        chip32_ctx.stack_size = 512;
+        // Vérification de base: le parsing et le build doivent réussir
+        REQUIRE( machine.parseResult == true );
+        REQUIRE( machine.buildResult == true );
 
-        chip32_ctx.rom.mem = program.data();
-        chip32_ctx.rom.addr = 18*1024;
-        chip32_ctx.rom.size = program.size();
-
-        chip32_ctx.ram.mem = data;
-        chip32_ctx.ram.addr = 56 *1024,
-        chip32_ctx.ram.size = sizeof(data);
-
-        chip32_ctx.syscall = story_player_syscall;
-
-        chip32_initialize(&chip32_ctx);
-        chip32_result_t runResult = chip32_run(&chip32_ctx);
-        REQUIRE( runResult == VM_FINISHED );
+        // Vérification que l'exécution a fini normalement (HALT)
+        REQUIRE( machine.runResult == VM_FINISHED );
     }
 
-    uint8_t data[8*1024];
-    std::vector<uint8_t> program;
-    Chip32::Assembler assembler;
-    Chip32::Result result;
-    chip32_ctx_t chip32_ctx;
+    Chip32::Machine machine; // Instance de la Machine à utiliser pour les tests
 };
 
 
@@ -89,7 +67,8 @@ TEST_CASE_METHOD(VmTestContext, "MUL", "[vm]") {
     )";
     Execute(test1);
 
-    uint32_t result = chip32_ctx.registers[R0];
+    // Accéder directement aux registres de la Machine pour vérifier le résultat
+    uint32_t result = machine.ctx.registers[R0];
     REQUIRE (result == 37 * 0x695);
 }
 
@@ -102,6 +81,7 @@ TEST_CASE_METHOD(VmTestContext, "DIV", "[vm]") {
     )";
     Execute(test1);
 
-    uint32_t result = chip32_ctx.registers[R0];
+    // Accéder directement aux registres de la Machine pour vérifier le résultat
+    uint32_t result = machine.ctx.registers[R0];
     REQUIRE (result == (int)(37/8));
 }

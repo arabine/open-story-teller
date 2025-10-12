@@ -365,7 +365,7 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
     // ========================================================================
     // PHASE 1: Créer les sections temporaires
     // ========================================================================
-    std::vector<uint8_t> dataSection;     // DC - ROM constants only
+    std::vector<uint8_t> constSection;     // DC - ROM constants only
     std::vector<uint8_t> codeSection;     // Executable code
     std::vector<uint8_t> initDataSection; // DV values + DZ zeros (RAM init)
     
@@ -471,10 +471,10 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
             
             if (!isDvInitData)
             {
-                // C'est une vraie constante DC - va dans dataSection
+                // C'est une vraie constante DC - va dans constSection
                 std::copy(i.compiledArgs.begin(), 
                          i.compiledArgs.end(), 
-                         std::back_inserter(dataSection));
+                         std::back_inserter(constSection));
                 
                 result.constantsSize += i.compiledArgs.size();
             }
@@ -511,7 +511,7 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
     chip32_binary_header_t header;
     chip32_binary_header_init(&header);
     
-    header.data_size = static_cast<uint32_t>(dataSection.size());
+    header.const_size = static_cast<uint32_t>(constSection.size());
     header.bss_size = bssSize;
     header.code_size = static_cast<uint32_t>(codeSection.size());
     header.entry_point = entryPoint;
@@ -530,7 +530,7 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
     
     uint32_t bytesWritten = chip32_binary_write(
         &header,
-        dataSection.empty() ? nullptr : dataSection.data(),
+        constSection.empty() ? nullptr : constSection.data(),
         codeSection.empty() ? nullptr : codeSection.data(),
         initDataSection.empty() ? nullptr : initDataSection.data(),
         program.data(),
@@ -548,8 +548,8 @@ bool Assembler::BuildBinary(std::vector<uint8_t> &program, Result &result)
     // PHASE 7: Remplir les statistiques
     // ========================================================================
     result.ramUsageSize = bssSize;
-    result.romUsageSize = header.data_size + header.code_size;
-    result.constantsSize = header.data_size;
+    result.romUsageSize = header.const_size + header.code_size;
+    result.constantsSize = header.const_size;
     
     return true;
 }

@@ -13,94 +13,92 @@ _Static_assert(sizeof(chip32_binary_header_t) == 28, "Header must be 28 bytes");
 // ============================================================================
 
 chip32_binary_error_t chip32_binary_load(
+    chip32_ctx_t *ctx,
     uint8_t* binary,
-    uint32_t size,
-    chip32_loaded_binary_t* out_loaded
+    uint32_t binary_size,
+    uint8_t* ram,
+    uint32_t ram_size,
+    chip32_binary_stats_t *out_stats
 )
 {
-    if (!binary || !out_loaded) {
+    memset(ctx, 0, sizeof(ctx));
+    ctx->stack_size = 512; // Can be changed outside this function
+
+    // Clear RAM
+    memset(ram, 0, ram_size);
+
+    chip32_binary_header_t header;
+
+    if (!binary || !ctx) {
         return CHIP32_BIN_ERR_NULL_POINTER;
     }
-    
-    // Clear output structure
-    memset(out_loaded, 0, sizeof(chip32_loaded_binary_t));
-    
+
     // Check minimum size
-    if (size < sizeof(chip32_binary_header_t)) {
-        out_loaded->error = CHIP32_BIN_ERR_TOO_SMALL;
+    if (binary_size < sizeof(chip32_binary_header_t)) {
         return CHIP32_BIN_ERR_TOO_SMALL;
     }
     
     // Copy header
-    memcpy(&out_loaded->header, binary, sizeof(chip32_binary_header_t));
+    memcpy(&header, binary, sizeof(chip32_binary_header_t));
     
     // Verify magic number
-    if (out_loaded->header.magic != CHIP32_MAGIC) {
-        out_loaded->error = CHIP32_BIN_ERR_INVALID_MAGIC;
+    if (header.magic != CHIP32_MAGIC) {
         return CHIP32_BIN_ERR_INVALID_MAGIC;
     }
     
     // Check version
-    if (out_loaded->header.version > CHIP32_VERSION) {
-        out_loaded->error = CHIP32_BIN_ERR_UNSUPPORTED_VERSION;
+    if (header.version > CHIP32_VERSION) {
         return CHIP32_BIN_ERR_UNSUPPORTED_VERSION;
     }
     
     // Calculate expected size
     uint32_t expected_size = sizeof(chip32_binary_header_t) +
-                            out_loaded->header.data_size +
-                            out_loaded->header.code_size +
-                            out_loaded->header.init_data_size;
+                            header.const_size +
+                            header.code_size +
+                            header.init_data_size;
     
-    if (size != expected_size) {
-        out_loaded->error = CHIP32_BIN_ERR_SIZE_MISMATCH;
+    if (binary_size != expected_size) {
         return CHIP32_BIN_ERR_SIZE_MISMATCH;
     }
     
     // Set section pointers
     uint32_t offset = sizeof(chip32_binary_header_t);
-    
-    if (out_loaded->header.data_size > 0) {
-        out_loaded->data_section = binary + offset;
-        offset += out_loaded->header.data_size;
-    }
-    
-    if (out_loaded->header.code_size > 0) {
-        out_loaded->code_section = binary + offset;
-        offset += out_loaded->header.code_size;
-    }
-    
-    if (out_loaded->header.init_data_size > 0) {
-        out_loaded->init_data_section = binary + offset;
-    }
-    
-    out_loaded->error = CHIP32_BIN_OK;
-    return CHIP32_BIN_OK;
-}
 
-void chip32_binary_get_stats(
-    const chip32_loaded_binary_t* loaded,
-    chip32_binary_stats_t* out_stats
-)
-{
-    if (!loaded || !out_stats) {
-        return;
-    }
-    
-    out_stats->data_size = loaded->header.data_size;
-    out_stats->bss_size = loaded->header.bss_size;
-    out_stats->code_size = loaded->header.code_size;
-    out_stats->init_data_size = loaded->header.init_data_size;
+    // Skip header for ROM executable (must start at a valide code address)
+    ctx->rom.mem = binary + offset;
+    ctx->rom.size = binary_size - offset;
+    ctx->rom.addr = 0;
+
+    // RAM and ROM are in the same logical memory plane
+    // So we set it begin after the ROM (why not)
+    ctx->ram.mem = ram;
+    ctx->ram.addr = ctx->rom.size;
+    ctx->ram.size = ram_size;
+
+    // Set entry point (DATA size + entry point offset in CODE)
+    ctx->registers[PC] = header.entry_point;
+
+    // Load data initialized values
+    const uint8_t *data = binary + header.code_size;
+    memcpy(ram, data, header.init_data_size);
+
+
+    out_stats->const_size = header.const_size;
+    out_stats->bss_size = header.bss_size;
+    out_stats->code_size = header.code_size;
+    out_stats->init_data_size = header.init_data_size;
     
     out_stats->total_file_size = sizeof(chip32_binary_header_t) +
-                                 loaded->header.data_size +
-                                 loaded->header.code_size +
-                                 loaded->header.init_data_size;
+                                 header.const_size +
+                                 header.code_size +
+                                 header.init_data_size;
     
-    out_stats->total_rom_size = loaded->header.data_size + 
-                               loaded->header.code_size;
+    out_stats->total_rom_size = header.const_size + 
+                               header.code_size;
     
-    out_stats->total_ram_size = loaded->header.bss_size;
+    out_stats->total_ram_size = header.bss_size;
+
+    return CHIP32_BIN_OK;
 }
 
 const char* chip32_binary_error_string(chip32_binary_error_t error)
@@ -146,7 +144,7 @@ uint32_t chip32_binary_calculate_size(const chip32_binary_header_t* header)
     }
     
     return sizeof(chip32_binary_header_t) +
-           header->data_size +
+           header->const_size +
            header->code_size +
            header->init_data_size;
 }
@@ -178,12 +176,12 @@ uint32_t chip32_binary_write(
     offset += sizeof(chip32_binary_header_t);
     
     // Write DATA section
-    if (header->data_size > 0) {
+    if (header->const_size > 0) {
         if (!data_section) {
             return 0; // Data expected but NULL pointer
         }
-        memcpy(out_buffer + offset, data_section, header->data_size);
-        offset += header->data_size;
+        memcpy(out_buffer + offset, data_section, header->const_size);
+        offset += header->const_size;
     }
     
     // Write CODE section
@@ -207,35 +205,6 @@ uint32_t chip32_binary_write(
     return offset;
 }
 
-// ============================================================================
-// RAM INITIALIZATION HELPER
-// ============================================================================
-
-uint32_t chip32_binary_init_ram(
-    const chip32_loaded_binary_t* loaded,
-    uint8_t* ram_buffer,
-    uint32_t ram_size
-)
-{
-    if (!loaded || !ram_buffer) {
-        return 0;
-    }
-    
-    // Check if binary has init data
-    if (loaded->header.init_data_size == 0 || !loaded->init_data_section) {
-        return 0;
-    }
-    
-    // Copy init data to RAM (respect buffer limits)
-    uint32_t copy_size = loaded->header.init_data_size;
-    if (copy_size > ram_size) {
-        copy_size = ram_size; // Truncate if RAM is smaller
-    }
-    
-    memcpy(ram_buffer, loaded->init_data_section, copy_size);
-    
-    return copy_size;
-}
 
 // ============================================================================
 // DEBUG/UTILITY FUNCTIONS
@@ -260,7 +229,7 @@ void chip32_binary_print_header(const chip32_binary_header_t* header)
         printf(" (has init data)");
     }
     printf("\n");
-    printf("DATA section:   %u bytes (ROM constants)\n", header->data_size);
+    printf("DATA section:   %u bytes (ROM constants)\n", header->const_size);
     printf("BSS section:    %u bytes (Total RAM: DV+DZ)\n", header->bss_size);
     printf("CODE section:   %u bytes\n", header->code_size);
     printf("Entry point:    0x%08X\n", header->entry_point);
@@ -275,7 +244,7 @@ void chip32_binary_print_stats(const chip32_binary_stats_t* stats)
     }
     
     printf("=== Chip32 Binary Statistics ===\n");
-    printf("DATA section:   %u bytes (ROM, initialized)\n", stats->data_size);
+    printf("DATA section:   %u bytes (ROM, initialized)\n", stats->const_size);
     printf("BSS section:    %u bytes (RAM, DV+DZ)\n", stats->bss_size);
     printf("CODE section:   %u bytes (ROM, executable)\n", stats->code_size);
     printf("Init data:      %u bytes (RAM initialization)\n", stats->init_data_size);

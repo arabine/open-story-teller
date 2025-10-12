@@ -104,14 +104,14 @@ void chip32_initialize(chip32_ctx_t *ctx)
 {
     memset(ctx->ram.mem, 0, ctx->ram.size);
     memset(ctx->registers, 0, REGISTER_COUNT * sizeof(uint32_t));
-    ctx->instrCount = 0;
+    ctx->instr_count = 0;
     ctx->registers[SP] = ctx->ram.size;
 }
 
 chip32_result_t chip32_run(chip32_ctx_t *ctx)
 {
     chip32_result_t result = VM_OK;
-    while ((ctx->max_instr == 0) || (ctx->instrCount < ctx->max_instr))
+    while ((ctx->max_instr == 0) || (ctx->instr_count < ctx->max_instr))
     {
         result = chip32_step(ctx);
 
@@ -434,7 +434,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     }
 
     ctx->registers[PC]++;
-    ctx->instrCount++;
+    ctx->instr_count++;
 
     return result;
 }

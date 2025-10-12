@@ -109,7 +109,9 @@
         "serializers.h": "c",
         "ni_parser.h": "c",
         "*.m": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "chip32_binary_format.h": "c",
+        "hash_map": "c"
     }
 
 }

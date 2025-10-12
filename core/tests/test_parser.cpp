@@ -363,7 +363,7 @@ TEST_CASE("Binary format validation")
     REQUIRE(loaded.header.magic == CHIP32_MAGIC);
     REQUIRE(loaded.header.version == CHIP32_VERSION);
     REQUIRE((loaded.header.flags & CHIP32_FLAG_HAS_INIT_DATA) != 0);
-    REQUIRE(loaded.header.data_size > 0);      // Has ROM constants
+    REQUIRE(loaded.header.const_size > 0);      // Has ROM constants
     REQUIRE(loaded.header.bss_size > 0);       // Has RAM
     REQUIRE(loaded.header.code_size > 0);      // Has code
     REQUIRE(loaded.header.init_data_size == loaded.header.bss_size); // Must match

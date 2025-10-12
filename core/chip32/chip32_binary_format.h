@@ -37,6 +37,24 @@
  *   - Initial RAM values: DV values + zeros for DZ areas
  *   - Size = sum of all DV and DZ declarations
  *   - Layout matches RAM layout exactly
+ * 
+ * 
+ 
++--------------------------------------+
+|          Chip32 Header               |  <-- Début du fichier
+| (Magic, Versions, Sizes, Entry...)   |
++--------------------------------------+
+|          CONST Section (DV)           |  <-- Données initialisées
+| (Variables globales initialisées)    |      e.g., const int x = 5;
++--------------------------------------+
+|          CODE Section                |  <-- Instructions du programme
+| (Les opcodes et leurs opérandes)     |
++--------------------------------------+
+|     DATA Section (Optional)          |  <-- Données pour l'initialisation de la RAM (copie de DV)
+| (Contient les valeurs initiales pour la RAM)
++--------------------------------------+
+ 
+
  */
 
 #ifndef CHIP32_BINARY_FORMAT_H
@@ -44,6 +62,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "chip32_vm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +93,7 @@ typedef struct {
     uint32_t magic;              // Magic number "C32\0"
     uint16_t version;            // Format version
     uint16_t flags;              // Feature flags
-    uint32_t data_size;          // Size of DATA section in bytes (ROM constants)
+    uint32_t const_size;          // Size of DATA section in bytes (ROM constants)
     uint32_t bss_size;           // Total RAM size (DV + DZ)
     uint32_t code_size;          // Size of CODE section in bytes
     uint32_t entry_point;        // Entry point offset in CODE section
@@ -82,18 +101,9 @@ typedef struct {
 } chip32_binary_header_t;
 #pragma pack(pop)
 
-// Loaded binary structure
-typedef struct {
-    chip32_binary_header_t header;
-    uint8_t* data_section;      // Points to DATA section (ROM)
-    uint8_t* code_section;      // Points to CODE section
-    uint8_t* init_data_section; // Points to INIT DATA (RAM initialization)
-    chip32_binary_error_t error;
-} chip32_loaded_binary_t;
-
 // Statistics
 typedef struct {
-    uint32_t data_size;          // ROM constants
+    uint32_t const_size;          // ROM constants
     uint32_t bss_size;           // Total RAM needed
     uint32_t code_size;          // Executable code
     uint32_t init_data_size;     // RAM initialization data
@@ -114,20 +124,14 @@ typedef struct {
  * @return Error code
  */
 chip32_binary_error_t chip32_binary_load(
+    chip32_ctx_t *ctx,
     uint8_t* binary,
-    uint32_t size,
-    chip32_loaded_binary_t* out_loaded
+    uint32_t binary_size,
+    uint8_t* ram,
+    uint32_t ram_size,
+    chip32_binary_stats_t *out_stats
 );
 
-/**
- * Get statistics from a loaded binary
- * @param loaded Loaded binary structure
- * @param out_stats Output statistics
- */
-void chip32_binary_get_stats(
-    const chip32_loaded_binary_t* loaded,
-    chip32_binary_stats_t* out_stats
-);
 
 /**
  * Get error string from error code
@@ -156,7 +160,7 @@ uint32_t chip32_binary_calculate_size(const chip32_binary_header_t* header);
 /**
  * Write a complete binary to memory
  * @param header Binary header
- * @param data_section DATA section content (can be NULL if data_size is 0)
+ * @param data_section DATA section content (can be NULL if const_size is 0)
  * @param code_section CODE section content (can be NULL if code_size is 0)
  * @param init_data_section INIT DATA section (can be NULL if init_data_size is 0)
  * @param out_buffer Output buffer (must be large enough)
@@ -170,24 +174,6 @@ uint32_t chip32_binary_write(
     const uint8_t* init_data_section,
     uint8_t* out_buffer,
     uint32_t buffer_size
-);
-
-// ============================================================================
-// RAM INITIALIZATION HELPER
-// ============================================================================
-
-/**
- * Initialize RAM from binary INIT DATA section
- * This copies all initial values (DV) and zeros (DZ) to RAM
- * @param loaded Loaded binary with init data
- * @param ram_buffer Destination RAM buffer
- * @param ram_size Size of RAM buffer
- * @return Number of bytes copied, or 0 if no init data
- */
-uint32_t chip32_binary_init_ram(
-    const chip32_loaded_binary_t* loaded,
-    uint8_t* ram_buffer,
-    uint32_t ram_size
 );
 
 // ============================================================================

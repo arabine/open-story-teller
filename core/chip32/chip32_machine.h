@@ -34,6 +34,7 @@ public:
         m_syscallHandler = std::bind(&Machine::HandleSyscall, this, 
                                      std::placeholders::_1, 
                                      std::placeholders::_2);
+        m_ram.resize(1024); 
     }
 
     // ========================================================================
@@ -64,12 +65,15 @@ public:
         
         result.Print();
 
-        // Load binary using new format
-        chip32_loaded_binary_t loaded;
+        // Load binary using executable format
+        chip32_binary_stats_t stats;
         chip32_binary_error_t error = chip32_binary_load(
+            &ctx,
             program.data(),
             static_cast<uint32_t>(program.size()),
-            &loaded
+            m_ram.data(),
+            static_cast<uint32_t>(m_ram.size()),
+            &stats
         );
         
         if (error != CHIP32_BIN_OK) {
@@ -78,29 +82,6 @@ public:
             return;
         }
         
-        // Allocate and initialize RAM
-        m_ram.resize(loaded.header.bss_size);
-        
-        uint32_t init_bytes = chip32_binary_init_ram(&loaded, m_ram.data(), m_ram.size());
-        
-        if (init_bytes > 0) {
-            std::cout << "RAM initialized: " << init_bytes << " bytes" << std::endl;
-        }
-
-        // Setup VM context
-        memset(&ctx, 0, sizeof(ctx));
-        ctx.stack_size = 512;
-        
-        // ROM = DATA + CODE (contiguous in loaded binary)
-        ctx.rom.mem = loaded.data_section;
-        ctx.rom.addr = 0;
-        ctx.rom.size = loaded.header.data_size + loaded.header.code_size;
-        
-        // RAM
-        ctx.ram.mem = m_ram.data();
-        ctx.ram.addr = ctx.rom.size;
-        ctx.ram.size = m_ram.size();
-
         // Set syscall handler using wrapper
         ctx.syscall = SyscallWrapper;
         ctx.user_data = this;
@@ -108,8 +89,6 @@ public:
         // Initialize VM
         chip32_initialize(&ctx);
 
-        // Set entry point (DATA size + entry point offset in CODE)
-        ctx.registers[PC] = loaded.header.data_size + loaded.header.entry_point;
 
         std::cout << "Starting execution at PC=0x" << std::hex << ctx.registers[PC] 
                   << std::dec << std::endl;
@@ -281,14 +260,7 @@ public:
         uint8_t *ram_buffer,
         uint32_t ram_size)
     {
-        // Charger et valider le binaire
-        chip32_loaded_binary_t loaded;
-        chip32_binary_error_t err = chip32_binary_load(
-            binary.data(),
-            static_cast<uint32_t>(binary.size()),
-            &loaded
-        );
-        
+       
         if (err != CHIP32_BIN_OK)
         {
             std::cerr << "Binary load error: " << chip32_binary_error_string(err) << std::endl;
