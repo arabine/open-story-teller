@@ -35,6 +35,8 @@ extern "C" {
 #include <stdbool.h>
 
 
+#define CHIP32_RAM_OFFSET 0x80000000
+
 // General form:  instruction destination, source
 //     coded as:   instr   dst, src
 typedef enum

@@ -102,10 +102,8 @@ static uint32_t pop(chip32_ctx_t *ctx) {
 // =======================================================================================
 void chip32_initialize(chip32_ctx_t *ctx)
 {
-    memset(ctx->ram.mem, 0, ctx->ram.size);
     memset(ctx->registers, 0, REGISTER_COUNT * sizeof(uint32_t));
     ctx->instr_count = 0;
-    ctx->registers[SP] = ctx->ram.size;
 }
 
 chip32_result_t chip32_run(chip32_ctx_t *ctx)
@@ -225,29 +223,43 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         _CHECK_REGISTER_VALID(reg2)
         // address is located in reg1 reg
         uint32_t addr = ctx->registers[reg1];
-        bool isRam = addr & 0x80000000;
-        addr &= 0xFFFF; // mask the RAM/ROM bit, ensure 16-bit addressing
+        bool isRam = addr & CHIP32_RAM_OFFSET;
+        addr &= ~CHIP32_RAM_OFFSET; // mask the RAM/ROM bit, ensure 31-bit addressing
         if (isRam) {
             _CHECK_RAM_ADDR_VALID(addr)
             memcpy(&ctx->ram.mem[addr], &ctx->registers[reg2], size);
         } else {
-            _CHECK_ROM_ADDR_VALID(addr)
-            memcpy(&ctx->rom.mem[addr], &ctx->registers[reg2], size);
+            // Invalid, cannot write in memory!
+            return VM_ERR_INVALID_ADDRESS;
         }
 
         break;
     }
     case OP_LOAD:
     {
-        const uint8_t reg1 = _NEXT_BYTE;
-        const uint8_t reg2 = _NEXT_BYTE;
-        const uint8_t size = _NEXT_BYTE;
-        _CHECK_REGISTER_VALID(reg1)
-        _CHECK_REGISTER_VALID(reg2)
+        uint8_t reg1 = _NEXT_BYTE;
+        uint32_t addr = 0;
+        uint8_t size = 0;
+
+        // Variable based
+        if (reg1 & 0x80)
+        {
+            reg1 &= 0x7F;
+            addr = _NEXT_INT(ctx);
+            size = _NEXT_BYTE;
+        }
         // address is located in reg2 reg
-        uint32_t addr = ctx->registers[reg2];
-        bool isRam = addr & 0x80000000;
-        addr &= 0xFFFF; // mask the RAM/ROM bit, ensure 16-bit addressing
+        else
+        {
+            const uint8_t reg2 = _NEXT_BYTE;
+            const uint8_t size = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            addr = ctx->registers[reg2];
+        }
+
+        bool isRam = addr & CHIP32_RAM_OFFSET;
+        addr &= ~CHIP32_RAM_OFFSET; // mask the RAM/ROM bit, ensure 31-bit addressing
         if (isRam) {
             _CHECK_RAM_ADDR_VALID(addr)
             memcpy(&ctx->registers[reg1], &ctx->ram.mem[addr], size);

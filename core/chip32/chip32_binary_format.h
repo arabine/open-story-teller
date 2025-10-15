@@ -44,7 +44,7 @@
 |          Chip32 Header               |  <-- Début du fichier
 | (Magic, Versions, Sizes, Entry...)   |
 +--------------------------------------+
-|          CONST Section (DV)           |  <-- Données initialisées
+|          CONST Section (DV)          |  <-- Données initialisées
 | (Variables globales initialisées)    |      e.g., const int x = 5;
 +--------------------------------------+
 |          CODE Section                |  <-- Instructions du programme
@@ -53,7 +53,6 @@
 |     DATA Section (Optional)          |  <-- Données pour l'initialisation de la RAM (copie de DV)
 | (Contient les valeurs initiales pour la RAM)
 +--------------------------------------+
- 
 
  */
 
@@ -93,11 +92,11 @@ typedef struct {
     uint32_t magic;              // Magic number "C32\0"
     uint16_t version;            // Format version
     uint16_t flags;              // Feature flags
-    uint32_t const_size;          // Size of DATA section in bytes (ROM constants)
+    uint32_t const_size;          // Size of CONST section in bytes (ROM constants)
     uint32_t bss_size;           // Total RAM size (DV + DZ)
     uint32_t code_size;          // Size of CODE section in bytes
     uint32_t entry_point;        // Entry point offset in CODE section
-    uint32_t init_data_size;     // Size of INIT DATA section (DV values + DZ zeros)
+    uint32_t data_size;     // Size of INIT DATA section (DV values + DZ zeros)
 } chip32_binary_header_t;
 #pragma pack(pop)
 
@@ -106,7 +105,7 @@ typedef struct {
     uint32_t const_size;          // ROM constants
     uint32_t bss_size;           // Total RAM needed
     uint32_t code_size;          // Executable code
-    uint32_t init_data_size;     // RAM initialization data
+    uint32_t data_size;     // RAM initialization data
     uint32_t total_file_size;    // File size on disk
     uint32_t total_rom_size;     // DATA + CODE
     uint32_t total_ram_size;     // RAM needed
@@ -129,7 +128,7 @@ chip32_binary_error_t chip32_binary_load(
     uint32_t binary_size,
     uint8_t* ram,
     uint32_t ram_size,
-    chip32_binary_stats_t *out_stats
+    chip32_binary_header_t *header
 );
 
 
@@ -160,16 +159,16 @@ uint32_t chip32_binary_calculate_size(const chip32_binary_header_t* header);
 /**
  * Write a complete binary to memory
  * @param header Binary header
- * @param data_section DATA section content (can be NULL if const_size is 0)
+ * @param const_section DATA section content (can be NULL if const_size is 0)
  * @param code_section CODE section content (can be NULL if code_size is 0)
- * @param init_data_section INIT DATA section (can be NULL if init_data_size is 0)
+ * @param init_data_section INIT DATA section (can be NULL if data_size is 0)
  * @param out_buffer Output buffer (must be large enough)
  * @param buffer_size Size of output buffer
  * @return Number of bytes written, or 0 on error
  */
 uint32_t chip32_binary_write(
     const chip32_binary_header_t* header,
-    const uint8_t* data_section,
+    const uint8_t* const_section,
     const uint8_t* code_section,
     const uint8_t* init_data_section,
     uint8_t* out_buffer,
@@ -179,6 +178,8 @@ uint32_t chip32_binary_write(
 // ============================================================================
 // DEBUG/UTILITY FUNCTIONS
 // ============================================================================
+
+void chip32_binary_build_stats(const chip32_binary_header_t *header, chip32_binary_stats_t* out_stats);
 
 /**
  * Print binary header information

@@ -25,7 +25,8 @@ THE SOFTWARE.
 #include <iostream>
 #include <thread>
 
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+
 #include "chip32_assembler.h"
 #include "chip32_macros.h"
 #include "compiler.h"

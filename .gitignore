@@ -87,3 +87,4 @@ story-editor/AppDir/
 
 story-player/android/build/reports/problems/problems-report.html
 core/tests/build
+core/story-manager/tests/build

@@ -73,7 +73,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/core/tests/build/core_tests", // Remplacez par le chemin de votre exécutable
-            "args": ["[vm]"],
+            "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/core/tests/build",
             "environment": [],

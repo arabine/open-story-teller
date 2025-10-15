@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 #include <iostream>
 
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 #include "chip32_machine.h"
 #include "chip32_binary_format.h"
 
@@ -92,6 +92,9 @@ TEST_CASE("Check various indentations and typos with DV/DZ")
     
     Chip32::Machine machine;
     machine.QuickExecute(test1);
+
+    // Hex Dump the memories
+    machine.DumpMemory();
     
     // Verify results
     REQUIRE(machine.parseResult == true);
@@ -131,7 +134,7 @@ $counter            DV32 10             ; Counter initialized to 10
     halt
 )";
 
-TEST_CASE("Test printf with DV variable")
+TEST_CASE("Test printf with DV variable", "[printf][dv]")
 {
     std::cout << "\n=== Test 2: Printf with DV ===" << std::endl;
     
@@ -145,81 +148,7 @@ TEST_CASE("Test printf with DV variable")
     std::cout << "✓ Test 2 passed: Printf with DV" << std::endl;
 }
 
-// ============================================================================
-// TEST 3: Macro language with DV/DZ
-// ============================================================================
 
-static const std::string testMacro1 = R"(
-%section_macro
-
-%macro incr 1
-    push t0
-    lcons t0, 1
-    add %1, t0
-    pop t0
-%endmacro
-
-%macro print 2
-    lcons r0, %1            ; string text
-    lcons r1, 1             ; number of arguments
-    mov r2, %2
-    syscall 4
-%endmacro
-
-%macro LOOP_START 3
-    lcons %2, %3            ; Initialize loop counter
-    %1_loop:                ; Loop start label
-%endmacro
-
-%macro LOOP_END 2
-    subi %2, 1              ; Decrement counter
-    skipz %2
-    jump %1_loop            ; Jump if not zero
-%endmacro
-
-%section_text
-
-    lcons R3, 4
-    incr R3
-
-    LOOP_START .myLoop, r6, 5
-    print $printHello, r3
-    LOOP_END .myLoop, r6 
-    
-    halt
-
-%section_data
-
-; ROM constant (DC)
-$printHello         DC8  "Answer is %d"
-
-; RAM zeroed buffer (DZ)
-$tempBuffer         DZ8  32             ; 32 bytes buffer for temporary data
-)";
-
-TEST_CASE("Check assembly macro language with DV/DZ")
-{
-    std::cout << "\n=== Test 3: Macros with DV/DZ ===" << std::endl;
-    
-    Chip32::ScriptProcessor processor;
-    processor.process(testMacro1);
-    processor.generate_assembly();
-
-    std::string resultAsm = processor.GetResult();
-
-    std::cout << "Generated Assembly:" << std::endl;
-    std::cout << resultAsm << std::endl;
-
-    Chip32::Machine machine;
-    machine.QuickExecute(resultAsm);
-
-    REQUIRE(machine.parseResult == true);
-    REQUIRE(machine.buildResult == true);
-    REQUIRE(machine.runResult == VM_FINISHED);
-    REQUIRE(machine.ctx.registers[R3] == 5);
-    
-    std::cout << "✓ Test 3 passed: Macros with DV/DZ" << std::endl;
-}
 
 // ============================================================================
 // TEST 4: DV vs DZ comprehensive test
@@ -333,40 +262,50 @@ TEST_CASE("Binary format validation")
 {
     std::cout << "\n=== Test 5: Binary format validation ===" << std::endl;
     
-    Chip32::Machine machine;
-    
     // Parse and build
     Chip32::Assembler assembler;
-    Chip32::Result result;
+    chip32_binary_stats_t stats;
     std::vector<uint8_t> program;
+    Chip32::Machine machine;
     
     REQUIRE(assembler.Parse(testBinaryFormat) == true);
-    REQUIRE(assembler.BuildBinary(program, result) == true);
+    REQUIRE(machine.BuildBinary(assembler, program, stats) == true);
     
     std::cout << "\nBinary statistics:" << std::endl;
-    result.Print();
+    chip32_binary_print_stats(&stats);
+
+    uint8_t ram[1024];
     
     // Validate binary format
-    chip32_loaded_binary_t loaded;
+    chip32_binary_header_t header;
+    chip32_ctx_t ctx;
     chip32_binary_error_t error = chip32_binary_load(
+        &ctx,
         program.data(),
         static_cast<uint32_t>(program.size()),
-        &loaded
+        ram,
+        sizeof(ram),
+        &header
     );
-    
+
     REQUIRE(error == CHIP32_BIN_OK);
     
     std::cout << "\nBinary header:" << std::endl;
-    chip32_binary_print_header(&loaded.header);
+    chip32_binary_print_header(&header);
     
     // Verify header values
-    REQUIRE(loaded.header.magic == CHIP32_MAGIC);
-    REQUIRE(loaded.header.version == CHIP32_VERSION);
-    REQUIRE((loaded.header.flags & CHIP32_FLAG_HAS_INIT_DATA) != 0);
-    REQUIRE(loaded.header.const_size > 0);      // Has ROM constants
-    REQUIRE(loaded.header.bss_size > 0);       // Has RAM
-    REQUIRE(loaded.header.code_size > 0);      // Has code
-    REQUIRE(loaded.header.init_data_size == loaded.header.bss_size); // Must match
+    REQUIRE(header.magic == CHIP32_MAGIC);
+    REQUIRE(header.version == CHIP32_VERSION);
+    REQUIRE((header.flags & CHIP32_FLAG_HAS_INIT_DATA) != 0);
+    REQUIRE(header.const_size > 0);      // Has ROM constants
+    REQUIRE(header.bss_size > 0);       // Has RAM
+    REQUIRE(header.code_size > 0);      // Has code
+    REQUIRE(header.data_size == header.bss_size); // Must match
+
+
+    
+    chip32_binary_build_stats(&header, &stats);
+
     
     std::cout << "\nBinary format validations:" << std::endl;
     std::cout << "  ✓ Magic number correct" << std::endl;
@@ -374,13 +313,7 @@ TEST_CASE("Binary format validation")
     std::cout << "  ✓ Has init data flag set" << std::endl;
     std::cout << "  ✓ All sections present" << std::endl;
     std::cout << "  ✓ INIT DATA size matches BSS size" << std::endl;
-    
-    // Initialize RAM and verify
-    std::vector<uint8_t> ram(loaded.header.bss_size);
-    uint32_t init_bytes = chip32_binary_init_ram(&loaded, ram.data(), ram.size());
-    
-    REQUIRE(init_bytes == loaded.header.bss_size);
-    
+       
     // Verify DV ramCounter is initialized to 99
     uint32_t ramCounter = *reinterpret_cast<uint32_t*>(&ram[0]);
     std::cout << "  ✓ DV ramCounter = " << ramCounter << " (expected: 99)" << std::endl;

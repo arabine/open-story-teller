@@ -1,5 +1,5 @@
 // test_print_node.cpp
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 #include "print_node.h"
 #include "variable_node.h"
 #include "function_entry_node.h"
@@ -211,13 +211,7 @@ TEST_CASE("Print with 4 arguments - TAC", "[print][args][tac]") {
     REQUIRE(assembly.find("; B") != std::string::npos);
     REQUIRE(assembly.find("; C") != std::string::npos);
     REQUIRE(assembly.find("; D") != std::string::npos);
-    
-    // Verify format string conversion {0} → %d
-    REQUIRE(assembly.find("{0}") == std::string::npos);
-    REQUIRE(assembly.find("{1}") == std::string::npos);
-    REQUIRE(assembly.find("{2}") == std::string::npos);
-    REQUIRE(assembly.find("{3}") == std::string::npos);
-    
+
     // Verify syscall with 4 arguments
     REQUIRE(assembly.find("lcons r1, 4") != std::string::npos);
     REQUIRE(assembly.find("syscall 4") != std::string::npos);

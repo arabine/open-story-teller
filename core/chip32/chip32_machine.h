@@ -12,6 +12,7 @@
 #include <sstream>
 #include <functional>
 #include <cstring>
+#include <iomanip>
 
 #include "chip32_assembler.h"
 #include "chip32_binary_format.h"
@@ -28,24 +29,142 @@ public:
     chip32_result_t runResult{VM_OK};
     std::string printOutput;
     chip32_ctx_t ctx;  // Public pour accès aux registres dans les tests
+    std::vector<uint8_t> ram;  // RAM storage
+    std::vector<uint8_t> program;
+    Chip32::Assembler assembler;
+    chip32_binary_header_t header;
+    
     
     Machine() {
         // Bind syscall handler to this instance
         m_syscallHandler = std::bind(&Machine::HandleSyscall, this, 
                                      std::placeholders::_1, 
                                      std::placeholders::_2);
-        m_ram.resize(1024); 
+        ram.resize(1024); 
+    }
+
+
+    bool BuildBinary(Assembler &assembler, std::vector<uint8_t> &program, chip32_binary_stats_t &stats)
+    {
+        program.clear();
+        
+        // ========================================================================
+        // PHASE 1: Créer les sections temporaires
+        // ========================================================================
+        std::vector<uint8_t> constSection;     // DC - ROM constants only
+        std::vector<uint8_t> codeSection;     // Executable code
+        std::vector<uint8_t> initDataSection; // DV values + DZ zeros (RAM init)
+        
+        
+        chip32_binary_header_init(&header);
+
+        Chip32::Instr instr;
+        if (assembler.GetMain(instr))
+        {
+            header.entry_point = instr.addr;
+        }
+        // else: no main found, we try to start at address zero...
+        
+        for (auto instr : assembler)
+        {
+            // ====================================================================
+            // CODE INSTRUCTIONS
+            // ====================================================================
+            if (instr.isRomCode())
+            {               
+                // Ajouter l'opcode
+                codeSection.push_back(instr.code.opcode);
+                
+                // Ajouter les arguments compilés
+                std::copy(instr.compiledArgs.begin(), 
+                        instr.compiledArgs.end(), 
+                        std::back_inserter(codeSection));
+            }
+            // ====================================================================
+            // ROM DATA - Distinguer DC (vraies constantes) de DV init data
+            // ====================================================================
+            else if (instr.isRomData && !instr.isRamData)
+            {
+                std::copy(instr.compiledArgs.begin(), 
+                            instr.compiledArgs.end(), 
+                            std::back_inserter(constSection));       
+            }
+            // ====================================================================
+            // RAM VARIABLES
+            // ====================================================================
+            else if (instr.isRamData)
+            {
+
+                // ====================================================================
+                // ZEROED DATA (DZ)
+                // ====================================================================
+                if (instr.isZeroData)
+                {
+                    header.bss_size += instr.dataLen;
+                }
+                // ====================================================================
+                // INITIALIZED RAM VARIABLES (DV)
+                // ====================================================================
+                else
+                {
+                    // Ces données appartiennent à cette variable DV
+                    initDataSection.insert(initDataSection.end(), 
+                                    instr.compiledArgs.begin(), 
+                                    instr.compiledArgs.end());
+                }
+            }
+        }
+
+        
+        // ========================================================================
+        // PHASE 5: Créer le header binaire
+        // ========================================================================
+        
+        header.const_size = static_cast<uint32_t>(constSection.size());
+        header.code_size = static_cast<uint32_t>(codeSection.size());
+        header.data_size = static_cast<uint32_t>(initDataSection.size());
+        
+        if (initDataSection.size() > 0)
+        {
+            header.flags |= CHIP32_FLAG_HAS_INIT_DATA;
+        }
+        
+        // ========================================================================
+        // PHASE 6: Assembler le binaire final
+        // ========================================================================
+        uint32_t totalSize = chip32_binary_calculate_size(&header);
+        program.resize(totalSize);
+        
+        uint32_t bytesWritten = chip32_binary_write(
+            &header,
+            constSection.empty() ? nullptr : constSection.data(),
+            codeSection.empty() ? nullptr : codeSection.data(),
+            initDataSection.empty() ? nullptr : initDataSection.data(),
+            program.data(),
+            static_cast<uint32_t>(program.size())
+        );
+        
+        if (bytesWritten == 0 || bytesWritten != totalSize)
+        {
+            // Erreur lors de l'écriture
+            program.clear();
+            return false;
+        }
+        
+        // ========================================================================
+        // PHASE 7: Remplir les statistiques
+        // ========================================================================
+        chip32_binary_build_stats(&header, &stats);
+        
+        return true;
     }
 
     // ========================================================================
     // Méthode principale : Parse, Build, Execute
     // ========================================================================
-    
     void QuickExecute(const std::string &assemblyCode)
     {
-        std::vector<uint8_t> program;
-        Chip32::Assembler assembler;
-        Chip32::Result result;
+        chip32_binary_stats_t stats;
 
         // Parse
         parseResult = assembler.Parse(assemblyCode);
@@ -56,24 +175,22 @@ public:
         }
 
         // Build binary with new format
-        buildResult = assembler.BuildBinary(program, result);
+        buildResult = BuildBinary(assembler, program, stats);
+        chip32_binary_print_stats(&stats);
         
         if (!buildResult) {
             std::cout << "Build error: " << assembler.GetLastError().ToString() << std::endl;
             return;
         }
-        
-        result.Print();
 
         // Load binary using executable format
-        chip32_binary_stats_t stats;
         chip32_binary_error_t error = chip32_binary_load(
             &ctx,
             program.data(),
             static_cast<uint32_t>(program.size()),
-            m_ram.data(),
-            static_cast<uint32_t>(m_ram.size()),
-            &stats
+            ram.data(),
+            static_cast<uint32_t>(ram.size()),
+            &header
         );
         
         if (error != CHIP32_BIN_OK) {
@@ -81,14 +198,13 @@ public:
             buildResult = false;
             return;
         }
+
+        chip32_binary_build_stats(&header, &stats);
+        chip32_binary_print_stats(&stats);
         
         // Set syscall handler using wrapper
         ctx.syscall = SyscallWrapper;
         ctx.user_data = this;
-
-        // Initialize VM
-        chip32_initialize(&ctx);
-
 
         std::cout << "Starting execution at PC=0x" << std::hex << ctx.registers[PC] 
                   << std::dec << std::endl;
@@ -249,77 +365,171 @@ public:
         }
     }
 
-    // ============================================================================
-    // Fonction helper pour charger un binaire Chip32 dans la VM
-    // IMPORTANT: Le vecteur binary doit rester en vie pendant toute l'exécution
-    // car vm_ctx pointe directement dans ses données
-    // ============================================================================
-    bool LoadBinaryIntoVM(
-        std::vector<uint8_t> &binary,
-        chip32_ctx_t &vm_ctx,
-        uint8_t *ram_buffer,
-        uint32_t ram_size)
+
+    // ========================================================================
+    // Hexdump utilities
+    // ========================================================================
+
+    void HexDump(const uint8_t* data, uint32_t size, uint32_t base_addr = 0, const std::string& title = "")
     {
-       
-        if (err != CHIP32_BIN_OK)
-        {
-            std::cerr << "Binary load error: " << chip32_binary_error_string(err) << std::endl;
-            return false;
+        if (!title.empty()) {
+            std::cout << "\n=== " << title << " ===" << std::endl;
         }
         
-        // Afficher les informations du binaire (debug)
-        chip32_binary_print_header(&loaded.header);
+        const int bytes_per_line = 16;
         
-        // Vérifier que la RAM est suffisante
-        if (loaded.header.bss_size > ram_size)
-        {
-            std::cerr << "Insufficient RAM: need " << loaded.header.bss_size 
-                    << " bytes, have " << ram_size << " bytes" << std::endl;
-            return false;
+        for (uint32_t i = 0; i < size; i += bytes_per_line) {
+            // Adresse
+            std::cout << std::hex << std::setfill('0') << std::setw(8) 
+                    << (base_addr + i) << ":  ";
+            
+            // Octets en hexadécimal
+            for (int j = 0; j < bytes_per_line; j++) {
+                if (i + j < size) {
+                    std::cout << std::setw(2) << static_cast<int>(data[i + j]) << " ";
+                } else {
+                    std::cout << "   ";
+                }
+                
+                // Séparateur au milieu
+                if (j == 7) {
+                    std::cout << " ";
+                }
+            }
+            
+            std::cout << " |";
+            
+            // Représentation ASCII
+            for (int j = 0; j < bytes_per_line && i + j < size; j++) {
+                uint8_t byte = data[i + j];
+                if (byte >= 32 && byte <= 126) {
+                    std::cout << static_cast<char>(byte);
+                } else {
+                    std::cout << '.';
+                }
+            }
+            
+            std::cout << "|" << std::dec << std::endl;
         }
         
-        // ========================================================================
-        // Configurer la VM - ROM pointe directement dans le binaire
-        // ========================================================================
-        
-        // Pour la VM, on considère DATA + CODE comme une seule ROM
-        // DATA commence à l'offset après le header
-        // CODE suit immédiatement après DATA
-        
-        vm_ctx.rom.mem = const_cast<uint8_t*>(loaded.data_section);
-        vm_ctx.rom.addr = 0;
-        vm_ctx.rom.size = loaded.header.data_size + loaded.header.code_size;
-        
-        // ========================================================================
-        // Initialiser la RAM avec INIT DATA section
-        // ========================================================================
-        
-        // D'abord mettre toute la RAM à zéro
-        memset(ram_buffer, 0, ram_size);
-        
-        // Ensuite copier les données d'initialisation (DV values + DZ zeros)
-        if (loaded.header.init_data_size > 0)
-        {
-            uint32_t copied = chip32_binary_init_ram(&loaded, ram_buffer, ram_size);
-            std::cout << "Copied " << copied << " bytes of init data to RAM" << std::endl;
-        }
-        
-        // Configurer RAM dans la VM
-        vm_ctx.ram.mem = ram_buffer;
-        vm_ctx.ram.addr = 0x8000; // Bit 31 = 1 pour RAM
-        vm_ctx.ram.size = ram_size;
-        
-        // ========================================================================
-        // Configurer le point d'entrée
-        // ========================================================================
-        // Le PC doit pointer dans la section CODE, qui commence après DATA
-        vm_ctx.registers[PC] = loaded.header.data_size + loaded.header.entry_point;
-        
-        return true;
+        std::cout << std::endl;
     }
 
+    void DumpRom()
+    {
+        if (ctx.rom.mem == nullptr || ctx.rom.size == 0) {
+            std::cout << "ROM is empty or not loaded" << std::endl;
+            return;
+        }
+        
+        std::cout << "\n" << std::string(80, '=') << std::endl;
+        std::cout << "ROM DUMP (Total: " << ctx.rom.size << " bytes)" << std::endl;
+        std::cout << std::string(80, '=') << std::endl;
+        
+        uint32_t offset = 0;
+        
+        // Dump CONST section
+        if (header.const_size > 0) {
+            HexDump(ctx.rom.mem + offset, header.const_size, offset, 
+                    "CONST Section (" + std::to_string(header.const_size) + " bytes)");
+            offset += header.const_size;
+        }
+        
+        // Dump CODE section
+        if (header.code_size > 0) {
+            HexDump(ctx.rom.mem + offset, header.code_size, offset,
+                    "CODE Section (" + std::to_string(header.code_size) + " bytes)");
+            offset += header.code_size;
+        }
+        
+        // Dump INIT DATA section
+        if (header.data_size > 0) {
+            HexDump(ctx.rom.mem + offset, header.data_size, offset,
+                    "INIT DATA Section (" + std::to_string(header.data_size) + " bytes)");
+        }
+    }
+
+    void DumpRam()
+    {
+        if (ctx.ram.mem == nullptr || ctx.ram.size == 0) {
+            std::cout << "RAM is empty or not allocated" << std::endl;
+            return;
+        }
+        
+        std::cout << "\n" << std::string(80, '=') << std::endl;
+        std::cout << "RAM DUMP (Total: " << ctx.ram.size << " bytes)" << std::endl;
+        std::cout << std::string(80, '=') << std::endl;
+        
+        uint32_t offset = 0;
+        
+        // Dump DATA section (initialized variables)
+        if (header.data_size > 0) {
+            HexDump(ctx.ram.mem + offset, header.data_size, 0x80000000 + offset,
+                    "DATA Section (DV - " + std::to_string(header.data_size) + " bytes)");
+            offset += header.data_size;
+        }
+        
+        // Dump BSS section (zero-initialized variables)
+        if (header.bss_size > 0) {
+            HexDump(ctx.ram.mem + offset, header.bss_size, 0x80000000 + offset,
+                    "BSS Section (DZ - " + std::to_string(header.bss_size) + " bytes)");
+            offset += header.bss_size;
+        }
+        
+        // Dump remaining RAM (heap/stack area)
+        uint32_t remaining = ctx.ram.size - offset;
+        if (remaining > 0) {
+            // Limiter l'affichage à 256 bytes pour le reste
+            uint32_t display_size = std::min(remaining, 256u);
+            HexDump(ctx.ram.mem + offset, display_size, 0x80000000 + offset,
+                    "Heap/Stack area (showing first " + std::to_string(display_size) + 
+                    " of " + std::to_string(remaining) + " bytes)");
+            
+            if (remaining > display_size) {
+                std::cout << "... (" << (remaining - display_size) 
+                        << " more bytes not shown)" << std::endl;
+            }
+        }
+    }
+
+    void DumpMemory()
+    {
+        DumpRom();
+        DumpRam();
+    }
+
+    // Variante pour dumper une région spécifique de RAM
+    void DumpRamRegion(uint32_t start_addr, uint32_t size)
+    {
+        // Enlever le bit RAM si présent
+        uint32_t addr = start_addr & 0x7FFFFFFF;
+        
+        if (ctx.ram.mem == nullptr || ctx.ram.size == 0) {
+            std::cout << "RAM is not allocated" << std::endl;
+            return;
+        }
+        
+        if (addr >= ctx.ram.size) {
+            std::cout << "Start address 0x" << std::hex << addr 
+                    << " is out of RAM bounds (size: 0x" << ctx.ram.size 
+                    << ")" << std::dec << std::endl;
+            return;
+        }
+        
+        uint32_t actual_size = std::min(size, ctx.ram.size - addr);
+        
+        std::cout << "\n" << std::string(80, '=') << std::endl;
+        std::cout << "RAM Region Dump" << std::endl;
+        std::cout << "Address: 0x" << std::hex << (0x80000000 | addr) 
+                << " - 0x" << (0x80000000 | (addr + actual_size - 1)) 
+                << std::dec << std::endl;
+        std::cout << std::string(80, '=') << std::endl;
+        
+        HexDump(ctx.ram.mem + addr, actual_size, 0x80000000 | addr, "");
+    }
+
+
 private:
-    std::vector<uint8_t> m_ram;  // RAM storage
     std::function<uint8_t(chip32_ctx_t*, uint8_t)> m_syscallHandler;
 
     // Wrapper statique qui récupère l'instance et appelle la méthode membre

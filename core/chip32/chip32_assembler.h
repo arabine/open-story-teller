@@ -56,8 +56,7 @@ struct Instr {
     bool isRamData{false};  //!< True if RAM variable (DV or DZ)
     bool isZeroData{false}; //!< True if zero-initialized RAM (DZ only)
 
-    uint16_t addr{0};       //!< Instruction/data address (ROM for DC, RAM for DV/DZ)
-    uint16_t romInitAddr{0};//!< For DV: ROM address where initial data is stored
+    uint32_t addr{0};       //!< Instruction/data address (ROM for DC, RAM for DV/DZ)
 
     bool isRomCode() const { return !(isLabel || isRomData || isRamData); }
 };
@@ -66,23 +65,6 @@ struct RegNames
 {
     chip32_register_t reg;
     std::string name;
-};
-
-struct Result
-{
-    int ramUsageSize{0};
-    int romUsageSize{0};
-    int constantsSize{0};
-
-    void Print()
-    {
-        std::cout << "RAM usage: " << ramUsageSize << " bytes\n"
-                  << "IMAGE size: " << romUsageSize << " bytes\n"
-                  << "   -> ROM DATA: " << constantsSize << " bytes\n"
-                  << "   -> ROM CODE: " << romUsageSize - constantsSize << "\n"
-                  << std::endl;
-
-    }
 };
 
 class Assembler
@@ -102,8 +84,6 @@ public:
 
     // Separated parser to allow only code check
     bool Parse(const std::string &data);
-    // Generate the executable binary after the parse pass
-    bool BuildBinary(std::vector<uint8_t> &program, Result &result);
 
     void Clear() {
         m_labels.clear();
@@ -112,8 +92,8 @@ public:
 
     static std::vector<std::string> Split(const std::string &line);
 
-    std::vector<Instr>::const_iterator Begin() { return m_instructions.begin(); }
-    std::vector<Instr>::const_iterator End() { return m_instructions.end(); }
+    std::vector<Instr>::const_iterator begin() { return m_instructions.begin(); }
+    std::vector<Instr>::const_iterator end() { return m_instructions.end(); }
 
     // Returns the register number from the name
     bool GetRegister(const std::string &regName, uint8_t &reg);
