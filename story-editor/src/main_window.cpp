@@ -583,7 +583,9 @@ bool MainWindow::Loop()
         m_cpuWindow.Draw();
 
         static MemoryEditor mem_edit_1;
-        mem_edit_1.DrawWindow("RAM view", m_appController.GetChip32Context()->ram.mem, m_appController.GetChip32Context()->ram.size);
+        static uint32_t ram_size = 0;
+        static uint8_t *ram = m_appController.GetRam(ram_size);
+        mem_edit_1.DrawWindow("RAM view", ram, ram_size);
 
         auto selectedNode = nodeEditorFocused ? m_nodeEditorWindow.GetSelectedNode() : m_moduleEditorWindow.GetSelectedNode();
         m_propertiesWindow.SetSelectedNode(selectedNode);

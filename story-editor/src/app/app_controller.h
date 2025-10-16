@@ -99,7 +99,7 @@ public:
     void LoadParams();
 
     // Méthodes pour interagir avec la VM et le débogueur
-    chip32_ctx_t* GetChip32Context() { return &m_machine.ctx; }
+    uint8_t* GetRam(uint32_t &size) {  size = m_machine.ram.size(); return m_machine.ram.data(); }
     DebugContext* GetDebugContext() { return &m_dbg; }
 
     void ProcessStory();
@@ -145,8 +145,6 @@ private:
     AudioPlayer m_player; // Gère la lecture audio
     ThreadSafeQueue<VmEvent> m_eventQueue; // File d'événements de la VM
     WebServer m_webServer; // Serveur web intégré
-
-    std::string WrapModuleWithMain(const std::string& moduleCode);
 };
 
 #endif // APP_CONTROLLER_H
