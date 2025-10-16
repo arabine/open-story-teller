@@ -58,10 +58,10 @@ public:
         
         chip32_binary_header_init(&header);
 
-        Chip32::Instr instr;
-        if (assembler.GetMain(instr))
+        std::shared_ptr<Chip32::Instr> mainInstr;
+        if (assembler.GetMain(mainInstr))
         {
-            header.entry_point = instr.addr;
+            header.entry_point = mainInstr->addr;
         }
         // else: no main found, we try to start at address zero...
         
@@ -70,37 +70,37 @@ public:
             // ====================================================================
             // CODE INSTRUCTIONS
             // ====================================================================
-            if (instr.isRomCode())
+            if (instr->isRomCode())
             {               
                 // Ajouter l'opcode
-                codeSection.push_back(instr.code.opcode);
+                codeSection.push_back(instr->code.opcode);
                 
                 // Ajouter les arguments compilés
-                std::copy(instr.compiledArgs.begin(), 
-                        instr.compiledArgs.end(), 
+                std::copy(instr->compiledArgs.begin(), 
+                        instr->compiledArgs.end(), 
                         std::back_inserter(codeSection));
             }
             // ====================================================================
             // ROM DATA - Distinguer DC (vraies constantes) de DV init data
             // ====================================================================
-            else if (instr.isRomData && !instr.isRamData)
+            else if (instr->isRomData && !instr->isRamData)
             {
-                std::copy(instr.compiledArgs.begin(), 
-                            instr.compiledArgs.end(), 
+                std::copy(instr->compiledArgs.begin(), 
+                            instr->compiledArgs.end(), 
                             std::back_inserter(constSection));       
             }
             // ====================================================================
             // RAM VARIABLES
             // ====================================================================
-            else if (instr.isRamData)
+            else if (instr->isRamData)
             {
 
                 // ====================================================================
                 // ZEROED DATA (DZ)
                 // ====================================================================
-                if (instr.isZeroData)
+                if (instr->isZeroData)
                 {
-                    header.bss_size += instr.dataLen;
+                    header.bss_size += instr->dataLen;
                 }
                 // ====================================================================
                 // INITIALIZED RAM VARIABLES (DV)
@@ -109,8 +109,8 @@ public:
                 {
                     // Ces données appartiennent à cette variable DV
                     initDataSection.insert(initDataSection.end(), 
-                                    instr.compiledArgs.begin(), 
-                                    instr.compiledArgs.end());
+                                    instr->compiledArgs.begin(), 
+                                    instr->compiledArgs.end());
                 }
             }
         }

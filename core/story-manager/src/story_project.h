@@ -40,7 +40,14 @@ public:
     }
 
     bool FindMain(Chip32::Instr &mainLine) {
-        return m_assembler.GetMain(mainLine);
+
+        std::shared_ptr<Chip32::Instr> m;
+        bool success = m_assembler.GetMain(m);
+        if (success)
+        {
+            mainLine = *m;
+        }
+        return success;
     }
 
     bool GenerateCompleteProgram(std::string &assembly);

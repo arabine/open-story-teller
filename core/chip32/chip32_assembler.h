@@ -31,6 +31,7 @@ THE SOFTWARE.
 #include <string>
 #include <map>
 #include <iostream>
+#include <memory>
 
 namespace Chip32
 {
@@ -92,8 +93,8 @@ public:
 
     static std::vector<std::string> Split(const std::string &line);
 
-    std::vector<Instr>::const_iterator begin() { return m_instructions.begin(); }
-    std::vector<Instr>::const_iterator end() { return m_instructions.end(); }
+    std::vector<std::shared_ptr<Instr>>::const_iterator begin() { return m_instructions.begin(); }
+    std::vector<std::shared_ptr<Instr>>::const_iterator end() { return m_instructions.end(); }
 
     // Returns the register number from the name
     bool GetRegister(const std::string &regName, uint8_t &reg);
@@ -101,7 +102,7 @@ public:
 
     Error GetLastError() { return m_lastError; }
 
-    bool GetMain(Instr &instr) const {
+    bool GetMain(std::shared_ptr<Instr> &instr) const {
 
         // Find the main label
         bool success = m_labels.count(".main") == 1;
@@ -115,15 +116,15 @@ public:
     }
 
 private:
-    bool CompileMnemonicArguments(Instr &instr);
+    bool CompileMnemonicArguments(std::shared_ptr<Instr> instr);
 
-    // label, address
-    std::map<std::string, Instr> m_labels;
+    // label, shared pointer to instruction
+    std::map<std::string, std::shared_ptr<Instr>> m_labels;
 
     Error m_lastError;
 
-    std::vector<Instr> m_instructions;
-    bool CompileConstantArgument(Instr &instr, const std::string &a);
+    std::vector<std::shared_ptr<Instr>> m_instructions;
+    bool CompileConstantArgument(std::shared_ptr<Instr> instr, const std::string &a);
 };
 
 }

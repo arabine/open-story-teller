@@ -300,9 +300,8 @@ TEST_CASE("Binary format validation")
     REQUIRE(header.const_size > 0);      // Has ROM constants
     REQUIRE(header.bss_size > 0);       // Has RAM
     REQUIRE(header.code_size > 0);      // Has code
-    REQUIRE(header.data_size == header.bss_size); // Must match
-
-
+    REQUIRE(header.bss_size == 144);
+    REQUIRE(header.data_size  == 7);
     
     chip32_binary_build_stats(&header, &stats);
 

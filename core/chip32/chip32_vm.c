@@ -241,20 +241,21 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         uint32_t addr = 0;
         uint8_t size = 0;
 
-        // Variable based
+        // Variable based, validity of reg will be verified after
         if (reg1 & 0x80)
         {
             reg1 &= 0x7F;
+            _CHECK_REGISTER_VALID(reg1);
             addr = _NEXT_INT(ctx);
             size = _NEXT_BYTE;
         }
         // address is located in reg2 reg
         else
         {
+            _CHECK_REGISTER_VALID(reg1);
             const uint8_t reg2 = _NEXT_BYTE;
-            const uint8_t size = _NEXT_BYTE;
-            _CHECK_REGISTER_VALID(reg1)
-            _CHECK_REGISTER_VALID(reg2)
+            _CHECK_REGISTER_VALID(reg2);
+            size = _NEXT_BYTE;
             addr = ctx->registers[reg2];
         }
 

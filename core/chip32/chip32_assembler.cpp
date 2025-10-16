@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include <iterator>
 #include <string>
 #include <set>
+#include <memory>
 
 namespace Chip32
 {
@@ -97,12 +98,12 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
 }
 
 #define GET_REG(name, ra) if (!GetRegister(name, ra)) {\
-    m_lastError.line -1; \
+    m_lastError.line = -1; \
     m_lastError.message = "ERROR! Bad register name: " + name; \
     return false; }
 
 #define CHIP32_CHECK(instr, cond, error) if (!(cond)) { \
-    m_lastError.line = instr.line; \
+    m_lastError.line = instr->line; \
     m_lastError.message = error; \
     return false; } \
 
@@ -180,11 +181,11 @@ bool Assembler::GetRegisterName(uint8_t reg, std::string &regName)
     return false;
 }
 
-bool Assembler::CompileMnemonicArguments(Instr &instr)
+bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
 {
     uint8_t ra, rb, rc;
 
-    switch(instr.code.opcode)
+    switch(instr->code.opcode)
     {
     case OP_NOP:
     case OP_HALT:
@@ -192,17 +193,17 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         // no arguments, just use the opcode
         break;
     case OP_SYSCALL:
-        instr.compiledArgs.push_back(static_cast<uint8_t>(strtol(instr.args[0].c_str(),  NULL, 0)));
+        instr->compiledArgs.push_back(static_cast<uint8_t>(strtol(instr->args[0].c_str(),  NULL, 0)));
         break;
     case OP_LCONS:
-        GET_REG(instr.args[0], ra);
-        instr.compiledArgs.push_back(ra);
+        GET_REG(instr->args[0], ra);
+        instr->compiledArgs.push_back(ra);
         // Detect address or immedate value
-        if ((instr.args[1].at(0) == '$') || (instr.args[1].at(0) == '.')) {
-            instr.useLabel = true;
-            leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
+        if ((instr->args[1].at(0) == '$') || (instr->args[1].at(0) == '.')) {
+            instr->useLabel = true;
+            leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
         } else { // immediate value
-            leu32_put(instr.compiledArgs, convertStringToLong(instr.args[1]));
+            leu32_put(instr->compiledArgs, convertStringToLong(instr->args[1]));
         }
         break;
     case OP_POP:
@@ -211,8 +212,8 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     case OP_SKIPNZ:
     case OP_CALL:
     case OP_JUMPR:
-        GET_REG(instr.args[0], ra);
-        instr.compiledArgs.push_back(ra);
+        GET_REG(instr->args[0], ra);
+        instr->compiledArgs.push_back(ra);
         break;
     case OP_MOV:
     case OP_ADD:
@@ -226,38 +227,38 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     case OP_OR:
     case OP_XOR:
     case OP_NOT:
-        GET_REG(instr.args[0], ra);
-        GET_REG(instr.args[1], rb);
-        instr.compiledArgs.push_back(ra);
-        instr.compiledArgs.push_back(rb);
+        GET_REG(instr->args[0], ra);
+        GET_REG(instr->args[1], rb);
+        instr->compiledArgs.push_back(ra);
+        instr->compiledArgs.push_back(rb);
         break;
     case OP_ADDI:
     case OP_SUBI:
     {
-        GET_REG(instr.args[0], ra);
-        instr.compiledArgs.push_back(ra);
+        GET_REG(instr->args[0], ra);
+        instr->compiledArgs.push_back(ra);
 
-        uint32_t op = convertStringToLong(instr.args[1]);
+        uint32_t op = convertStringToLong(instr->args[1]);
         if (op > 255) {
             return false;
         }
-        leu32_put(instr.compiledArgs, op);
+        leu32_put(instr->compiledArgs, op);
         break;
     }
     case OP_JUMP:
         // Reserve 2 bytes for address, it will be filled at the end
-        instr.useLabel = true;
-        instr.compiledArgs.push_back(0);
-        instr.compiledArgs.push_back(0);
+        instr->useLabel = true;
+        instr->compiledArgs.push_back(0);
+        instr->compiledArgs.push_back(0);
         break;
     case OP_STORE: // store @r4, r1, 2
-        CHIP32_CHECK(instr, instr.args[0].at(0) == '@', "Missing @ sign before register")
-        instr.args[0].erase(0, 1);
-        GET_REG(instr.args[0], ra);
-        GET_REG(instr.args[1], rb);
-        instr.compiledArgs.push_back(ra);
-        instr.compiledArgs.push_back(rb);
-        instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+        CHIP32_CHECK(instr, instr->args[0].at(0) == '@', "Missing @ sign before register")
+        instr->args[0].erase(0, 1);
+        GET_REG(instr->args[0], ra);
+        GET_REG(instr->args[1], rb);
+        instr->compiledArgs.push_back(ra);
+        instr->compiledArgs.push_back(rb);
+        instr->compiledArgs.push_back(static_cast<uint32_t>(strtol(instr->args[2].c_str(),  NULL, 0)));
         break;
     case OP_LOAD:
     {
@@ -265,26 +266,26 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
         // - load r0, @R1, 4        ; the address is located in a register
         // - load r0, $variable, 2  ; we use the variable address to get the value
         // 
-        char prefix = instr.args[1].at(0);
+        char prefix = instr->args[1].at(0);
 
         // Register based
         if (prefix == '@')
         {
-            instr.args[1].erase(0, 1); // delete @ character
-            GET_REG(instr.args[0], ra);
-            GET_REG(instr.args[1], rb);
-            instr.compiledArgs.push_back(ra);
-            instr.compiledArgs.push_back(rb);
-            instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+            instr->args[1].erase(0, 1); // delete @ character
+            GET_REG(instr->args[0], ra);
+            GET_REG(instr->args[1], rb);
+            instr->compiledArgs.push_back(ra);
+            instr->compiledArgs.push_back(rb);
+            instr->compiledArgs.push_back(static_cast<uint32_t>(strtol(instr->args[2].c_str(),  NULL, 0)));
         }
         // Variable based
         else if (prefix == '$')
         {
-            instr.useLabel = true;
-            GET_REG(instr.args[0], ra);
-            instr.compiledArgs.push_back(ra | 0x80); // Flag this register with a bit to indicate an immediate address is following
-            leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
-            instr.compiledArgs.push_back(static_cast<uint32_t>(strtol(instr.args[2].c_str(),  NULL, 0)));
+            instr->useLabel = true;
+            GET_REG(instr->args[0], ra);
+            instr->compiledArgs.push_back(ra | 0x80); // Flag this register with a bit to indicate an immediate address is following
+            leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
+            instr->compiledArgs.push_back(static_cast<uint32_t>(strtol(instr->args[2].c_str(),  NULL, 0)));
         }
         else
         {
@@ -296,23 +297,23 @@ bool Assembler::CompileMnemonicArguments(Instr &instr)
     case OP_CMP_EQ:
     case OP_CMP_GT:
     case OP_CMP_LT:
-        GET_REG(instr.args[0], ra);
-        GET_REG(instr.args[1], rb);
-        GET_REG(instr.args[2], rc);
-        instr.compiledArgs.push_back(ra);
-        instr.compiledArgs.push_back(rb);
-        instr.compiledArgs.push_back(rc);
+        GET_REG(instr->args[0], ra);
+        GET_REG(instr->args[1], rb);
+        GET_REG(instr->args[2], rc);
+        instr->compiledArgs.push_back(ra);
+        instr->compiledArgs.push_back(rb);
+        instr->compiledArgs.push_back(rc);
         break;
     default:
-        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " + instr.mnemonic);
+        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " + instr->mnemonic);
         break;
     }
     return true;
 }
 
-bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
+bool Assembler::CompileConstantArgument(std::shared_ptr<Instr> instr, const std::string &a)
 {
-    instr.compiledArgs.clear(); instr.args.clear(); instr.useLabel = false;
+    instr->compiledArgs.clear(); instr->args.clear(); instr->useLabel = false;
 
     // Check string
     if (a.size() > 2)
@@ -322,19 +323,19 @@ bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
         {
             for (unsigned int i = 1; i < (a.size() - 1); i++)
             {
-                instr.compiledArgs.push_back(a[i]);
+                instr->compiledArgs.push_back(a[i]);
             }
-            instr.compiledArgs.push_back(0);
+            instr->compiledArgs.push_back(0);
             return true;
         }
         // Detect label
         else if (a[0] == '.')
         {
             // Label must be 32-bit, throw an error if not the case
-            CHIP32_CHECK(instr, instr.dataTypeSize == 32, "Labels must be stored in a 32-bit area (DC32)")
-            instr.useLabel = true;
-            instr.args.push_back(a);
-            leu32_put(instr.compiledArgs, 0); // reserve 4 bytes
+            CHIP32_CHECK(instr, instr->dataTypeSize == 32, "Labels must be stored in a 32-bit area (DC32)")
+            instr->useLabel = true;
+            instr->args.push_back(a);
+            leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
             return true;
         }
     }
@@ -343,18 +344,18 @@ bool Assembler::CompileConstantArgument(Instr &instr, const std::string &a)
     uint32_t intVal = static_cast<uint32_t>(strtol(a.c_str(),  NULL, 0));
 
     bool sizeOk = false;
-    if (((intVal <= UINT8_MAX) && (instr.dataTypeSize == 8)) ||
-        ((intVal <= UINT16_MAX) && (instr.dataTypeSize == 16)) ||
-        ((intVal <= UINT32_MAX) && (instr.dataTypeSize == 32))) {
+    if (((intVal <= UINT8_MAX) && (instr->dataTypeSize == 8)) ||
+        ((intVal <= UINT16_MAX) && (instr->dataTypeSize == 16)) ||
+        ((intVal <= UINT32_MAX) && (instr->dataTypeSize == 32))) {
         sizeOk = true;
     }
     CHIP32_CHECK(instr, sizeOk, "integer too high: " + std::to_string(intVal));
-    if (instr.dataTypeSize == 8) {
-        instr.compiledArgs.push_back(intVal);
-    } else if (instr.dataTypeSize == 16) {
-        leu16_put(instr.compiledArgs, intVal);
+    if (instr->dataTypeSize == 8) {
+        instr->compiledArgs.push_back(intVal);
+    } else if (instr->dataTypeSize == 16) {
+        leu16_put(instr->compiledArgs, intVal);
     } else {
-        leu32_put(instr.compiledArgs, intVal);
+        leu32_put(instr->compiledArgs, intVal);
     }
     return true;
 }
@@ -372,8 +373,8 @@ bool Assembler::Parse(const std::string &data)
     while(std::getline(data_stream, line))
     {
         lineNum++;
-        Instr instr;
-        instr.line = lineNum;
+        auto instr = std::make_shared<Instr>();
+        instr->line = lineNum;
         size_t pos = line.find_first_of(";");
         if (pos != std::string::npos) {
             line.erase(pos);
@@ -398,9 +399,9 @@ bool Assembler::Parse(const std::string &data)
             CHIP32_CHECK(instr, (opcode[opcode.length() - 1] == ':') && (lineParts.size() == 1), "label must end with ':'");
             // Label
             opcode.pop_back(); // remove the colon character
-            instr.mnemonic = opcode;
-            instr.isLabel = true;
-            instr.addr = code_addr;
+            instr->mnemonic = opcode;
+            instr->isLabel = true;
+            instr->addr = code_addr;
             CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " + opcode);
             m_labels[opcode] = instr;
             m_instructions.push_back(instr);
@@ -409,20 +410,20 @@ bool Assembler::Parse(const std::string &data)
         // =======================================================================================
         // INSTRUCTIONS
         // =======================================================================================
-        else if (IsOpCode(opcode, instr.code))
+        else if (IsOpCode(opcode, instr->code))
         {
-            instr.mnemonic = opcode;
+            instr->mnemonic = opcode;
             bool nbArgsSuccess = false;
             // Test nedded arguments
-            if ((instr.code.nbAargs == 0) && (lineParts.size() == 1))
+            if ((instr->code.nbAargs == 0) && (lineParts.size() == 1))
             {
                 nbArgsSuccess = true; // no arguments, solo mnemonic
             }
-            else if ((instr.code.nbAargs > 0) && (lineParts.size() >= 2))
+            else if ((instr->code.nbAargs > 0) && (lineParts.size() >= 2))
             {
-                instr.args.insert(instr.args.begin(), lineParts.begin() + 1, lineParts.end());
-                CHIP32_CHECK(instr, instr.args.size() == instr.code.nbAargs,
-                             "Bad number of parameters. Required: " + std::to_string(static_cast<int>(instr.code.nbAargs)) + ", got: " + std::to_string(instr.args.size()));
+                instr->args.insert(instr->args.begin(), lineParts.begin() + 1, lineParts.end());
+                CHIP32_CHECK(instr, instr->args.size() == instr->code.nbAargs,
+                             "Bad number of parameters. Required: " + std::to_string(static_cast<int>(instr->code.nbAargs)) + ", got: " + std::to_string(instr->args.size()));
                 nbArgsSuccess = true;
             }
             else
@@ -433,8 +434,8 @@ bool Assembler::Parse(const std::string &data)
             if (nbArgsSuccess)
             {
                 CHIP32_CHECK(instr, CompileMnemonicArguments(instr) == true, "Compile failure, mnemonic or arguments");
-                instr.addr = code_addr;
-                code_addr += 1 + instr.compiledArgs.size();
+                instr->addr = code_addr;
+                code_addr += 1 + instr->compiledArgs.size();
                 m_instructions.push_back(instr);
             }
         }
@@ -444,7 +445,7 @@ bool Assembler::Parse(const std::string &data)
         // =======================================================================================
         else if (opcode[0] == '$')
         {
-            instr.mnemonic = opcode;
+            instr->mnemonic = opcode;
             CHIP32_CHECK(instr, (lineParts.size() >= 3), "bad number of parameters");
 
             std::string type = lineParts[1];
@@ -456,51 +457,58 @@ bool Assembler::Parse(const std::string &data)
 
             // Parse data type size (8, 16, or 32)
             type.erase(0, 2);
-            instr.dataTypeSize = static_cast<uint32_t>(strtol(type.c_str(), NULL, 0));
+            instr->dataTypeSize = static_cast<uint32_t>(strtol(type.c_str(), NULL, 0));
 
             // Determine data type
             char typeChar = lineParts[1][1];
-            instr.isRomData = (typeChar == 'C');
-            instr.isRamData = (typeChar == 'V' || typeChar == 'Z');
-            instr.isZeroData = (typeChar == 'Z');
+            instr->isRomData = (typeChar == 'C');
+            instr->isRamData = (typeChar == 'V' || typeChar == 'Z');
+            instr->isZeroData = (typeChar == 'Z');
 
             // =======================================================================================
             // DC - ROM Constants (read-only data in program memory)
             // =======================================================================================
-            if (instr.isRomData)
+            if (instr->isRomData)
             {
-                instr.addr = code_addr;
+                instr->addr = code_addr;
                 m_labels[opcode] = instr; // location of the start of the data
                 
                 // Generate one instruction per argument
                 // Reason: arguments may be labels, easier to replace later
                 for (unsigned int i = 2; i < lineParts.size(); i++)
                 {
-                    CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), 
+                    // Create a new cloned instruction for each argument
+                    auto clonedInstr = std::make_shared<Instr>(*instr);
+                    
+                    CHIP32_CHECK(clonedInstr, CompileConstantArgument(clonedInstr, lineParts[i]), 
                                 "Compile argument error, stopping.");
-                    m_instructions.push_back(instr);
-                    code_addr += instr.compiledArgs.size();
-                    instr.addr = code_addr;
+                    m_instructions.push_back(clonedInstr);
+                    code_addr += clonedInstr->compiledArgs.size();
+                    clonedInstr->addr = code_addr;
                 }
             }
             // =======================================================================================
             // DV - RAM Variables with initial values (data stored in ROM, copied to RAM at startup)
             // =======================================================================================
-            else if (!instr.isZeroData)  // DV
+            else if (!instr->isZeroData)  // DV
             {
                 // DV behaves like DC for data storage
                 
-                instr.addr = dv_ram_addr;
+                instr->addr = dv_ram_addr;
                 m_labels[opcode] = instr; // RAM address for this variable
                 
                 // Process all initial values (like DC)
                 for (unsigned int i = 2; i < lineParts.size(); i++)
                 {
-                    CHIP32_CHECK(instr, CompileConstantArgument(instr, lineParts[i]), 
+                    // Create a new cloned instruction for each argument
+                    auto clonedInstr = std::make_shared<Instr>(*instr);
+                    
+                    CHIP32_CHECK(clonedInstr, CompileConstantArgument(clonedInstr, lineParts[i]), 
                                 "Compile argument error, stopping.");
-                    m_instructions.push_back(instr);
-                    dv_ram_addr += instr.compiledArgs.size();
-                    instr.addr = dv_ram_addr;
+                    m_instructions.push_back(clonedInstr);
+                    dv_ram_addr += clonedInstr->compiledArgs.size();
+                    clonedInstr->addr = dv_ram_addr;
+
                 }
             }
             // =======================================================================================
@@ -512,20 +520,20 @@ bool Assembler::Parse(const std::string &data)
                 CHIP32_CHECK(instr, lineParts.size() == 3, 
                             "DZ directive requires exactly one argument (number of elements)");
                 
-                instr.addr = dz_ram_addr;
+                instr->addr = dz_ram_addr;
                 
                 // Calculate size in bytes: num_elements * (type_size / 8)
                 uint32_t numElements = static_cast<uint32_t>(strtol(lineParts[2].c_str(), NULL, 0));
-                instr.dataLen = static_cast<uint16_t>(numElements * (instr.dataTypeSize / 8));
+                instr->dataLen = static_cast<uint16_t>(numElements * (instr->dataTypeSize / 8));
                 
-                dz_ram_addr += instr.dataLen;
+                dz_ram_addr += instr->dataLen;
                 m_labels[opcode] = instr;
                 m_instructions.push_back(instr);
             }
         }
     }
 
-    // Now that the RAM DV sier is known, compute DZ real data location after DV
+    // 2. Second pass: Now that the RAM DV size is known, compute DZ real data location after DV
 /*
 
 Position of Data in RAM
@@ -536,35 +544,38 @@ Position of Data in RAM
 |           DZ             |
 ----------------------------
 */
-
-    // 2. Second pass: replace all label or RAM data by the real address in memory
     for (auto &instr : m_instructions)
     {
-        if (instr.isZeroData)
+        if (instr->isZeroData)
         {
-            instr.addr += dv_ram_addr;
+            instr->addr += dv_ram_addr;
         }
+    }
 
-        if (instr.useLabel && (instr.args.size() > 0))
+
+    // 3. Third pass: replace all label or RAM data by the real address in memory
+    for (auto &instr : m_instructions)
+    {
+        if (instr->useLabel && (instr->args.size() > 0))
         {
             // label is the first argument for jump, second position for LCONS and LOAD
             uint16_t argsIndex = 1;
-            if (instr.code.opcode == OP_JUMP) {
+            if (instr->code.opcode == OP_JUMP) {
                 argsIndex = 0;
             }
-            std::string label = instr.args[argsIndex];
+            std::string label = instr->args[argsIndex];
             CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " + label);
-            uint32_t addr = m_labels[label].addr;
+            uint32_t addr = m_labels[label]->addr;
             std::cout << "LABEL: " << label << " , addr: " << addr << std::endl;
-            if (m_labels[label].isRamData)
+            if (m_labels[label]->isRamData)
             {
                 addr |= CHIP32_RAM_OFFSET;
             }
             
-            instr.compiledArgs[argsIndex] = addr & 0xFF;
-            instr.compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
-            instr.compiledArgs[argsIndex+2] = (addr >> 16U) & 0xFF;
-            instr.compiledArgs[argsIndex+3] = (addr >> 24U) & 0xFF;
+            instr->compiledArgs[argsIndex] = addr & 0xFF;
+            instr->compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
+            instr->compiledArgs[argsIndex+2] = (addr >> 16U) & 0xFF;
+            instr->compiledArgs[argsIndex+3] = (addr >> 24U) & 0xFF;
         }
     }
 
