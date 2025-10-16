@@ -29,6 +29,7 @@
 #include "node_widget_factory.h"
 #include "Localization.h"
 #include "LanguageSelector.h"
+#include "chip32_machine.h"
 
 class MainWindow : public std::enable_shared_from_this<MainWindow>, public ILogSubject
 {

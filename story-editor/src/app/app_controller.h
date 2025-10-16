@@ -25,6 +25,7 @@
 #include "variable.h"           // Pour Variable (si géré par AppController)
 #include "debug_context.h"     // Pour DebugContext
 #include "event_bus.h"
+#include "chip32_machine.h"
 
 // Forward declaration pour éviter les dépendances circulaires si le logger est une GUI
 class ILogger; // Peut être implémenté par la console_window par exemple
@@ -98,7 +99,7 @@ public:
     void LoadParams();
 
     // Méthodes pour interagir avec la VM et le débogueur
-    chip32_ctx_t* GetChip32Context() { return &m_chip32_ctx; }
+    chip32_ctx_t* GetChip32Context() { return &m_machine.ctx; }
     DebugContext* GetDebugContext() { return &m_dbg; }
 
     void ProcessStory();
@@ -130,15 +131,13 @@ private:
 
     std::shared_ptr<StoryProject> m_story;
     std::shared_ptr<StoryProject> m_module;
-    uint8_t m_rom_data[16*1024];
-    uint8_t m_ram_data[16*1024];
-    chip32_ctx_t m_chip32_ctx;
-    Chip32::Result m_result;
+    Chip32::Machine m_machine;
+
     DebugContext m_dbg; // Contexte de débogage
     std::string m_storyAssembly;
     std::string m_moduleAssembly;
-    std::string m_externalSourceFileName;
     std::vector<std::string> m_recentProjects;
+    std::string m_externalSourceFileName;
 
     NodesFactory m_nodesFactory;
     ResourceManager m_resources; // Gère les ressources (images, sons)

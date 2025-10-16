@@ -111,7 +111,8 @@
         "*.m": "cpp",
         "*.inc": "cpp",
         "chip32_binary_format.h": "c",
-        "hash_map": "c"
+        "hash_map": "c",
+        "csignal": "cpp"
     }
 
 }

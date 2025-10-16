@@ -568,8 +568,6 @@ bool MainWindow::Loop()
 
     if (m_appController.IsLibraryManagerInitialized())
     {
-        
-
         bool nodeEditorFocused = m_nodeEditorWindow.IsFocused();
         bool moduleEditorFocused = m_moduleEditorWindow.IsFocused();
 

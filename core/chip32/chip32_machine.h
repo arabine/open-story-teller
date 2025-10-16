@@ -13,6 +13,9 @@
 #include <functional>
 #include <cstring>
 #include <iomanip>
+#include <fstream>
+#include <vector>
+#include <iterator>
 
 #include "chip32_assembler.h"
 #include "chip32_binary_format.h"
@@ -33,7 +36,7 @@ public:
     std::vector<uint8_t> program;
     Chip32::Assembler assembler;
     chip32_binary_header_t header;
-    
+    chip32_binary_error_t error;
     
     Machine() {
         // Bind syscall handler to this instance
@@ -159,10 +162,50 @@ public:
         return true;
     }
 
-    // ========================================================================
-    // Méthode principale : Parse, Build, Execute
-    // ========================================================================
-    void QuickExecute(const std::string &assemblyCode)
+    bool GetAssemblyLine(uint32_t pointer_counter, uint32_t &line)
+    {
+        bool success = false;
+
+        // On recherche quelle est la ligne qui possède une instruction à cette adresse
+        for (auto instr : assembler)
+        {
+            if ((instr->addr == pointer_counter) && instr->isRomCode())
+            {
+                line = instr->line;
+                success = true;
+                break;
+            }
+        }
+
+        return success;
+    }
+
+    bool LoadBinary(const std::string &filename)
+    {
+        bool success = false;
+        std::ifstream file(filename, std::ios::binary);
+
+        if (file)
+        {
+            // Méthode 1 : La plus simple avec les itérateurs
+            program = std::vector<uint8_t>(
+                std::istreambuf_iterator<char>(file),
+                std::istreambuf_iterator<char>()
+            );
+            success = true;
+
+        }
+        return success;
+    }
+
+    void SaveBinary(const std::string &filename)
+    {
+        std::ofstream o(filename , std::ios::out | std::ios::binary);
+        o.write(reinterpret_cast<const char*>(program.data()), program.size());
+        o.close();
+    }
+
+    bool Build(const std::string &assemblyCode)
     {
         chip32_binary_stats_t stats;
 
@@ -171,7 +214,7 @@ public:
         
         if (!parseResult) {
             std::cout << "Parse error: " << assembler.GetLastError().ToString() << std::endl;
-            return;
+            return false;
         }
 
         // Build binary with new format
@@ -180,11 +223,29 @@ public:
         
         if (!buildResult) {
             std::cout << "Build error: " << assembler.GetLastError().ToString() << std::endl;
-            return;
+            return false;
         }
 
-        // Load binary using executable format
-        chip32_binary_error_t error = chip32_binary_load(
+        if (!LoadCurrentProgram()) {
+            std::cout << "Binary load error: " << chip32_binary_error_string(error) << std::endl;
+            buildResult = false;
+            return false;
+        }
+
+        chip32_binary_build_stats(&header, &stats);
+        chip32_binary_print_stats(&stats);
+
+        return true;
+    }
+
+    void SetEvent(uint32_t ev) {
+        ctx.registers[R0] = ev;
+    }
+
+    bool LoadCurrentProgram() 
+    {
+         // Load binary using executable format
+        error = chip32_binary_load(
             &ctx,
             program.data(),
             static_cast<uint32_t>(program.size()),
@@ -193,15 +254,16 @@ public:
             &header
         );
         
-        if (error != CHIP32_BIN_OK) {
-            std::cout << "Binary load error: " << chip32_binary_error_string(error) << std::endl;
-            buildResult = false;
-            return;
-        }
+        return error == CHIP32_BIN_OK;
+    }
 
-        chip32_binary_build_stats(&header, &stats);
-        chip32_binary_print_stats(&stats);
-        
+    // ========================================================================
+    // Méthode principale : Parse, Build, Execute
+    // ========================================================================
+    void QuickExecute(const std::string &assemblyCode)
+    {
+        Build(assemblyCode);
+
         // Set syscall handler using wrapper
         ctx.syscall = SyscallWrapper;
         ctx.user_data = this;

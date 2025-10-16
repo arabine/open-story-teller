@@ -27,23 +27,9 @@ AppController::AppController(ILogger& logger, EventBus& eventBus)
     , m_player(*this) // m_player a besoin d'un IAudioEvent
     , m_webServer(m_libraryManager)
 {
-    // VM Initialize - Déplacé du constructeur de MainWindow
-    m_chip32_ctx.stack_size = 512;
-
-    m_chip32_ctx.rom.mem = m_rom_data;
-    m_chip32_ctx.rom.addr = 0;
-    m_chip32_ctx.rom.size = sizeof(m_rom_data);
-
-    m_chip32_ctx.ram.mem = m_ram_data;
-    m_chip32_ctx.ram.addr = sizeof(m_rom_data);
-    m_chip32_ctx.ram.size = sizeof(m_ram_data);
-
-    // Initialise le trampoline de syscall avec cette instance
-    // SyscallTrampoline::s_instance = this;
-    // m_chip32_ctx.syscall = SyscallTrampoline::Callback;
 
     Callback<uint8_t(chip32_ctx_t *, uint8_t)>::func = std::bind(&AppController::Syscall, this, std::placeholders::_1, std::placeholders::_2);
-    m_chip32_ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
+    m_machine.ctx.syscall = static_cast<syscall_t>(Callback<uint8_t(chip32_ctx_t *, uint8_t)>::callback);
 
     // Assurez-vous que ces fonctions existent ou sont implémentées ailleurs
     // CloseProject() et CloseModule() étaient dans MainWindow
@@ -247,38 +233,20 @@ void AppController::Build(bool compileonly)
         m_resources.ConvertResources(m_story->AssetsPath(), "", options.image_format, options.sound_format);
     }
 
-    Chip32::Assembler::Error err;
-    // La GUI (DebuggerWindow) doit être notifiée pour effacer les erreurs. FIXME
-    // m_debuggerWindow.ClearErrors();
-    
-    if (m_story->GenerateBinary(m_storyAssembly, err))
+
+    if (m_machine.Build(m_storyAssembly))
     {
-        m_result.Print(); // Imprime le résultat de l'assemblage (Debug uniquement)
+        m_machine.SaveBinary(m_story->BinaryFileName());
+        m_dbg.run_result = VM_READY;
+        UpdateVmView(); // Notifie la GUI de mettre à jour la vue VM
+        m_logger.Log("Build successful. VM ready.");
 
-        if (m_story->CopyProgramTo(m_rom_data, sizeof (m_rom_data)))
-        {
-            m_story->SaveBinary();
-            chip32_initialize(&m_chip32_ctx);
-
-            Chip32::Instr mainLine;
-            if (m_story->FindMain(mainLine)) {
-                m_chip32_ctx.registers[PC] = mainLine.addr;
-            }
-
-            m_dbg.run_result = VM_READY;
-            UpdateVmView(); // Notifie la GUI de mettre à jour la vue VM
-            m_logger.Log("Build successful. VM ready.");
-        }
-        else
-        {
-            m_logger.Log("Program too big. Expand ROM memory.", true);
-        }
+         m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Build success"));
     }
     else
     {
-        m_logger.Log(err.ToString(), true);
-        // La GUI (DebuggerWindow) doit être notifiée pour ajouter l'erreur. FIXME
-        // m_debuggerWindow.AddError(err.line, err.message);
+        auto err = m_machine.assembler.GetLastError(); // FIXME: l'erreur ne vient pas uniquement de l'assembleur, enfouir cela et remonter d'autres erreurs liées à la machine 
+        m_eventBus.Emit(std::make_shared<GenericResultEvent>(false, "Build error: " + err.ToString()));
     }
 }
 
@@ -297,44 +265,22 @@ void AppController::BuildModule(bool compileonly)
     m_logger.Log(m_moduleAssembly);
     m_logger.Log("============================");
 
-    // Try to compile the module code directly
-    Chip32::Assembler::Error err;
-    
-    if (m_module->GenerateBinary(m_moduleAssembly, err))
+    if (m_machine.Build(m_moduleAssembly))
     {
         m_logger.Log("Module compiled successfully!");
         
         // Save the binary to disk
-        m_module->SaveBinary();
-        
-        // Load into VM for testing
-        if (m_module->CopyProgramTo(m_rom_data, sizeof(m_rom_data)))
-        {
-            chip32_initialize(&m_chip32_ctx);
-
-            Chip32::Instr mainLine;
-            if (m_module->FindMain(mainLine)) {
-                m_chip32_ctx.registers[PC] = mainLine.addr;
-            }
-
-            m_dbg.run_result = VM_READY;
-            UpdateVmView();
-            
-            m_logger.Log("Module binary ready for testing.");
-            m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildSuccess, m_module->GetUuid()));
-        }
-        else
-        {
-            auto errObj = std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildFailure, m_module->GetUuid());
-            errObj->SetFailure("Module program too big. Expand ROM memory.", -1);
-            m_eventBus.Emit(errObj);
-        }
+        m_machine.SaveBinary(m_module->BinaryFileName());
+        m_dbg.run_result = VM_READY;
+        UpdateVmView(); // Notifie la GUI de mettre à jour la vue VM
+        m_eventBus.Emit(std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildSuccess, m_module->GetUuid()));
     }
     else
     {
         // Compilation failed - show error
+        auto err = m_machine.assembler.GetLastError(); // FIXME: l'erreur ne vient pas uniquement de l'assembleur, enfouir cela et remonter d'autres erreurs liées à la machine 
+        
         std::string errorMsg = err.ToString();
-            
         auto errObj = std::make_shared<ModuleEvent>(ModuleEvent::Type::BuildFailure, m_module->GetUuid());
         errObj->SetFailure(errorMsg, err.line);
         m_eventBus.Emit(errObj);
@@ -372,32 +318,15 @@ void AppController::SetExternalSourceFile(const std::string &filename)
 
 void AppController::LoadBinaryStory(const std::string &filename)
 {
-    FILE *fp = fopen(filename.c_str(), "rb");
-    if (fp != NULL)
-    {
-        fseek(fp, 0L, SEEK_END);
-        long int sz = ftell(fp);
-        fseek(fp, 0L, SEEK_SET);
 
-        if (sz <= m_chip32_ctx.rom.size)
-        {
-            size_t sizeRead = fread(m_chip32_ctx.rom.mem, 1, sz, fp); // Corrected fread args
-            if (sizeRead == (size_t)sz) // Cast sz to size_t for comparison
-            {
-                m_dbg.run_result = VM_READY;
-                chip32_initialize(&m_chip32_ctx);
-                m_logger.Log("Loaded binary file: " + filename);
-                UpdateVmView();
-            }
-            else
-            {
-                m_logger.Log("Failed to load binary file completely. Read " + std::to_string(sizeRead) + " of " + std::to_string(sz) + " bytes.", true);
-            }
-        } else {
-            m_logger.Log("Binary file is too large for ROM: " + std::to_string(sz) + " bytes, max " + std::to_string(m_chip32_ctx.rom.size) + " bytes.", true);
-        }
-        fclose(fp);
-    } else {
+    if (m_machine.LoadBinary(filename))
+    {
+        m_dbg.run_result = VM_READY;
+        m_logger.Log("Loaded binary file: " + filename);
+        UpdateVmView();
+    }
+    else
+    {
         m_logger.Log("Failed to open binary file: " + filename, true);
     }
 }
@@ -422,7 +351,7 @@ uint32_t AppController::GetRegister(int reg)
     uint32_t regVal = 0;
     if (reg >= 0 && reg < REGISTER_COUNT) // Assurez-vous que REGISTER_COUNT est défini
     {
-        regVal = m_chip32_ctx.registers[reg];
+        regVal = m_machine.ctx.registers[reg];
     }
     return regVal;
 }
@@ -620,7 +549,7 @@ void AppController::ProcessStory()
             {
                 if (m_dbg.IsValidEvent(EV_MASK_OK_BUTTON))
                 {
-                    m_chip32_ctx.registers[R0] = EV_MASK_OK_BUTTON;
+                    m_machine.SetEvent(EV_MASK_OK_BUTTON);
                     m_dbg.run_result = VM_OK;
                 }
             }
@@ -628,7 +557,7 @@ void AppController::ProcessStory()
             {
                 if (m_dbg.IsValidEvent(EV_MASK_PREVIOUS_BUTTON))
                 {
-                    m_chip32_ctx.registers[R0] = EV_MASK_PREVIOUS_BUTTON;
+                    m_machine.SetEvent(EV_MASK_PREVIOUS_BUTTON);
                     m_dbg.run_result = VM_OK;
                 }
             }
@@ -636,7 +565,7 @@ void AppController::ProcessStory()
             {
                 if (m_dbg.IsValidEvent(EV_MASK_NEXT_BUTTON))
                 {
-                    m_chip32_ctx.registers[R0] = EV_MASK_NEXT_BUTTON;
+                    m_machine.SetEvent(EV_MASK_NEXT_BUTTON);
                     m_dbg.run_result = VM_OK;
                 }
             }
@@ -644,7 +573,7 @@ void AppController::ProcessStory()
             {
                 if (m_dbg.IsValidEvent(EV_MASK_END_OF_AUDIO))
                 {
-                    m_chip32_ctx.registers[R0] = EV_MASK_END_OF_AUDIO;
+                    m_machine.SetEvent(EV_MASK_END_OF_AUDIO);
                     m_dbg.run_result = VM_OK;
                 }
             }
@@ -652,7 +581,7 @@ void AppController::ProcessStory()
             {
                 if (m_dbg.IsValidEvent(EV_MASK_HOME_BUTTON))
                 {
-                    m_chip32_ctx.registers[R0] = EV_MASK_HOME_BUTTON;
+                    m_machine.SetEvent(EV_MASK_HOME_BUTTON);
                     m_dbg.run_result = VM_OK;
                 }
             }
@@ -705,7 +634,7 @@ void AppController::ProcessStory()
 
 void AppController::StepInstruction()
 {
-    m_dbg.run_result = chip32_step(&m_chip32_ctx);
+    m_dbg.run_result = chip32_step(&m_machine.ctx);
     UpdateVmView();
 }
 
@@ -788,11 +717,11 @@ void AppController::UpdateVmView()
     // C'est une fonction de notification pour la GUI.
     // AppController ne devrait pas directement manipuler les vues GUI.
     // Au lieu de cela, il émettrait un signal ou appellerait un observer.
-    uint32_t pcVal = m_chip32_ctx.registers[PC];
+    uint32_t pcVal = m_machine.ctx.registers[PC];
 
     if (m_story)
     {
-        if (m_story->GetAssemblyLine(pcVal, m_dbg.line))
+        if (m_machine.GetAssemblyLine(pcVal, m_dbg.line))
         {
             m_logger.Log("Executing line: " + std::to_string(m_dbg.line + 1));
         // m_debuggerWindow.HighlightLine(m_dbg.line); // Dépendance GUI
@@ -835,7 +764,6 @@ void AppController::CloseProject()
     m_dbg.run_result = VM_FINISHED;
     m_dbg.free_run = false;
     m_dbg.m_breakpoints.clear();
-    chip32_initialize(&m_chip32_ctx); // Reset VM context
 
     m_resources.Clear(); // Clear loaded resources
     m_eventQueue.clear(); // Clear any pending VM events

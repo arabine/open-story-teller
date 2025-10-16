@@ -24,10 +24,10 @@ struct DebugContext
         return (event_mask & event) != 0;
     }
 
-    static void DumpCodeAssembler(Chip32::Assembler & assembler) {
+    static void DumpCodeAssembler(Chip32::Assembler & assembler) 
+    {
 
-        for (std::vector<Chip32::Instr>::const_iterator iter = assembler.Begin();
-             iter != assembler.End(); ++iter)
+        for (auto iter : assembler)
         {
             if (iter->isRomCode() || iter->isRomData)
             {

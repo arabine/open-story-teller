@@ -54,14 +54,16 @@ void StoryProject::CopyToDevice(const std::string &outputDir, NodesFactory &fact
 
     std::cout << code << std::endl;
 
-    Chip32::Assembler::Error err;
-    if (GenerateBinary(code, err))
-    {
-        std::filesystem::copy(BinaryFileName(), destRootDir, std::filesystem::copy_options::overwrite_existing);
+// FIXME génération
 
-        // Convert resources (if necessary) and copy them to destination assets
-        manager.ConvertResources(AssetsPath(), destAssetsDir, m_storyOptions.image_format, m_storyOptions.sound_format);
-    }
+    // Chip32::Assembler::Error err;
+    // if (GenerateBinary(code, err))
+    // {
+    //     std::filesystem::copy(BinaryFileName(), destRootDir, std::filesystem::copy_options::overwrite_existing);
+
+    //     // Convert resources (if necessary) and copy them to destination assets
+    //     manager.ConvertResources(AssetsPath(), destAssetsDir, m_storyOptions.image_format, m_storyOptions.sound_format);
+    // }
 }
 
 void StoryProject::New(const std::string &uuid, const std::string &library_path)
@@ -84,14 +86,6 @@ void StoryProject::New(const std::string &uuid, const std::string &library_path)
 std::filesystem::path StoryProject::BinaryFileName() const
 {
     return m_working_dir / "story.c32";
-}
-
-
-void StoryProject::SaveBinary()
-{
-    std::ofstream o(BinaryFileName() , std::ios::out | std::ios::binary);
-    o.write(reinterpret_cast<const char*>(m_program.data()), m_program.size());
-    o.close();
 }
 
 bool StoryProject::ParseStoryInformation(nlohmann::json &j)
@@ -321,17 +315,6 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model, NodesFactory &fact
     return success;
 }
 
-bool StoryProject::CopyProgramTo(uint8_t *memory, uint32_t size)
-{
-    bool success = false;
-    // Update ROM memory
-    if (m_program.size() < size)
-    {
-        std::copy(m_program.begin(), m_program.end(), memory);
-        success = true;
-    }
-    return success;
-}
 
 std::vector<IStoryProject::FunctionInfo> StoryProject::GetFunctionsList() const
 {
@@ -357,27 +340,6 @@ std::vector<IStoryProject::FunctionInfo> StoryProject::GetFunctionsList() const
     return functions;
 }
 
-bool StoryProject::GetAssemblyLine(uint32_t pointer_counter, uint32_t &line)
-{
-    bool success = false;
-    // On recherche quelle est la ligne qui possède une instruction à cette adresse
-    std::vector<Chip32::Instr>::const_iterator ptr = m_assembler.Begin();
-    for (; ptr != m_assembler.End(); ++ptr)
-    {
-        if ((ptr->addr == pointer_counter) && ptr->isRomCode())
-        {
-            break;
-        }
-    }
-
-    if (ptr != m_assembler.End())
-    {
-        line = ptr->line;
-        success = true; 
-    }
-
-    return success;
-}
 
 std::list<std::shared_ptr<Connection>> StoryProject::GetNodeConnections(const std::string &nodeId)
 {
@@ -541,37 +503,6 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
 
     return true;
 }
-
-bool StoryProject::GenerateBinary(const std::string &code, Chip32::Assembler::Error &err)
-{
-    Chip32::Result result;
-    bool success = false;
-
-    if (m_assembler.Parse(code) == true)
-    {
-        if (m_assembler.BuildBinary(m_program, result) == true)
-        {
-            result.Print();
-
-            m_log.Log("Binary successfully generated.");
-            SaveBinary();
-            success = true;
-        }
-        else
-        {
-            err = m_assembler.GetLastError();
-            
-        }
-    }
-    else
-    {
-        err = m_assembler.GetLastError();
-        m_log.Log(err.ToString(), true);
-    }
-    return success;
-}
-
-
 
 bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
 {

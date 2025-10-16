@@ -31,43 +31,21 @@ public:
         return &m_selected;
     }
 
-    // std::shared_ptr<StoryProject> shared_from_this() {
-    //     return shared_from_this();
-    // }
-
     std::string MainUuid() const {
         return "490745ab-df4d-476d-ae27-027e94b8ee0a";
-    }
-
-    bool FindMain(Chip32::Instr &mainLine) {
-
-        std::shared_ptr<Chip32::Instr> m;
-        bool success = m_assembler.GetMain(m);
-        if (success)
-        {
-            mainLine = *m;
-        }
-        return success;
     }
 
     bool GenerateCompleteProgram(std::string &assembly);
 
     void New(const std::string &uuid, const std::string &library_path);
     std::filesystem::path BinaryFileName() const;
-    bool GenerateBinary(const std::string &code, Chip32::Assembler::Error &err);
     bool Load(ResourceManager &manager, NodesFactory &factory);
     void Save(ResourceManager &manager);
-    void SaveBinary();
     void SetPaths(const std::string &uuid, const std::string &library_path);
     void CopyToDevice(const std::string &outputDir, NodesFactory &factory);
 
     void ModelToJson(nlohmann::json &model);
     bool ModelFromJson(const nlohmann::json &model, NodesFactory &factory);
-
-    bool CopyProgramTo(uint8_t *memory, uint32_t size);
-
-    // returns >= 0 on success
-    bool GetAssemblyLine(uint32_t pointer_counter, uint32_t &line);
 
     void Clear();
 
@@ -148,10 +126,6 @@ private:
     std::unordered_set<std::string> m_usedLabels; // permet de ne pas générer un label qui existe déjà
 
     std::filesystem::path m_assetsPath;
-
-    Chip32::Assembler m_assembler;
-    std::vector<uint8_t> m_program;
-
     std::list<std::shared_ptr<StoryPage>> m_pages;
 
     std::vector<std::shared_ptr<Variable>> m_variables;
