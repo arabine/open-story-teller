@@ -148,6 +148,7 @@ set(SRCS
     src/node_editor/operator_node_widget.cpp
     src/node_editor/print_node_widget.cpp
     src/node_editor/syscall_node_widget.cpp
+    src/node_editor/branch_node_widget.cpp
     
     src/gui.cpp
     src/media_converter.cpp

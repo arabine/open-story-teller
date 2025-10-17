@@ -696,7 +696,13 @@ private:
     }
 
     void GenerateBranchNode(std::shared_ptr<ASTNode> node) {
+        auto* branchNode = node->GetAs<BranchNode>();
+        if (!branchNode) {
+            throw std::runtime_error("BranchNode cast failed");
+        }
+
         // Évaluer la condition (le BranchNode reçoit la condition sur le port 1)
+        // La condition provient généralement d'un OperatorNode (comparaison)
         auto conditionInput = node->GetDataInput(1);
         if (!conditionInput) {
             throw std::runtime_error("BranchNode missing condition input on port 1");
@@ -707,11 +713,12 @@ private:
             throw std::runtime_error("BranchNode condition evaluation returned null");
         }
 
-        // Créer les labels pour true/false
-        auto trueLabel = NewLabel("true_branch");
-        auto falseLabel = NewLabel("false_branch");
-        auto endLabel = NewLabel("end_branch");
+        // Créer les labels pour true/false/end
+        auto trueLabel = NewLabel("branch_true");
+        auto falseLabel = NewLabel("branch_false");
+        auto endLabel = NewLabel("branch_end");
 
+        // Convention: 0 = false, toute autre valeur = true
         // if (!condition) goto falseLabel
         auto ifInstr = std::make_shared<TACInstruction>(
             TACInstruction::OpCode::IF_FALSE,
@@ -721,11 +728,11 @@ private:
         m_program.AddInstruction(ifInstr);
 
         // True branch label
-        auto labelInstr1 = std::make_shared<TACInstruction>(
+        auto labelTrue = std::make_shared<TACInstruction>(
             TACInstruction::OpCode::LABEL,
             trueLabel
         );
-        m_program.AddInstruction(labelInstr1);
+        m_program.AddInstruction(labelTrue);
         
         // True branch code
         if (node->GetChild(0)) {
@@ -740,11 +747,11 @@ private:
         m_program.AddInstruction(gotoEnd);
 
         // False branch label
-        auto labelInstr2 = std::make_shared<TACInstruction>(
+        auto labelFalse = std::make_shared<TACInstruction>(
             TACInstruction::OpCode::LABEL,
             falseLabel
         );
-        m_program.AddInstruction(labelInstr2);
+        m_program.AddInstruction(labelFalse);
         
         // False branch code
         if (node->GetChild(1)) {
@@ -752,11 +759,11 @@ private:
         }
 
         // End label
-        auto labelInstr3 = std::make_shared<TACInstruction>(
+        auto labelEnd = std::make_shared<TACInstruction>(
             TACInstruction::OpCode::LABEL,
             endLabel
         );
-        m_program.AddInstruction(labelInstr3);
+        m_program.AddInstruction(labelEnd);
     }
 };
 

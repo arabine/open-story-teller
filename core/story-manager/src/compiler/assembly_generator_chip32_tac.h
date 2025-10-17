@@ -462,13 +462,13 @@ private:
     
     void GenerateIfFalse(std::shared_ptr<TACInstruction> instr) {
         LoadOperand(instr->GetOp1(), "r0");
-        m_assembly << "    skipz r0\n";
+        m_assembly << "    skipnz r0\n";
         m_assembly << "    jump " << instr->GetDest()->ToString() << "\n";
     }
     
     void GenerateIfTrue(std::shared_ptr<TACInstruction> instr) {
         LoadOperand(instr->GetOp1(), "r0");
-        m_assembly << "    skipnz r0\n";
+        m_assembly << "    skipz r0\n";
         m_assembly << "    jump " << instr->GetDest()->ToString() << "\n";
     }
     
@@ -601,9 +601,9 @@ private:
                 break;
             
             case Variable::ValueType::INTEGER:
-                // CORRECTION : Déclarer 1 élément, pas la valeur !
-                m_assembly << "$" << v->GetLabel() << " DV32, 1 ; " 
-                        << v->GetVariableName() << "\n";
+                m_assembly << "$" << v->GetLabel() << " DV32, " 
+                            << v->GetValue<int>() << " ; " 
+                            << v->GetVariableName() << "\n";
                 break;
             
             case Variable::ValueType::FLOAT:

@@ -85,9 +85,9 @@ typedef enum
     OP_SKIPNZ = 27, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
     // Comparison
-    OP_CMP_EQ = 28,  ///< compare two registers for equality, result in first e.g.: eq r4, r0, r1 (r4 = (r0 == r1 ? 1 : 0)
-    OP_CMP_GT = 29,  ///< compare if first register is greater than the second, result in first e.g.: gt r4, r0, r1
-    OP_CMP_LT = 30,  ///< compare if first register is less than the second, result in first e.g.: lt r4, r0, r1
+    OP_CMP_EQ = 28,  ///< compare two registers for equality, result in first e.g.: eq r4, r0, r1 ; similar to: r4 = (r0 == r1 ? 1 : 0
+    OP_CMP_GT = 29,  ///< compare if first register is greater than the second, result in first e.g.: gt r4, r0, r1 ; similar to: r4 = (r0 > r1 ? 1 : 0
+    OP_CMP_LT = 30,  ///< compare if first register is less than the second, result in first e.g.: lt r4, r0, r1 ; similar to: r4 = (r0 < r1 ? 1 : 0
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;

@@ -16,7 +16,7 @@
 #include "story_project.h"
 #include "story_primitive.h"
 #include "function_entry_node.h"
-
+#include "branch_node.h"
 
 static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
 static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
@@ -24,7 +24,7 @@ static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed
 static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
 static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
 static const std::string FunctionEntryNodeUuid = "02fd145a-b3a6-43c2-83ce-6a187e6d4b5b";
-static const std::string DUMMY_a_prendre_Uuid = "027b723d-2327-4646-a17a-79ddc2e016e4";
+static const std::string BranchNodeUuid = "027b723d-2327-4646-a17a-79ddc2e016e4";
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
 
@@ -44,6 +44,8 @@ public:
         registerNode<PrintNode>(PrintNodeUuid, std::make_shared<StoryPrimitive>("Print"));
         registerNode<SyscallNode>(SyscallNodeUuid, std::make_shared<StoryPrimitive>("System call"));
         registerNode<FunctionEntryNode>(FunctionEntryNodeUuid, std::make_shared<StoryPrimitive>("Function entry"));
+        registerNode<BranchNode>(BranchNodeUuid, std::make_shared<StoryPrimitive>("Branch"));
+        
     }
 
     ~NodesFactory() = default;

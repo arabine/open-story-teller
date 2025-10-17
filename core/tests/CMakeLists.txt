@@ -30,6 +30,7 @@ add_executable(${PROJECT_NAME}
     test_vm.cpp 
     test_ast.cpp
     test_print_node.cpp
+    test_branch.cpp
 
     ../story-manager/src/nodes/base_node.cpp
     ../story-manager/src/nodes/branch_node.cpp
