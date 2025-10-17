@@ -764,7 +764,7 @@ void AppController::CloseProject()
     m_dbg.run_result = VM_FINISHED;
     m_dbg.free_run = false;
     m_dbg.m_breakpoints.clear();
-
+    
     m_resources.Clear(); // Clear loaded resources
     m_eventQueue.clear(); // Clear any pending VM events
 

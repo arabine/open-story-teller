@@ -511,6 +511,7 @@ bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
         nlohmann::json j = nlohmann::json::parse(f);
 
         manager.Clear();
+        m_variables.clear();
 
         if (ParseStoryInformation(j))
         {

@@ -14,6 +14,6 @@ public:
     void Draw(std::shared_ptr<IStoryProject> story);
 
 private:
-    void ShowRAMEditor(std::shared_ptr<IStoryProject> story);
+    void DrawVariableEditor(std::shared_ptr<IStoryProject> story);
 };
 

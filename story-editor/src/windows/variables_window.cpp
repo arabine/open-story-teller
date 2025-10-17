@@ -28,7 +28,7 @@ int64_t FloatToScaled(float floatValue, int scalePower) {
 }
 
 
-void VariablesWindow::ShowRAMEditor(std::shared_ptr<IStoryProject> story)
+void VariablesWindow::DrawVariableEditor(std::shared_ptr<IStoryProject> story)
 {
 
     if (ImGui::Button("Add variable")) {
@@ -114,7 +114,7 @@ void VariablesWindow::Draw(std::shared_ptr<IStoryProject> story)
 
     if (story)
     {
-        ShowRAMEditor(story);
+        DrawVariableEditor(story);
     }
 
     WindowBase::EndDraw();
