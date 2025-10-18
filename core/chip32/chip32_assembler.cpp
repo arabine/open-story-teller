@@ -210,8 +210,8 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
     case OP_PUSH:
     case OP_SKIPZ:
     case OP_SKIPNZ:
-    case OP_CALL:
     case OP_JUMPR:
+    case OP_NOT:
         GET_REG(instr->args[0], ra);
         instr->compiledArgs.push_back(ra);
         break;
@@ -226,7 +226,6 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
     case OP_AND:
     case OP_OR:
     case OP_XOR:
-    case OP_NOT:
         GET_REG(instr->args[0], ra);
         GET_REG(instr->args[1], rb);
         instr->compiledArgs.push_back(ra);
@@ -245,11 +244,11 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
         leu32_put(instr->compiledArgs, op);
         break;
     }
+    case OP_CALL:
     case OP_JUMP:
-        // Reserve 2 bytes for address, it will be filled at the end
+        // Reserve 4 bytes for address, it will be filled at the end
         instr->useLabel = true;
-        instr->compiledArgs.push_back(0);
-        instr->compiledArgs.push_back(0);
+        instr->compiledArgs.reserve(4);
         break;
     case OP_STORE: // store @r4, r1, 2
         CHIP32_CHECK(instr, instr->args[0].at(0) == '@', "Missing @ sign before register")
@@ -558,9 +557,9 @@ Position of Data in RAM
     {
         if (instr->useLabel && (instr->args.size() > 0))
         {
-            // label is the first argument for jump, second position for LCONS and LOAD
+            // label is the first argument for JUMP and CALL, second position for LCONS and LOAD
             uint16_t argsIndex = 1;
-            if (instr->code.opcode == OP_JUMP) {
+            if ((instr->code.opcode == OP_JUMP) || (instr->code.opcode == OP_CALL)) {
                 argsIndex = 0;
             }
             std::string label = instr->args[argsIndex];

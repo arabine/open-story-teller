@@ -43,7 +43,7 @@ public:
         m_syscallHandler = std::bind(&Machine::HandleSyscall, this, 
                                      std::placeholders::_1, 
                                      std::placeholders::_2);
-        ram.resize(1024); 
+        ram.resize(2048); 
     }
 
 

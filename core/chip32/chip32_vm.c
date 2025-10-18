@@ -35,6 +35,23 @@ THE SOFTWARE.
 
 #define _NEXT_BYTE ctx->rom.mem[++ctx->registers[PC]]
 
+
+static inline uint32_t deserialize_le32(const uint8_t *ptr)
+{
+    return (uint32_t)ptr[0] | 
+           ((uint32_t)ptr[1] << 8) | 
+           ((uint32_t)ptr[2] << 16) | 
+           ((uint32_t)ptr[3] << 24);
+}
+static inline void serialize_le32(uint8_t *ptr, uint32_t value)
+{
+    ptr[0] = (uint8_t)(value & 0xFF);
+    ptr[1] = (uint8_t)((value >> 8) & 0xFF);
+    ptr[2] = (uint8_t)((value >> 16) & 0xFF);
+    ptr[3] = (uint8_t)((value >> 24) & 0xFF);
+}
+
+
 static inline uint16_t _NEXT_SHORT (chip32_ctx_t *ctx)
 {
     ctx->registers[PC] += 2;
@@ -45,8 +62,7 @@ static inline uint32_t _NEXT_INT (chip32_ctx_t *ctx)
 {
     ctx->registers[PC] += 4;
 
-    return ctx->rom.mem[ctx->registers[PC] - 3] | ctx->rom.mem[ctx->registers[PC] - 2] << 8 |
-    ctx->rom.mem[ctx->registers[PC] - 1] << 16 | ctx->rom.mem[ctx->registers[PC]] << 24;
+    return deserialize_le32(&ctx->rom.mem[ctx->registers[PC] - 3]);
 }
 
 #define _CHECK_SKIP if (skip) continue;
@@ -88,11 +104,11 @@ static const uint16_t OpCodesSize = sizeof(OpCodes) / sizeof(OpCodes[0]);
 
 static void push(chip32_ctx_t *ctx, uint32_t val) {
     ctx->registers[SP] -= 4;
-    ctx->ram.mem[ctx->registers[SP]] = val;
+    serialize_le32(&ctx->ram.mem[ctx->registers[SP]], val);
 }
 
 static uint32_t pop(chip32_ctx_t *ctx) {
-    uint32_t val = ctx->ram.mem[ctx->registers[SP]];
+    uint32_t val = deserialize_le32(&ctx->ram.mem[ctx->registers[SP]]);
     ctx->registers[SP] += 4;
     return val;
 }
@@ -190,7 +206,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
     }
     case OP_CALL:
     {
-        ctx->registers[RA] = ctx->registers[PC] + 2; // set return address to next instruction after CALL
+        ctx->registers[RA] = ctx->registers[PC] + 4; // set return address to next instruction after CALL (+4 is for address size)
         const uint8_t reg = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg)
         ctx->registers[PC] = ctx->registers[reg] - 1;
@@ -319,7 +335,14 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         const uint8_t reg2 = _NEXT_BYTE;
         _CHECK_REGISTER_VALID(reg1)
         _CHECK_REGISTER_VALID(reg2)
-        ctx->registers[reg1] = ctx->registers[reg1] / ctx->registers[reg2];
+        if (ctx->registers[reg2] != 0)
+        {
+            ctx->registers[reg1] = ctx->registers[reg1] / ctx->registers[reg2];
+        }
+        else
+        {
+            ctx->registers[reg1] = 0;
+        }
         break;
     }
     case OP_SHL:
