@@ -50,9 +50,9 @@ struct Instr {
     std::string mnemonic;
     uint16_t dataTypeSize{0};
     uint16_t dataLen{0};
+    int8_t labelIndex{-1}; // index of label in compiled argument (-1 means no label)
 
     bool isLabel{false};    //!< If true, this is a label, otherwise it is an instruction
-    bool useLabel{false};   //!< If true, the instruction uses a label
     bool isRomData{false};  //!< True if constant data in ROM (DC)
     bool isRamData{false};  //!< True if RAM variable (DV or DZ)
     bool isZeroData{false}; //!< True if zero-initialized RAM (DZ only)

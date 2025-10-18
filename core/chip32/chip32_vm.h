@@ -80,14 +80,13 @@ typedef enum
     OP_CALL = 22, ///<  set register RA to the next instruction and jump to subroutine, e.g.: call 0x10 0x00
     OP_RET = 23,  ///<  return to the address of last callee (RA), e.g.: ret
     OP_JUMP = 24, ///<   jump to address (can use label or address), e.g.: jump .my_label
-    OP_JUMPR = 25, ///<   jump to address contained in a register, e.g.: jumpr t9
-    OP_SKIPZ = 26,  ///<  skip next instruction if zero, e.g.: skipz r0
-    OP_SKIPNZ = 27, ///<  skip next instruction if not zero, e.g.: skipnz r2
+    OP_SKIPZ = 25,  ///<  skip next instruction if zero, e.g.: skipz r0
+    OP_SKIPNZ = 26, ///<  skip next instruction if not zero, e.g.: skipnz r2
 
     // Comparison
-    OP_CMP_EQ = 28,  ///< compare two registers for equality, result in first e.g.: eq r4, r0, r1 ; similar to: r4 = (r0 == r1 ? 1 : 0
-    OP_CMP_GT = 29,  ///< compare if first register is greater than the second, result in first e.g.: gt r4, r0, r1 ; similar to: r4 = (r0 > r1 ? 1 : 0
-    OP_CMP_LT = 30,  ///< compare if first register is less than the second, result in first e.g.: lt r4, r0, r1 ; similar to: r4 = (r0 < r1 ? 1 : 0
+    OP_CMP_EQ = 27,  ///< compare two registers for equality, result in first e.g.: eq r4, r0, r1 ; similar to: r4 = (r0 == r1 ? 1 : 0
+    OP_CMP_GT = 28,  ///< compare if first register is greater than the second, result in first e.g.: gt r4, r0, r1 ; similar to: r4 = (r0 > r1 ? 1 : 0
+    OP_CMP_LT = 29,  ///< compare if first register is less than the second, result in first e.g.: lt r4, r0, r1 ; similar to: r4 = (r0 < r1 ? 1 : 0
 
     INSTRUCTION_COUNT
 } chip32_instruction_t;
@@ -161,11 +160,11 @@ typedef struct {
 
 #define OPCODES_LIST { { OP_NOP, 0, 0 }, { OP_HALT, 0, 0 }, { OP_SYSCALL, 1, 1 }, { OP_LCONS, 2, 5 }, \
 { OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, \
-{ OP_STORE, 3, 3 }, { OP_LOAD, 3, 3 }, \
+{ OP_STORE, 3, 3 }, { OP_LOAD, 3, 6 }, \
 { OP_ADD, 2, 2 }, { OP_ADDI, 2, 2 }, { OP_SUB, 2, 2 }, { OP_SUBI, 2, 2 }, { OP_MUL, 2, 2 }, \
 { OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
-{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 1 }, { OP_RET, 0, 0 }, \
-{ OP_JUMP, 1, 2 }, { OP_JUMPR, 1, 1 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 }, \
+{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1, 1 }, { OP_CALL, 1, 5 }, { OP_RET, 0, 0 }, \
+{ OP_JUMP, 1, 5 }, { OP_SKIPZ, 1, 1 }, { OP_SKIPNZ, 1, 1 }, \
 { OP_CMP_EQ, 3, 3 }, { OP_CMP_GT, 3, 3 }, { OP_CMP_LT, 3, 3 } }
 
 /**

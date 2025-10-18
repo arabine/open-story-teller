@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart' hide Router;
-import 'package:path/path.dart';
 
 import 'dart:io';
-import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -10,10 +8,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:external_path/external_path.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:logger/logger.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'libstory/storyvm.dart';

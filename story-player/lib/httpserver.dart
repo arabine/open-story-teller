@@ -48,7 +48,7 @@ void httpServer() async {
   });
 
   // Démarrer le serveur
-  io.serve(router, 'localhost', 8080).then((server) {
+  io.serve(router.call, 'localhost', 8080).then((server) {
     logger.d('Serving at http://${server.address.host}:${server.port}');
   });
 }

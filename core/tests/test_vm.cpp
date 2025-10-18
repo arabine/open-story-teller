@@ -310,19 +310,6 @@ TEST_CASE_METHOD(VmTestContext, "JUMP - Unconditional jump", "[vm][control][jump
     REQUIRE(machine.ctx.registers[R0] == 42);
 }
 
-TEST_CASE_METHOD(VmTestContext, "JUMPR - Jump to register", "[vm][control][jumpr]") {
-    static const std::string test = R"(
-        lcons r0, .target
-        jumpr r0
-        lcons r1, 99
-.target:
-        lcons r1, 42
-        halt
-    )";
-    Execute(test);
-    REQUIRE(machine.ctx.registers[R1] == 42);
-}
-
 // ===================================================================
 // CONTROL FLOW - SKIP
 // ===================================================================

@@ -204,30 +204,16 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[reg] = pop(ctx);
         break;
     }
-    case OP_CALL:
-    {
-        ctx->registers[RA] = ctx->registers[PC] + 4; // set return address to next instruction after CALL (+4 is for address size)
-        const uint8_t reg = _NEXT_BYTE;
-        _CHECK_REGISTER_VALID(reg)
-        ctx->registers[PC] = ctx->registers[reg] - 1;
-
-        // Save Tx registers on stack
-        _CHECK_CAN_PUSH(10)
-        for (int i = 0; i < 10; i++) {
-            push(ctx, ctx->registers[T0 + i]);
-        }
-
-        break;
-    }
     case OP_RET:
     {
         ctx->registers[PC] = ctx->registers[RA] - 1;
-
-        _CHECK_CAN_POP(10)
+        _CHECK_CAN_POP(11)
         // restore Tx registers from stack
         for (int i = 0; i < 10; i++) {
             ctx->registers[T9 - i] = pop(ctx);
         }
+        // restore previous RA
+        ctx->registers[RA] = pop(ctx);
         break;
     }
     case OP_STORE:
@@ -273,6 +259,7 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
             _CHECK_REGISTER_VALID(reg2);
             size = _NEXT_BYTE;
             addr = ctx->registers[reg2];
+            ctx->registers[PC] += 3; // skip unused 3 bytes
         }
 
         bool isRam = addr & CHIP32_RAM_OFFSET;
@@ -406,18 +393,48 @@ chip32_result_t chip32_step(chip32_ctx_t *ctx)
         ctx->registers[reg1] = ~ctx->registers[reg1];
         break;
     }
+
+    case OP_CALL:
     case OP_JUMP:
     {
-        ctx->registers[PC] = _NEXT_SHORT(ctx) - 1;
+        const uint8_t option = _NEXT_BYTE;
+        uint32_t target_addr;
+
+        if (option == 0)
+        {
+            // Register-based: @R0
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            target_addr = ctx->registers[reg];
+            
+            // Skip 3 padding bytes
+            ctx->registers[PC] += 3;
+        }
+        else // option == 1
+        {
+            // Address-based: .myLabel
+            target_addr = _NEXT_INT(ctx);
+        }
+
+        // If CALL, we have more work to do, saving state to prepare a ret
+        if (instr == OP_CALL)
+        {
+            _CHECK_CAN_PUSH(1)
+            push(ctx, ctx->registers[RA]); // save previous RA
+            ctx->registers[RA] = ctx->registers[PC] + 1;
+            // Save Tx registers on stack
+            _CHECK_CAN_PUSH(10)
+            for (int i = 0; i < 10; i++) {
+                push(ctx, ctx->registers[T0 + i]);
+            }
+        }
+
+        // Perform jump
+        ctx->registers[PC] = target_addr - 1;
+
         break;
     }
-    case OP_JUMPR:
-    {
-        const uint8_t reg = _NEXT_BYTE;
-        _CHECK_REGISTER_VALID(reg)
-        ctx->registers[PC] = ctx->registers[reg] - 1;
-        break;
-    }
+
     case OP_SKIPZ:
     case OP_SKIPNZ:
     {

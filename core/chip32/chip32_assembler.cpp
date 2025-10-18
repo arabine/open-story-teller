@@ -58,7 +58,7 @@ static const uint32_t NbRegs = sizeof(AllRegs) / sizeof(AllRegs[0]);
 // Keep same order than the opcodes list!!
 static const std::string Mnemonics[] = {
     "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "store", "load", "add", "addi", "sub", "subi", "mul", "div",
-    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "jumpr", "skipz", "skipnz",
+    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "call", "ret", "jump", "skipz", "skipnz",
     "eq", "gt", "lt"
 };
 
@@ -200,7 +200,7 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
         instr->compiledArgs.push_back(ra);
         // Detect address or immedate value
         if ((instr->args[1].at(0) == '$') || (instr->args[1].at(0) == '.')) {
-            instr->useLabel = true;
+            instr->labelIndex = 1;
             leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
         } else { // immediate value
             leu32_put(instr->compiledArgs, convertStringToLong(instr->args[1]));
@@ -210,7 +210,6 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
     case OP_PUSH:
     case OP_SKIPZ:
     case OP_SKIPNZ:
-    case OP_JUMPR:
     case OP_NOT:
         GET_REG(instr->args[0], ra);
         instr->compiledArgs.push_back(ra);
@@ -246,10 +245,40 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
     }
     case OP_CALL:
     case OP_JUMP:
-        // Reserve 4 bytes for address, it will be filled at the end
-        instr->useLabel = true;
-        instr->compiledArgs.reserve(4);
+    {
+        // 5 bytes
+        // first byte is option: register based or address
+        // Then 4 bytes (address or just one byte for register)
+         
+        // We allow two forms of writing:
+        // - call @r0        ; call the address located in R0
+        // - jump .myFunction  ; jump to the label
+        // 
+        char prefix = instr->args[0].at(0);
+
+        if (prefix == '@')
+        {
+            instr->compiledArgs.push_back(0); // option zero
+            GET_REG(instr->args[0], ra);
+            instr->compiledArgs.push_back(ra);
+            // Three more bytes to keep same size
+            instr->compiledArgs.push_back(0);
+            instr->compiledArgs.push_back(0);
+            instr->compiledArgs.push_back(0);
+        }
+        else if (prefix == '.')
+        {
+            // Reserve 4 bytes for address, it will be filled at the end
+            instr->labelIndex = 1;
+            instr->compiledArgs.push_back(1); // option 1
+            leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
+        }
+        else
+        {
+            CHIP32_CHECK(instr, false, "Jump/Call argument must be @R0 or .myLabel")
+        }
         break;
+    }
     case OP_STORE: // store @r4, r1, 2
         CHIP32_CHECK(instr, instr->args[0].at(0) == '@', "Missing @ sign before register")
         instr->args[0].erase(0, 1);
@@ -270,17 +299,23 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
         // Register based
         if (prefix == '@')
         {
+            // 3 bytes total for arguments
             instr->args[1].erase(0, 1); // delete @ character
             GET_REG(instr->args[0], ra);
             GET_REG(instr->args[1], rb);
             instr->compiledArgs.push_back(ra);
             instr->compiledArgs.push_back(rb);
             instr->compiledArgs.push_back(static_cast<uint32_t>(strtol(instr->args[2].c_str(),  NULL, 0)));
+            // Three more bytes to keep same size
+            instr->compiledArgs.push_back(0);
+            instr->compiledArgs.push_back(0);
+            instr->compiledArgs.push_back(0);
         }
         // Variable based
         else if (prefix == '$')
         {
-            instr->useLabel = true;
+            // 6 bytes
+            instr->labelIndex = 1;
             GET_REG(instr->args[0], ra);
             instr->compiledArgs.push_back(ra | 0x80); // Flag this register with a bit to indicate an immediate address is following
             leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
@@ -312,7 +347,7 @@ bool Assembler::CompileMnemonicArguments(std::shared_ptr<Instr> instr)
 
 bool Assembler::CompileConstantArgument(std::shared_ptr<Instr> instr, const std::string &a)
 {
-    instr->compiledArgs.clear(); instr->args.clear(); instr->useLabel = false;
+    instr->compiledArgs.clear(); instr->args.clear(); instr->labelIndex = -1;
 
     // Check string
     if (a.size() > 2)
@@ -332,7 +367,7 @@ bool Assembler::CompileConstantArgument(std::shared_ptr<Instr> instr, const std:
         {
             // Label must be 32-bit, throw an error if not the case
             CHIP32_CHECK(instr, instr->dataTypeSize == 32, "Labels must be stored in a 32-bit area (DC32)")
-            instr->useLabel = true;
+            instr->labelIndex = 1;
             instr->args.push_back(a);
             leu32_put(instr->compiledArgs, 0); // reserve 4 bytes
             return true;
@@ -555,13 +590,21 @@ Position of Data in RAM
     // 3. Third pass: replace all label or RAM data by the real address in memory
     for (auto &instr : m_instructions)
     {
-        if (instr->useLabel && (instr->args.size() > 0))
+        if ((instr->labelIndex >=0 ) && (instr->args.size() > 0))
         {
             // label is the first argument for JUMP and CALL, second position for LCONS and LOAD
-            uint16_t argsIndex = 1;
-            if ((instr->code.opcode == OP_JUMP) || (instr->code.opcode == OP_CALL)) {
-                argsIndex = 0;
+
+            // Look where is the label
+            uint16_t argsIndex = 0;
+            for (auto &arg : instr->args)
+            {
+                if ((arg[0] == '.') || (arg[0] == '$'))
+                {
+                    break;
+                }
+                argsIndex++;
             }
+
             std::string label = instr->args[argsIndex];
             CHIP32_CHECK(instr, m_labels.count(label) > 0, "label not found: " + label);
             uint32_t addr = m_labels[label]->addr;
@@ -570,11 +613,10 @@ Position of Data in RAM
             {
                 addr |= CHIP32_RAM_OFFSET;
             }
-            
-            instr->compiledArgs[argsIndex] = addr & 0xFF;
-            instr->compiledArgs[argsIndex+1] = (addr >> 8U) & 0xFF;
-            instr->compiledArgs[argsIndex+2] = (addr >> 16U) & 0xFF;
-            instr->compiledArgs[argsIndex+3] = (addr >> 24U) & 0xFF;
+            instr->compiledArgs[instr->labelIndex] = (uint8_t)(addr & 0xFF);
+            instr->compiledArgs[instr->labelIndex + 1] = (uint8_t)((addr >> 8) & 0xFF);
+            instr->compiledArgs[instr->labelIndex + 2] = (uint8_t)((addr >> 16) & 0xFF);
+            instr->compiledArgs[instr->labelIndex + 3] = (uint8_t)((addr >> 24) & 0xFF);
         }
     }
 
