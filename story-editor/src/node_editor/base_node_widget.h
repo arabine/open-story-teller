@@ -130,6 +130,8 @@ public:
     void SetTitle(const std::string& title) { m_title = title; }
     std::string GetTitle() const { return m_title; }
 
+    IStoryManager &Manager() { return m_manager; }
+
 private:
     IStoryManager &m_manager;
     std::shared_ptr<BaseNode> m_base;

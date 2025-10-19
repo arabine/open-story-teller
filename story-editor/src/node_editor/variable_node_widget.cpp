@@ -29,7 +29,9 @@ void VariableNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
             if (var->GetUuid() == m_selectedVariableUuid)
             {
                 m_selectedVariableName = var->GetVariableName();
+                return false;
             }
+            return true;
         });
     }
 
@@ -61,6 +63,7 @@ void VariableNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
             }
 
             i++;
+            return true;
         });
         ImGui::EndCombo();
     }
@@ -72,7 +75,9 @@ void VariableNodeWidget::DrawProperties(std::shared_ptr<IStoryProject> story)
             if (var->GetUuid() == m_selectedVariableUuid) {
                 ImGui::Text("Type: %s", Variable::ValueTypeToString(var->GetValueType()).c_str());
                 ImGui::Text("Value: %s", var->GetValueAsString().c_str());
+                return false;
             }
+            return true;
         });
     }
 }

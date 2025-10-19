@@ -11,7 +11,6 @@
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
-#include "syscall_node.h"
 #include "sys_lib.h"
 #include "assembly_generator_chip32_tac.h"
 #include "nodes_factory.h"
@@ -225,11 +224,13 @@ std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::share
     return std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator>();
 }
 
-void StoryProject::ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation)
+void StoryProject::ScanVariable(const std::function<bool(std::shared_ptr<Variable> element)>& operation)
 {
     for (auto &v : m_variables)
     {
-        operation(v);
+        bool ret = operation(v);
+        if (!ret)
+            break;
     }
 }
 

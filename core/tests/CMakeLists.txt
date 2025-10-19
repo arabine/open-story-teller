@@ -36,8 +36,12 @@ add_executable(${PROJECT_NAME}
     ../story-manager/src/nodes/branch_node.cpp
     ../story-manager/src/nodes/print_node.cpp
     ../story-manager/src/nodes/variable_node.cpp
-    ../story-manager/src/nodes/syscall_node.cpp
     ../story-manager/src/nodes/connection.cpp
+    ../story-manager/src/nodes/wait_event_node.cpp
+    ../story-manager/src/nodes/wait_delay_node.cpp
+    ../story-manager/src/nodes/play_media_node.cpp
+    ../story-manager/src/nodes/send_signal_node.cpp
+    
 
     ../chip32/chip32_assembler.cpp 
     ../chip32/chip32_vm.c

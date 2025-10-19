@@ -104,7 +104,7 @@ public:
     std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator> Links(const std::string_view &page_uuid);
 
 
-    void ScanVariable(const std::function<void(std::shared_ptr<Variable> element)>& operation) override;
+    void ScanVariable(const std::function<bool(std::shared_ptr<Variable> element)>& operation) override;
     void AddVariable() override;
     void DeleteVariable(int i) override;
 

@@ -20,11 +20,11 @@
 
 AppController::AppController(ILogger& logger, EventBus& eventBus)
     : m_logger(logger)
-    , m_eventBus(eventBus) // m_eventBus pour les événements
-    , m_resources(logger) // m_resources a besoin d'un IStoryManager/IResourceSource
-    , m_nodesFactory(logger) // m_nodesFactory a besoin d'un IStoryManager/IResourceSource
-    , m_libraryManager(logger, m_nodesFactory) // m_libraryManager a besoin d'un IStoryManager/INodeFactory
-    , m_player(*this) // m_player a besoin d'un IAudioEvent
+    , m_eventBus(eventBus)
+    , m_resources(logger)
+    , m_nodesFactory(logger)
+    , m_libraryManager(logger, m_nodesFactory)
+    , m_player(*this)
     , m_webServer(m_libraryManager)
 {
 

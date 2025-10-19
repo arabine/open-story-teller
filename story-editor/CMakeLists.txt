@@ -147,8 +147,11 @@ set(SRCS
     src/node_editor/variable_node_widget.cpp
     src/node_editor/operator_node_widget.cpp
     src/node_editor/print_node_widget.cpp
-    src/node_editor/syscall_node_widget.cpp
     src/node_editor/branch_node_widget.cpp
+    src/node_editor/wait_event_node_widget.cpp
+    src/node_editor/wait_delay_node_widget.cpp
+    src/node_editor/play_media_node_widget.cpp
+    src/node_editor/send_signal_node_widget.cpp
     
     src/gui.cpp
     src/media_converter.cpp
@@ -182,12 +185,15 @@ set(SRCS
 
 
     ../core/story-manager/src/nodes/base_node.cpp
-    ../core/story-manager/src/nodes/compare_node.cpp
     ../core/story-manager/src/nodes/branch_node.cpp
     ../core/story-manager/src/nodes/variable_node.cpp
     ../core/story-manager/src/nodes/module_node.cpp
     ../core/story-manager/src/nodes/print_node.cpp
-    ../core/story-manager/src/nodes/syscall_node.cpp
+    ../core/story-manager/src/nodes/wait_event_node.cpp
+    ../core/story-manager/src/nodes/wait_delay_node.cpp
+    ../core/story-manager/src/nodes/play_media_node.cpp
+    ../core/story-manager/src/nodes/send_signal_node.cpp
+
     ../core/story-manager/src/nodes/connection.cpp
     ../core/story-manager/src/story_db.cpp
     ../core/story-manager/src/sys_lib.cpp

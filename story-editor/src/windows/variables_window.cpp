@@ -100,7 +100,7 @@ void VariablesWindow::DrawVariableEditor(std::shared_ptr<IStoryProject> story)
         }
         ImGui::PopID();
         i++;
-
+        return true;
     });
 }
 

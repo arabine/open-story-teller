@@ -32,9 +32,12 @@
 #include "variable_node_widget.h"
 #include "operator_node_widget.h"
 #include "print_node_widget.h"
-#include "syscall_node_widget.h"
 #include "function_entry_widget.h"
 #include "branch_node_widget.h"
+#include "play_media_node_widget.h"
+#include "send_signal_node_widget.h"
+#include "wait_delay_node_widget.h"
+#include "wait_event_node_widget.h"
 
 MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
     : m_logger(logger)
@@ -57,24 +60,18 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     // define style for all files
     ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByTypeFile, "", ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ICON_MDI_FILE);
 
-
-    // g OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
-// static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
-// static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
-// static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
-// static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
-// static const std::string ModuleNodeUuid = "02e4c728-ef72-4003-b7c8-2bee8834a47e";
-
-
     // registerNode<MediaNodeWidget>("media-node");
     m_widgetFactory.registerNode<OperatorNodeWidget>(OperatorNodeUuid);
     m_widgetFactory.registerNode<CallFunctionNodeWidget>(CallFunctionNodeUuid);
     // m_widgetFactory.registerNode<ModuleNodeWidget>("module-node");
     m_widgetFactory.registerNode<VariableNodeWidget>(VariableNodeUuid);
     m_widgetFactory.registerNode<PrintNodeWidget>(PrintNodeUuid);
-    m_widgetFactory.registerNode<SyscallNodeWidget>(SyscallNodeUuid);
     m_widgetFactory.registerNode<FunctionEntryWidget>(FunctionEntryNodeUuid);
     m_widgetFactory.registerNode<BranchNodeWidget>(BranchNodeUuid);
+    m_widgetFactory.registerNode<WaitEventNodeWidget>(WaitEventNodeUuid);
+    m_widgetFactory.registerNode<WaitDelayNodeWidget>(WaitDelayNodeUuid);
+    m_widgetFactory.registerNode<PlayMediaNodeWidget>(PlayMediaNodeUuid);
+    m_widgetFactory.registerNode<SendSignalNodeWidget>(SendSignalNodeUuid);
 
     m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {
         OpenProject(event.GetUuid());

@@ -12,19 +12,25 @@
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
-#include "syscall_node.h"
 #include "story_project.h"
 #include "story_primitive.h"
 #include "function_entry_node.h"
 #include "branch_node.h"
+#include "wait_delay_node.h"
+#include "wait_event_node.h"
+#include "play_media_node.h"
+#include "send_signal_node.h"
 
 static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
 static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
 static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
 static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
-static const std::string SyscallNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
 static const std::string FunctionEntryNodeUuid = "02fd145a-b3a6-43c2-83ce-6a187e6d4b5b";
 static const std::string BranchNodeUuid = "027b723d-2327-4646-a17a-79ddc2e016e4";
+static const std::string WaitEventNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
+static const std::string WaitDelayNodeUuid = "02455ef0-4975-4546-94de-720cae6baae3";
+static const std::string PlayMediaNodeUuid = "0285e90a-2eb7-4605-baa9-b3712a14dff8";
+static const std::string SendSignalNodeUuid = "02c2ce4b-8783-47cb-a55f-90056bebd64b";
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
 
@@ -42,10 +48,12 @@ public:
         registerNode<CallFunctionNode>(CallFunctionNodeUuid, std::make_shared<StoryPrimitive>("Call function"));
         registerNode<VariableNode>(VariableNodeUuid, std::make_shared<StoryPrimitive>("Variable"));
         registerNode<PrintNode>(PrintNodeUuid, std::make_shared<StoryPrimitive>("Print"));
-        registerNode<SyscallNode>(SyscallNodeUuid, std::make_shared<StoryPrimitive>("System call"));
         registerNode<FunctionEntryNode>(FunctionEntryNodeUuid, std::make_shared<StoryPrimitive>("Function entry"));
         registerNode<BranchNode>(BranchNodeUuid, std::make_shared<StoryPrimitive>("Branch"));
-        
+        registerNode<WaitEventNode>(WaitEventNodeUuid, std::make_shared<StoryPrimitive>("Wait Event"));
+        registerNode<WaitDelayNode>(WaitDelayNodeUuid, std::make_shared<StoryPrimitive>("Wait Delay"));
+        registerNode<PlayMediaNode>(PlayMediaNodeUuid, std::make_shared<StoryPrimitive>("Play Media"));
+        registerNode<SendSignalNode>(SendSignalNodeUuid, std::make_shared<StoryPrimitive>("Send Signal"));
     }
 
     ~NodesFactory() = default;
