@@ -20,6 +20,10 @@
 #include "wait_event_node.h"
 #include "play_media_node.h"
 #include "send_signal_node.h"
+#include "for_loop_node.h"
+#include "while_loop_node.h"
+#include "break_node.h"
+#include "continue_node.h"
 
 static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
 static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
@@ -31,6 +35,10 @@ static const std::string WaitEventNodeUuid = "02225cff-4975-400e-8130-41524d8af7
 static const std::string WaitDelayNodeUuid = "02455ef0-4975-4546-94de-720cae6baae3";
 static const std::string PlayMediaNodeUuid = "0285e90a-2eb7-4605-baa9-b3712a14dff8";
 static const std::string SendSignalNodeUuid = "02c2ce4b-8783-47cb-a55f-90056bebd64b";
+static const std::string ForLoopNodeUuid = "02a1b2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c";
+static const std::string WhileLoopNodeUuid = "02b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d";
+static const std::string BreakNodeUuid = "02c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e";
+static const std::string ContinueNodeUuid = "02d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f";
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
 
@@ -54,6 +62,10 @@ public:
         registerNode<WaitDelayNode>(WaitDelayNodeUuid, std::make_shared<StoryPrimitive>("Wait Delay"));
         registerNode<PlayMediaNode>(PlayMediaNodeUuid, std::make_shared<StoryPrimitive>("Play Media"));
         registerNode<SendSignalNode>(SendSignalNodeUuid, std::make_shared<StoryPrimitive>("Send Signal"));
+        registerNode<ForLoopNode>(ForLoopNodeUuid, std::make_shared<StoryPrimitive>("For Loop"));
+        registerNode<WhileLoopNode>(WhileLoopNodeUuid, std::make_shared<StoryPrimitive>("While Loop"));
+        registerNode<BreakNode>(BreakNodeUuid, std::make_shared<StoryPrimitive>("Break"));
+        registerNode<ContinueNode>(ContinueNodeUuid, std::make_shared<StoryPrimitive>("Continue"));
     }
 
     ~NodesFactory() = default;

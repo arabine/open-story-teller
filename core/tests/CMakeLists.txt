@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME}
     test_ast.cpp
     test_print_node.cpp
     test_branch.cpp
+    test_loops.cpp
 
     ../story-manager/src/nodes/base_node.cpp
     ../story-manager/src/nodes/branch_node.cpp
@@ -41,6 +42,10 @@ add_executable(${PROJECT_NAME}
     ../story-manager/src/nodes/wait_delay_node.cpp
     ../story-manager/src/nodes/play_media_node.cpp
     ../story-manager/src/nodes/send_signal_node.cpp
+    ../story-manager/src/nodes/for_loop_node.cpp
+    ../story-manager/src/nodes/while_loop_node.cpp
+    ../story-manager/src/nodes/break_node.cpp
+    ../story-manager/src/nodes/continue_node.cpp
     
 
     ../chip32/chip32_assembler.cpp 

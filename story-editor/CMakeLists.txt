@@ -152,6 +152,10 @@ set(SRCS
     src/node_editor/wait_delay_node_widget.cpp
     src/node_editor/play_media_node_widget.cpp
     src/node_editor/send_signal_node_widget.cpp
+    src/node_editor/for_loop_node_widget.cpp
+    src/node_editor/while_loop_node_widget.cpp
+    src/node_editor/break_node_widget.cpp
+    src/node_editor/continue_node_widget.cpp
     
     src/gui.cpp
     src/media_converter.cpp
@@ -193,6 +197,10 @@ set(SRCS
     ../core/story-manager/src/nodes/wait_delay_node.cpp
     ../core/story-manager/src/nodes/play_media_node.cpp
     ../core/story-manager/src/nodes/send_signal_node.cpp
+    ../core/story-manager/src/nodes/for_loop_node.cpp
+    ../core/story-manager/src/nodes/while_loop_node.cpp
+    ../core/story-manager/src/nodes/break_node.cpp
+    ../core/story-manager/src/nodes/continue_node.cpp
 
     ../core/story-manager/src/nodes/connection.cpp
     ../core/story-manager/src/story_db.cpp

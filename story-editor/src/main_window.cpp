@@ -38,6 +38,10 @@
 #include "send_signal_node_widget.h"
 #include "wait_delay_node_widget.h"
 #include "wait_event_node_widget.h"
+#include "for_loop_node_widget.h"
+#include "while_loop_node_widget.h"
+#include "break_node_widget.h"
+#include "continue_node_widget.h"
 
 MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
     : m_logger(logger)
@@ -72,6 +76,10 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     m_widgetFactory.registerNode<WaitDelayNodeWidget>(WaitDelayNodeUuid);
     m_widgetFactory.registerNode<PlayMediaNodeWidget>(PlayMediaNodeUuid);
     m_widgetFactory.registerNode<SendSignalNodeWidget>(SendSignalNodeUuid);
+    m_widgetFactory.registerNode<ForLoopNodeWidget>(ForLoopNodeUuid);
+    m_widgetFactory.registerNode<WhileLoopNodeWidget>(WhileLoopNodeUuid);
+    m_widgetFactory.registerNode<BreakNodeWidget>(BreakNodeUuid);
+    m_widgetFactory.registerNode<ContinueNodeWidget>(ContinueNodeUuid);
 
     m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {
         OpenProject(event.GetUuid());

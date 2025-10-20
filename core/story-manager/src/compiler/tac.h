@@ -324,6 +324,10 @@ private:
 #include "wait_delay_node.h"
 #include "play_media_node.h"
 #include "send_signal_node.h"
+#include "for_loop_node.h"
+#include "while_loop_node.h"
+#include "break_node.h"
+#include "continue_node.h"
 
 // ===================================================================
 // SECTION 2: CLASSE TACGenerator - MODIFICATIONS
@@ -376,6 +380,16 @@ private:
     TACProgram m_program;
     int m_tempCounter;
     int m_labelCounter;
+
+    // Structure pour le contexte de boucle
+    struct LoopContext {
+        std::string startLabel;      // Label du début de la boucle
+        std::string endLabel;        // Label de fin de la boucle
+        std::string continueLabel;   // Label pour continue (peut différer du start)
+    };
+    
+    // Pile de contextes de boucles pour gérer Break/Continue et boucles imbriquées
+    std::vector<LoopContext> m_loopStack;
     
     // Map pour garder en mémoire où sont stockés les résultats des nœuds
     std::map<std::string, std::shared_ptr<TACOperand>> m_nodeResults;
@@ -383,12 +397,37 @@ private:
     // Set pour éviter de visiter deux fois le même nœud
     std::set<std::string> m_visitedNodes;
     
-    // NOUVEAU: Variables disponibles pour résolution
+    // Variables disponibles pour résolution
     std::vector<std::shared_ptr<Variable>> m_variables;
 
     // ===================================================================
     // HELPERS
     // ===================================================================
+
+    void GenerateExecutionChain(std::shared_ptr<ASTNode> startNode) {
+        if (!startNode) return;
+        
+        // Générer le nœud actuel
+        GenerateNode(startNode);
+        
+        // Suivre la chaîne d'exécution (enfants d'exécution)
+        for (const auto& child : startNode->children) {
+            GenerateExecutionChain(child);
+        }
+    }
+
+    // Vérifie si on est dans une boucle
+    bool IsInLoop() const {
+        return !m_loopStack.empty();
+    }
+    
+    // Obtient le contexte de la boucle courante
+    const LoopContext& GetCurrentLoop() const {
+        if (m_loopStack.empty()) {
+            throw std::runtime_error("Not in a loop context");
+        }
+        return m_loopStack.back();
+    }
 
     // Génère un nouveau temporaire
     std::shared_ptr<TACOperand> NewTemp() {
@@ -407,7 +446,7 @@ private:
     }
 
     // ===================================================================
-    // NOUVEAU: HELPERS POUR RÉSOLUTION DE VARIABLES
+    // HELPERS POUR RÉSOLUTION DE VARIABLES
     // ===================================================================
     
     std::shared_ptr<Variable> ResolveVariableByUuid(const std::string& uuid) const {
@@ -491,6 +530,15 @@ private:
             std::cout << "    -> Type: CallFunctionNode\n";
             GenerateCallFunctionNode(node);
         }
+        else if (node->IsType<FunctionEntryNode>()) {
+            std::cout << "    -> Type: FunctionEntryNode (generating children)\n";
+            // Entry point, générer les enfants
+            for (size_t i = 0; i < node->children.size(); i++) {
+                std::cout << "      Processing child [" << i << "]\n";
+                GenerateNode(node->children[i]);
+            }
+        }
+
         // ===================================================================
         // NŒUDS SYSCALL
         // ===================================================================
@@ -510,14 +558,31 @@ private:
             std::cout << "    -> Type: SendSignalNode\n";
             GenerateSendSignalNode(node);
         }
-        else if (node->IsType<FunctionEntryNode>()) {
-            std::cout << "    -> Type: FunctionEntryNode (generating children)\n";
-            // Entry point, générer les enfants
-            for (size_t i = 0; i < node->children.size(); i++) {
-                std::cout << "      Processing child [" << i << "]\n";
-                GenerateNode(node->children[i]);
-            }
+
+        // ===================================================================
+        // OUR LES BOUCLES
+        // ===================================================================
+        else if (node->IsType<ForLoopNode>()) {
+            std::cout << "    -> Type: ForLoopNode\n";
+            GenerateForLoopNode(node);
+            return nullptr;
         }
+        else if (node->IsType<WhileLoopNode>()) {
+            std::cout << "    -> Type: WhileLoopNode\n";
+            GenerateWhileLoopNode(node);
+            return nullptr;
+        }
+        else if (node->IsType<BreakNode>()) {
+            std::cout << "    -> Type: BreakNode\n";
+            GenerateBreakNode(node);
+            return nullptr;
+        }
+        else if (node->IsType<ContinueNode>()) {
+            std::cout << "    -> Type: ContinueNode\n";
+            GenerateContinueNode(node);
+            return nullptr;
+        }
+
 
         // Mémoriser le résultat
         if (result) {
@@ -531,6 +596,291 @@ private:
     // ===================================================================
     // GÉNÉRATION PAR TYPE DE NŒUD - EXISTANTS (pas de changement)
     // ===================================================================
+
+    // ===================================================================
+    // GÉNÉRATION DU FOR LOOP
+    // ===================================================================
+    void GenerateForLoopNode(std::shared_ptr<ASTNode> node) {
+        auto* forLoopNode = node->GetAs<ForLoopNode>();
+        if (!forLoopNode) {
+            throw std::runtime_error("ForLoopNode cast failed");
+        }
+
+        std::cout << "  Generating ForLoopNode\n";
+
+        // Créer les labels pour la boucle
+        auto loopStart = NewLabel("for_start");
+        auto loopBody = NewLabel("for_body");
+        auto loopContinue = NewLabel("for_continue");
+        auto loopEnd = NewLabel("for_end");
+
+        // ⭐ IMPORTANT : Empiler le contexte AVANT de générer le corps
+        m_loopStack.push_back({
+            loopStart->GetValue(), 
+            loopEnd->GetValue(), 
+            loopContinue->GetValue()
+        });
+
+        // === 1. INITIALISATION : index = start ===
+        std::shared_ptr<TACOperand> startOperand;
+        auto startInput = node->GetDataInput(1);
+        if (startInput) {
+            startOperand = GenerateNode(startInput);
+        } else {
+            startOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(forLoopNode->GetStartIndex())
+            );
+        }
+
+        // Créer la variable temporaire pour l'index
+        auto indexTemp = NewTemp();
+        auto copyInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::COPY,
+            indexTemp,
+            startOperand
+        );
+        m_program.AddInstruction(copyInstr);
+
+        // === 2. LABEL loop_start ===
+        auto labelStart = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopStart
+        );
+        m_program.AddInstruction(labelStart);
+
+        // === 3. CONDITION : index < end ===
+        std::shared_ptr<TACOperand> endOperand;
+        auto endInput = node->GetDataInput(2);
+        if (endInput) {
+            endOperand = GenerateNode(endInput);
+        } else {
+            endOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(forLoopNode->GetEndIndex())
+            );
+        }
+
+        // Test: index < end
+        auto condTemp = NewTemp();
+        auto ltInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LT,
+            condTemp,
+            indexTemp,
+            endOperand
+        );
+        m_program.AddInstruction(ltInstr);
+
+        // if (!condition) goto loop_end
+        auto ifFalse = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::IF_FALSE,
+            loopEnd,
+            condTemp
+        );
+        m_program.AddInstruction(ifFalse);
+
+        // === 4. LABEL loop_body ===
+        auto labelBody = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopBody
+        );
+        m_program.AddInstruction(labelBody);
+
+        // === 5. CORPS DE LA BOUCLE - CORRECTION ===
+        // Générer toute la chaîne d'exécution (pas juste le premier enfant)
+        if (node->GetChild(0)) {
+            std::cout << "    Generating loop body execution chain...\n";
+            GenerateExecutionChain(node->GetChild(0));
+        }
+
+        // === 6. LABEL loop_continue (pour Continue) ===
+        auto labelContinue = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopContinue
+        );
+        m_program.AddInstruction(labelContinue);
+
+        // === 7. INCRÉMENTATION : index = index + step ===
+        std::shared_ptr<TACOperand> stepOperand;
+        auto stepInput = node->GetDataInput(3);
+        if (stepInput) {
+            stepOperand = GenerateNode(stepInput);
+        } else {
+            stepOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(forLoopNode->GetStep())
+            );
+        }
+
+        auto addInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::ADD,
+            indexTemp,
+            indexTemp,
+            stepOperand
+        );
+        m_program.AddInstruction(addInstr);
+
+        // === 8. RETOUR AU DÉBUT ===
+        auto gotoStart = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::GOTO,
+            loopStart
+        );
+        m_program.AddInstruction(gotoStart);
+
+        // === 9. LABEL loop_end ===
+        auto labelEnd = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopEnd
+        );
+        m_program.AddInstruction(labelEnd);
+
+        // ⭐ IMPORTANT : Dépiler APRÈS avoir généré tout le corps
+        m_loopStack.pop_back();
+
+        // === 10. COMPLETED (port de sortie 1) ===
+        if (node->GetChild(1)) {
+            GenerateNode(node->GetChild(1));
+        }
+    }
+
+    // ===================================================================
+    // GÉNÉRATION DU WHILE LOOP
+    // ===================================================================
+    void GenerateWhileLoopNode(std::shared_ptr<ASTNode> node) {
+        auto* whileLoopNode = node->GetAs<WhileLoopNode>();
+        if (!whileLoopNode) {
+            throw std::runtime_error("WhileLoopNode cast failed");
+        }
+
+        std::cout << "  Generating WhileLoopNode\n";
+
+        // Créer les labels
+        auto loopStart = NewLabel("while_start");
+        auto loopBody = NewLabel("while_body");
+        auto loopEnd = NewLabel("while_end");
+
+        // ⭐ Empiler le contexte AVANT le corps
+        m_loopStack.push_back({
+            loopStart->GetValue(), 
+            loopEnd->GetValue(), 
+            loopStart->GetValue()
+        });
+
+        // === 1. LABEL loop_start ===
+        auto labelStart = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopStart
+        );
+        m_program.AddInstruction(labelStart);
+
+        // === 2. ÉVALUER LA CONDITION ===
+        auto conditionInput = node->GetDataInput(1);
+        if (!conditionInput) {
+            throw std::runtime_error("WhileLoopNode missing condition input on port 1");
+        }
+
+        auto conditionOperand = GenerateNode(conditionInput);
+
+        // === 3. TEST : if (!condition) goto loop_end ===
+        auto ifFalse = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::IF_FALSE,
+            loopEnd,
+            conditionOperand
+        );
+        m_program.AddInstruction(ifFalse);
+
+        // === 4. LABEL loop_body ===
+        auto labelBody = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopBody
+        );
+        m_program.AddInstruction(labelBody);
+
+        // === 5. CORPS DE LA BOUCLE - CORRECTION ===
+        if (node->GetChild(0)) {
+            GenerateExecutionChain(node->GetChild(0));
+        }
+
+        // === 6. RETOUR AU DÉBUT ===
+        auto gotoStart = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::GOTO,
+            loopStart
+        );
+        m_program.AddInstruction(gotoStart);
+
+        // === 7. LABEL loop_end ===
+        auto labelEnd = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::LABEL,
+            loopEnd
+        );
+        m_program.AddInstruction(labelEnd);
+
+        // ⭐ Dépiler APRÈS le corps
+        m_loopStack.pop_back();
+
+        // === 8. COMPLETED (port de sortie 1) ===
+        if (node->GetChild(1)) {
+            GenerateNode(node->GetChild(1));
+        }
+    }
+
+    // ===================================================================
+    // GÉNÉRATION DU BREAK
+    // ===================================================================
+    void GenerateBreakNode(std::shared_ptr<ASTNode> node) {
+        auto* breakNode = node->GetAs<BreakNode>();
+        if (!breakNode) {
+            throw std::runtime_error("BreakNode cast failed");
+        }
+
+        if (!IsInLoop()) {
+            throw std::runtime_error("Break statement outside of loop");
+        }
+
+        std::cout << "  Generating BreakNode (jump to loop end)\n";
+
+        // Sauter vers la fin de la boucle courante
+        const auto& loopContext = GetCurrentLoop();
+        auto endLabel = std::make_shared<TACOperand>(
+            TACOperand::Type::LABEL,
+            loopContext.endLabel
+        );
+
+        auto gotoEnd = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::GOTO,
+            endLabel
+        );
+        m_program.AddInstruction(gotoEnd);
+    }
+
+    // ===================================================================
+    // GÉNÉRATION DU CONTINUE
+    // ===================================================================
+    void GenerateContinueNode(std::shared_ptr<ASTNode> node) {
+        auto* continueNode = node->GetAs<ContinueNode>();
+        if (!continueNode) {
+            throw std::runtime_error("ContinueNode cast failed");
+        }
+
+        if (!IsInLoop()) {
+            throw std::runtime_error("Continue statement outside of loop");
+        }
+
+        std::cout << "  Generating ContinueNode (jump to loop continue point)\n";
+
+        // Sauter vers le point de continue de la boucle courante
+        const auto& loopContext = GetCurrentLoop();
+        auto continueLabel = std::make_shared<TACOperand>(
+            TACOperand::Type::LABEL,
+            loopContext.continueLabel
+        );
+
+        auto gotoContinue = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::GOTO,
+            continueLabel
+        );
+        m_program.AddInstruction(gotoContinue);
+    }
 
     std::shared_ptr<TACOperand> GenerateVariableNode(std::shared_ptr<ASTNode> node) {
         auto* varNode = node->GetAs<VariableNode>();
