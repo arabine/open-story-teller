@@ -130,6 +130,10 @@ public:
         return m_assembly.str();
     }
 
+    GeneratorContext& Context() {
+        return m_context;
+    }
+
 protected:
 
     virtual void GenerateNodeCode(std::shared_ptr<ASTNode> node, bool isDataPath = false) = 0;

@@ -49,7 +49,7 @@ public:
         
         // === ÉTAPE 3 : GÉNÉRATION TAC ===
         m_tacGenerator = std::make_unique<TACGenerator>();
-        m_tacProgram = m_tacGenerator->Generate(astNodes);
+        m_tacProgram = m_tacGenerator->Generate(astNodes, Context().variables);
         
         // DEBUG : Afficher le TAC généré
         if (m_context.debugOutput) {

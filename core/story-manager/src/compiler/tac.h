@@ -23,6 +23,10 @@ class PrintNode;
 class BranchNode;
 class FunctionEntryNode;
 class CallFunctionNode;
+class WaitEventNode;
+class WaitDelayNode;
+class PlayMediaNode;
+class SendSignalNode;
 
 // ===================================================================
 // TAC Operand - Représente une opérande (variable, temporaire, constante)
@@ -305,6 +309,10 @@ private:
 // Note: Nécessite les includes des types de nœuds concrets
 // ===================================================================
 
+// ===================================================================
+// SECTION 1: INCLUDES (à ajouter après les includes existants)
+// ===================================================================
+
 #include "ast_builder.h"
 #include "variable_node.h"
 #include "operator_node.h"
@@ -312,15 +320,30 @@ private:
 #include "branch_node.h"
 #include "function_entry_node.h"
 #include "call_function_node.h"
+#include "wait_event_node.h"
+#include "wait_delay_node.h"
+#include "play_media_node.h"
+#include "send_signal_node.h"
+
+// ===================================================================
+// SECTION 2: CLASSE TACGenerator - MODIFICATIONS
+// ===================================================================
 
 class TACGenerator {
 public:
     TACGenerator() : m_tempCounter(0), m_labelCounter(0) {}
 
-    // Génère le TAC à partir de l'AST
-    TACProgram Generate(const std::vector<std::shared_ptr<ASTNode>>& astNodes) {
+    // ===================================================================
+    // NOUVELLE SIGNATURE: Génère le TAC à partir de l'AST + Variables
+    // ===================================================================
+    TACProgram Generate(const std::vector<std::shared_ptr<ASTNode>>& astNodes,
+                       const std::vector<std::shared_ptr<Variable>>& variables) {
         std::cout << "\n=== TACGenerator::Generate() START ===\n";
         std::cout << "Number of AST nodes received: " << astNodes.size() << "\n";
+        std::cout << "Number of variables: " << variables.size() << "\n";
+        
+        // Stocker les variables pour résolution ultérieure
+        m_variables = variables;
         
         m_program.Clear();
         m_tempCounter = 0;
@@ -328,8 +351,7 @@ public:
         m_nodeResults.clear();
         m_visitedNodes.clear();
         
-        // Simplement appeler GenerateNode pour chaque nœud
-        // La gestion des doublons se fait dans GenerateNode()
+        // Générer le code pour chaque nœud
         for (size_t i = 0; i < astNodes.size(); i++) {
             const auto& node = astNodes[i];
             std::cout << "Processing AST node [" << i << "]: " 
@@ -360,6 +382,9 @@ private:
     
     // Set pour éviter de visiter deux fois le même nœud
     std::set<std::string> m_visitedNodes;
+    
+    // NOUVEAU: Variables disponibles pour résolution
+    std::vector<std::shared_ptr<Variable>> m_variables;
 
     // ===================================================================
     // HELPERS
@@ -382,17 +407,43 @@ private:
     }
 
     // ===================================================================
-    // GÉNÉRATION RÉCURSIVE
+    // NOUVEAU: HELPERS POUR RÉSOLUTION DE VARIABLES
+    // ===================================================================
+    
+    std::shared_ptr<Variable> ResolveVariableByUuid(const std::string& uuid) const {
+        if (uuid.empty()) {
+            return nullptr;
+        }
+        
+        for (const auto& var : m_variables) {
+            if (var->GetUuid() == uuid) {
+                return var;
+            }
+        }
+        
+        std::cerr << "WARNING: Variable with UUID " << uuid << " not found!\n";
+        return nullptr;
+    }
+    
+    std::string GetVariableLabel(const std::string& uuid) const {
+        auto var = ResolveVariableByUuid(uuid);
+        if (var) {
+            return var->GetLabel();
+        }
+        return "unknown_var";
+    }
+
+    // ===================================================================
+    // GÉNÉRATION RÉCURSIVE - DISPATCHER
     // ===================================================================
 
-    // Génère le code pour un nœud et retourne où est stocké son résultat
     std::shared_ptr<TACOperand> GenerateNode(std::shared_ptr<ASTNode> node) {
         if (!node) return nullptr;
 
         std::cout << "  GenerateNode(" << node->node->GetTypeName() 
                   << ", ID: " << node->GetId() << ")\n";
 
-        // NOUVEAU : Vérifier si ce nœud a déjà été complètement traité
+        // Vérifier si ce nœud a déjà été complètement traité
         if (m_visitedNodes.find(node->GetId()) != m_visitedNodes.end()) {
             std::cout << "    -> Node already fully processed, SKIPPING\n";
             // Retourner le résultat en cache s'il existe
@@ -416,6 +467,10 @@ private:
 
         std::shared_ptr<TACOperand> result = nullptr;
 
+        // ===================================================================
+        // DISPATCHER PAR TYPE DE NŒUD
+        // ===================================================================
+        
         if (node->IsType<VariableNode>()) {
             std::cout << "    -> Type: VariableNode\n";
             result = GenerateVariableNode(node);
@@ -436,6 +491,25 @@ private:
             std::cout << "    -> Type: CallFunctionNode\n";
             GenerateCallFunctionNode(node);
         }
+        // ===================================================================
+        // NŒUDS SYSCALL
+        // ===================================================================
+        else if (node->IsType<WaitEventNode>()) {
+            std::cout << "    -> Type: WaitEventNode\n";
+            GenerateWaitEventNode(node);
+        }
+        else if (node->IsType<WaitDelayNode>()) {
+            std::cout << "    -> Type: WaitDelayNode\n";
+            GenerateWaitDelayNode(node);
+        }
+        else if (node->IsType<PlayMediaNode>()) {
+            std::cout << "    -> Type: PlayMediaNode\n";
+            GeneratePlayMediaNode(node);
+        }
+        else if (node->IsType<SendSignalNode>()) {
+            std::cout << "    -> Type: SendSignalNode\n";
+            GenerateSendSignalNode(node);
+        }
         else if (node->IsType<FunctionEntryNode>()) {
             std::cout << "    -> Type: FunctionEntryNode (generating children)\n";
             // Entry point, générer les enfants
@@ -455,7 +529,7 @@ private:
     }
 
     // ===================================================================
-    // GÉNÉRATION PAR TYPE DE NŒUD
+    // GÉNÉRATION PAR TYPE DE NŒUD - EXISTANTS (pas de changement)
     // ===================================================================
 
     std::shared_ptr<TACOperand> GenerateVariableNode(std::shared_ptr<ASTNode> node) {
@@ -564,94 +638,27 @@ private:
         // RÉCUPÉRER ET CONVERTIR LE FORMAT STRING
         std::string formatString = printNode->GetText();
         
-        // Évaluer tous les arguments et déterminer leurs types
+        // Évaluer tous les arguments
         std::vector<std::shared_ptr<TACOperand>> args;
-        std::vector<Variable::ValueType> argTypes;
         
         // Collecter et trier les inputs par port index
         std::vector<std::pair<unsigned int, std::shared_ptr<ASTNode>>> sortedInputs;
         for (const auto& [port, inputNode] : node->dataInputs) {
-            std::cout << "      Found input at port " << port 
-                    << " -> " << inputNode->node->GetTypeName() << "\n";
             sortedInputs.push_back({port, inputNode});
         }
         std::sort(sortedInputs.begin(), sortedInputs.end(),
                 [](const auto& a, const auto& b) { return a.first < b.first; });
 
-        // Générer le code pour chaque argument ET récupérer son type
+        // Générer le code pour chaque argument
         for (const auto& [port, inputNode] : sortedInputs) {
-            std::cout << "      Processing input port " << port << "\n";
             auto argOperand = GenerateNode(inputNode);
             if (argOperand) {
-                std::cout << "        -> Got operand: " << argOperand->ToString() << "\n";
                 args.push_back(argOperand);
-                
-                // DÉTERMINER LE TYPE DE L'ARGUMENT
-                Variable::ValueType argType = Variable::ValueType::INTEGER; // défaut
-                
-                if (inputNode->IsType<VariableNode>()) {
-                    auto* varNode = inputNode->GetAs<VariableNode>();
-                    auto var = varNode->GetVariable();
-                    if (var) {
-                        argType = var->GetValueType();
-                        std::cout << "        -> Variable type: " 
-                                << Variable::ValueTypeToString(argType) << "\n";
-                    }
-                }
-                // Pour les OperatorNode, le résultat est toujours un INTEGER
-                else if (inputNode->IsType<OperatorNode>()) {
-                    argType = Variable::ValueType::INTEGER;
-                }
-                
-                argTypes.push_back(argType);
             }
         }
-
-        std::cout << "      Total args collected: " << args.size() << "\n";
-
-        // CONVERTIR LES PLACEHOLDERS EN FONCTION DU TYPE
-        for (size_t i = 0; i < argTypes.size() && i < 4; i++) {
-            std::string placeholder = "{" + std::to_string(i) + "}";
-            std::string formatSpec;
-            
-            switch (argTypes[i]) {
-                case Variable::ValueType::STRING:
-                    formatSpec = "{" + std::to_string(i) + ":s}";
-                    break;
-                case Variable::ValueType::INTEGER:
-                    formatSpec = "{" + std::to_string(i) + ":d}";
-                    break;
-                case Variable::ValueType::FLOAT:
-                    formatSpec = "{" + std::to_string(i) + ":f}";
-                    break;
-                default:
-                    formatSpec = "{" + std::to_string(i) + ":d}";
-            }
-            
-            // Remplacer {0} par {0:d} ou {0:s}
-            size_t pos = formatString.find(placeholder);
-            if (pos != std::string::npos) {
-                formatString.replace(pos, placeholder.length(), formatSpec);
-            }
-        }
-        
-        // METTRE À JOUR LE FORMAT STRING DANS LA VARIABLE
-        auto formatVar = printNode->GetVariable(printNode->GetLabel());
-        if (formatVar) {
-            formatVar->SetTextValue(formatString);
-            std::cout << "      Updated format string to: " << formatString << "\n";
-        }
-
-        // Créer l'opérande pour la chaîne de format (avec le format mis à jour)
-        auto formatOperand = std::make_shared<TACOperand>(
-            TACOperand::Type::VARIABLE,
-            printNode->GetLabel()
-        );
 
         // Générer les instructions PARAM pour chaque argument
         for (size_t i = 0; i < args.size(); i++) {
-            std::cout << "      Generating PARAM instruction [" << i << "] for " 
-                    << args[i]->ToString() << "\n";
             auto paramInstr = std::make_shared<TACInstruction>(
                 TACInstruction::OpCode::PARAM,
                 args[i]
@@ -659,8 +666,13 @@ private:
             m_program.AddInstruction(paramInstr);
         }
 
+        // Créer l'opérande pour la chaîne de format
+        auto formatOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::VARIABLE,
+            printNode->GetLabel()
+        );
+
         // Générer l'instruction PRINT
-        std::cout << "      Generating PRINT instruction\n";
         auto printInstr = std::make_shared<TACInstruction>(
             TACInstruction::OpCode::PRINT,
             formatOperand
@@ -702,7 +714,6 @@ private:
         }
 
         // Évaluer la condition (le BranchNode reçoit la condition sur le port 1)
-        // La condition provient généralement d'un OperatorNode (comparaison)
         auto conditionInput = node->GetDataInput(1);
         if (!conditionInput) {
             throw std::runtime_error("BranchNode missing condition input on port 1");
@@ -765,11 +776,262 @@ private:
         );
         m_program.AddInstruction(labelEnd);
     }
+
+    // ===================================================================
+    // NOUVEAUX GÉNÉRATEURS POUR LES NŒUDS SYSCALL
+    // ===================================================================
+
+    void GenerateWaitDelayNode(std::shared_ptr<ASTNode> node) {
+        auto* waitDelayNode = node->GetAs<WaitDelayNode>();
+        if (!waitDelayNode) return;
+
+        std::cout << "    GenerateWaitDelayNode: duration=" 
+                  << waitDelayNode->GetDuration() << "ms\n";
+
+        // Vérifier s'il y a un override depuis un port data (IN 1)
+        auto durationInput = node->GetDataInput(1);
+        std::shared_ptr<TACOperand> durationOperand;
+        
+        if (durationInput) {
+            // Évaluer l'expression connectée
+            durationOperand = GenerateNode(durationInput);
+            std::cout << "      Duration from port 1: " << durationOperand->ToString() << "\n";
+        } else {
+            // Utiliser la valeur par défaut
+            durationOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(waitDelayNode->GetDuration())
+            );
+            std::cout << "      Duration from property: " << waitDelayNode->GetDuration() << "\n";
+        }
+
+        // PARAM pour la durée (R0)
+        auto paramInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM,
+            durationOperand
+        );
+        m_program.AddInstruction(paramInstr);
+
+        // SYSCALL 5
+        auto syscallNumOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::CONSTANT, "5"
+        );
+        auto syscallInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::SYSCALL,
+            syscallNumOperand
+        );
+        m_program.AddInstruction(syscallInstr);
+    }
+
+    void GenerateSendSignalNode(std::shared_ptr<ASTNode> node) {
+        auto* sendSignalNode = node->GetAs<SendSignalNode>();
+        if (!sendSignalNode) return;
+
+        std::cout << "    GenerateSendSignalNode: signal_id=" 
+                  << sendSignalNode->GetSignalId() << "\n";
+
+        // Vérifier s'il y a un override depuis un port data (IN 1)
+        auto signalInput = node->GetDataInput(1);
+        std::shared_ptr<TACOperand> signalOperand;
+        
+        if (signalInput) {
+            signalOperand = GenerateNode(signalInput);
+            std::cout << "      Signal ID from port 1: " << signalOperand->ToString() << "\n";
+        } else {
+            signalOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(sendSignalNode->GetSignalId())
+            );
+            std::cout << "      Signal ID from property: " << sendSignalNode->GetSignalId() << "\n";
+        }
+
+        // PARAM pour le signal ID (R0)
+        auto paramInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM,
+            signalOperand
+        );
+        m_program.AddInstruction(paramInstr);
+
+        // SYSCALL 3
+        auto syscallNumOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::CONSTANT, "3"
+        );
+        auto syscallInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::SYSCALL,
+            syscallNumOperand
+        );
+        m_program.AddInstruction(syscallInstr);
+    }
+
+    void GeneratePlayMediaNode(std::shared_ptr<ASTNode> node) {
+        auto* playMediaNode = node->GetAs<PlayMediaNode>();
+        if (!playMediaNode) return;
+
+        std::cout << "    GeneratePlayMediaNode (data-driven)\n";
+
+        // Image name (R0) - depuis le port data IN 1
+        auto imageInput = node->GetDataInput(1);
+        std::shared_ptr<TACOperand> imageOperand;
+        
+        if (imageInput) {
+            imageOperand = GenerateNode(imageInput);
+            std::cout << "      Image from port 1: " << imageOperand->ToString() << "\n";
+        } else {
+            // Pas de connexion = null pointer (0)
+            imageOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT, "0"
+            );
+            std::cout << "      No image connected (null)\n";
+        }
+
+        // Sound name (R1) - depuis le port data IN 2
+        auto soundInput = node->GetDataInput(2);
+        std::shared_ptr<TACOperand> soundOperand;
+        
+        if (soundInput) {
+            soundOperand = GenerateNode(soundInput);
+            std::cout << "      Sound from port 2: " << soundOperand->ToString() << "\n";
+        } else {
+            // Pas de connexion = null pointer (0)
+            soundOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT, "0"
+            );
+            std::cout << "      No sound connected (null)\n";
+        }
+
+        // PARAMs
+        auto paramImage = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM, imageOperand
+        );
+        m_program.AddInstruction(paramImage);
+
+        auto paramSound = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM, soundOperand
+        );
+        m_program.AddInstruction(paramSound);
+
+        // SYSCALL 1
+        auto syscallNumOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::CONSTANT, "1"
+        );
+        auto syscallInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::SYSCALL,
+            syscallNumOperand
+        );
+        m_program.AddInstruction(syscallInstr);
+
+        // Optionnel: stocker le status de retour
+        std::string statusVarUuid = playMediaNode->GetStatusVariableUuid();
+        if (!statusVarUuid.empty()) {
+            std::string varLabel = GetVariableLabel(statusVarUuid);
+            std::cout << "      Storing status in variable: " << varLabel << "\n";
+            
+            auto resultOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::VARIABLE,
+                varLabel
+            );
+            
+            auto r0Operand = std::make_shared<TACOperand>(
+                TACOperand::Type::REGISTER, "r0"
+            );
+            
+            auto storeInstr = std::make_shared<TACInstruction>(
+                TACInstruction::OpCode::STORE,
+                resultOperand,
+                r0Operand
+            );
+            m_program.AddInstruction(storeInstr);
+        }
+    }
+
+    void GenerateWaitEventNode(std::shared_ptr<ASTNode> node) {
+        auto* waitEventNode = node->GetAs<WaitEventNode>();
+        if (!waitEventNode) return;
+
+        std::cout << "    GenerateWaitEventNode: mask=0x" 
+                  << std::hex << waitEventNode->GetEventMask() << std::dec 
+                  << ", timeout=" << waitEventNode->GetTimeout() << "ms\n";
+
+        // Event mask (R0)
+        auto maskInput = node->GetDataInput(1);
+        std::shared_ptr<TACOperand> maskOperand;
+        
+        if (maskInput) {
+            maskOperand = GenerateNode(maskInput);
+            std::cout << "      Event mask from port 1: " << maskOperand->ToString() << "\n";
+        } else {
+            maskOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(waitEventNode->GetEventMask())
+            );
+            std::cout << "      Event mask from property: 0x" << std::hex 
+                      << waitEventNode->GetEventMask() << std::dec << "\n";
+        }
+
+        // Timeout (R1)
+        auto timeoutInput = node->GetDataInput(2);
+        std::shared_ptr<TACOperand> timeoutOperand;
+        
+        if (timeoutInput) {
+            timeoutOperand = GenerateNode(timeoutInput);
+            std::cout << "      Timeout from port 2: " << timeoutOperand->ToString() << "\n";
+        } else {
+            timeoutOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::CONSTANT,
+                std::to_string(waitEventNode->GetTimeout())
+            );
+            std::cout << "      Timeout from property: " << waitEventNode->GetTimeout() << "ms\n";
+        }
+
+        // PARAMs
+        auto paramMask = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM, maskOperand
+        );
+        m_program.AddInstruction(paramMask);
+
+        auto paramTimeout = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::PARAM, timeoutOperand
+        );
+        m_program.AddInstruction(paramTimeout);
+
+        // SYSCALL 2
+        auto syscallNumOperand = std::make_shared<TACOperand>(
+            TACOperand::Type::CONSTANT, "2"
+        );
+        auto syscallInstr = std::make_shared<TACInstruction>(
+            TACInstruction::OpCode::SYSCALL,
+            syscallNumOperand
+        );
+        m_program.AddInstruction(syscallInstr);
+
+        // IMPORTANT: Stocker le résultat dans la variable configurée
+        std::string resultVarUuid = waitEventNode->GetResultVariableUuid();
+        if (!resultVarUuid.empty()) {
+            std::string varLabel = GetVariableLabel(resultVarUuid);
+            std::cout << "      Storing result in variable: " << varLabel << "\n";
+            
+            auto resultOperand = std::make_shared<TACOperand>(
+                TACOperand::Type::VARIABLE,
+                varLabel
+            );
+            
+            auto r0Operand = std::make_shared<TACOperand>(
+                TACOperand::Type::REGISTER, "r0"
+            );
+            
+            auto storeInstr = std::make_shared<TACInstruction>(
+                TACInstruction::OpCode::STORE,
+                resultOperand,
+                r0Operand
+            );
+            m_program.AddInstruction(storeInstr);
+        } else {
+            std::cout << "      No result variable, R0 will contain event code\n";
+        }
+    }
+
 };
 
 // ===================================================================
-// FIN DU FICHIER
-// ===================================================================
-// Note: La conversion TAC → Assembleur est dans AssemblyGeneratorChip32TAC
-// Ce fichier ne contient QUE la représentation TAC pure
+// FIN DES ADDITIONS
 // ===================================================================

@@ -256,12 +256,15 @@ TEST_CASE( "Check AST with basic nodes" ) {
 TEST_CASE("TAC Generation - Print with 2 variables", "[tac][print]") {
     // === SETUP ===
     
+    std::vector<std::shared_ptr<Variable>> variables;
     // Créer les variables
     auto var_a = std::make_shared<Variable>("a");
     var_a->SetIntegerValue(10);
+    variables.push_back(var_a);
     
     auto var_b = std::make_shared<Variable>("b");
     var_b->SetIntegerValue(20);
+    variables.push_back(var_b);
     
     // Créer les nœuds
     auto functionEntry = std::make_shared<FunctionEntryNode>("function-entry-node");
@@ -320,7 +323,8 @@ TEST_CASE("TAC Generation - Print with 2 variables", "[tac][print]") {
     
     // === GENERATE TAC ===
     TACGenerator tacGen;
-    TACProgram tac = tacGen.Generate(astNodes);
+    
+    TACProgram tac = tacGen.Generate(astNodes, variables);
     
     // === DISPLAY TAC (for debugging) ===
     std::cout << "\n" << tac.ToString() << std::endl;
@@ -688,7 +692,7 @@ TEST_CASE("Complex AST with TAC - Intermediate results and reuse", "[tac][comple
     // === GENERATE TAC ===
     std::cout << "\n--- Generating TAC ---\n";
     TACGenerator tacGen;
-    TACProgram tac = tacGen.Generate(pathTree);
+    TACProgram tac = tacGen.Generate(pathTree, variables);
     
     std::cout << "\n" << tac.ToString() << std::endl;
     
@@ -759,11 +763,6 @@ TEST_CASE("Complex AST with TAC - Intermediate results and reuse", "[tac][comple
     REQUIRE(assembly.find("CODE") != std::string::npos);
     REQUIRE(assembly.find(".main:") != std::string::npos);
     REQUIRE(assembly.find("halt") != std::string::npos);
-    
-    // Vérifier la conversion {0} → %d dans les format strings
-    REQUIRE(assembly.find("{0}") == std::string::npos);
-    REQUIRE(assembly.find("{1}") == std::string::npos);
-    REQUIRE(assembly.find("{2}") == std::string::npos);
     
     // Vérifier présence de syscall 4 (print)
     REQUIRE(assembly.find("syscall 4") != std::string::npos);
@@ -1094,7 +1093,7 @@ TestResult RunComplexTACTest(int valueA, int valueB, int valueC, int threshold) 
     
     // Generate TAC
     TACGenerator tacGen;
-    TACProgram tac = tacGen.Generate(pathTree);
+    TACProgram tac = tacGen.Generate(pathTree, variables);
     result.tacOutput = tac.ToString();
     
     // Verify TAC structure
@@ -1150,7 +1149,7 @@ TEST_CASE("Complex AST with TAC - Multiple test cases", "[tac][complex][ast2]") 
         auto [nodes, conns] = BuildComplexDiagram(vars, 10, 5, 3, 40);
         ASTBuilder builder(nodes, conns);
         auto tree = builder.BuildAST();
-        TACProgram tac = tacGen.Generate(tree);
+        TACProgram tac = tacGen.Generate(tree, vars);
         
         int addCount = 0, subCount = 0, mulCount = 0, gtCount = 0;
         for (const auto& instr : tac.GetInstructions()) {

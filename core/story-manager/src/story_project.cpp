@@ -422,7 +422,7 @@ bool StoryProject::GenerateCompleteProgram(std::string &assembly)
         
         // Générer le TAC pour cette page
         TACGenerator tacGen;
-        TACProgram pageTAC = tacGen.Generate(astNodes);
+        TACProgram pageTAC = tacGen.Generate(astNodes, m_variables);
         
         // Stocker le TAC
         pageTACPrograms[pageUuid] = pageTAC;
