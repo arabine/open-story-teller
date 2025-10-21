@@ -1,5 +1,7 @@
-#include "main_window.h"
 #include <filesystem>
+#include <memory>
+
+#include "main_window.h"
 #include <SDL3/SDL.h>
 #include "platform_folders.h"
 
@@ -24,6 +26,7 @@
 
 #include "app_controller.h"
 #include "all_events.h"
+#include "story_project.h"
 
 #include "nodes_factory.h"
 #include "media_node_widget.h"
@@ -55,6 +58,7 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     , m_moduleEditorWindow(appController, appController.GetNodesFactory(), m_widgetFactory, IStoryProject::PROJECT_TYPE_MODULE)
     , m_libraryWindow(appController, appController.GetLibraryManager(), appController.GetNodesFactory(), eventBus)
     , m_projectPropertiesDialog(appController, appController.GetResourceManager())
+    , m_modulePropertiesDialog(appController)
 {
     CloseProject();
     CloseModule();
@@ -174,12 +178,12 @@ float MainWindow::DrawMainMenuBar()
             {
                 CloseProject();
 
-                m_story = m_appController.NewProject();
+                auto newProject = m_appController.NewProject();
 
-                if (m_story)
+                if (newProject)
                 {
                     m_appController.SaveProject();
-                    OpenProject(m_story->GetUuid());
+                    OpenProject(newProject->GetUuid());
                 }
             }
 
@@ -201,7 +205,7 @@ float MainWindow::DrawMainMenuBar()
             }
 */
 
-            bool init = m_story ? true : false; // local copy because CloseProject() changes the status between BeginDisabled/EndDisabled
+            bool init = m_nodeEditorWindow.GetCurrentStory() ? true : false; // local copy because CloseProject() changes the status between BeginDisabled/EndDisabled
             if (!init)
                 ImGui::BeginDisabled();
 
@@ -244,6 +248,11 @@ float MainWindow::DrawMainMenuBar()
                 CloseModule();
             }
 
+            if (ImGui::MenuItem("Module settings"))
+            {
+                m_modulePropertiesDialog.Show();
+            }
+
 
             ImGui::EndMenu();
         }
@@ -273,9 +282,13 @@ float MainWindow::DrawMainMenuBar()
     }
 
     m_aboutDialog.Open();
-    if (m_story)
+    if (m_nodeEditorWindow.GetCurrentStory())
     {
         m_projectPropertiesDialog.Open();
+    }
+    if (m_moduleEditorWindow.GetCurrentStory())
+    {
+        m_modulePropertiesDialog.Open();
     }
 
     return height;
@@ -339,8 +352,9 @@ bool MainWindow::ShowQuitConfirm()
 
 void MainWindow::OpenProject(const std::string &uuid)
 {
-    m_nodeEditorWindow.Load(m_story);
-    auto proj = m_story->GetProjectFilePath();
+    auto p = dynamic_pointer_cast<StoryProject>(m_appController.GetCurrentProject());
+    m_nodeEditorWindow.Load(p);
+    auto proj = p->GetProjectFilePath();
     // Add to recent if not exists
     if (std::find(m_recentProjects.begin(), m_recentProjects.end(), proj) == m_recentProjects.end())
     {
@@ -452,9 +466,14 @@ void MainWindow::RefreshProjectInformation()
 {
     std::string fullText = "Story Editor " + LibraryManager::GetVersion();
 
-    if (m_story)
+    auto p = m_nodeEditorWindow.GetCurrentStory();
+    if (p)
     {
-        fullText += " - " + m_story->GetProjectFilePath();
+        auto proj = dynamic_pointer_cast<StoryProject>(p);
+        if (proj)
+        {
+            fullText += " - " + proj->GetProjectFilePath();
+        }
     }
     m_gui.SetWindowTitle(fullText);
 }
@@ -607,14 +626,14 @@ bool MainWindow::Loop()
         ImGuiIO& io = ImGui::GetIO();
         if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false))
         {
-            if (moduleEditorFocused && m_module)
+            if (moduleEditorFocused && m_moduleEditorWindow.GetCurrentStory())
             {
                 // Si l'éditeur de module a le focus, sauvegarder le module
                 m_appController.SaveModule();
                 m_toastNotifier.success("Module sauvegardé");
                 m_logger.Log("Module sauvegardé via Ctrl+S");
             }
-            else if (m_story)
+            else if (m_nodeEditorWindow.GetCurrentStory())
             {
                 // Sinon, sauvegarder l'histoire principale
                 m_appController.SaveProject();
@@ -633,12 +652,12 @@ bool MainWindow::Loop()
         {
             bool moduleEditorFocused = m_moduleEditorWindow.IsFocused();
             
-            if (moduleEditorFocused && m_module)
+            if (moduleEditorFocused && m_moduleEditorWindow.GetCurrentStory())
             {
                 m_logger.Log("Building module...");
                 m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_MODULE);
             }
-            else if (m_story)
+            else if (m_nodeEditorWindow.GetCurrentStory())
             {
                 m_logger.Log("Building story...");
                 m_appController.CompileNodes(IStoryProject::PROJECT_TYPE_STORY);
@@ -648,6 +667,7 @@ bool MainWindow::Loop()
 
     m_aboutDialog.Draw();
     m_projectPropertiesDialog.Draw();
+    m_modulePropertiesDialog.Draw();
 
     m_toastNotifier.render();
 

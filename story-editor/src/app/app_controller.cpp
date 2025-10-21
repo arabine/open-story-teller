@@ -854,5 +854,10 @@ void AppController::ImportProject(const std::string &filePathName, int format)
 
 std::shared_ptr<IStoryProject> AppController::GetCurrentProject()
 {
-    return m_story; // Retourne le projet actuel
+    return m_story;
+}
+
+std::shared_ptr<IStoryProject> AppController::GetCurrentModule()
+{
+    return m_module;
 }

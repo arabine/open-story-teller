@@ -34,6 +34,7 @@ public:
 
     virtual void OpenProject(const std::string &uuid) = 0;
     virtual void SaveProject() = 0;
+    virtual void SaveModule() = 0;
     virtual void ImportProject(const std::string &fileName, int format) = 0;
     virtual void Log(const std::string &txt, bool critical = false) = 0;
     virtual void PlaySoundFile(const std::string &fileName) = 0;
@@ -41,6 +42,7 @@ public:
     virtual void OpenFunction(const std::string &uuid, const std::string &name) = 0;
 
     virtual std::shared_ptr<IStoryProject> GetCurrentProject() = 0;
+    virtual std::shared_ptr<IStoryProject> GetCurrentModule() = 0;
 
     // Node interaction
     virtual void BuildCode(bool compileonly) = 0;

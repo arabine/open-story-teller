@@ -21,6 +21,7 @@
 // Dialogs
 #include "about_dialog.h"
 #include "project_properties_dialog.h"
+#include "module_properties_dialog.h"
 
 #include "event_bus.h"
 #include "app_controller.h"
@@ -30,6 +31,7 @@
 #include "Localization.h"
 #include "LanguageSelector.h"
 #include "chip32_machine.h"
+
 
 class MainWindow : public std::enable_shared_from_this<MainWindow>, public ILogSubject
 {
@@ -47,9 +49,6 @@ private:
     EventBus& m_eventBus;
     AppController &m_appController; // Controller for application logic
     NodeWidgetFactory m_widgetFactory;
-
-    std::shared_ptr<StoryProject> m_story; // Current story
-    std::shared_ptr<StoryProject> m_module; // Current module
 
     std::vector<std::string> m_recentProjects;
 
@@ -69,6 +68,7 @@ private:
     // Dialogs
     AboutDialog m_aboutDialog;
     ProjectPropertiesDialog m_projectPropertiesDialog;
+    ModulePropertiesDialog m_modulePropertiesDialog;
 
     ImGuiToastNotifier m_toastNotifier;
     LanguageSelector m_languageSelector;

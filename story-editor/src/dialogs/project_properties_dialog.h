@@ -58,7 +58,7 @@ private:
 
     void DrawContent(std::shared_ptr<IStoryProject> story)
     {
-        if (ImGui::BeginPopupModal(GetTitle(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal(GetTitle(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
 
             ImGui::Text("Project name: "); ImGui::SameLine();

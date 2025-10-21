@@ -60,20 +60,19 @@ public:
     void CloseProject();
     void SaveProject();
     std::shared_ptr<StoryProject> NewModule();
-    void SaveModule();
+    
     void CloseModule();
     std::shared_ptr<StoryProject> OpenModule(const std::string &uuid);
     void OpenStory(const std::string &path = "");
     void SaveStory(const std::string &path = "");
     void ExportStory(const std::string &filename);
-    std::shared_ptr<StoryProject> GetCurrentStory() const { return m_story; }
-    std::shared_ptr<StoryProject> GetCurrentModule() const { return m_module; }
     void CompileNodes(IStoryProject::Type type);
     void Build(bool compileonly);
     void BuildModule(bool compileonly);
     void BuildCode(std::shared_ptr<StoryProject> story, bool compileonly, bool force = false);
 
     // --- Fonctions de IStoryManager ---
+    void SaveModule() override;
     virtual void SetExternalSourceFile(const std::string &filename) override;
     virtual void LoadBinaryStory(const std::string &filename) override;
     virtual void ToggleBreakpoint(int line) override;
@@ -90,6 +89,7 @@ public:
     virtual std::string VmState() const override;
     virtual void BuildCode(bool compileonly);
     virtual std::shared_ptr<IStoryProject> GetCurrentProject() override;
+    virtual std::shared_ptr<IStoryProject> GetCurrentModule() override;
 
     // --- Fonctions de IAudioEvent ---
     virtual void EndOfAudio() override;
