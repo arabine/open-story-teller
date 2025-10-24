@@ -5,7 +5,7 @@
 #include <string>
 #include <filesystem>
 #include <unordered_set>
-#include "json.hpp"
+
 
 #include "json.hpp"
 #include "resource_manager.h"
@@ -103,7 +103,7 @@ public:
     std::pair<std::list<std::shared_ptr<BaseNode>>::iterator, std::list<std::shared_ptr<BaseNode>>::iterator> Nodes(const std::string_view &page_uuid);
     std::pair<std::list<std::shared_ptr<Connection>>::iterator, std::list<std::shared_ptr<Connection>>::iterator> Links(const std::string_view &page_uuid);
 
-
+    void ScanNodes(const std::function<bool(std::shared_ptr<BaseNode>)>& callback);
     void ScanVariable(const std::function<bool(std::shared_ptr<Variable> element)>& operation) override;
     void AddVariable() override;
     void DeleteVariable(int i) override;

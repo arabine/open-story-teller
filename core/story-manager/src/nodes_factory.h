@@ -24,21 +24,24 @@
 #include "while_loop_node.h"
 #include "break_node.h"
 #include "continue_node.h"
+#include "function_exit_node.h"
 
-static const std::string OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
-static const std::string CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
-static const std::string VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
-static const std::string PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
-static const std::string FunctionEntryNodeUuid = "02fd145a-b3a6-43c2-83ce-6a187e6d4b5b";
-static const std::string BranchNodeUuid = "027b723d-2327-4646-a17a-79ddc2e016e4";
-static const std::string WaitEventNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
-static const std::string WaitDelayNodeUuid = "02455ef0-4975-4546-94de-720cae6baae3";
-static const std::string PlayMediaNodeUuid = "0285e90a-2eb7-4605-baa9-b3712a14dff8";
-static const std::string SendSignalNodeUuid = "02c2ce4b-8783-47cb-a55f-90056bebd64b";
-static const std::string ForLoopNodeUuid = "02a1b2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c";
-static const std::string WhileLoopNodeUuid = "02b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d";
-static const std::string BreakNodeUuid = "02c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e";
-static const std::string ContinueNodeUuid = "02d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f";
+
+static constexpr const char* OperatorNodeUuid = "0226fdac-8f7a-47d7-8584-b23aceb712ec";
+static constexpr const char* CallFunctionNodeUuid = "02745f38-9b11-49fe-94b1-b2a6b78249fb";
+static constexpr const char* VariableNodeUuid = "020cca4e-9cdc-47e7-a6a5-53e4c9152ed0";
+static constexpr const char* PrintNodeUuid = "02ee27bc-ff1d-4f94-b700-eab55052ad1c";
+static constexpr const char* FunctionEntryNodeUuid = "02fd145a-b3a6-43c2-83ce-6a187e6d4b5b";
+static constexpr const char* BranchNodeUuid = "027b723d-2327-4646-a17a-79ddc2e016e4";
+static constexpr const char* WaitEventNodeUuid = "02225cff-4975-400e-8130-41524d8af773";
+static constexpr const char* WaitDelayNodeUuid = "02455ef0-4975-4546-94de-720cae6baae3";
+static constexpr const char* PlayMediaNodeUuid = "0285e90a-2eb7-4605-baa9-b3712a14dff8";
+static constexpr const char* SendSignalNodeUuid = "02c2ce4b-8783-47cb-a55f-90056bebd64b";
+static constexpr const char* ForLoopNodeUuid = "02a1b2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c";
+static constexpr const char* WhileLoopNodeUuid = "02b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d";
+static constexpr const char* BreakNodeUuid = "02c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e";
+static constexpr const char* ContinueNodeUuid = "02d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f";
+static constexpr const char* FunctionExitNodeUuid = "02d78b65-9246-4108-91fc-03dfc142d9ee";
 
 typedef std::shared_ptr<BaseNode> (*GenericCreator)(const std::string &type);
 
@@ -66,6 +69,8 @@ public:
         registerNode<WhileLoopNode>(WhileLoopNodeUuid, std::make_shared<StoryPrimitive>("While Loop"));
         registerNode<BreakNode>(BreakNodeUuid, std::make_shared<StoryPrimitive>("Break"));
         registerNode<ContinueNode>(ContinueNodeUuid, std::make_shared<StoryPrimitive>("Continue"));
+        registerNode<FunctionExitNode>(FunctionExitNodeUuid, std::make_shared<StoryPrimitive>("Function exit"));
+
     }
 
     ~NodesFactory() = default;

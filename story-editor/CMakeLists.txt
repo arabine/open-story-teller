@@ -292,6 +292,7 @@ target_include_directories(${STORY_EDITOR_PROJECT} PUBLIC
     ../core/story-manager/src
     ../core/story-manager/src/nodes
     ../core/story-manager/src/compiler
+    ../core/story-manager/src/utils
     ../core/story-manager/interfaces
 )
 
@@ -300,7 +301,7 @@ add_definitions(
     -DVERSION_MAJOR=${PROJECT_VERSION_MAJOR} 
     -DVERSION_MINOR=${PROJECT_VERSION_MINOR} 
     -DVERSION_PATCH=${PROJECT_VERSION_PATCH}
-
+    -DJSON_DIAGNOSTICS=1
     -DRAUDIO_STANDALONE
     -DSUPPORT_MODULE_RAUDIO
 )

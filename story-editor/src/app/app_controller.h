@@ -77,6 +77,7 @@ public:
     virtual void LoadBinaryStory(const std::string &filename) override;
     virtual void ToggleBreakpoint(int line) override;
     virtual uint32_t GetRegister(int reg) override;
+    virtual NodesFactory& GetNodesFactory() override;
     virtual void Play() override;
     virtual void Step() override;
     virtual void Run() override;
@@ -113,7 +114,6 @@ public:
     // Getters pour les managers gérés par AppController
     ResourceManager& GetResourceManager() { return m_resources; }
     LibraryManager& GetLibraryManager() { return m_libraryManager; }
-    NodesFactory& GetNodesFactory() { return m_nodesFactory; }
     AudioPlayer& GetAudioPlayer() { return m_player; }
     WebServer& GetWebServer() { return m_webServer; }
     const std::vector<std::string>& GetRecentProjects() const { return m_recentProjects; }

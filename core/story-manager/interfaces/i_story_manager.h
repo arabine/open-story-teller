@@ -27,6 +27,8 @@ struct Callback<Ret(Params...)> {
 template <typename Ret, typename... Params>
 std::function<Ret(Params...)> Callback<Ret(Params...)>::func;
 
+class NodesFactory;
+
 class IStoryManager
 {
 public:
@@ -50,6 +52,7 @@ public:
     virtual void LoadBinaryStory(const std::string &filename) = 0;
     virtual void ToggleBreakpoint(int line) = 0;
     virtual uint32_t GetRegister(int reg) = 0;
+    virtual NodesFactory& GetNodesFactory() = 0;
  
     virtual void Play() = 0;
     virtual void Step() = 0;

@@ -7,7 +7,6 @@
 
 #include "story_project.h"
 #include "json.hpp"
-// #include "media_node.h"
 #include "variable_node.h"
 #include "operator_node.h"
 #include "print_node.h"
@@ -234,6 +233,18 @@ void StoryProject::ScanVariable(const std::function<bool(std::shared_ptr<Variabl
     }
 }
 
+void StoryProject::ScanNodes(const std::function<bool(std::shared_ptr<BaseNode>)>& callback) {
+    for (auto& page : m_pages) {
+        auto [nodesBegin, nodesEnd] = page->Nodes();       
+        std::vector<std::shared_ptr<BaseNode>> pageNodes(nodesBegin, nodesEnd);
+        for (auto& node : pageNodes) {
+            if (!callback(node)) {
+                return; // Stop scanning if callback returns false
+            }
+        }
+    }
+}
+
 void StoryProject::AddVariable() 
 {
     auto v = std::make_shared<Variable>("var_" + std::to_string(m_variables.size()));
@@ -271,6 +282,8 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model, NodesFactory &fact
             
                 std::string type = element["type"].get<std::string>();
 
+                std::cout << "!!!!!!!!!!!!!!!!!" << type << std::endl;
+
                 auto n = factory.CreateNode(type);
                 if (n)
                 {
@@ -301,16 +314,13 @@ bool StoryProject::ModelFromJson(const nlohmann::json &model, NodesFactory &fact
                     p->AddLink(std::make_shared<Connection>(connection.get<Connection>()));
                 }
             }
-
-
         }
-
        
         success = true;
     }
     catch(nlohmann::json::exception &e)
     {
-        std::cout << "(NodeEditorWindow::Load) " << e.what() << std::endl;
+        std::cout << "(StoryProject::ModelFromJson) " << e.what() << std::endl;
     }
 
     return success;
@@ -533,8 +543,14 @@ bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
 
                 if (j.contains("pages"))
                 {
-                    ModelFromJson(j, factory);
-                    m_initialized = true;
+                    if (ModelFromJson(j, factory))
+                    {
+                        m_initialized = true;
+                    }
+                    else
+                    {
+                        throw std::logic_error("Model read error");
+                    }
                 }
 
                 if (j.contains("variables"))
@@ -575,7 +591,11 @@ bool StoryProject::Load(ResourceManager &manager, NodesFactory &factory)
     }
     catch(nlohmann::json::exception &e)
     {
-        std::cout << e.what() << std::endl;
+        m_log.Log(e.what(), true);
+    }
+    catch(const std::exception &e)
+    {
+        m_log.Log(e.what(), true);
     }
 
     if (m_pages.size() == 0)

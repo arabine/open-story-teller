@@ -32,6 +32,7 @@ add_executable(${PROJECT_NAME}
     test_print_node.cpp
     test_branch.cpp
     test_loops.cpp
+    test_json.cpp
 
     ../story-manager/src/nodes/base_node.cpp
     ../story-manager/src/nodes/branch_node.cpp
@@ -47,6 +48,7 @@ add_executable(${PROJECT_NAME}
     ../story-manager/src/nodes/break_node.cpp
     ../story-manager/src/nodes/continue_node.cpp
     
+    ../story-manager/src/utils/json_wrapper.cpp
 
     ../chip32/chip32_assembler.cpp 
     ../chip32/chip32_vm.c
@@ -58,6 +60,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ../story-manager/src
     ../story-manager/src/nodes
     ../story-manager/src/compiler
+    ../story-manager/src/utils
     ../story-manager/interfaces
     ../../shared
 )

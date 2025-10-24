@@ -35,7 +35,7 @@
 #include "variable_node_widget.h"
 #include "operator_node_widget.h"
 #include "print_node_widget.h"
-#include "function_entry_widget.h"
+#include "function_entry_node_widget.h"
 #include "branch_node_widget.h"
 #include "play_media_node_widget.h"
 #include "send_signal_node_widget.h"
@@ -45,6 +45,8 @@
 #include "while_loop_node_widget.h"
 #include "break_node_widget.h"
 #include "continue_node_widget.h"
+#include "function_exit_node_widget.h"
+
 
 MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appController)
     : m_logger(logger)
@@ -74,7 +76,7 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     // m_widgetFactory.registerNode<ModuleNodeWidget>("module-node");
     m_widgetFactory.registerNode<VariableNodeWidget>(VariableNodeUuid);
     m_widgetFactory.registerNode<PrintNodeWidget>(PrintNodeUuid);
-    m_widgetFactory.registerNode<FunctionEntryWidget>(FunctionEntryNodeUuid);
+    m_widgetFactory.registerNode<FunctionEntryNodeWidget>(FunctionEntryNodeUuid);
     m_widgetFactory.registerNode<BranchNodeWidget>(BranchNodeUuid);
     m_widgetFactory.registerNode<WaitEventNodeWidget>(WaitEventNodeUuid);
     m_widgetFactory.registerNode<WaitDelayNodeWidget>(WaitDelayNodeUuid);
@@ -84,6 +86,8 @@ MainWindow::MainWindow(ILogger& logger, EventBus& eventBus, AppController& appCo
     m_widgetFactory.registerNode<WhileLoopNodeWidget>(WhileLoopNodeUuid);
     m_widgetFactory.registerNode<BreakNodeWidget>(BreakNodeUuid);
     m_widgetFactory.registerNode<ContinueNodeWidget>(ContinueNodeUuid);
+    m_widgetFactory.registerNode<FunctionExitNodeWidget>(FunctionExitNodeUuid);
+
 
     m_eventBus.Subscribe<OpenProjectEvent>([this](const OpenProjectEvent &event) {
         OpenProject(event.GetUuid());

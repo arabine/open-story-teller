@@ -852,6 +852,11 @@ void AppController::ImportProject(const std::string &filePathName, int format)
 
 }
 
+NodesFactory& AppController::GetNodesFactory()
+{
+    return m_nodesFactory;
+}
+
 std::shared_ptr<IStoryProject> AppController::GetCurrentProject()
 {
     return m_story;

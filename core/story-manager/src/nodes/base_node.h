@@ -136,6 +136,38 @@ public:
         m_outputPorts.clear();
     }
 
+    // Clear only data input ports, keep execution ports
+    void ClearDataInputPorts() {
+        auto it = m_inputPorts.begin();
+        while (it != m_inputPorts.end()) {
+            if (it->type == Port::Type::DATA_PORT) {
+                it = m_inputPorts.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    
+    // Clear only data output ports, keep execution ports
+    void ClearDataOutputPorts() {
+        auto it = m_outputPorts.begin();
+        while (it != m_outputPorts.end()) {
+            if (it->type == Port::Type::DATA_PORT) {
+                it = m_outputPorts.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    
+    void ClearAllInputPorts() {
+        m_inputPorts.clear();
+    }
+    
+    void ClearAllOutputPorts() {
+        m_outputPorts.clear();
+    }
+
     // Port management
     void AddInputPort(Port::Type type, const std::string& label, bool customRendering = false) {
         m_inputPorts.push_back({type, label, customRendering});
